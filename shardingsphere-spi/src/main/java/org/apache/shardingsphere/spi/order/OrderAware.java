@@ -15,21 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.shardingscaling.core.metadata.column;
-
-import lombok.Getter;
-import lombok.Setter;
+package org.apache.shardingsphere.spi.order;
 
 /**
- * Column meta data.
+ * Order aware.
  */
-@Setter
-@Getter
-public final class ColumnMetaData {
+public interface OrderAware {
     
-    private String columnName;
-    
-    private int columnType;
-    
-    private String columnTypeName;
+    /**
+     * Get order of load.
+     *
+     * @return load order
+     */
+    int getOrder();
 }

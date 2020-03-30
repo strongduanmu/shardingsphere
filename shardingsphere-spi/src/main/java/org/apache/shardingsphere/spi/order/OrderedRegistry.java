@@ -15,18 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.shardingscaling.core.metadata;
+package org.apache.shardingsphere.spi.order;
+
+import org.apache.shardingsphere.spi.NewInstanceServiceLoader;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
- * Meta data loader.
+ * Ordered registry.
  */
-public interface MetaDataLoader<T> {
+public final class OrderedRegistry {
     
     /**
-     * load meta data.
-     *
-     * @param tableName table name of meta data
-     * @return meta data
+     * Get registered classes.
+     * 
+     * @param orderAwareClass class of order aware
+     * @param <T> type of order aware class
+     * @return registered classes
      */
-    T load(String tableName);
+    @SuppressWarnings("unchecked")
+    public static <T extends OrderAware> Collection<Class<T>> getRegisteredClasses(final Class<T> orderAwareClass) {
+        Map<Integer, Class<T>> result = new TreeMap<>();
+        for (T each : NewInstanceServiceLoader.newServiceInstances(orderAwareClass)) {
+            result.put(each.getOrder(), (Class<T>) each.getClass());
+        }
+        return result.values();
+    }
 }
