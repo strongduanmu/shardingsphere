@@ -15,28 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.shardingjdbc.orchestration.api.yaml.fixture;
+package org.apache.shardingsphere.ui.common.dto;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.shardingsphere.spi.keygen.ShardingKeyGenerator;
 
-import java.util.Properties;
-import java.util.concurrent.atomic.AtomicInteger;
-
-public final class DecrementShardingKeyGenerator implements ShardingKeyGenerator {
+/**
+ * CenterConfig DTO
+ */
+@Getter
+@Setter
+public final class CenterConfigDTO {
     
-    @Getter
-    private final String type = "DECREMENT";
+    private String name;
     
-    private final AtomicInteger sequence = new AtomicInteger(100);
+    private String instanceType;
     
-    @Getter
-    @Setter
-    private Properties properties = new Properties();
+    private String serverLists;
     
-    @Override
-    public Comparable<?> generateKey() {
-        return sequence.decrementAndGet();
-    }
+    private String namespace;
+    
+    private String orchestrationName;
+    
+    private String orchestrationType;
+    
+    private String digest;
+    
+    private String primaryName;
 }

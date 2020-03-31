@@ -15,25 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.underlying.rewrite.context;
+package org.apache.shardingsphere.core.strategy.keygen.fixture;
 
-import org.apache.shardingsphere.spi.order.OrderAware;
-import org.apache.shardingsphere.underlying.common.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.underlying.common.rule.BaseRule;
+import lombok.Getter;
+import lombok.Setter;
+import org.apache.shardingsphere.spi.keygen.KeyGenerateAlgorithm;
 
-/**
- * SQL rewrite context decorator.
- *
- * @param <T> type of rule
- */
-public interface SQLRewriteContextDecorator<T extends BaseRule> extends OrderAware<Class<T>> {
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public final class IncrementKeyGenerateAlgorithm implements KeyGenerateAlgorithm {
     
-    /**
-     * Decorate SQL rewrite context.
-     *
-     * @param rule rule
-     * @param properties ShardingSphere properties
-     * @param sqlRewriteContext SQL rewrite context to be decorated
-     */
-    void decorate(T rule, ConfigurationProperties properties, SQLRewriteContext sqlRewriteContext);
+    @Getter
+    private final String type = "INCREMENT";
+    
+    private final AtomicInteger count = new AtomicInteger();
+    
+    @Getter
+    @Setter
+    private Properties properties = new Properties();
+    
+    @Override
+    public Comparable<?> generateKey() {
+        return count.incrementAndGet();
+    }
 }
