@@ -15,21 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.spi.fixture;
+package org.apache.shardingsphere.spi.order;
 
-import lombok.Getter;
-import lombok.Setter;
+import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
 
-import java.util.Properties;
+import java.util.Collection;
+import java.util.Map;
+import java.util.TreeMap;
 
-@Getter
-@Setter
-public final class TypeBasedSPIFixtureImpl implements TypeBasedSPIFixture {
+/**
+ * Ordered SPI registry.
+ */
+public final class OrderedSPIRegistry {
     
-    private Properties properties;
-    
-    @Override
-    public String getType() {
-        return "FIXTURE";
+    /**
+     * Get registered services.
+     * 
+     * @param orderedSPIClass class of ordered SPI
+     * @param <T> type of ordered SPI class
+     * @return registered services
+     */
+    public static <T extends OrderedSPI> Collection<T> getRegisteredServices(final Class<T> orderedSPIClass) {
+        Map<Integer, T> result = new TreeMap<>();
+        for (T each : ShardingSphereServiceLoader.newServiceInstances(orderedSPIClass)) {
+            result.put(each.getOrder(), each);
+        }
+        return result.values();
     }
 }

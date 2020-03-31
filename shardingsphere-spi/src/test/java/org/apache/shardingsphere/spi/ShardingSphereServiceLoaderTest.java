@@ -17,7 +17,7 @@
 
 package org.apache.shardingsphere.spi;
 
-import org.apache.shardingsphere.spi.fixture.TypeBasedSPIFixture;
+import org.apache.shardingsphere.spi.fixture.TypedSPIFixture;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -26,19 +26,19 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public final class NewInstanceServiceLoaderTest {
+public final class ShardingSphereServiceLoaderTest {
     
     @Test
     public void assertNewServiceInstanceWhenIsNotExist() {
-        NewInstanceServiceLoader.register(Collection.class);
-        Collection collection = NewInstanceServiceLoader.newServiceInstances(Collection.class);
+        ShardingSphereServiceLoader.register(Collection.class);
+        Collection collection = ShardingSphereServiceLoader.newServiceInstances(Collection.class);
         assertTrue(collection.isEmpty());
     }
     
     @Test
     public void assertNewServiceInstanceWhenIsExist() {
-        NewInstanceServiceLoader.register(TypeBasedSPIFixture.class);
-        Collection collection = NewInstanceServiceLoader.newServiceInstances(TypeBasedSPIFixture.class);
+        ShardingSphereServiceLoader.register(TypedSPIFixture.class);
+        Collection collection = ShardingSphereServiceLoader.newServiceInstances(TypedSPIFixture.class);
         assertThat(collection.size(), is(1));
     }
 }

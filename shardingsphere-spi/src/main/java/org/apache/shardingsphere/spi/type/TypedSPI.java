@@ -15,26 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.spi.order;
+package org.apache.shardingsphere.spi.type;
+
+import java.util.Properties;
 
 /**
- * Order aware.
- * 
- * @param <T> type
+ * Typed SPI.
  */
-public interface OrderAware<T> {
-    
-    /**
-     * Get order of load.
-     *
-     * @return load order
-     */
-    int getOrder();
+public interface TypedSPI {
     
     /**
      * Get type.
      * 
      * @return type
      */
-    T getType();
+    String getType();
+    
+    /**
+     * Get properties.
+     * 
+     * @return properties
+     */
+    Properties getProperties();
+    
+    /**
+     * Set properties.
+     * 
+     * @param properties properties
+     */
+    void setProperties(Properties properties);
 }

@@ -15,9 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.spi.fixture;
+package org.apache.shardingsphere.spi.order;
 
-import org.apache.shardingsphere.spi.TypeBasedSPI;
-
-public interface TypeBasedSPIFixture extends TypeBasedSPI {
+/**
+ * Ordered SPI.
+ * 
+ * @param <T> type
+ */
+public interface OrderedSPI<T> {
+    
+    /**
+     * Get order of load.
+     *
+     * @return load order
+     */
+    int getOrder();
+    
+    /**
+     * Get type.
+     * 
+     * @return type
+     */
+    T getType();
 }

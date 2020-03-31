@@ -15,18 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.spi.fixture;
+package org.apache.shardingsphere.underlying.common.config;
 
-import org.apache.shardingsphere.spi.NewInstanceServiceLoader;
-import org.apache.shardingsphere.spi.TypeBasedSPIServiceLoader;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import lombok.Getter;
 
-public final class TypeBasedSPIFixtureServiceLoader extends TypeBasedSPIServiceLoader<TypeBasedSPIFixture> {
+import java.util.Properties;
+
+/**
+ * Type based SPI configuration.
+ */
+@Getter
+public abstract class TypedSPIConfiguration {
     
-    static {
-        NewInstanceServiceLoader.register(TypeBasedSPIFixture.class);
+    private final String type;
+    
+    private final Properties properties;
+    
+    public TypedSPIConfiguration(final String type) {
+        this(type, null);
     }
     
-    public TypeBasedSPIFixtureServiceLoader() {
-        super(TypeBasedSPIFixture.class);
+    public TypedSPIConfiguration(final String type, final Properties properties) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(type), "Type is required.");
+        this.type = type;
+        this.properties = null == properties ? new Properties() : properties;
     }
 }

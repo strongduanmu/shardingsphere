@@ -15,24 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.api.config.masterslave;
+package org.apache.shardingsphere.spi.fixture;
 
-import lombok.Getter;
-import org.apache.shardingsphere.underlying.common.config.TypedSPIConfiguration;
+import org.apache.shardingsphere.spi.type.TypedSPI;
 
-import java.util.Properties;
-
-/**
- * Master-slave load balance strategy configuration.
- */
-@Getter
-public final class LoadBalanceStrategyConfiguration extends TypedSPIConfiguration {
-    
-    public LoadBalanceStrategyConfiguration(final String type) {
-        super(type);
-    }
-    
-    public LoadBalanceStrategyConfiguration(final String type, final Properties properties) {
-        super(type, properties);
-    }
+public interface TypedSPIFixture extends TypedSPI {
 }

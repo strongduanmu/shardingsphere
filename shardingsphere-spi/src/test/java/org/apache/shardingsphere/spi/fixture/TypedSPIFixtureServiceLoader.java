@@ -15,33 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.sharding.route.spi;
+package org.apache.shardingsphere.spi.fixture;
 
 import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
+import org.apache.shardingsphere.spi.type.TypedSPIServiceLoader;
 
-import java.util.Collection;
-import java.util.Date;
-
-/**
- * Time service for SPI.
- */
-public final class SPITimeService implements TimeService {
-    
-    private final Collection<TimeService> timeServices = ShardingSphereServiceLoader.newServiceInstances(TimeService.class);
+public final class TypedSPIFixtureServiceLoader extends TypedSPIServiceLoader<TypedSPIFixture> {
     
     static {
-        ShardingSphereServiceLoader.register(TimeService.class);
+        ShardingSphereServiceLoader.register(TypedSPIFixture.class);
     }
     
-    @Override
-    public Date getTime() {
-        Date result = null;
-        for (TimeService server : timeServices) {
-            result = server.getTime();
-            if (!(server instanceof DefaultTimeService) && null != result) {
-                return result;
-            }
-        }
-        return result;
+    public TypedSPIFixtureServiceLoader() {
+        super(TypedSPIFixture.class);
     }
 }
