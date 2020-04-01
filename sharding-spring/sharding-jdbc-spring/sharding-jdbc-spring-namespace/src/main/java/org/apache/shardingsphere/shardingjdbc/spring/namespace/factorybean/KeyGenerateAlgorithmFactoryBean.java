@@ -21,27 +21,32 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.shardingsphere.spi.algorithm.keygen.KeyGenerateAlgorithmServiceLoader;
+import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
 import org.apache.shardingsphere.spi.keygen.KeyGenerateAlgorithm;
+import org.apache.shardingsphere.spi.type.TypedSPIRegistry;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 
 import java.util.Properties;
 
 /**
- * key generate algorithm FactoryBean.
+ * Key generate algorithm FactoryBean.
  */
 @Setter
 @Getter
-public class KeyGenerateAlgorithmFactoryBean implements FactoryBean<KeyGenerateAlgorithm>, InitializingBean {
+public final class KeyGenerateAlgorithmFactoryBean implements FactoryBean<KeyGenerateAlgorithm>, InitializingBean {
+    
+    static {
+        ShardingSphereServiceLoader.register(KeyGenerateAlgorithm.class);
+    }
     
     private String type;
     
-    private Properties properties;
+    private Properties properties = new Properties();
     
     @Override
     public KeyGenerateAlgorithm getObject() {
-        return new KeyGenerateAlgorithmServiceLoader().newService(type, properties);
+        return TypedSPIRegistry.getRegisteredService(KeyGenerateAlgorithm.class, type, properties);
     }
     
     @Override

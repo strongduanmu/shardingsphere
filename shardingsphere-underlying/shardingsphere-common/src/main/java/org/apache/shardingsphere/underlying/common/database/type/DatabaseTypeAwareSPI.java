@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.spi.algorithm.keygen;
-
-import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
-import org.apache.shardingsphere.spi.keygen.KeyGenerateAlgorithm;
-import org.apache.shardingsphere.spi.type.TypedSPIServiceLoader;
+package org.apache.shardingsphere.underlying.common.database.type;
 
 /**
- * Key generate algorithm service loader.
+ * Database type aware SPI.
  */
-public final class KeyGenerateAlgorithmServiceLoader extends TypedSPIServiceLoader<KeyGenerateAlgorithm> {
+public interface DatabaseTypeAwareSPI {
     
-    static {
-        ShardingSphereServiceLoader.register(KeyGenerateAlgorithm.class);
-    }
-    
-    public KeyGenerateAlgorithmServiceLoader() {
-        super(KeyGenerateAlgorithm.class);
-    }
+    /**
+     * Get database type.
+     * 
+     * <p>
+     *     The value of database type must registered by SPI for {@code org.apache.shardingsphere.spi.database.DatabaseType}.
+     * </p>
+     * 
+     * @return database type
+     */
+    String getDatabaseType();
 }

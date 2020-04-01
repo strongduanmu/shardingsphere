@@ -15,23 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.spi.algorithm.masterslave;
-
-import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
-import org.apache.shardingsphere.spi.type.TypedSPIServiceLoader;
-import org.apache.shardingsphere.spi.masterslave.MasterSlaveLoadBalanceAlgorithm;
+package org.apache.shardingsphere.underlying.common.database.metadata;
 
 /**
- * Master-slave database load-balance algorithm service loader.
+ * Data source meta data.
  */
-public final class MasterSlaveLoadBalanceAlgorithmServiceLoader extends TypedSPIServiceLoader<MasterSlaveLoadBalanceAlgorithm> {
+public interface DataSourceMetaData {
     
-    static {
-        ShardingSphereServiceLoader.register(MasterSlaveLoadBalanceAlgorithm.class);
-    }
+    /**
+     * Get host name.
+     * 
+     * @return host name
+     */
+    String getHostName();
     
-    public MasterSlaveLoadBalanceAlgorithmServiceLoader() {
-        super(MasterSlaveLoadBalanceAlgorithm.class);
-    }
+    /**
+     * Get port.
+     * 
+     * @return port
+     */
+    int getPort();
+    
+    /**
+     * Get catalog.
+     *
+     * @return catalog
+     */
+    String getCatalog();
+    
+    /**
+     * Get schema.
+     * 
+     * @return schema
+     */
+    String getSchema();
 }
-
