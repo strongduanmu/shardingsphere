@@ -15,33 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.shardingjdbc.jdbc.core.context;
+package org.apache.shardingsphere.shardingjdbc.jdbc.core.context.impl;
 
 import lombok.Getter;
-import org.apache.shardingsphere.core.rule.MasterSlaveRule;
+import org.apache.shardingsphere.core.rule.ShardingRule;
+import org.apache.shardingsphere.shardingjdbc.jdbc.core.context.AbstractRuntimeContext;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.datasource.metadata.CachedDatabaseMetaData;
+import org.apache.shardingsphere.transaction.ShardingTransactionManagerEngine;
 import org.apache.shardingsphere.underlying.common.database.type.DatabaseType;
-import org.apache.shardingsphere.sql.parser.binder.metadata.schema.SchemaMetaData;
-import org.apache.shardingsphere.sql.parser.binder.metadata.schema.SchemaMetaDataLoader;
-import org.apache.shardingsphere.underlying.common.config.properties.ConfigurationPropertyKey;
+import org.apache.shardingsphere.underlying.common.rule.BaseRule;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
 
 /**
- * Runtime context for master-slave.
+ * Runtime context for sharding.
  */
 @Getter
-public final class MasterSlaveRuntimeContext extends MultipleDataSourcesRuntimeContext<MasterSlaveRule> {
+public final class ShardingRuntimeContext extends AbstractRuntimeContext<ShardingRule> {
     
     private final CachedDatabaseMetaData cachedDatabaseMetaData;
     
-    public MasterSlaveRuntimeContext(final Map<String, DataSource> dataSourceMap, final MasterSlaveRule masterSlaveRule, final Properties props, final DatabaseType databaseType) throws SQLException {
-        super(dataSourceMap, masterSlaveRule, props, databaseType);
+    private final ShardingTransactionManagerEngine shardingTransactionManagerEngine;
+    
+    private final Map<String, DataSource> dataSourceMap;
+    
+    public ShardingRuntimeContext(final Map<String, DataSource> dataSourceMap, final ShardingRule shardingRule, final Properties props, final DatabaseType databaseType) throws SQLException {
+        super(dataSourceMap, shardingRule, props, databaseType);
+        this.dataSourceMap = dataSourceMap;
         cachedDatabaseMetaData = createCachedDatabaseMetaData(dataSourceMap);
+        shardingTransactionManagerEngine = new ShardingTransactionManagerEngine();
+        shardingTransactionManagerEngine.init(databaseType, dataSourceMap);
     }
     
     private CachedDatabaseMetaData createCachedDatabaseMetaData(final Map<String, DataSource> dataSourceMap) throws SQLException {
@@ -51,8 +59,13 @@ public final class MasterSlaveRuntimeContext extends MultipleDataSourcesRuntimeC
     }
     
     @Override
-    protected SchemaMetaData loadSchemaMetaData(final Map<String, DataSource> dataSourceMap) throws SQLException {
-        return SchemaMetaDataLoader.load(dataSourceMap.values().iterator().next(),
-            getProperties().<Integer>getValue(ConfigurationPropertyKey.MAX_CONNECTIONS_SIZE_PER_QUERY), getDatabaseType().getName());
+    protected Collection<BaseRule> getRules() {
+        return getRule().toRules();
+    }
+    
+    @Override
+    public void close() throws Exception {
+        shardingTransactionManagerEngine.close();
+        super.close();
     }
 }

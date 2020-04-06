@@ -28,38 +28,33 @@ import org.apache.shardingsphere.orchestration.core.common.event.MasterSlaveRule
 import org.apache.shardingsphere.orchestration.core.common.rule.OrchestrationMasterSlaveRule;
 import org.apache.shardingsphere.orchestration.core.registrycenter.event.DisabledStateChangedEvent;
 import org.apache.shardingsphere.orchestration.core.registrycenter.schema.OrchestrationShardingSchema;
-import org.apache.shardingsphere.shardingproxy.backend.schema.MetaDataInitializedLogicSchema;
+import org.apache.shardingsphere.shardingproxy.backend.schema.LogicSchema;
 import org.apache.shardingsphere.shardingproxy.config.yaml.YamlDataSourceParameter;
-import org.apache.shardingsphere.underlying.common.metadata.ShardingSphereMetaData;
 
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.Map;
 
 /**
  * Master-slave schema.
  */
 @Getter
-public final class MasterSlaveSchema extends MetaDataInitializedLogicSchema {
-    
-    private MasterSlaveRule masterSlaveRule;
+public final class MasterSlaveSchema extends LogicSchema {
     
     private final ShardingRule shardingRule;
     
+    private MasterSlaveRule masterSlaveRule;
+    
     public MasterSlaveSchema(final String name,
                              final Map<String, YamlDataSourceParameter> dataSources, final MasterSlaveRuleConfiguration masterSlaveRuleConfig, final boolean isUsingRegistry) throws SQLException {
-        super(name, dataSources);
+        super(name, dataSources, Collections.singletonList(createMasterSlaveRule(masterSlaveRuleConfig, isUsingRegistry)));
         masterSlaveRule = createMasterSlaveRule(masterSlaveRuleConfig, isUsingRegistry);
         // TODO we should remove it after none-sharding parsingEngine completed.
         shardingRule = new ShardingRule(new ShardingRuleConfiguration(), getDataSources().keySet());
     }
     
-    private MasterSlaveRule createMasterSlaveRule(final MasterSlaveRuleConfiguration masterSlaveRuleConfig, final boolean isUsingRegistry) {
+    private static MasterSlaveRule createMasterSlaveRule(final MasterSlaveRuleConfiguration masterSlaveRuleConfig, final boolean isUsingRegistry) {
         return isUsingRegistry ? new OrchestrationMasterSlaveRule(masterSlaveRuleConfig) : new MasterSlaveRule(masterSlaveRuleConfig);
-    }
-    
-    @Override
-    public ShardingSphereMetaData getMetaData() {
-        return getPhysicalMetaData();
     }
     
     /**

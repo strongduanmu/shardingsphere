@@ -17,7 +17,7 @@
 
 package org.apache.shardingsphere.shardingjdbc.jdbc.refreh.impl;
 
-import org.apache.shardingsphere.shardingjdbc.jdbc.core.context.ShardingRuntimeContext;
+import org.apache.shardingsphere.shardingjdbc.jdbc.core.context.impl.ShardingRuntimeContext;
 import org.apache.shardingsphere.shardingjdbc.jdbc.refreh.MetaDataRefreshStrategy;
 import org.apache.shardingsphere.sql.parser.binder.metadata.index.IndexMetaData;
 import org.apache.shardingsphere.sql.parser.binder.statement.ddl.CreateIndexStatementContext;
@@ -36,6 +36,6 @@ public final class CreateIndexStatementMetaDataRefreshStrategy implements MetaDa
         }
         String indexName = createIndexStatement.getIndex().getIdentifier().getValue();
         String tableName = createIndexStatement.getTable().getTableName().getIdentifier().getValue();
-        shardingRuntimeContext.getMetaData().getSchema().get(tableName).getIndexes().put(indexName, new IndexMetaData(indexName));
+        shardingRuntimeContext.getMetaData().getSchema().getConfiguredSchemaMetaData().get(tableName).getIndexes().put(indexName, new IndexMetaData(indexName));
     }
 }

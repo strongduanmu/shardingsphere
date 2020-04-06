@@ -17,7 +17,7 @@
 
 package org.apache.shardingsphere.shardingjdbc.jdbc.refreh.impl;
 
-import org.apache.shardingsphere.shardingjdbc.jdbc.core.context.ShardingRuntimeContext;
+import org.apache.shardingsphere.shardingjdbc.jdbc.core.context.impl.ShardingRuntimeContext;
 import org.apache.shardingsphere.shardingjdbc.jdbc.refreh.MetaDataRefreshStrategy;
 import org.apache.shardingsphere.sql.parser.binder.metadata.schema.SchemaMetaData;
 import org.apache.shardingsphere.sql.parser.binder.metadata.table.TableMetaData;
@@ -39,12 +39,12 @@ public final class DropIndexStatementMetaDataRefreshStrategy implements MetaData
         DropIndexStatement dropIndexStatement = sqlStatementContext.getSqlStatement();
         Collection<String> indexNames = getIndexNames(dropIndexStatement);
         String tableName = dropIndexStatement.getTable().getTableName().getIdentifier().getValue();
-        TableMetaData tableMetaData = shardingRuntimeContext.getMetaData().getSchema().get(tableName);
+        TableMetaData tableMetaData = shardingRuntimeContext.getMetaData().getSchema().getConfiguredSchemaMetaData().get(tableName);
         if (null != dropIndexStatement.getTable()) {
             indexNames.forEach(each -> tableMetaData.getIndexes().remove(each));
         }
         for (String each : indexNames) {
-            if (findLogicTableName(shardingRuntimeContext.getMetaData().getSchema(), each).isPresent()) {
+            if (findLogicTableName(shardingRuntimeContext.getMetaData().getSchema().getConfiguredSchemaMetaData(), each).isPresent()) {
                 tableMetaData.getIndexes().remove(each);
             }
         }

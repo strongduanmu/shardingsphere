@@ -19,7 +19,6 @@ package org.apache.shardingsphere.core.rule;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
 import lombok.Getter;
 import org.apache.shardingsphere.api.config.masterslave.MasterSlaveRuleConfiguration;
 import org.apache.shardingsphere.api.config.sharding.KeyGeneratorConfiguration;
@@ -36,8 +35,10 @@ import org.apache.shardingsphere.spi.type.TypedSPIRegistry;
 import org.apache.shardingsphere.underlying.common.config.exception.ShardingSphereConfigurationException;
 import org.apache.shardingsphere.underlying.common.rule.BaseRule;
 import org.apache.shardingsphere.underlying.common.rule.DataNode;
+import org.apache.shardingsphere.underlying.common.rule.TablesAggregationRule;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -50,7 +51,7 @@ import java.util.stream.Collectors;
  * Databases and tables sharding rule.
  */
 @Getter
-public class ShardingRule implements BaseRule {
+public class ShardingRule implements TablesAggregationRule {
     
     static {
         ShardingSphereServiceLoader.register(KeyGenerateAlgorithm.class);
@@ -163,10 +164,7 @@ public class ShardingRule implements BaseRule {
         if (isBroadcastTable(logicTableName)) {
             return new TableRule(shardingDataSourceNames.getDataSourceNames(), logicTableName);
         }
-        if (!Strings.isNullOrEmpty(shardingDataSourceNames.getDefaultDataSourceName())) {
-            return new TableRule(shardingDataSourceNames.getDefaultDataSourceName(), logicTableName);
-        }
-        throw new ShardingSphereConfigurationException("Cannot find table rule and default data source with logic table: '%s'", logicTableName);
+        throw new ShardingSphereConfigurationException("Cannot find table rule with logic table: '%s'", logicTableName);
     }
     
     /**
@@ -259,24 +257,6 @@ public class ShardingRule implements BaseRule {
     }
     
     /**
-     * Judge logic tables is all belong to default data source.
-     *
-     * @param logicTableNames logic table names
-     * @return logic tables is all belong to default data source
-     */
-    public boolean isAllInDefaultDataSource(final Collection<String> logicTableNames) {
-        if (!hasDefaultDataSourceName()) {
-            return false;
-        }
-        for (String each : logicTableNames) {
-            if (findTableRule(each).isPresent() || isBroadcastTable(each)) {
-                return false;
-            }
-        }
-        return !logicTableNames.isEmpty();
-    }
-    
-    /**
      * Judge if there is at least one table rule for logic tables.
      *
      * @param logicTableNames logic table names
@@ -362,36 +342,6 @@ public class ShardingRule implements BaseRule {
     }
     
     /**
-     * Judge if default data source mame exists.
-     *
-     * @return if default data source name exists
-     */
-    public boolean hasDefaultDataSourceName() {
-        String defaultDataSourceName = shardingDataSourceNames.getDefaultDataSourceName();
-        return !Strings.isNullOrEmpty(defaultDataSourceName);
-    }
-    
-    /**
-     * Find actual default data source name.
-     *
-     * <p>If use master-slave rule, return master data source name.</p>
-     *
-     * @return actual default data source name
-     */
-    public Optional<String> findActualDefaultDataSourceName() {
-        String defaultDataSourceName = shardingDataSourceNames.getDefaultDataSourceName();
-        if (Strings.isNullOrEmpty(defaultDataSourceName)) {
-            return Optional.empty();
-        }
-        Optional<String> masterDefaultDataSourceName = findMasterDataSourceName(defaultDataSourceName);
-        return masterDefaultDataSourceName.isPresent() ? masterDefaultDataSourceName : Optional.of(defaultDataSourceName);
-    }
-    
-    private Optional<String> findMasterDataSourceName(final String masterSlaveRuleName) {
-        return masterSlaveRules.stream().filter(each -> each.getName().equalsIgnoreCase(masterSlaveRuleName)).map(e -> Optional.of(e.getMasterDataSourceName())).findFirst().orElse(Optional.empty());
-    }
-    
-    /**
      * Find master slave rule.
      *
      * @param dataSourceName data source name
@@ -440,6 +390,15 @@ public class ShardingRule implements BaseRule {
             result.add(encryptRule);
         }
         result.addAll(masterSlaveRules);
+        return result;
+    }
+    
+    @Override
+    public final Collection<String> getAllActualTables() {
+        Collection<String> result = new HashSet<>();
+        for (TableRule each : tableRules) {
+            result.addAll(each.getActualDataNodes().stream().map(DataNode::getTableName).collect(Collectors.toSet()));
+        }
         return result;
     }
 }
