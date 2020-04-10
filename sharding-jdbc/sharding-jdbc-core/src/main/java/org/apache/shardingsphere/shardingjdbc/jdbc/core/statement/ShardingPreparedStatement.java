@@ -29,17 +29,19 @@ import org.apache.shardingsphere.shardingjdbc.jdbc.core.constant.SQLExceptionCon
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.context.impl.ShardingRuntimeContext;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.resultset.GeneratedKeysResultSet;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.resultset.ShardingResultSet;
-import org.apache.shardingsphere.shardingjdbc.jdbc.core.statement.metadata.ShardingParameterMetaData;
+import org.apache.shardingsphere.shardingjdbc.jdbc.core.statement.metadata.ShardingSphereParameterMetaData;
 import org.apache.shardingsphere.sql.parser.binder.segment.insert.keygen.GeneratedKeyContext;
 import org.apache.shardingsphere.sql.parser.binder.statement.dml.InsertStatementContext;
 import org.apache.shardingsphere.sql.parser.binder.statement.dml.SelectStatementContext;
+import org.apache.shardingsphere.sql.parser.sql.statement.SQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.statement.dal.DALStatement;
 import org.apache.shardingsphere.underlying.executor.QueryResult;
 import org.apache.shardingsphere.underlying.executor.context.ExecutionContext;
+import org.apache.shardingsphere.underlying.merge.MergeEngine;
 import org.apache.shardingsphere.underlying.merge.result.MergedResult;
-import org.apache.shardingsphere.underlying.pluggble.merge.MergeEngine;
-import org.apache.shardingsphere.underlying.pluggble.prepare.BasePrepareEngine;
-import org.apache.shardingsphere.underlying.pluggble.prepare.PreparedQueryPrepareEngine;
+import org.apache.shardingsphere.underlying.pluggble.prepare.PrepareEngine;
+import org.apache.shardingsphere.underlying.route.DataNodeRouter;
+import org.apache.shardingsphere.underlying.route.context.RouteContext;
 
 import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
@@ -62,10 +64,12 @@ public final class ShardingPreparedStatement extends AbstractShardingPreparedSta
     
     private final String sql;
     
+    private final SQLStatement sqlStatement;
+    
     @Getter
     private final ParameterMetaData parameterMetaData;
     
-    private final BasePrepareEngine prepareEngine;
+    private final PrepareEngine prepareEngine;
     
     private final PreparedStatementExecutor preparedStatementExecutor;
     
@@ -102,8 +106,9 @@ public final class ShardingPreparedStatement extends AbstractShardingPreparedSta
         this.connection = connection;
         this.sql = sql;
         ShardingRuntimeContext runtimeContext = connection.getRuntimeContext();
-        parameterMetaData = new ShardingParameterMetaData(runtimeContext.getSqlParserEngine(), sql);
-        prepareEngine = new PreparedQueryPrepareEngine(runtimeContext.getRule().toRules(), runtimeContext.getProperties(), runtimeContext.getMetaData(), runtimeContext.getSqlParserEngine());
+        sqlStatement = runtimeContext.getSqlParserEngine().parse(sql, true);
+        parameterMetaData = new ShardingSphereParameterMetaData(sqlStatement);
+        prepareEngine = new PrepareEngine(runtimeContext.getRule().toRules(), runtimeContext.getProperties(), runtimeContext.getMetaData());
         preparedStatementExecutor = new PreparedStatementExecutor(resultSetType, resultSetConcurrency, resultSetHoldability, returnGeneratedKeys, connection);
         batchPreparedStatementExecutor = new BatchPreparedStatementExecutor(resultSetType, resultSetConcurrency, resultSetHoldability, returnGeneratedKeys, connection);
     }
@@ -180,14 +185,16 @@ public final class ShardingPreparedStatement extends AbstractShardingPreparedSta
     }
     
     private void prepare() {
-        executionContext = prepareEngine.prepare(sql, getParameters());
+        ShardingRuntimeContext runtimeContext = connection.getRuntimeContext();
+        RouteContext routeContext = new DataNodeRouter(runtimeContext.getMetaData(), runtimeContext.getProperties(), runtimeContext.getRule().toRules()).route(sqlStatement, sql, getParameters());
+        executionContext = prepareEngine.prepare(sql, new ArrayList<>(getParameters()), routeContext);
         findGeneratedKey().ifPresent(generatedKey -> generatedValues.add(generatedKey.getGeneratedValues().getLast()));
     }
     
     private MergedResult mergeQuery(final List<QueryResult> queryResults) throws SQLException {
         ShardingRuntimeContext runtimeContext = connection.getRuntimeContext();
-        MergeEngine mergeEngine = new MergeEngine(runtimeContext.getRule().toRules(), 
-                runtimeContext.getProperties(), runtimeContext.getDatabaseType(), runtimeContext.getMetaData().getSchema().getConfiguredSchemaMetaData());
+        MergeEngine mergeEngine = new MergeEngine(runtimeContext.getDatabaseType(), 
+                runtimeContext.getMetaData().getSchema().getConfiguredSchemaMetaData(), runtimeContext.getProperties(), runtimeContext.getRule().toRules());
         return mergeEngine.merge(queryResults, executionContext.getSqlStatementContext());
     }
     

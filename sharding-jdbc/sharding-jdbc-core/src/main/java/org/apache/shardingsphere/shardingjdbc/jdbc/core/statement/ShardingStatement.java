@@ -30,13 +30,15 @@ import org.apache.shardingsphere.shardingjdbc.jdbc.core.resultset.ShardingResult
 import org.apache.shardingsphere.sql.parser.binder.segment.insert.keygen.GeneratedKeyContext;
 import org.apache.shardingsphere.sql.parser.binder.statement.dml.InsertStatementContext;
 import org.apache.shardingsphere.sql.parser.binder.statement.dml.SelectStatementContext;
+import org.apache.shardingsphere.sql.parser.sql.statement.SQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.statement.dal.DALStatement;
 import org.apache.shardingsphere.underlying.executor.QueryResult;
 import org.apache.shardingsphere.underlying.executor.context.ExecutionContext;
+import org.apache.shardingsphere.underlying.merge.MergeEngine;
 import org.apache.shardingsphere.underlying.merge.result.MergedResult;
-import org.apache.shardingsphere.underlying.pluggble.merge.MergeEngine;
-import org.apache.shardingsphere.underlying.pluggble.prepare.BasePrepareEngine;
-import org.apache.shardingsphere.underlying.pluggble.prepare.SimpleQueryPrepareEngine;
+import org.apache.shardingsphere.underlying.pluggble.prepare.PrepareEngine;
+import org.apache.shardingsphere.underlying.route.DataNodeRouter;
+import org.apache.shardingsphere.underlying.route.context.RouteContext;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -219,9 +221,11 @@ public final class ShardingStatement extends AbstractStatementAdapter {
     private ExecutionContext prepare(final String sql) throws SQLException {
         statementExecutor.clear();
         ShardingRuntimeContext runtimeContext = connection.getRuntimeContext();
-        BasePrepareEngine prepareEngine = new SimpleQueryPrepareEngine(
-                runtimeContext.getRule().toRules(), runtimeContext.getProperties(), runtimeContext.getMetaData(), runtimeContext.getSqlParserEngine());
-        ExecutionContext result = prepareEngine.prepare(sql, Collections.emptyList());
+        PrepareEngine prepareEngine = new PrepareEngine(runtimeContext.getRule().toRules(), runtimeContext.getProperties(), runtimeContext.getMetaData());
+        SQLStatement sqlStatement = runtimeContext.getSqlParserEngine().parse(sql, false);
+        RouteContext routeContext = new DataNodeRouter(
+                runtimeContext.getMetaData(), runtimeContext.getProperties(), runtimeContext.getRule().toRules()).route(sqlStatement, sql, Collections.emptyList());
+        ExecutionContext result = prepareEngine.prepare(sql, Collections.emptyList(), routeContext);
         statementExecutor.init(result);
         statementExecutor.getStatements().forEach(this::replayMethodsInvocation);
         return result;
@@ -229,8 +233,8 @@ public final class ShardingStatement extends AbstractStatementAdapter {
     
     private MergedResult mergeQuery(final List<QueryResult> queryResults) throws SQLException {
         ShardingRuntimeContext runtimeContext = connection.getRuntimeContext();
-        MergeEngine mergeEngine = new MergeEngine(runtimeContext.getRule().toRules(), 
-                runtimeContext.getProperties(), runtimeContext.getDatabaseType(), runtimeContext.getMetaData().getSchema().getConfiguredSchemaMetaData());
+        MergeEngine mergeEngine = new MergeEngine(runtimeContext.getDatabaseType(), 
+                runtimeContext.getMetaData().getSchema().getConfiguredSchemaMetaData(), runtimeContext.getProperties(), runtimeContext.getRule().toRules());
         return mergeEngine.merge(queryResults, executionContext.getSqlStatementContext());
     }
     

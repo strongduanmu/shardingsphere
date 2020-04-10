@@ -27,7 +27,9 @@ import org.apache.shardingsphere.shardingjdbc.jdbc.core.resultset.EncryptResultS
 import org.apache.shardingsphere.shardingjdbc.jdbc.unsupported.AbstractUnsupportedOperationStatement;
 import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.underlying.executor.context.ExecutionContext;
-import org.apache.shardingsphere.underlying.pluggble.prepare.SimpleQueryPrepareEngine;
+import org.apache.shardingsphere.underlying.pluggble.prepare.PrepareEngine;
+import org.apache.shardingsphere.underlying.route.DataNodeRouter;
+import org.apache.shardingsphere.underlying.route.context.RouteContext;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -85,9 +87,10 @@ public final class EncryptStatement extends AbstractUnsupportedOperationStatemen
     }
     
     private String getRewriteSQL(final String sql) {
-        SimpleQueryPrepareEngine prepareEngine = new SimpleQueryPrepareEngine(
-                Collections.singletonList(runtimeContext.getRule()), runtimeContext.getProperties(), runtimeContext.getMetaData(), runtimeContext.getSqlParserEngine());
-        ExecutionContext executionContext = prepareEngine.prepare(sql, Collections.emptyList());
+        RouteContext routeContext = new DataNodeRouter(runtimeContext.getMetaData(), runtimeContext.getProperties(),
+                Collections.singletonList(runtimeContext.getRule())).route(runtimeContext.getSqlParserEngine().parse(sql, false), sql, Collections.emptyList());
+        PrepareEngine prepareEngine = new PrepareEngine(Collections.singletonList(runtimeContext.getRule()), runtimeContext.getProperties(), runtimeContext.getMetaData());
+        ExecutionContext executionContext = prepareEngine.prepare(sql, Collections.emptyList(), routeContext);
         Preconditions.checkArgument(1 == executionContext.getExecutionUnits().size());
         sqlStatementContext = executionContext.getSqlStatementContext();
         return executionContext.getExecutionUnits().iterator().next().getSqlUnit().getSql();
