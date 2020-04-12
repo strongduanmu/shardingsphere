@@ -15,17 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.shardingproxy.backend.executor;
+package org.apache.shardingsphere.underlying.executor.kernel;
 
-import org.junit.Test;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import java.util.List;
 
-public final class ExecutorContextTest {
+/**
+ * Input group.
+ *
+ * @param <T> type of input value
+ */
+@RequiredArgsConstructor
+@Getter
+public final class InputGroup<T> {
     
-    @Test
-    public void assertGetInstance() {
-        assertThat(BackendExecutorContext.getInstance().getExecutorKernel(), is(BackendExecutorContext.getInstance().getExecutorKernel()));
-    }
+    private final List<T> inputs;
 }

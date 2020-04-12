@@ -15,21 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.underlying.executor.engine;
+package org.apache.shardingsphere.orchestration.core.metadatacenter;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import org.junit.Test;
 
-import java.util.List;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
-/**
- * Input group.
- *
- * @param <T> type of inputs value
- */
-@RequiredArgsConstructor
-@Getter
-public final class InputGroup<T> {
+public final class MetaDataCenterNodeTest {
     
-    private final List<T> inputs;
+    private final MetaDataCenterNode metaDataCenterNode = new MetaDataCenterNode("test");
+    
+    @Test
+    public void assertGetMetaDataCenterNodeFullPath() {
+        assertThat(metaDataCenterNode.getMetaDataCenterNodeFullPath("schema"),
+                is("/test/metadata/schema"));
+    }
 }

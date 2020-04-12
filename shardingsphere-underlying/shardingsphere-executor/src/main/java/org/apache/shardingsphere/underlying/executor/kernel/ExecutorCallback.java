@@ -15,28 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.underlying.executor.engine;
+package org.apache.shardingsphere.underlying.executor.kernel;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-
-import java.util.LinkedHashMap;
+import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Map;
 
 /**
- * Executor data map for thread local even cross multiple threads.
+ * Grouped callback.
+ * 
+ * @param <I> type of input value
+ * @param <O> type of output value
  */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-public final class ExecutorDataMap {
-    
-    private static ThreadLocal<Map<String, Object>> dataMap = ThreadLocal.withInitial(LinkedHashMap::new);
+public interface ExecutorCallback<I, O> {
     
     /**
-     * Get value.
-     *
-     * @return data map
+     * Execute.
+     * 
+     * @param inputs input values
+     * @param isTrunkThread is execution in trunk thread
+     * @param dataMap data map
+     * @return execution results
+     * @throws SQLException throw when execute failure
      */
-    public static Map<String, Object> getValue() {
-        return dataMap.get();
-    }
+    Collection<O> execute(Collection<I> inputs, boolean isTrunkThread, Map<String, Object> dataMap) throws SQLException;
 }
