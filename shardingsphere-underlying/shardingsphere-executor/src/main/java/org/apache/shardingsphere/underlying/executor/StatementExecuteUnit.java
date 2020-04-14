@@ -15,27 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.shardingscaling.core.execute.executor.checker;
+package org.apache.shardingsphere.underlying.executor;
 
-import org.apache.shardingsphere.shardingscaling.core.exception.DatasourceCheckFailedException;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.apache.shardingsphere.underlying.executor.constant.ConnectionMode;
+import org.apache.shardingsphere.underlying.executor.context.ExecutionUnit;
 
-import javax.sql.DataSource;
-import java.sql.SQLException;
-import java.util.Collection;
+import java.sql.Statement;
 
 /**
- * Abstract data source checker.
+ * Execute unit with resource.
  */
-public abstract class AbstractDataSourceChecker implements DataSourceChecker {
+@RequiredArgsConstructor
+@Getter
+public final class StatementExecuteUnit {
     
-    @Override
-    public final void checkConnection(final Collection<DataSource> dataSources) {
-        try {
-            for (DataSource each : dataSources) {
-                each.getConnection().close();
-            }
-        } catch (SQLException e) {
-            throw new DatasourceCheckFailedException("Datasources can't connected!");
-        }
-    }
+    private final ExecutionUnit executionUnit;
+    
+    private final Statement statement;
+    
+    private final ConnectionMode connectionMode;
 }

@@ -15,27 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.shardingscaling.core.execute.executor.checker;
+package org.apache.shardingsphere.core.yaml.config.sharding.strategy;
 
-import javax.sql.DataSource;
-import java.util.Collection;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.Properties;
 
 /**
- * Data source checker.
+ * Sharding algorithm configuration for YAML.
  */
-public interface DataSourceChecker {
+@Getter
+@Setter
+public final class YamlShardingAlgorithmConfiguration implements YamlBaseShardingStrategyConfiguration {
     
-    /**
-     * Check datasource connections.
-     *
-     * @param dataSources datasource connections
-     */
-    void checkConnection(Collection<DataSource> dataSources);
+    private String type;
     
-    /**
-     * Check user privileges.
-     *
-     * @param dataSources datasource connections
-     */
-    void checkPrivilege(Collection<DataSource> dataSources);
+    private Properties props = new Properties();
 }

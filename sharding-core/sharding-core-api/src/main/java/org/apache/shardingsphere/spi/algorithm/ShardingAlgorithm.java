@@ -15,25 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.sharding.execute.sql;
+package org.apache.shardingsphere.spi.algorithm;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.apache.shardingsphere.underlying.executor.constant.ConnectionMode;
-import org.apache.shardingsphere.underlying.executor.context.ExecutionUnit;
-
-import java.sql.Statement;
+import org.apache.shardingsphere.spi.type.TypedSPI;
 
 /**
- * Execute unit for JDBC statement.
+ * Sharding algorithm.
  */
-@RequiredArgsConstructor
-@Getter
-public final class StatementExecuteUnit {
-    
-    private final ExecutionUnit executionUnit;
-    
-    private final Statement statement;
-    
-    private final ConnectionMode connectionMode;
+public interface ShardingAlgorithm extends TypedSPI {
 }
