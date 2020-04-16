@@ -19,19 +19,17 @@ package org.apache.shardingsphere.shardingjdbc.executor.batch;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
-import org.apache.shardingsphere.sharding.execute.sql.execute.SQLExecuteTemplate;
-import org.apache.shardingsphere.sharding.execute.sql.execute.SQLExecutorCallback;
-import org.apache.shardingsphere.sharding.execute.sql.execute.threadlocal.ExecutorExceptionHandler;
-import org.apache.shardingsphere.sharding.execute.sql.execute.SQLExecutor;
+import org.apache.shardingsphere.underlying.executor.sql.executor.SQLExecutor;
+import org.apache.shardingsphere.underlying.executor.sql.executor.SQLExecutorCallback;
+import org.apache.shardingsphere.underlying.executor.sql.executor.ExecutorExceptionHandler;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.context.impl.ShardingRuntimeContext;
 import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.underlying.executor.StatementExecuteUnit;
-import org.apache.shardingsphere.underlying.executor.constant.ConnectionMode;
+import org.apache.shardingsphere.underlying.executor.sql.StatementExecuteUnit;
+import org.apache.shardingsphere.underlying.executor.sql.connection.ConnectionMode;
 import org.apache.shardingsphere.underlying.executor.context.ExecutionContext;
 import org.apache.shardingsphere.underlying.executor.context.ExecutionUnit;
 import org.apache.shardingsphere.underlying.executor.kernel.InputGroup;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
@@ -41,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 /**
@@ -53,21 +50,18 @@ public final class BatchPreparedStatementExecutor {
     
     private final SQLExecutor sqlExecutor;
     
-    @Getter
-    private final List<ResultSet> resultSets;
-    
     private final Collection<InputGroup<StatementExecuteUnit>> inputGroups;
     
     @Getter
-    private final Collection<BatchRouteUnit> routeUnits = new LinkedList<>();
+    private final Collection<BatchRouteUnit> routeUnits;
     
     private int batchCount;
     
-    public BatchPreparedStatementExecutor(final ShardingRuntimeContext runtimeContext, final SQLExecuteTemplate sqlExecuteTemplate) {
+    public BatchPreparedStatementExecutor(final ShardingRuntimeContext runtimeContext, final SQLExecutor sqlExecutor) {
         this.runtimeContext = runtimeContext;
-        sqlExecutor = new SQLExecutor(sqlExecuteTemplate);
-        resultSets = new CopyOnWriteArrayList<>();
+        this.sqlExecutor = sqlExecutor;
         inputGroups = new LinkedList<>();
+        routeUnits = new LinkedList<>();
     }
     
     /**
@@ -226,7 +220,6 @@ public final class BatchPreparedStatementExecutor {
     public void clear() throws SQLException {
         closeStatements();
         getStatements().clear();
-        resultSets.clear();
         inputGroups.clear();
         batchCount = 0;
         routeUnits.clear();
