@@ -15,29 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.sql.parser.integrate.jaxb.domain.segment.impl.table;
-
-import lombok.Getter;
-import lombok.Setter;
-import org.apache.shardingsphere.sql.parser.integrate.jaxb.domain.segment.AbstractExpectedDelimiterSQLSegment;
-import org.apache.shardingsphere.sql.parser.integrate.jaxb.domain.segment.impl.ExpectedTableReference;
-
-import javax.xml.bind.annotation.XmlElement;
-import java.util.Collection;
+package org.apache.shardingsphere.shardingscaling.core.exception;
 
 /**
- * Expected TableFactor.
+ * Prepare failed exception.
  */
-@Getter
-@Setter
-public final class ExpectedTableFactor extends AbstractExpectedDelimiterSQLSegment {
+public class PrepareFailedException extends RuntimeException {
     
-    @XmlElement
-    private ExpectedSimpleTable table;
+    private static final long serialVersionUID = 1409505606319197767L;
     
-    @XmlElement
-    private ExpectedSubqueryTable subqueryTable;
-    
-    @XmlElement(name = "table-reference")
-    private Collection<ExpectedTableReference> expectedTableReferences;
+    public PrepareFailedException(final String message) {
+        super(message);
+    }
+
+    public PrepareFailedException(final Throwable cause) {
+        super(cause);
+    }
+
+    public PrepareFailedException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 }

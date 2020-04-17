@@ -15,29 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.sql.parser.integrate.jaxb.domain.segment.impl.table;
+package org.apache.shardingsphere.database.protocol.mysql.packet.handshake;
 
 import lombok.Getter;
-import lombok.Setter;
-import org.apache.shardingsphere.sql.parser.integrate.jaxb.domain.segment.AbstractExpectedDelimiterSQLSegment;
-import org.apache.shardingsphere.sql.parser.integrate.jaxb.domain.segment.impl.ExpectedTableReference;
-
-import javax.xml.bind.annotation.XmlElement;
-import java.util.Collection;
+import lombok.RequiredArgsConstructor;
+import org.apache.shardingsphere.database.protocol.mysql.payload.MySQLPacketPayload;
 
 /**
- * Expected TableFactor.
+ * MySQL auth switch request packet.
+ *
+ * @see <a href="https://dev.mysql.com/doc/internals/en/connection-phase-packets.html#packet-Protocol::AuthSwitchResponse">AuthSwitchResponse</a>
  */
+@RequiredArgsConstructor
 @Getter
-@Setter
-public final class ExpectedTableFactor extends AbstractExpectedDelimiterSQLSegment {
+public final class MySQLAuthSwitchResponsePacket {
     
-    @XmlElement
-    private ExpectedSimpleTable table;
+    @Getter
+    private final int sequenceId;
     
-    @XmlElement
-    private ExpectedSubqueryTable subqueryTable;
+    private final byte[] authPluginResponse;
     
-    @XmlElement(name = "table-reference")
-    private Collection<ExpectedTableReference> expectedTableReferences;
+    public MySQLAuthSwitchResponsePacket(final MySQLPacketPayload payload) {
+        sequenceId = payload.readInt1();
+        authPluginResponse = payload.readStringEOFByBytes();
+    }
 }
