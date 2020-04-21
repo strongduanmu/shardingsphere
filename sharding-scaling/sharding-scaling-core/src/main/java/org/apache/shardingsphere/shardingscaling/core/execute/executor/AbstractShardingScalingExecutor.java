@@ -15,22 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.example.algorithm;
+package org.apache.shardingsphere.shardingscaling.core.execute.executor;
 
-import org.apache.shardingsphere.api.sharding.standard.PreciseShardingAlgorithm;
-import org.apache.shardingsphere.api.sharding.standard.PreciseShardingValue;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.util.Collection;
+/**
+ * Abstract sharding scaling executor.
+ */
+public abstract class AbstractShardingScalingExecutor implements ShardingScalingExecutor {
 
-public final class PreciseModuloShardingTableAlgorithm implements PreciseShardingAlgorithm<Long> {
+    @Setter(AccessLevel.PROTECTED)
+    @Getter(AccessLevel.PROTECTED)
+    private boolean running;
+
+    /**
+     * Generic start implement.
+     */
+    @Override
+    public void start() {
+        running = true;
+    }
+
+    /**
+     * Generic stop implement.
+     */
+    @Override
+    public void stop() {
+        running = false;
+    }
     
     @Override
-    public String doSharding(final Collection<String> tableNames, final PreciseShardingValue<Long> shardingValue) {
-        for (String each : tableNames) {
-            if (each.endsWith(shardingValue.getValue() % 2 + "")) {
-                return each;
-            }
-        }
-        throw new UnsupportedOperationException();
+    public final void run() {
+        start();
     }
 }

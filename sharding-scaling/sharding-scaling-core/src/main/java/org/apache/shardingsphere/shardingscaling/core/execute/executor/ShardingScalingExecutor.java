@@ -18,9 +18,9 @@
 package org.apache.shardingsphere.shardingscaling.core.execute.executor;
 
 /**
- * sync executor.
+ * Sharding scaling executor.
  */
-public interface SyncExecutor extends Runnable {
+public interface ShardingScalingExecutor extends Runnable {
 
     /**
      * Start run execute.
