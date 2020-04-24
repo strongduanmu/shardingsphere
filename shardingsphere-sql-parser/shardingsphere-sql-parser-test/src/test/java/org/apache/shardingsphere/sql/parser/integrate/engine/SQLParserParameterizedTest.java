@@ -99,9 +99,6 @@ public final class SQLParserParameterizedTest {
         sqlCases.add("show_index_with_database_back_quotes");
         sqlCases.add("show_index_with_table_back_quotes");
         // TODO Sub query is necessary
-        sqlCases.add("select_pagination_with_row_number");
-        sqlCases.add("select_pagination_with_row_number_for_greater_than");
-        sqlCases.add("select_pagination_with_row_number_for_greater_than_and_equal");
         sqlCases.add("select_pagination_with_offset_fetch");
         sqlCases.add("select_pagination_with_top");
         sqlCases.add("select_pagination_with_top_for_greater_than");
@@ -130,6 +127,9 @@ public final class SQLParserParameterizedTest {
     
     @Test
     public void assertSupportedSQL() {
+        if ("select_pagination_with_row_number_for_greater_than_and_equal".equals(sqlCaseId)) {
+            System.out.println("fhsdfa");
+        }
         SQLParserTestCase expected = SQL_PARSER_TEST_CASES_REGISTRY.get(sqlCaseId);
         String databaseType = "H2".equals(this.databaseType) ? "MySQL" : this.databaseType;
         String sql = SQL_CASES_LOADER.getSQL(sqlCaseId, sqlCaseType, SQL_PARSER_TEST_CASES_REGISTRY.get(sqlCaseId).getParameters());
