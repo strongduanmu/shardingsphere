@@ -80,12 +80,6 @@ public final class ShardingRuleTest {
     }
     
     @Test
-    public void assertNewShardingRuleWithMasterSlaveConfiguration() {
-        ShardingRule actual = createMasterSlaveShardingRule();
-        assertThat(actual.getMasterSlaveRules().size(), is(2));
-    }
-    
-    @Test
     public void assertFindTableRule() {
         assertTrue(createMaximumShardingRule().findTableRule("logic_Table").isPresent());
     }
@@ -103,6 +97,16 @@ public final class ShardingRuleTest {
     @Test
     public void assertNotFindTableRuleByActualTable() {
         assertFalse(createMaximumShardingRule().findTableRuleByActualTable("table_3").isPresent());
+    }
+    
+    @Test
+    public void assertFindLogicTableByActualTable() {
+        assertTrue(createMaximumShardingRule().findLogicTableByActualTable("table_0").isPresent());
+    }
+    
+    @Test
+    public void assertNotFindLogicTableByActualTable() {
+        assertFalse(createMaximumShardingRule().findLogicTableByActualTable("table_3").isPresent());
     }
     
     @Test

@@ -20,11 +20,12 @@ package org.apache.shardingsphere.shardingjdbc.executor.batch;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import org.apache.shardingsphere.shardingjdbc.executor.callback.RuleExecuteBatchExecutorCallback;
-import org.apache.shardingsphere.shardingjdbc.jdbc.core.context.impl.ShardingRuntimeContext;
+import org.apache.shardingsphere.shardingjdbc.jdbc.core.context.RuntimeContext;
 import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
 import org.apache.shardingsphere.spi.order.OrderedSPIRegistry;
 import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.underlying.common.rule.BaseRule;
+import org.apache.shardingsphere.underlying.common.rule.TablesAggregationRule;
 import org.apache.shardingsphere.underlying.executor.kernel.InputGroup;
 import org.apache.shardingsphere.underlying.executor.sql.ConnectionMode;
 import org.apache.shardingsphere.underlying.executor.sql.context.ExecutionUnit;
@@ -54,7 +55,7 @@ public final class BatchPreparedStatementExecutor {
         ShardingSphereServiceLoader.register(RuleExecuteBatchExecutorCallback.class);
     }
     
-    private final ShardingRuntimeContext runtimeContext;
+    private final RuntimeContext runtimeContext;
     
     private final SQLExecutor sqlExecutor;
     
@@ -65,7 +66,7 @@ public final class BatchPreparedStatementExecutor {
     
     private int batchCount;
     
-    public BatchPreparedStatementExecutor(final ShardingRuntimeContext runtimeContext, final SQLExecutor sqlExecutor) {
+    public BatchPreparedStatementExecutor(final RuntimeContext runtimeContext, final SQLExecutor sqlExecutor) {
         this.runtimeContext = runtimeContext;
         this.sqlExecutor = sqlExecutor;
         inputGroups = new LinkedList<>();
@@ -139,16 +140,17 @@ public final class BatchPreparedStatementExecutor {
             }
         });
         List<int[]> results = sqlExecutor.execute(inputGroups, callback);
-        if (!runtimeContext.getRule().isAllBroadcastTables(sqlStatementContext.getTablesContext().getTableNames())) {
-            return accumulate(results);
-        } else {
-            return results.get(0);
-        }
+        return isNeedAccumulate(runtimeContext.getRules().stream().filter(rule -> rule instanceof TablesAggregationRule).collect(Collectors.toList()), sqlStatementContext)
+                ? accumulate(results) : results.get(0);
     }
     
     private SQLExecutorCallback<int[]> getExecuteBatchExecutorCallback(final DefaultSQLExecutorCallback callback) {
-        Map<BaseRule, RuleExecuteBatchExecutorCallback> callbackMap = OrderedSPIRegistry.getRegisteredServices(runtimeContext.getRule().toRules(), RuleExecuteBatchExecutorCallback.class);
+        Map<BaseRule, RuleExecuteBatchExecutorCallback> callbackMap = OrderedSPIRegistry.getRegisteredServices(runtimeContext.getRules(), RuleExecuteBatchExecutorCallback.class);
         return callbackMap.isEmpty() ? callback : callbackMap.values().iterator().next();
+    }
+    
+    private boolean isNeedAccumulate(final Collection<BaseRule> rules, final SQLStatementContext sqlStatementContext) {
+        return rules.stream().anyMatch(each -> ((TablesAggregationRule) each).isNeedAccumulate(sqlStatementContext.getTablesContext().getTableNames()));
     }
     
     private int[] accumulate(final List<int[]> results) {

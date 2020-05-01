@@ -20,16 +20,16 @@ package org.apache.shardingsphere.shardingproxy.backend.response.query;
 import lombok.SneakyThrows;
 import org.apache.shardingsphere.core.rule.ShardingRule;
 import org.apache.shardingsphere.shardingproxy.backend.schema.impl.ShardingSchema;
-import org.apache.shardingsphere.underlying.common.database.metadata.DataSourceMetaData;
+import org.apache.shardingsphere.sql.parser.binder.metadata.column.ColumnMetaData;
 import org.apache.shardingsphere.sql.parser.binder.metadata.index.IndexMetaData;
+import org.apache.shardingsphere.sql.parser.binder.metadata.schema.SchemaMetaData;
+import org.apache.shardingsphere.sql.parser.binder.metadata.table.TableMetaData;
 import org.apache.shardingsphere.sql.parser.binder.segment.select.projection.ProjectionsContext;
 import org.apache.shardingsphere.sql.parser.binder.segment.select.projection.impl.ColumnProjection;
 import org.apache.shardingsphere.sql.parser.binder.segment.select.projection.impl.ExpressionProjection;
+import org.apache.shardingsphere.underlying.common.database.metadata.DataSourceMetaData;
 import org.apache.shardingsphere.underlying.common.metadata.ShardingSphereMetaData;
-import org.apache.shardingsphere.sql.parser.binder.metadata.column.ColumnMetaData;
 import org.apache.shardingsphere.underlying.common.metadata.datasource.DataSourceMetas;
-import org.apache.shardingsphere.sql.parser.binder.metadata.table.TableMetaData;
-import org.apache.shardingsphere.sql.parser.binder.metadata.schema.SchemaMetaData;
 import org.apache.shardingsphere.underlying.common.metadata.schema.RuleSchemaMetaData;
 import org.junit.Test;
 
@@ -37,6 +37,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.Types;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -139,8 +140,8 @@ public final class QueryHeaderTest {
         when(metaData.getDataSources()).thenReturn(dataSourceMetas);
         when(result.getMetaData()).thenReturn(metaData);
         ShardingRule shardingRule = mock(ShardingRule.class);
-        when(shardingRule.getLogicTableNames("t_order")).thenReturn(Collections.singletonList("t_logic_order"));
-        when(result.getShardingRule()).thenReturn(shardingRule);
+        when(shardingRule.findLogicTableByActualTable("t_order")).thenReturn(Optional.of("t_logic_order"));
+        when(result.getRules()).thenReturn(Collections.singletonList(shardingRule));
         when(result.getName()).thenReturn("sharding_schema");
         return result;
     }

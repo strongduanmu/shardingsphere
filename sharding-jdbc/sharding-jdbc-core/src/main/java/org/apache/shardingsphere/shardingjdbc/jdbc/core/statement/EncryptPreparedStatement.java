@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.shardingjdbc.jdbc.adapter.AbstractShardingPreparedStatementAdapter;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.connection.EncryptConnection;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.constant.SQLExceptionConstant;
-import org.apache.shardingsphere.shardingjdbc.jdbc.core.context.impl.EncryptRuntimeContext;
+import org.apache.shardingsphere.shardingjdbc.jdbc.core.context.RuntimeContext;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.resultset.EncryptResultSet;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.statement.metadata.ShardingSphereParameterMetaData;
 import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
@@ -47,7 +47,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedList;
 
 /**
@@ -65,7 +64,7 @@ public final class EncryptPreparedStatement extends AbstractShardingPreparedStat
     @Getter
     private final ParameterMetaData parameterMetaData;
     
-    private final EncryptRuntimeContext runtimeContext;
+    private final RuntimeContext runtimeContext;
     
     private final EncryptPreparedStatementGenerator preparedStatementGenerator;
     
@@ -174,7 +173,7 @@ public final class EncryptPreparedStatement extends AbstractShardingPreparedStat
     
     @SuppressWarnings("unchecked")
     private SQLUnit getSQLUnit(final String sql) {
-        Collection<BaseRule> rules = Collections.singletonList(runtimeContext.getRule());
+        Collection<BaseRule> rules = runtimeContext.getRules();
         RouteContext routeContext = new DataNodeRouter(runtimeContext.getMetaData(), runtimeContext.getProperties(), rules).route(sqlStatement, sql, getParameters());
         sqlStatementContext = routeContext.getSqlStatementContext();
         SQLRewriteResult sqlRewriteResult = new SQLRewriteEntry(

@@ -22,7 +22,7 @@ import com.google.common.base.Strings;
 import lombok.Getter;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.connection.EncryptConnection;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.constant.SQLExceptionConstant;
-import org.apache.shardingsphere.shardingjdbc.jdbc.core.context.impl.EncryptRuntimeContext;
+import org.apache.shardingsphere.shardingjdbc.jdbc.core.context.RuntimeContext;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.resultset.EncryptResultSet;
 import org.apache.shardingsphere.shardingjdbc.jdbc.unsupported.AbstractUnsupportedOperationStatement;
 import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
@@ -53,7 +53,7 @@ public final class EncryptStatement extends AbstractUnsupportedOperationStatemen
     
     private final Statement statement;
     
-    private final EncryptRuntimeContext runtimeContext;
+    private final RuntimeContext runtimeContext;
     
     private SQLStatementContext sqlStatementContext;
     
@@ -93,7 +93,7 @@ public final class EncryptStatement extends AbstractUnsupportedOperationStatemen
     }
     
     private String getRewriteSQL(final String sql) {
-        Collection<BaseRule> rules = Collections.singletonList(runtimeContext.getRule());
+        Collection<BaseRule> rules = runtimeContext.getRules();
         RouteContext routeContext = new DataNodeRouter(runtimeContext.getMetaData(), runtimeContext.getProperties(),
                 rules).route(runtimeContext.getSqlParserEngine().parse(sql, false), sql, Collections.emptyList());
         sqlStatementContext = routeContext.getSqlStatementContext();

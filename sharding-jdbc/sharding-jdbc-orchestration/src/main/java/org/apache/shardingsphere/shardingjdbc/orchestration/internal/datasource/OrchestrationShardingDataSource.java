@@ -22,25 +22,25 @@ import com.google.common.eventbus.Subscribe;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.apache.shardingsphere.api.config.sharding.ShardingRuleConfiguration;
+import org.apache.shardingsphere.core.rule.MasterSlaveRule;
+import org.apache.shardingsphere.core.rule.RuleBuilder;
+import org.apache.shardingsphere.orchestration.center.config.OrchestrationConfiguration;
 import org.apache.shardingsphere.orchestration.core.common.event.DataSourceChangedEvent;
 import org.apache.shardingsphere.orchestration.core.common.event.PropertiesChangedEvent;
 import org.apache.shardingsphere.orchestration.core.common.event.ShardingRuleChangedEvent;
 import org.apache.shardingsphere.orchestration.core.configcenter.ConfigCenter;
 import org.apache.shardingsphere.orchestration.core.facade.ShardingOrchestrationFacade;
 import org.apache.shardingsphere.orchestration.core.metadatacenter.event.MetaDataChangedEvent;
-import org.apache.shardingsphere.underlying.common.config.RuleConfiguration;
-import org.apache.shardingsphere.api.config.sharding.ShardingRuleConfiguration;
-import org.apache.shardingsphere.underlying.common.config.DataSourceConfiguration;
-import org.apache.shardingsphere.orchestration.center.config.OrchestrationConfiguration;
-import org.apache.shardingsphere.underlying.common.database.DefaultSchema;
-import org.apache.shardingsphere.core.rule.MasterSlaveRule;
 import org.apache.shardingsphere.orchestration.core.registrycenter.event.DisabledStateChangedEvent;
 import org.apache.shardingsphere.orchestration.core.registrycenter.schema.OrchestrationShardingSchema;
-import org.apache.shardingsphere.orchestration.core.common.rule.OrchestrationMasterSlaveRule;
-import org.apache.shardingsphere.orchestration.core.common.rule.OrchestrationShardingRule;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.datasource.ShardingDataSource;
 import org.apache.shardingsphere.shardingjdbc.orchestration.internal.util.DataSourceConverter;
+import org.apache.shardingsphere.underlying.common.config.DataSourceConfiguration;
+import org.apache.shardingsphere.underlying.common.config.RuleConfiguration;
+import org.apache.shardingsphere.underlying.common.database.DefaultSchema;
 import org.apache.shardingsphere.underlying.common.metadata.ShardingSphereMetaData;
+import org.apache.shardingsphere.underlying.common.rule.BaseRule;
 
 import java.sql.SQLException;
 import java.util.Collections;
@@ -48,7 +48,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Orchestration sharding datasource.
+ * Orchestration sharding data source.
  */
 @Getter(AccessLevel.PROTECTED)
 public class OrchestrationShardingDataSource extends AbstractOrchestrationDataSource {
@@ -61,8 +61,8 @@ public class OrchestrationShardingDataSource extends AbstractOrchestrationDataSo
         ShardingRuleConfiguration shardingRuleConfig = configService.loadShardingRuleConfiguration(DefaultSchema.LOGIC_NAME);
         Preconditions.checkState(null != shardingRuleConfig && !shardingRuleConfig.getTableRuleConfigs().isEmpty(), "Missing the sharding rule configuration on registry center");
         Map<String, DataSourceConfiguration> dataSourceConfigurations = configService.loadDataSourceConfigurations(DefaultSchema.LOGIC_NAME);
-        dataSource = new ShardingDataSource(DataSourceConverter.getDataSourceMap(dataSourceConfigurations), new OrchestrationShardingRule(shardingRuleConfig, dataSourceConfigurations.keySet()),
-                configService.loadProperties());
+        dataSource = new ShardingDataSource(DataSourceConverter.getDataSourceMap(dataSourceConfigurations),
+                RuleBuilder.build(dataSourceConfigurations.keySet(), shardingRuleConfig), configService.loadProperties());
         initShardingOrchestrationFacade();
         persistMetaData(dataSource.getRuntimeContext().getMetaData().getSchema());
     }
@@ -77,7 +77,7 @@ public class OrchestrationShardingDataSource extends AbstractOrchestrationDataSo
     
     private Map<String, RuleConfiguration> getRuleConfigurationMap() {
         Map<String, RuleConfiguration> result = new LinkedHashMap<>(1, 1);
-        result.put(DefaultSchema.LOGIC_NAME, dataSource.getRuntimeContext().getRule().getRuleConfiguration());
+        result.put(DefaultSchema.LOGIC_NAME, dataSource.getRuntimeContext().getRules().iterator().next().getRuleConfiguration());
         return result;
     }
     
@@ -103,8 +103,8 @@ public class OrchestrationShardingDataSource extends AbstractOrchestrationDataSo
     @Subscribe
     @SneakyThrows
     public final synchronized void renew(final ShardingRuleChangedEvent shardingRuleChangedEvent) {
-        dataSource = new ShardingDataSource(dataSource.getDataSourceMap(), new OrchestrationShardingRule(shardingRuleChangedEvent.getShardingRuleConfiguration(),
-                dataSource.getDataSourceMap().keySet()), dataSource.getRuntimeContext().getProperties().getProps());
+        dataSource = new ShardingDataSource(dataSource.getDataSourceMap(), 
+                RuleBuilder.build(dataSource.getDataSourceMap().keySet(), shardingRuleChangedEvent.getShardingRuleConfiguration()), dataSource.getRuntimeContext().getProperties().getProps());
     }
     
     /**
@@ -119,7 +119,7 @@ public class OrchestrationShardingDataSource extends AbstractOrchestrationDataSo
         dataSource.close(getDeletedDataSources(dataSourceConfigurations));
         dataSource.close(getModifiedDataSources(dataSourceConfigurations).keySet());
         dataSource = new ShardingDataSource(getChangedDataSources(dataSource.getDataSourceMap(), dataSourceConfigurations), 
-                dataSource.getRuntimeContext().getRule(), dataSource.getRuntimeContext().getProperties().getProps());
+                dataSource.getRuntimeContext().getRules(), dataSource.getRuntimeContext().getProperties().getProps());
         getDataSourceConfigurations().clear();
         getDataSourceConfigurations().putAll(dataSourceConfigurations);
     }
@@ -132,7 +132,7 @@ public class OrchestrationShardingDataSource extends AbstractOrchestrationDataSo
     @SneakyThrows
     @Subscribe
     public final synchronized void renew(final PropertiesChangedEvent propertiesChangedEvent) {
-        dataSource = new ShardingDataSource(dataSource.getDataSourceMap(), dataSource.getRuntimeContext().getRule(), propertiesChangedEvent.getProps());
+        dataSource = new ShardingDataSource(dataSource.getDataSourceMap(), dataSource.getRuntimeContext().getRules(), propertiesChangedEvent.getProps());
     }
     
     /**
@@ -144,8 +144,10 @@ public class OrchestrationShardingDataSource extends AbstractOrchestrationDataSo
     public synchronized void renew(final DisabledStateChangedEvent disabledStateChangedEvent) {
         OrchestrationShardingSchema shardingSchema = disabledStateChangedEvent.getShardingSchema();
         if (DefaultSchema.LOGIC_NAME.equals(shardingSchema.getSchemaName())) {
-            for (MasterSlaveRule each : dataSource.getRuntimeContext().getRule().getMasterSlaveRules()) {
-                ((OrchestrationMasterSlaveRule) each).updateDisabledDataSourceNames(shardingSchema.getDataSourceName(), disabledStateChangedEvent.isDisabled());
+            for (BaseRule each : dataSource.getRuntimeContext().getRules()) {
+                if (each instanceof MasterSlaveRule) {
+                    ((MasterSlaveRule) each).updateDisabledDataSourceNames(shardingSchema.getDataSourceName(), disabledStateChangedEvent.isDisabled());
+                }
             }
         }
     }

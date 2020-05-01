@@ -20,6 +20,7 @@ package org.apache.shardingsphere.shardingjdbc.jdbc.core.statement;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.shardingsphere.core.rule.ShadowRule;
 import org.apache.shardingsphere.shadow.rewrite.judgement.ShadowJudgementEngine;
 import org.apache.shardingsphere.shadow.rewrite.judgement.impl.SimpleJudgementEngine;
 import org.apache.shardingsphere.shardingjdbc.jdbc.adapter.AbstractStatementAdapter;
@@ -211,7 +212,7 @@ public final class ShadowStatement extends AbstractStatementAdapter {
         sqlStatementContext = SQLStatementContextFactory.newInstance(
                 connection.getRuntimeContext().getMetaData().getSchema().getConfiguredSchemaMetaData(), sql, Collections.emptyList(), sqlStatement);
         if (sqlStatement instanceof DMLStatement) {
-            ShadowJudgementEngine shadowJudgementEngine = new SimpleJudgementEngine(connection.getRuntimeContext().getRule(), sqlStatementContext);
+            ShadowJudgementEngine shadowJudgementEngine = new SimpleJudgementEngine((ShadowRule) connection.getRuntimeContext().getRules().iterator().next(), sqlStatementContext);
             isShadowSQL = shadowJudgementEngine.isShadowSQL();
             result.add(shadowStatementGenerator.createStatement(isShadowSQL));
         } else {
@@ -224,7 +225,7 @@ public final class ShadowStatement extends AbstractStatementAdapter {
     
     private String rewriteSQL(final String sql) {
         SQLRewriteEntry sqlRewriteEntry = new SQLRewriteEntry(connection.getRuntimeContext().getMetaData().getSchema().getConfiguredSchemaMetaData(),
-                connection.getRuntimeContext().getProperties(), Collections.singletonList(connection.getRuntimeContext().getRule()));
+                connection.getRuntimeContext().getProperties(), connection.getRuntimeContext().getRules());
         SQLRewriteUnit sqlRewriteResult = ((GenericSQLRewriteResult) sqlRewriteEntry.rewrite(sql, Collections.emptyList(),
                 new RouteContext(sqlStatementContext, Collections.emptyList(), new RouteResult()))).getSqlRewriteUnit();
         String result = sqlRewriteResult.getSql();
