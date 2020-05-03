@@ -17,42 +17,17 @@
 
 package org.apache.shardingsphere.underlying.common.rule;
 
-import java.util.Collection;
-import java.util.Optional;
+import org.apache.shardingsphere.underlying.common.config.RuleConfiguration;
 
 /**
- * Tables aggregation rule.
+ * ShardingSphere rule.
  */
-public interface TablesAggregationRule extends BaseRule {
+public interface ShardingSphereRule {
     
     /**
-     * Get all actual tables.
+     * Get rule configuration.
      * 
-     * @return all actual tables
+     * @return rule configuration
      */
-    Collection<String> getAllActualTables();
-    
-    /**
-     * Find first actual table name.
-     *
-     * @param logicTable logic table name
-     * @return the first actual table name
-     */
-    Optional<String> findFirstActualTable(String logicTable);
-    
-    /**
-     * Is need accumulate.
-     * 
-     * @param tables table names
-     * @return need accumulate
-     */
-    boolean isNeedAccumulate(Collection<String> tables);
-    
-    /**
-     * Find logic table name via actual table name.
-     *
-     * @param actualTable actual table name
-     * @return logic table name
-     */
-    Optional<String> findLogicTableByActualTable(String actualTable);
+    RuleConfiguration getRuleConfiguration();
 }

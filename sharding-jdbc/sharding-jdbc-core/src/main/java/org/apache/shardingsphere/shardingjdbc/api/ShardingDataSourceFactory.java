@@ -20,11 +20,14 @@ package org.apache.shardingsphere.shardingjdbc.api;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.api.config.sharding.ShardingRuleConfiguration;
-import org.apache.shardingsphere.core.rule.RuleBuilder;
+import org.apache.shardingsphere.core.rule.builder.ConfigurationBuilder;
+import org.apache.shardingsphere.core.rule.builder.RuleBuilder;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.datasource.ShardingDataSource;
+import org.apache.shardingsphere.underlying.common.config.RuleConfiguration;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
 
@@ -37,13 +40,29 @@ public final class ShardingDataSourceFactory {
     /**
      * Create sharding data source.
      *
+     * @deprecated use createDataSource(final Map dataSourceMap, final Collection ruleConfigurations, final Properties props) instead of it.
+     * 
      * @param dataSourceMap data source map
      * @param shardingRuleConfig rule configuration for databases and tables sharding
      * @param props properties for data source
      * @return sharding data source
      * @throws SQLException SQL exception
      */
+    @Deprecated
     public static DataSource createDataSource(final Map<String, DataSource> dataSourceMap, final ShardingRuleConfiguration shardingRuleConfig, final Properties props) throws SQLException {
-        return new ShardingDataSource(dataSourceMap, RuleBuilder.build(dataSourceMap.keySet(), shardingRuleConfig), props);
+        return new ShardingDataSource(dataSourceMap, RuleBuilder.build(dataSourceMap.keySet(), ConfigurationBuilder.buildSharding(shardingRuleConfig)), props);
+    }
+    
+    /**
+     * Create sharding data source.
+     *
+     * @param dataSourceMap data source map
+     * @param ruleConfigurations rule configurations
+     * @param props properties for data source
+     * @return sharding data source
+     * @throws SQLException SQL exception
+     */
+    public static DataSource createDataSource(final Map<String, DataSource> dataSourceMap, final Collection<RuleConfiguration> ruleConfigurations, final Properties props) throws SQLException {
+        return new ShardingDataSource(dataSourceMap, RuleBuilder.build(dataSourceMap.keySet(), ruleConfigurations), props);
     }
 }

@@ -29,7 +29,7 @@ import org.apache.shardingsphere.encrypt.strategy.spi.Encryptor;
 import org.apache.shardingsphere.encrypt.strategy.spi.QueryAssistedEncryptor;
 import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
 import org.apache.shardingsphere.spi.type.TypedSPIRegistry;
-import org.apache.shardingsphere.underlying.common.rule.BaseRule;
+import org.apache.shardingsphere.underlying.common.rule.ShardingSphereRule;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 /**
  * Encrypt rule.
  */
-public final class EncryptRule implements BaseRule {
+public final class EncryptRule implements ShardingSphereRule {
     
     static {
         ShardingSphereServiceLoader.register(Encryptor.class);
@@ -56,10 +56,6 @@ public final class EncryptRule implements BaseRule {
     
     @Getter
     private EncryptRuleConfiguration ruleConfiguration;
-    
-    public EncryptRule() {
-        ruleConfiguration = new EncryptRuleConfiguration();
-    }
     
     public EncryptRule(final EncryptRuleConfiguration encryptRuleConfig) {
         this.ruleConfiguration = encryptRuleConfig;

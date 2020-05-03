@@ -23,18 +23,21 @@ import org.apache.shardingsphere.api.config.masterslave.MasterSlaveRuleConfigura
 import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
 import org.apache.shardingsphere.spi.masterslave.MasterSlaveLoadBalanceAlgorithm;
 import org.apache.shardingsphere.spi.type.TypedSPIRegistry;
-import org.apache.shardingsphere.underlying.common.rule.BaseRule;
+import org.apache.shardingsphere.underlying.common.rule.DataSourceRoutedRule;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * Databases and tables master-slave rule.
  */
 @Getter
-public final class MasterSlaveRule implements BaseRule {
+public final class MasterSlaveRule implements DataSourceRoutedRule {
     
     static {
         ShardingSphereServiceLoader.register(MasterSlaveLoadBalanceAlgorithm.class);
@@ -105,5 +108,15 @@ public final class MasterSlaveRule implements BaseRule {
         } else {
             disabledDataSourceNames.remove(dataSourceName);
         }
+    }
+    
+    @Override
+    public Map<String, Collection<String>> getDataSourceMapper() {
+        Map<String, Collection<String>> result = new HashMap<>();
+        Collection<String> actualDataSourceNames = new LinkedList<>();
+        actualDataSourceNames.add(masterDataSourceName);
+        actualDataSourceNames.addAll(slaveDataSourceNames);
+        result.put(name, actualDataSourceNames);
+        return result;
     }
 }
