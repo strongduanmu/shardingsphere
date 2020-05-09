@@ -85,8 +85,9 @@ public final class RuntimeContext implements AutoCloseable {
         shardingTransactionManagerEngine = new ShardingTransactionManagerEngine();
         shardingTransactionManagerEngine.init(databaseType, dataSourceMap);
         metaData = createMetaData(dataSourceMap, databaseType);
-        // TODO log multiple rules
-        ConfigurationLogger.log(rules.iterator().next().getRuleConfiguration());
+        if (!rules.isEmpty()) {
+            rules.forEach(each -> ConfigurationLogger.log(each.getRuleConfiguration()));
+        }
         ConfigurationLogger.log(props);
     }
     
@@ -103,7 +104,7 @@ public final class RuntimeContext implements AutoCloseable {
     private ShardingSphereMetaData createMetaData(final Map<String, DataSource> dataSourceMap, final DatabaseType databaseType) throws SQLException {
         long start = System.currentTimeMillis();
         DataSourceMetas dataSourceMetas = new DataSourceMetas(databaseType, getDatabaseAccessConfigurationMap(dataSourceMap));
-        RuleSchemaMetaData ruleSchemaMetaData = new RuleSchemaMetaDataLoader(rules).load(getDatabaseType(), dataSourceMap, getProperties());
+        RuleSchemaMetaData ruleSchemaMetaData = new RuleSchemaMetaDataLoader(rules).load(getDatabaseType(), dataSourceMap, getProperties(), executorKernel.getExecutorService().getExecutorService());
         ShardingSphereMetaData result = new ShardingSphereMetaData(dataSourceMetas, ruleSchemaMetaData);
         log.info("Meta data load finished, cost {} milliseconds.", System.currentTimeMillis() - start);
         return result;

@@ -19,25 +19,20 @@ package org.apache.shardingsphere.shardingjdbc.spring.boot;
 
 import com.google.common.base.Preconditions;
 import lombok.RequiredArgsConstructor;
-import org.apache.shardingsphere.core.rule.builder.ConfigurationBuilder;
 import org.apache.shardingsphere.core.strategy.algorithm.sharding.inline.InlineExpressionParser;
-import org.apache.shardingsphere.core.yaml.swapper.MasterSlaveRuleConfigurationYamlSwapper;
 import org.apache.shardingsphere.core.yaml.swapper.ShadowRuleConfigurationYamlSwapper;
-import org.apache.shardingsphere.core.yaml.swapper.ShardingRuleConfigurationYamlSwapper;
+import org.apache.shardingsphere.core.yaml.swapper.root.RuleRootConfigurationsYamlSwapper;
 import org.apache.shardingsphere.encrypt.yaml.swapper.EncryptRuleConfigurationYamlSwapper;
 import org.apache.shardingsphere.shardingjdbc.api.EncryptDataSourceFactory;
-import org.apache.shardingsphere.shardingjdbc.api.MasterSlaveDataSourceFactory;
 import org.apache.shardingsphere.shardingjdbc.api.ShadowDataSourceFactory;
 import org.apache.shardingsphere.shardingjdbc.api.ShardingDataSourceFactory;
 import org.apache.shardingsphere.shardingjdbc.spring.boot.common.SpringBootPropertiesConfigurationProperties;
 import org.apache.shardingsphere.shardingjdbc.spring.boot.encrypt.EncryptRuleCondition;
 import org.apache.shardingsphere.shardingjdbc.spring.boot.encrypt.SpringBootEncryptRuleConfigurationProperties;
-import org.apache.shardingsphere.shardingjdbc.spring.boot.masterslave.MasterSlaveRuleCondition;
-import org.apache.shardingsphere.shardingjdbc.spring.boot.masterslave.SpringBootMasterSlaveRuleConfigurationProperties;
 import org.apache.shardingsphere.shardingjdbc.spring.boot.shadow.ShadowRuleCondition;
 import org.apache.shardingsphere.shardingjdbc.spring.boot.shadow.SpringBootShadowRuleConfigurationProperties;
 import org.apache.shardingsphere.shardingjdbc.spring.boot.sharding.ShardingRuleCondition;
-import org.apache.shardingsphere.shardingjdbc.spring.boot.sharding.SpringBootShardingRuleConfigurationProperties;
+import org.apache.shardingsphere.shardingjdbc.spring.boot.sharding.SpringBootRulesConfigurationProperties;
 import org.apache.shardingsphere.spring.boot.datasource.DataSourcePropertiesSetterHolder;
 import org.apache.shardingsphere.spring.boot.util.DataSourceUtil;
 import org.apache.shardingsphere.spring.boot.util.PropertyUtil;
@@ -70,17 +65,14 @@ import java.util.Map;
 @Configuration
 @ComponentScan("org.apache.shardingsphere.spring.boot.converter")
 @EnableConfigurationProperties({
-        SpringBootShardingRuleConfigurationProperties.class,
-        SpringBootMasterSlaveRuleConfigurationProperties.class, SpringBootEncryptRuleConfigurationProperties.class,
+        SpringBootRulesConfigurationProperties.class, SpringBootEncryptRuleConfigurationProperties.class,
         SpringBootPropertiesConfigurationProperties.class, SpringBootShadowRuleConfigurationProperties.class})
 @ConditionalOnProperty(prefix = "spring.shardingsphere", name = "enabled", havingValue = "true", matchIfMissing = true)
 @AutoConfigureBefore(DataSourceAutoConfiguration.class)
 @RequiredArgsConstructor
 public class SpringBootConfiguration implements EnvironmentAware {
     
-    private final SpringBootShardingRuleConfigurationProperties shardingRule;
-    
-    private final SpringBootMasterSlaveRuleConfigurationProperties masterSlaveRule;
+    private final SpringBootRulesConfigurationProperties rules;
     
     private final SpringBootEncryptRuleConfigurationProperties encryptRule;
     
@@ -101,19 +93,7 @@ public class SpringBootConfiguration implements EnvironmentAware {
     @Bean
     @Conditional(ShardingRuleCondition.class)
     public DataSource shardingDataSource() throws SQLException {
-        return ShardingDataSourceFactory.createDataSource(dataSourceMap, ConfigurationBuilder.buildSharding(new ShardingRuleConfigurationYamlSwapper().swap(shardingRule)), props.getProps());
-    }
-    
-    /**
-     * Get master-slave data source bean.
-     *
-     * @return data source bean
-     * @throws SQLException SQL exception
-     */
-    @Bean
-    @Conditional(MasterSlaveRuleCondition.class)
-    public DataSource masterSlaveDataSource() throws SQLException {
-        return MasterSlaveDataSourceFactory.createDataSource(dataSourceMap, new MasterSlaveRuleConfigurationYamlSwapper().swap(masterSlaveRule), props.getProps());
+        return ShardingDataSourceFactory.createDataSource(dataSourceMap, new RuleRootConfigurationsYamlSwapper().swap(rules), props.getProps());
     }
     
     /**

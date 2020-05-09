@@ -23,7 +23,6 @@ import org.apache.shardingsphere.shadow.rewrite.judgement.ShadowJudgementEngine;
 import org.apache.shardingsphere.shadow.rewrite.judgement.impl.PreparedJudgementEngine;
 import org.apache.shardingsphere.shardingproxy.backend.schema.LogicSchema;
 import org.apache.shardingsphere.shardingproxy.backend.schema.impl.EncryptSchema;
-import org.apache.shardingsphere.shardingproxy.backend.schema.impl.MasterSlaveSchema;
 import org.apache.shardingsphere.shardingproxy.backend.schema.impl.ShadowSchema;
 import org.apache.shardingsphere.shardingproxy.backend.schema.impl.ShardingSchema;
 import org.apache.shardingsphere.shardingproxy.context.ShardingProxyContext;
@@ -39,8 +38,8 @@ import org.apache.shardingsphere.underlying.executor.sql.context.ExecutionContex
 import org.apache.shardingsphere.underlying.executor.sql.context.ExecutionContextBuilder;
 import org.apache.shardingsphere.underlying.executor.sql.context.ExecutionUnit;
 import org.apache.shardingsphere.underlying.executor.sql.context.SQLUnit;
-import org.apache.shardingsphere.underlying.executor.sql.group.ExecuteGroupEngine;
 import org.apache.shardingsphere.underlying.executor.sql.execute.jdbc.group.PreparedStatementExecuteGroupEngine;
+import org.apache.shardingsphere.underlying.executor.sql.group.ExecuteGroupEngine;
 import org.apache.shardingsphere.underlying.rewrite.SQLRewriteEntry;
 import org.apache.shardingsphere.underlying.rewrite.engine.result.GenericSQLRewriteResult;
 import org.apache.shardingsphere.underlying.rewrite.engine.result.SQLRewriteResult;
@@ -74,9 +73,6 @@ public final class PreparedStatementExecutorWrapper implements JDBCExecutorWrapp
         if (logicSchema instanceof ShardingSchema) {
             return doShardingRoute(sql);
         }
-        if (logicSchema instanceof MasterSlaveSchema) {
-            return doMasterSlaveRoute(sql);
-        }
         if (logicSchema instanceof EncryptSchema) {
             return doEncryptRoute(sql);
         }
@@ -96,15 +92,6 @@ public final class PreparedStatementExecutorWrapper implements JDBCExecutorWrapp
     }
     
     @SuppressWarnings("unchecked")
-    private ExecutionContext doMasterSlaveRoute(final String sql) {
-        SQLStatement sqlStatement = logicSchema.getSqlParserEngine().parse(sql, true);
-        RouteContext routeContext = new DataNodeRouter(logicSchema.getMetaData(), SHARDING_PROXY_CONTEXT.getProperties(), logicSchema.getRules()).route(sqlStatement, sql, parameters);
-        SQLRewriteResult sqlRewriteResult = new SQLRewriteEntry(logicSchema.getMetaData().getSchema().getConfiguredSchemaMetaData(),
-                SHARDING_PROXY_CONTEXT.getProperties(), logicSchema.getRules()).rewrite(sql, new ArrayList<>(parameters), routeContext);
-        return new ExecutionContext(routeContext.getSqlStatementContext(), ExecutionContextBuilder.build(logicSchema.getMetaData(), sqlRewriteResult));
-    }
-    
-    @SuppressWarnings("unchecked")
     private ExecutionContext doEncryptRoute(final String sql) {
         SQLStatement sqlStatement = logicSchema.getSqlParserEngine().parse(sql, true);
         RouteContext routeContext = new DataNodeRouter(logicSchema.getMetaData(), SHARDING_PROXY_CONTEXT.getProperties(), logicSchema.getRules()).route(sqlStatement, sql, parameters);
@@ -116,7 +103,7 @@ public final class PreparedStatementExecutorWrapper implements JDBCExecutorWrapp
     private ExecutionContext doShadowRoute(final String sql) {
         ShadowSchema shadowSchema = (ShadowSchema) logicSchema;
         SQLStatement sqlStatement = shadowSchema.getSqlParserEngine().parse(sql, true);
-        SchemaMetaData schemaMetaData = logicSchema.getMetaData().getSchema().getConfiguredSchemaMetaData();
+        SchemaMetaData schemaMetaData = logicSchema.getMetaData().getSchema().getSchemaMetaData();
         SQLStatementContext sqlStatementContext = SQLStatementContextFactory.newInstance(schemaMetaData, sql, parameters, sqlStatement);
         Collection<ExecutionUnit> executionUnits = new ArrayList<>();
         if (sqlStatement instanceof DMLStatement) {
