@@ -21,7 +21,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import org.apache.shardingsphere.api.config.masterslave.MasterSlaveRuleConfiguration;
+import org.apache.shardingsphere.masterslave.api.config.MasterSlaveRuleConfiguration;
 import org.apache.shardingsphere.api.config.shadow.ShadowRuleConfiguration;
 import org.apache.shardingsphere.api.config.sharding.ShardingRuleConfiguration;
 import org.apache.shardingsphere.core.rule.Authentication;
@@ -119,7 +119,8 @@ public final class ConfigCenter {
                 configurations.add(each);
             } else if (each instanceof MasterSlaveRuleConfiguration) {
                 MasterSlaveRuleConfiguration config = (MasterSlaveRuleConfiguration) each;
-                Preconditions.checkState(!config.getMasterDataSourceName().isEmpty(), "No available master-slave rule configuration in `%s` for orchestration.", shardingSchemaName);
+                config.getDataSources().forEach(group -> Preconditions.checkState(
+                        !group.getMasterDataSourceName().isEmpty(), "No available master-slave rule configuration in `%s` for orchestration.", shardingSchemaName));
                 configurations.add(each);
             } else if (each instanceof EncryptRuleConfiguration) {
                 EncryptRuleConfiguration config = (EncryptRuleConfiguration) each;
