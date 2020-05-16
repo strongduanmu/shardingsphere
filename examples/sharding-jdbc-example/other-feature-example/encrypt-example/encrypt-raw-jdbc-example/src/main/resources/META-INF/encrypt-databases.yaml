@@ -22,7 +22,8 @@ dataSources:
     username: root
     password:
 
-encryptRule:
+rules:
+- !ENCRYPT
   encryptors:
     name_encryptror:
       type: aes

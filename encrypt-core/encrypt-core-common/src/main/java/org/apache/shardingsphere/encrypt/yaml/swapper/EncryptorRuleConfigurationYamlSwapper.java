@@ -17,9 +17,9 @@
 
 package org.apache.shardingsphere.encrypt.yaml.swapper;
 
-import org.apache.shardingsphere.encrypt.api.EncryptorRuleConfiguration;
+import org.apache.shardingsphere.encrypt.api.config.EncryptorRuleConfiguration;
 import org.apache.shardingsphere.encrypt.yaml.config.YamlEncryptorRuleConfiguration;
-import org.apache.shardingsphere.underlying.common.yaml.swapper.YamlSwapper;
+import org.apache.shardingsphere.infra.yaml.swapper.YamlSwapper;
 
 /**
  * Encryptor configuration YAML swapper.

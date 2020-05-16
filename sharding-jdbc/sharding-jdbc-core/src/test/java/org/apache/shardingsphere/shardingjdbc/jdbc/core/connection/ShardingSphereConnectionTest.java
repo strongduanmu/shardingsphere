@@ -17,9 +17,8 @@
 
 package org.apache.shardingsphere.shardingjdbc.jdbc.core.connection;
 
-import org.apache.shardingsphere.api.config.sharding.ShardingRuleConfiguration;
-import org.apache.shardingsphere.api.config.sharding.TableRuleConfiguration;
-import org.apache.shardingsphere.shardingjdbc.fixture.TestDataSource;
+import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
+import org.apache.shardingsphere.sharding.api.config.TableRuleConfiguration;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.context.RuntimeContext;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.fixture.BASEShardingTransactionManagerFixture;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.fixture.XAShardingTransactionManagerFixture;
@@ -27,13 +26,14 @@ import org.apache.shardingsphere.transaction.ShardingTransactionManagerEngine;
 import org.apache.shardingsphere.transaction.core.TransactionOperationType;
 import org.apache.shardingsphere.transaction.core.TransactionType;
 import org.apache.shardingsphere.transaction.core.TransactionTypeHolder;
-import org.apache.shardingsphere.underlying.common.database.type.DatabaseTypes;
+import org.apache.shardingsphere.infra.database.type.DatabaseTypes;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,12 +54,17 @@ public final class ShardingSphereConnectionTest {
     
     @BeforeClass
     public static void init() throws SQLException {
-        DataSource masterDataSource = new TestDataSource("test_ds_master");
-        DataSource slaveDataSource = new TestDataSource("test_ds_slave");
+        DataSource masterDataSource = mockDataSource();
+        DataSource slaveDataSource = mockDataSource();
         dataSourceMap = new HashMap<>(2, 1);
         dataSourceMap.put("test_ds_master", masterDataSource);
         dataSourceMap.put("test_ds_slave", slaveDataSource);
-        ((TestDataSource) slaveDataSource).setThrowExceptionWhenClosing(true);
+    }
+    
+    private static DataSource mockDataSource() throws SQLException {
+        DataSource result = mock(DataSource.class);
+        when(result.getConnection()).thenReturn(mock(Connection.class));
+        return result;
     }
     
     @Before

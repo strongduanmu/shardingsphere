@@ -22,7 +22,8 @@ dataSources:
     username: sa
     password: 
 
-encryptRule:
+rules:
+- !ENCRYPT
   tables:
     t_account:
       columns:

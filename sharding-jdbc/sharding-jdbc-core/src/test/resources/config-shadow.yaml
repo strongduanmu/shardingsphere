@@ -15,7 +15,8 @@
 # limitations under the License.
 #
 
-shadowRule:
+rules:
+- !SHADOW
   column: shadow
   shadowMappings:
     jdbc_0: jdbc_1

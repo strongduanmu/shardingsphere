@@ -19,20 +19,20 @@ package org.apache.shardingsphere.shardingproxy.frontend.mysql.auth;
 
 import com.google.common.base.Strings;
 import io.netty.channel.ChannelHandlerContext;
-import org.apache.shardingsphere.database.protocol.mysql.constant.MySQLAuthenticationMethod;
-import org.apache.shardingsphere.database.protocol.mysql.constant.MySQLCapabilityFlag;
-import org.apache.shardingsphere.database.protocol.mysql.constant.MySQLServerErrorCode;
-import org.apache.shardingsphere.database.protocol.mysql.packet.generic.MySQLErrPacket;
-import org.apache.shardingsphere.database.protocol.mysql.packet.generic.MySQLOKPacket;
-import org.apache.shardingsphere.database.protocol.mysql.packet.handshake.MySQLAuthSwitchRequestPacket;
-import org.apache.shardingsphere.database.protocol.mysql.packet.handshake.MySQLAuthSwitchResponsePacket;
-import org.apache.shardingsphere.database.protocol.mysql.constant.MySQLConnectionPhase;
-import org.apache.shardingsphere.database.protocol.mysql.packet.handshake.MySQLHandshakePacket;
-import org.apache.shardingsphere.database.protocol.mysql.packet.handshake.MySQLHandshakeResponse41Packet;
-import org.apache.shardingsphere.database.protocol.mysql.payload.MySQLPacketPayload;
-import org.apache.shardingsphere.database.protocol.payload.PacketPayload;
+import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLAuthenticationMethod;
+import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLCapabilityFlag;
+import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLServerErrorCode;
+import org.apache.shardingsphere.db.protocol.mysql.packet.generic.MySQLErrPacket;
+import org.apache.shardingsphere.db.protocol.mysql.packet.generic.MySQLOKPacket;
+import org.apache.shardingsphere.db.protocol.mysql.packet.handshake.MySQLAuthSwitchRequestPacket;
+import org.apache.shardingsphere.db.protocol.mysql.packet.handshake.MySQLAuthSwitchResponsePacket;
+import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLConnectionPhase;
+import org.apache.shardingsphere.db.protocol.mysql.packet.handshake.MySQLHandshakePacket;
+import org.apache.shardingsphere.db.protocol.mysql.packet.handshake.MySQLHandshakeResponse41Packet;
+import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
+import org.apache.shardingsphere.db.protocol.payload.PacketPayload;
 import org.apache.shardingsphere.shardingproxy.backend.communication.jdbc.connection.BackendConnection;
-import org.apache.shardingsphere.shardingproxy.backend.schema.LogicSchemas;
+import org.apache.shardingsphere.shardingproxy.backend.schema.ShardingSphereSchemas;
 import org.apache.shardingsphere.shardingproxy.frontend.ConnectionIdGenerator;
 import org.apache.shardingsphere.shardingproxy.frontend.engine.AuthenticationEngine;
 
@@ -73,7 +73,7 @@ public final class MySQLAuthenticationEngine implements AuthenticationEngine {
             authResponse = response41.getAuthResponse();
             database = response41.getDatabase();
             sequenceId = response41.getSequenceId();
-            if (!Strings.isNullOrEmpty(database) && !LogicSchemas.getInstance().schemaExists(database)) {
+            if (!Strings.isNullOrEmpty(database) && !ShardingSphereSchemas.getInstance().schemaExists(database)) {
                 context.writeAndFlush(new MySQLErrPacket(++sequenceId, MySQLServerErrorCode.ER_BAD_DB_ERROR, database));
                 return false;
             }

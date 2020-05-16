@@ -19,10 +19,10 @@ package org.apache.shardingsphere.shardingproxy.frontend.mysql.auth;
 
 import com.google.common.primitives.Bytes;
 import lombok.SneakyThrows;
-import org.apache.shardingsphere.core.rule.Authentication;
-import org.apache.shardingsphere.core.rule.ProxyUser;
-import org.apache.shardingsphere.database.protocol.mysql.constant.MySQLServerErrorCode;
-import org.apache.shardingsphere.database.protocol.mysql.packet.handshake.MySQLAuthPluginData;
+import org.apache.shardingsphere.infra.auth.Authentication;
+import org.apache.shardingsphere.infra.auth.ProxyUser;
+import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLServerErrorCode;
+import org.apache.shardingsphere.db.protocol.mysql.packet.handshake.MySQLAuthPluginData;
 import org.apache.shardingsphere.shardingproxy.context.ShardingProxyContext;
 import org.junit.Before;
 import org.junit.Test;

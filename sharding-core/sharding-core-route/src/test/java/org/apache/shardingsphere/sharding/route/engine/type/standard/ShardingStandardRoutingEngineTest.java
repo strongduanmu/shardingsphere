@@ -17,8 +17,8 @@
 
 package org.apache.shardingsphere.sharding.route.engine.type.standard;
 
-import org.apache.shardingsphere.api.hint.HintManager;
-import org.apache.shardingsphere.core.rule.ShardingRule;
+import org.apache.shardingsphere.infra.hint.HintManager;
+import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sharding.route.engine.condition.ShardingConditions;
 import org.apache.shardingsphere.sharding.route.fixture.AbstractRoutingEngineTest;
 import org.apache.shardingsphere.sql.parser.binder.segment.select.groupby.GroupByContext;
@@ -31,10 +31,10 @@ import org.apache.shardingsphere.sql.parser.binder.statement.dml.InsertStatement
 import org.apache.shardingsphere.sql.parser.binder.statement.dml.SelectStatementContext;
 import org.apache.shardingsphere.sql.parser.sql.statement.dml.InsertStatement;
 import org.apache.shardingsphere.sql.parser.sql.statement.dml.SelectStatement;
-import org.apache.shardingsphere.underlying.common.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.underlying.common.exception.ShardingSphereException;
-import org.apache.shardingsphere.underlying.route.context.RouteResult;
-import org.apache.shardingsphere.underlying.route.context.RouteUnit;
+import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
+import org.apache.shardingsphere.infra.exception.ShardingSphereException;
+import org.apache.shardingsphere.infra.route.context.RouteResult;
+import org.apache.shardingsphere.infra.route.context.RouteUnit;
 import org.junit.After;
 import org.junit.Test;
 

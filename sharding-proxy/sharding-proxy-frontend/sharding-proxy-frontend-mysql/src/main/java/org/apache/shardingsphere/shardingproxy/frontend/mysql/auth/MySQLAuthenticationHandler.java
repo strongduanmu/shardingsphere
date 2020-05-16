@@ -21,9 +21,9 @@ import com.google.common.base.Strings;
 import lombok.Getter;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.shardingsphere.core.rule.ProxyUser;
-import org.apache.shardingsphere.database.protocol.mysql.constant.MySQLServerErrorCode;
-import org.apache.shardingsphere.database.protocol.mysql.packet.handshake.MySQLAuthPluginData;
+import org.apache.shardingsphere.infra.auth.ProxyUser;
+import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLServerErrorCode;
+import org.apache.shardingsphere.db.protocol.mysql.packet.handshake.MySQLAuthPluginData;
 import org.apache.shardingsphere.shardingproxy.context.ShardingProxyContext;
 
 import java.util.Arrays;

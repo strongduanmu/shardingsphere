@@ -19,13 +19,13 @@ package org.apache.shardingsphere.shardingproxy.backend.text.sctl.hint.internal.
 
 import com.google.common.base.Joiner;
 import lombok.RequiredArgsConstructor;
-import org.apache.shardingsphere.api.hint.HintManager;
+import org.apache.shardingsphere.infra.hint.HintManager;
 import org.apache.shardingsphere.sharding.merge.dal.common.MultipleLocalDataMergedResult;
 import org.apache.shardingsphere.shardingproxy.backend.communication.jdbc.connection.BackendConnection;
 import org.apache.shardingsphere.shardingproxy.backend.response.query.QueryHeader;
 import org.apache.shardingsphere.shardingproxy.backend.text.sctl.hint.internal.command.HintShowTableStatusCommand;
 import org.apache.shardingsphere.shardingproxy.backend.text.sctl.hint.internal.result.HintShowTableStatusResult;
-import org.apache.shardingsphere.underlying.merge.result.MergedResult;
+import org.apache.shardingsphere.infra.merge.result.MergedResult;
 
 import java.sql.Types;
 import java.util.ArrayList;
@@ -55,7 +55,7 @@ public final class HintShowTableStatusExecutor extends AbstractHintQueryExecutor
     @Override
     protected MergedResult createMergedResult() {
         Map<String, HintShowTableStatusResult> results = new HashMap<>();
-        for (String each : backendConnection.getLogicSchema().getMetaData().getSchema().getConfiguredSchemaMetaData().getAllTableNames()) {
+        for (String each : backendConnection.getSchema().getMetaData().getSchema().getConfiguredSchemaMetaData().getAllTableNames()) {
             if (HintManager.isDatabaseShardingOnly()) {
                 fillShardingValues(results, each, HintManager.getDatabaseShardingValues(), Collections.emptyList());
             } else {

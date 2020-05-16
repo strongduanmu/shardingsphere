@@ -17,11 +17,11 @@
 
 package org.apache.shardingsphere.shardingproxy.backend;
 
-import org.apache.shardingsphere.underlying.common.database.type.DatabaseTypes;
+import org.apache.shardingsphere.infra.database.type.DatabaseTypes;
 import org.apache.shardingsphere.shardingproxy.backend.communication.jdbc.connection.BackendConnection;
 import org.apache.shardingsphere.shardingproxy.backend.communication.jdbc.connection.ConnectionStateHandler;
 import org.apache.shardingsphere.shardingproxy.backend.communication.jdbc.datasource.JDBCBackendDataSource;
-import org.apache.shardingsphere.shardingproxy.backend.schema.LogicSchema;
+import org.apache.shardingsphere.shardingproxy.backend.schema.ShardingSphereSchema;
 import org.apache.shardingsphere.shardingproxy.backend.text.TextProtocolBackendHandler;
 import org.apache.shardingsphere.shardingproxy.backend.text.TextProtocolBackendHandlerFactory;
 import org.apache.shardingsphere.shardingproxy.backend.text.admin.BroadcastBackendHandler;
@@ -33,7 +33,7 @@ import org.apache.shardingsphere.shardingproxy.backend.text.sctl.set.ShardingCTL
 import org.apache.shardingsphere.shardingproxy.backend.text.sctl.show.ShardingCTLShowBackendHandler;
 import org.apache.shardingsphere.shardingproxy.backend.text.transaction.SkipBackendHandler;
 import org.apache.shardingsphere.shardingproxy.backend.text.transaction.TransactionBackendHandler;
-import org.apache.shardingsphere.underlying.common.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.transaction.ShardingTransactionManagerEngine;
 import org.apache.shardingsphere.transaction.core.TransactionType;
 import org.junit.Before;
@@ -59,11 +59,11 @@ public final class TextProtocolBackendHandlerFactoryTest {
     @Before
     public void setUp() {
         when(backendConnection.getTransactionType()).thenReturn(TransactionType.LOCAL);
-        LogicSchema logicSchema = mock(LogicSchema.class);
+        ShardingSphereSchema schema = mock(ShardingSphereSchema.class);
         JDBCBackendDataSource backendDataSource = mock(JDBCBackendDataSource.class);
         when(backendDataSource.getShardingTransactionManagerEngine()).thenReturn(mock(ShardingTransactionManagerEngine.class));
-        when(logicSchema.getBackendDataSource()).thenReturn(backendDataSource);
-        when(backendConnection.getLogicSchema()).thenReturn(logicSchema);
+        when(schema.getBackendDataSource()).thenReturn(backendDataSource);
+        when(backendConnection.getSchema()).thenReturn(schema);
     }
     
     @Test

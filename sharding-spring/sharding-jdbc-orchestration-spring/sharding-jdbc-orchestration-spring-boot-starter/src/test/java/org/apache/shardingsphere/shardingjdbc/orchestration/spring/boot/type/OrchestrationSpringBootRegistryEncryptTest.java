@@ -18,7 +18,7 @@
 package org.apache.shardingsphere.shardingjdbc.orchestration.spring.boot.type;
 
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.apache.shardingsphere.encrypt.api.EncryptRuleConfiguration;
+import org.apache.shardingsphere.encrypt.api.config.EncryptRuleConfiguration;
 import org.apache.shardingsphere.shardingjdbc.jdbc.core.datasource.ShardingSphereDataSource;
 import org.apache.shardingsphere.shardingjdbc.orchestration.internal.datasource.OrchestrationShardingSphereDataSource;
 import org.apache.shardingsphere.shardingjdbc.orchestration.spring.boot.registry.TestCenterRepository;
@@ -52,25 +52,28 @@ public class OrchestrationSpringBootRegistryEncryptTest {
     public static void init() {
         EmbedTestingServer.start();
         TestCenterRepository testCenter = new TestCenterRepository();
-        testCenter.persist("/demo_spring_boot_ds_center/config/schema/logic_db/datasource",
-            "dataSource: !!org.apache.shardingsphere.orchestration.core.configuration.YamlDataSourceConfiguration\n"
-            + "  dataSourceClassName: org.apache.commons.dbcp2.BasicDataSource\n"
-            + "  properties:\n"
-            + "    url: jdbc:h2:mem:ds;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;MODE=MYSQL\n"
-            + "    maxTotal: 100\n"
-            + "    password: ''\n"
-            + "    username: sa\n");
-        testCenter.persist("/demo_spring_boot_ds_center/config/schema/logic_db/rule", "encryptRule:\n  encryptors:\n"
-            + "    order_encrypt:\n"
-            + "      props:\n"
-            + "        aes.key.value: '123456'\n"
-            + "      type: aes\n"
-            + "  tables:\n" 
-            + "    t_order:\n" 
-            + "      columns:\n"
-            + "         user_id:\n"
-            + "           cipherColumn: user_id\n"
-            + "           encryptor: order_encrypt\n");
+        testCenter.persist("/demo_spring_boot_ds_center/config/schema/logic_db/datasource", ""
+                + "dataSource: !!org.apache.shardingsphere.orchestration.core.configuration.YamlDataSourceConfiguration\n" 
+                + "  dataSourceClassName: org.apache.commons.dbcp2.BasicDataSource\n"
+                + "  properties:\n"
+                + "    url: jdbc:h2:mem:ds;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;MODE=MYSQL\n"
+                + "    maxTotal: 100\n"
+                + "    password: ''\n"
+                + "    username: sa\n");
+        testCenter.persist("/demo_spring_boot_ds_center/config/schema/logic_db/rule", ""
+                + "rules:\n"
+                + "- !ENCRYPT\n"
+                + "  encryptors:\n"
+                + "    order_encrypt:\n"
+                + "      props:\n"
+                + "        aes.key.value: '123456'\n"
+                + "      type: aes\n"
+                + "  tables:\n" 
+                + "    t_order:\n" 
+                + "      columns:\n"
+                + "         user_id:\n"
+                + "           cipherColumn: user_id\n"
+                + "           encryptor: order_encrypt\n");
         testCenter.persist("/demo_spring_boot_ds_center/config/props", "sql.show: 'true'\n");
         testCenter.persist("/demo_spring_boot_ds_center/registry/datasources", "");
     }

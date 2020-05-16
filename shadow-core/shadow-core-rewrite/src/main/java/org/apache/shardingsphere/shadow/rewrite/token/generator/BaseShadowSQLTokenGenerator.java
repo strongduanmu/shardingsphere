@@ -20,9 +20,9 @@ package org.apache.shardingsphere.shadow.rewrite.token.generator;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.shardingsphere.shadow.rewrite.aware.ShadowRuleAware;
-import org.apache.shardingsphere.core.rule.ShadowRule;
+import org.apache.shardingsphere.shadow.rule.ShadowRule;
 import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.underlying.rewrite.sql.token.generator.SQLTokenGenerator;
+import org.apache.shardingsphere.infra.rewrite.sql.token.generator.SQLTokenGenerator;
 
 /**
  * Base SQL token generator for shadow.
