@@ -33,26 +33,18 @@
         <module>shardingsphere-sql-parser</module>
         <module>shardingsphere-db-protocol</module>
         <module>shardingsphere-infra</module>
+        <module>shardingsphere-kernal</module>
         
-        <module>sharding-core</module>
-        <module>encrypt-core</module>
-        <module>shadow-core</module>
-        <module>master-slave-core</module>
+        <module>shardingsphere-jdbc</module>
+        <module>shardingsphere-proxy</module>
         
-        <module>sharding-jdbc</module>
-        <module>sharding-proxy</module>
-        <module>sharding-spring</module>
+        <module>shardingsphere-features</module>
+        <module>shardingsphere-scaling</module>
+        <module>shardingsphere-transaction</module>
+        <module>shardingsphere-control-panel</module>
         
-        <module>sharding-scaling</module>
-        <module>sharding-transaction</module>
-        
-        <module>sharding-orchestration</module> 
-        <module>sharding-opentracing</module>
-        <module>sharding-metrics</module>
-        <module>control-panel</module>
-        
-        <module>sharding-distribution</module>
         <module>shardingsphere-integration-test</module>
+        <module>shardingsphere-distribution</module>
     </modules>
     
     <properties>
