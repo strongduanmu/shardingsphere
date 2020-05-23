@@ -37,4 +37,8 @@ public final class InstanceState {
     public InstanceState(final Map<String, DataSourceState> dataSources) {
         this.dataSources = dataSources;
     }
+    
+    public InstanceState(final NodeState state) {
+        this.state = state;
+    }
 }
