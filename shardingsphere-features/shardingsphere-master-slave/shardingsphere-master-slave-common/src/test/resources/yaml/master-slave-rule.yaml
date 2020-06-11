@@ -55,10 +55,15 @@ rules:
       slaveDataSourceNames:
         - master_ds_0_slave_0
         - master_ds_0_slave_1
-      loadBalanceAlgorithmType: ROUND_ROBIN
+      loadBalancerName: roundRobin
     ds_1:
       masterDataSourceName: master_ds_1
       slaveDataSourceNames: 
         - master_ds_1_slave_0
         - master_ds_1_slave_1
-      loadBalanceAlgorithmType: RANDOM
+      loadBalancerName: random
+  loadBalancers:
+    roundRobin:
+      type: ROUND_ROBIN
+    random:
+      type: RANDOM

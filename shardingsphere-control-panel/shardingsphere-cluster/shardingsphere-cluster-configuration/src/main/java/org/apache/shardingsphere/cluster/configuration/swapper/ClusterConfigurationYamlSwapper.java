@@ -18,9 +18,9 @@
 package org.apache.shardingsphere.cluster.configuration.swapper;
 
 import org.apache.shardingsphere.cluster.configuration.config.ClusterConfiguration;
-import org.apache.shardingsphere.cluster.configuration.config.HeartBeatConfiguration;
+import org.apache.shardingsphere.cluster.configuration.config.HeartbeatConfiguration;
 import org.apache.shardingsphere.cluster.configuration.yaml.YamlClusterConfiguration;
-import org.apache.shardingsphere.cluster.configuration.yaml.YamlHeartBeatConfiguration;
+import org.apache.shardingsphere.cluster.configuration.yaml.YamlHeartbeatConfiguration;
 import org.apache.shardingsphere.infra.yaml.swapper.YamlSwapper;
 
 /**
@@ -31,26 +31,30 @@ public final class ClusterConfigurationYamlSwapper implements YamlSwapper<YamlCl
     @Override
     public YamlClusterConfiguration swap(final ClusterConfiguration clusterConfiguration) {
         final YamlClusterConfiguration yamlClusterConfiguration = new YamlClusterConfiguration();
-        final YamlHeartBeatConfiguration yamlHeartBeatConfiguration = new YamlHeartBeatConfiguration();
-        yamlHeartBeatConfiguration.setSql(clusterConfiguration.getHeartBeat().getSql());
-        yamlHeartBeatConfiguration.setInterval(clusterConfiguration.getHeartBeat().getInterval());
-        yamlHeartBeatConfiguration.setRetryEnable(clusterConfiguration.getHeartBeat().getRetryEnable());
-        yamlHeartBeatConfiguration.setRetryMaximum(clusterConfiguration.getHeartBeat().getRetryMaximum());
-        yamlHeartBeatConfiguration.setThreadCount(clusterConfiguration.getHeartBeat().getThreadCount());
-        yamlClusterConfiguration.setHeartBeat(yamlHeartBeatConfiguration);
+        final YamlHeartbeatConfiguration yamlHeartBeatConfiguration = new YamlHeartbeatConfiguration();
+        HeartbeatConfiguration heartbeat = clusterConfiguration.getHeartbeat();
+        yamlHeartBeatConfiguration.setSql(heartbeat.getSql());
+        yamlHeartBeatConfiguration.setInterval(heartbeat.getInterval());
+        yamlHeartBeatConfiguration.setRetryEnable(heartbeat.getRetryEnable());
+        yamlHeartBeatConfiguration.setRetryMaximum(heartbeat.getRetryMaximum());
+        yamlHeartBeatConfiguration.setRetryInterval(heartbeat.getRetryInterval());
+        yamlHeartBeatConfiguration.setThreadCount(heartbeat.getThreadCount());
+        yamlClusterConfiguration.setHeartbeat(yamlHeartBeatConfiguration);
         return yamlClusterConfiguration;
     }
     
     @Override
     public ClusterConfiguration swap(final YamlClusterConfiguration yamlConfiguration) {
         final ClusterConfiguration clusterConfiguration = new ClusterConfiguration();
-        final HeartBeatConfiguration heartBeatConfiguration = new HeartBeatConfiguration();
-        heartBeatConfiguration.setSql(yamlConfiguration.getHeartBeat().getSql());
-        heartBeatConfiguration.setInterval(yamlConfiguration.getHeartBeat().getInterval());
-        heartBeatConfiguration.setRetryEnable(yamlConfiguration.getHeartBeat().getRetryEnable());
-        heartBeatConfiguration.setRetryMaximum(yamlConfiguration.getHeartBeat().getRetryMaximum());
-        heartBeatConfiguration.setThreadCount(yamlConfiguration.getHeartBeat().getThreadCount());
-        clusterConfiguration.setHeartBeat(heartBeatConfiguration);
+        final HeartbeatConfiguration heartBeatConfiguration = new HeartbeatConfiguration();
+        YamlHeartbeatConfiguration heartbeat = yamlConfiguration.getHeartbeat();
+        heartBeatConfiguration.setSql(heartbeat.getSql());
+        heartBeatConfiguration.setInterval(heartbeat.getInterval());
+        heartBeatConfiguration.setRetryEnable(heartbeat.getRetryEnable());
+        heartBeatConfiguration.setRetryMaximum(heartbeat.getRetryMaximum());
+        heartBeatConfiguration.setRetryInterval(heartbeat.getRetryInterval());
+        heartBeatConfiguration.setThreadCount(null == heartbeat.getThreadCount() ? Runtime.getRuntime().availableProcessors() << 1 : heartbeat.getThreadCount());
+        clusterConfiguration.setHeartbeat(heartBeatConfiguration);
         return clusterConfiguration;
     }
 }

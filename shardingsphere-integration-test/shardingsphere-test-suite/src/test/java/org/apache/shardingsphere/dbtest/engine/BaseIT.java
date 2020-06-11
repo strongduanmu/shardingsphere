@@ -23,6 +23,7 @@ import lombok.Getter;
 import org.apache.shardingsphere.dbtest.env.EnvironmentPath;
 import org.apache.shardingsphere.dbtest.env.IntegrateTestEnvironment;
 import org.apache.shardingsphere.dbtest.env.datasource.DataSourceUtil;
+import org.apache.shardingsphere.dbtest.env.datasource.ProxyDataSourceUtil;
 import org.apache.shardingsphere.dbtest.env.schema.SchemaEnvironmentManager;
 import org.apache.shardingsphere.driver.api.yaml.YamlShardingSphereDataSourceFactory;
 import org.apache.shardingsphere.driver.jdbc.core.datasource.ShardingSphereDataSource;
@@ -35,7 +36,10 @@ import javax.sql.DataSource;
 import javax.xml.bind.JAXBException;
 import java.io.File;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,9 +61,12 @@ public abstract class BaseIT {
     
     static {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+        if (IntegrateTestEnvironment.getInstance().isProxyEnvironment()) {
+            waitForProxy();
+        }
     }
     
-    public BaseIT(final String ruleType, final DatabaseType databaseType) throws IOException, JAXBException, SQLException {
+    BaseIT(final String ruleType, final DatabaseType databaseType) throws IOException, JAXBException, SQLException {
         this.ruleType = ruleType;
         this.databaseType = databaseType;
         dataSourceMap = createDataSourceMap();
@@ -76,7 +83,8 @@ public abstract class BaseIT {
     }
     
     private DataSource createDataSource() throws SQLException, IOException {
-        return YamlShardingSphereDataSourceFactory.createDataSource(dataSourceMap, new File(EnvironmentPath.getRuleResourceFile(ruleType)));
+        return IntegrateTestEnvironment.getInstance().isProxyEnvironment() ? ProxyDataSourceUtil.createDataSource(databaseType, "proxy_" + ruleType)
+            : YamlShardingSphereDataSourceFactory.createDataSource(dataSourceMap, new File(EnvironmentPath.getRuleResourceFile(ruleType)));
     }
     
     protected final String getExpectedDataFile(final String path, final String ruleType, final DatabaseType databaseType, final String expectedDataFile) {
@@ -149,6 +157,28 @@ public abstract class BaseIT {
         if (dataSource instanceof ShardingSphereDataSource) {
             ((ShardingSphereDataSource) dataSource).getSchemaContexts().getDefaultSchemaContext().getRuntimeContext().getExecutorKernel().close();
         }
+    }
+    
+    private static void waitForProxy() {
+        int retryCount = 1;
+        while (!isProxyAvailable() && retryCount < 30) {
+            try {
+                Thread.sleep(1000);
+            } catch (final InterruptedException ignore) {
+            }
+            retryCount++;
+        }
+    }
+    
+    private static boolean isProxyAvailable() {
+        try (Connection connection = DriverManager.getConnection("jdbc:mysql://127.0.0.1:33070/proxy_db/?serverTimezone=UTC&useSSL=false&useLocalSessionState=true");
+             Statement statement = connection.createStatement()) {
+            statement.execute("SELECT 1");
+            
+        } catch (final SQLException ignore) {
+            return false;
+        }
+        return true;
     }
 }
 

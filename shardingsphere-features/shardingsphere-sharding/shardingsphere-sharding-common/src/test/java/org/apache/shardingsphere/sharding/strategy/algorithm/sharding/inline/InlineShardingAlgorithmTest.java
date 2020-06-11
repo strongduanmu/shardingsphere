@@ -38,19 +38,21 @@ public final class InlineShardingAlgorithmTest {
     private StandardShardingStrategy shardingStrategy;
 
     private StandardShardingStrategy shardingStrategyWithSimplified;
-
+    
     @Before
     public void setUp() {
         InlineShardingAlgorithm shardingAlgorithm = new InlineShardingAlgorithm();
         shardingAlgorithm.getProperties().setProperty("algorithm.expression", "t_order_$->{order_id % 4}");
+        shardingAlgorithm.init();
         StandardShardingStrategyConfiguration shardingStrategyConfig = new StandardShardingStrategyConfiguration("order_id", shardingAlgorithm);
         shardingStrategy = new StandardShardingStrategy(shardingStrategyConfig);
         InlineShardingAlgorithm shardingAlgorithmWithSimplified = new InlineShardingAlgorithm();
         shardingAlgorithmWithSimplified.getProperties().setProperty("algorithm.expression", "t_order_${order_id % 4}");
+        shardingAlgorithmWithSimplified.init();
         StandardShardingStrategyConfiguration shardingStrategyConfigWithSimplified = new StandardShardingStrategyConfiguration("order_id", shardingAlgorithmWithSimplified);
         shardingStrategyWithSimplified = new StandardShardingStrategy(shardingStrategyConfigWithSimplified);
     }
-
+    
     @Test
     public void assertDoSharding() {
         List<String> availableTargetNames = Lists.newArrayList("t_order_0", "t_order_1", "t_order_2", "t_order_3");
@@ -60,7 +62,7 @@ public final class InlineShardingAlgorithmTest {
         Collection<String> actualWithSimplified = shardingStrategyWithSimplified.doSharding(availableTargetNames, shardingValues, new ConfigurationProperties(new Properties()));
         assertThat(actualWithSimplified.size(), is(4));
     }
-
+    
     @Test
     public void assertDoShardingWithNonExistNodes() {
         List<String> availableTargetNames = Lists.newArrayList("t_order_0", "t_order_1");
@@ -70,7 +72,7 @@ public final class InlineShardingAlgorithmTest {
         Collection<String> actualWithSimplified = shardingStrategyWithSimplified.doSharding(availableTargetNames, shardingValues, new ConfigurationProperties(new Properties()));
         assertThat(actualWithSimplified.size(), is(2));
     }
-
+    
     @Test
     public void assertGetShardingColumns() {
         assertThat(shardingStrategy.getShardingColumns().size(), is(1));

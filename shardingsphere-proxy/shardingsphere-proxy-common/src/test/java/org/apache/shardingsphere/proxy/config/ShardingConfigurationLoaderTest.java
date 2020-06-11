@@ -18,9 +18,9 @@
 package org.apache.shardingsphere.proxy.config;
 
 import org.apache.shardingsphere.encrypt.yaml.config.YamlEncryptRuleConfiguration;
-import org.apache.shardingsphere.encrypt.yaml.config.YamlEncryptorRuleConfiguration;
+import org.apache.shardingsphere.encrypt.yaml.config.algorithm.YamlEncryptAlgorithmConfiguration;
 import org.apache.shardingsphere.orchestration.center.yaml.config.YamlCenterRepositoryConfiguration;
-import org.apache.shardingsphere.masterslave.yaml.config.YamlMasterSlaveDataSourceConfiguration;
+import org.apache.shardingsphere.masterslave.yaml.config.rule.YamlMasterSlaveDataSourceRuleConfiguration;
 import org.apache.shardingsphere.masterslave.yaml.config.YamlMasterSlaveRuleConfiguration;
 import org.apache.shardingsphere.sharding.yaml.config.YamlShardingRuleConfiguration;
 import org.apache.shardingsphere.proxy.config.yaml.YamlDataSourceParameter;
@@ -96,12 +96,12 @@ public final class ShardingConfigurationLoaderTest {
         Optional<YamlMasterSlaveRuleConfiguration> masterSlaveRuleConfiguration = actual.getRules().stream().filter(
             each -> each instanceof YamlMasterSlaveRuleConfiguration).findFirst().map(configuration -> (YamlMasterSlaveRuleConfiguration) configuration);
         assertTrue(masterSlaveRuleConfiguration.isPresent());
-        for (YamlMasterSlaveDataSourceConfiguration each : masterSlaveRuleConfiguration.get().getDataSources().values()) {
+        for (YamlMasterSlaveDataSourceRuleConfiguration each : masterSlaveRuleConfiguration.get().getDataSources().values()) {
             assertMasterSlaveRuleConfiguration(each);
         }
     }
     
-    private void assertMasterSlaveRuleConfiguration(final YamlMasterSlaveDataSourceConfiguration actual) {
+    private void assertMasterSlaveRuleConfiguration(final YamlMasterSlaveDataSourceRuleConfiguration actual) {
         assertThat(actual.getName(), is("ms_ds"));
         assertThat(actual.getMasterDataSourceName(), is("master_ds"));
         assertThat(actual.getSlaveDataSourceNames().size(), is(2));
@@ -125,13 +125,13 @@ public final class ShardingConfigurationLoaderTest {
     
     private void assertEncryptRuleConfiguration(final YamlEncryptRuleConfiguration actual) {
         assertThat(actual.getEncryptors().size(), is(2));
-        assertTrue(actual.getEncryptors().containsKey("encryptor_aes"));
-        assertTrue(actual.getEncryptors().containsKey("encryptor_md5"));
-        YamlEncryptorRuleConfiguration aesEncryptorRule = actual.getEncryptors().get("encryptor_aes");
-        assertThat(aesEncryptorRule.getType(), is("aes"));
-        assertThat(aesEncryptorRule.getProps().getProperty("aes.key.value"), is("123456abc"));
-        YamlEncryptorRuleConfiguration md5EncryptorRule = actual.getEncryptors().get("encryptor_md5");
-        assertThat(md5EncryptorRule.getType(), is("md5"));
+        assertTrue(actual.getEncryptors().containsKey("aes_encryptor"));
+        assertTrue(actual.getEncryptors().containsKey("md5_encryptor"));
+        YamlEncryptAlgorithmConfiguration aesEncryptAlgorithmConfiguration = actual.getEncryptors().get("aes_encryptor");
+        assertThat(aesEncryptAlgorithmConfiguration.getType(), is("aes"));
+        assertThat(aesEncryptAlgorithmConfiguration.getProps().getProperty("aes.key.value"), is("123456abc"));
+        YamlEncryptAlgorithmConfiguration md5EncryptAlgorithmConfiguration = actual.getEncryptors().get("md5_encryptor");
+        assertThat(md5EncryptAlgorithmConfiguration.getType(), is("md5"));
     }
     
     private void assertDataSourceParameter(final YamlDataSourceParameter actual, final String expectedURL) {

@@ -20,24 +20,22 @@ package org.apache.shardingsphere.sharding.rule;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import lombok.Getter;
-import org.apache.shardingsphere.sharding.api.config.KeyGeneratorConfiguration;
+import org.apache.shardingsphere.sharding.api.config.rule.KeyGeneratorConfiguration;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
-import org.apache.shardingsphere.sharding.api.config.TableRuleConfiguration;
+import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.ShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.strategy.algorithm.sharding.inline.InlineExpressionParser;
 import org.apache.shardingsphere.sharding.strategy.route.ShardingStrategy;
 import org.apache.shardingsphere.sharding.strategy.route.ShardingStrategyFactory;
 import org.apache.shardingsphere.sharding.strategy.route.none.NoneShardingStrategy;
 import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
-import org.apache.shardingsphere.sharding.spi.keygen.KeyGenerateAlgorithm;
+import org.apache.shardingsphere.sharding.spi.KeyGenerateAlgorithm;
 import org.apache.shardingsphere.infra.spi.type.TypedSPIRegistry;
 import org.apache.shardingsphere.infra.config.exception.ShardingSphereConfigurationException;
 import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.apache.shardingsphere.infra.rule.DataNodeRoutedRule;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -73,21 +71,22 @@ public final class ShardingRule implements DataNodeRoutedRule {
     public ShardingRule(final ShardingRuleConfiguration shardingRuleConfiguration, final Collection<String> dataSourceNames) {
         Preconditions.checkArgument(null != shardingRuleConfiguration, "ShardingRuleConfig cannot be null.");
         Preconditions.checkArgument(null != dataSourceNames && !dataSourceNames.isEmpty(), "Data sources cannot be empty.");
-        this.dataSourceNames = getDataSourceNames(shardingRuleConfiguration.getTableRuleConfigs(), dataSourceNames);
-        tableRules = createTableRules(shardingRuleConfiguration);
+        this.dataSourceNames = getDataSourceNames(shardingRuleConfiguration.getTables(), dataSourceNames);
+        tableRules = new LinkedList<>(createTableRules(shardingRuleConfiguration));
+        tableRules.addAll(createAutoTableRules(shardingRuleConfiguration));
         broadcastTables = shardingRuleConfiguration.getBroadcastTables();
         bindingTableRules = createBindingTableRules(shardingRuleConfiguration.getBindingTableGroups());
-        defaultDatabaseShardingStrategy = createDefaultShardingStrategy(shardingRuleConfiguration.getDefaultDatabaseShardingStrategyConfig());
-        defaultTableShardingStrategy = createDefaultShardingStrategy(shardingRuleConfiguration.getDefaultTableShardingStrategyConfig());
+        defaultDatabaseShardingStrategy = createDefaultShardingStrategy(shardingRuleConfiguration.getDefaultDatabaseShardingStrategy());
+        defaultTableShardingStrategy = createDefaultShardingStrategy(shardingRuleConfiguration.getDefaultTableShardingStrategy());
         defaultKeyGenerateAlgorithm = createDefaultKeyGenerateAlgorithm(shardingRuleConfiguration.getDefaultKeyGeneratorConfig());
     }
     
-    private Collection<String> getDataSourceNames(final Collection<TableRuleConfiguration> tableRuleConfigs, final Collection<String> dataSourceNames) {
+    private Collection<String> getDataSourceNames(final Collection<ShardingTableRuleConfiguration> tableRuleConfigs, final Collection<String> dataSourceNames) {
         Collection<String> result = new LinkedHashSet<>();
         if (tableRuleConfigs.isEmpty()) {
             return dataSourceNames;
         }
-        for (TableRuleConfiguration each : tableRuleConfigs) {
+        for (ShardingTableRuleConfiguration each : tableRuleConfigs) {
             if (null == each.getActualDataNodes()) {
                 return dataSourceNames;
             }
@@ -96,16 +95,21 @@ public final class ShardingRule implements DataNodeRoutedRule {
         return result;
     }
     
-    private Collection<String> getDataSourceNames(final TableRuleConfiguration tableRuleConfiguration) {
+    private Collection<String> getDataSourceNames(final ShardingTableRuleConfiguration shardingTableRuleConfiguration) {
         Collection<String> result = new LinkedHashSet<>();
-        for (String each : new InlineExpressionParser(tableRuleConfiguration.getActualDataNodes()).splitAndEvaluate()) {
+        for (String each : new InlineExpressionParser(shardingTableRuleConfiguration.getActualDataNodes()).splitAndEvaluate()) {
             result.add(new DataNode(each).getDataSourceName());
         }
         return result;
     }
     
     private Collection<TableRule> createTableRules(final ShardingRuleConfiguration shardingRuleConfig) {
-        return shardingRuleConfig.getTableRuleConfigs().stream().map(each ->
+        return shardingRuleConfig.getTables().stream().map(each ->
+                new TableRule(each, dataSourceNames, getDefaultGenerateKeyColumn(shardingRuleConfig))).collect(Collectors.toList());
+    }
+
+    private Collection<TableRule> createAutoTableRules(final ShardingRuleConfiguration shardingRuleConfig) {
+        return shardingRuleConfig.getAutoTables().stream().map(each ->
                 new TableRule(each, dataSourceNames, getDefaultGenerateKeyColumn(shardingRuleConfig))).collect(Collectors.toList());
     }
     
@@ -241,12 +245,7 @@ public final class ShardingRule implements DataNodeRoutedRule {
         if (logicTableNames.isEmpty()) {
             return false;
         }
-        for (String each : logicTableNames) {
-            if (!isBroadcastTable(each)) {
-                return false;
-            }
-        }
-        return true;
+        return logicTableNames.stream().allMatch(this::isBroadcastTable);
     }
     
     /**
@@ -362,20 +361,12 @@ public final class ShardingRule implements DataNodeRoutedRule {
     
     @Override
     public Map<String, Collection<DataNode>> getAllDataNodes() {
-        Map<String, Collection<DataNode>> result = new HashMap<>(tableRules.size(), 1);
-        for (TableRule each : tableRules) {
-            result.put(each.getLogicTable(), each.getActualDataNodes());
-        }
-        return result;
+        return tableRules.stream().collect(Collectors.toMap(TableRule::getLogicTable, TableRule::getActualDataNodes));
     }
     
     @Override
     public Collection<String> getAllActualTables() {
-        Collection<String> result = new HashSet<>();
-        for (TableRule each : tableRules) {
-            result.addAll(each.getActualDataNodes().stream().map(DataNode::getTableName).collect(Collectors.toSet()));
-        }
-        return result;
+        return tableRules.stream().flatMap(each -> each.getActualDataNodes().stream().map(DataNode::getTableName)).collect(Collectors.toSet());
     }
     
     @Override

@@ -23,7 +23,7 @@ import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties
 import org.apache.shardingsphere.infra.config.properties.ConfigurationPropertyKey;
 import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
-import org.apache.shardingsphere.kernal.context.SchemaContexts;
+import org.apache.shardingsphere.kernel.context.SchemaContexts;
 import org.apache.shardingsphere.sharding.api.config.strategy.ComplexShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.HintShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.NoneShardingStrategyConfiguration;
@@ -31,7 +31,7 @@ import org.apache.shardingsphere.sharding.api.config.strategy.StandardShardingSt
 import org.apache.shardingsphere.sharding.rule.BindingTableRule;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sharding.rule.TableRule;
-import org.apache.shardingsphere.sharding.spi.keygen.KeyGenerateAlgorithm;
+import org.apache.shardingsphere.sharding.spi.KeyGenerateAlgorithm;
 import org.apache.shardingsphere.spring.algorithm.DefaultComplexKeysShardingAlgorithm;
 import org.apache.shardingsphere.spring.algorithm.DefaultHintShardingAlgorithm;
 import org.apache.shardingsphere.spring.algorithm.StandardModuloDatabaseShardingAlgorithm;
@@ -132,6 +132,28 @@ public class ShardingNamespaceTest extends AbstractJUnit4SpringContextTests {
         assertTrue(Arrays.equals(shardingRule.getDefaultTableShardingStrategy().getShardingColumns().toArray(new String[]{}), 
                 new String[]{applicationContext.getBean("inlineStrategy", StandardShardingStrategyConfiguration.class).getShardingColumn()}));
         assertThat(shardingRule.getDefaultKeyGenerateAlgorithm(), instanceOf(IncrementKeyGenerateAlgorithm.class));
+    }
+
+    @Test
+    public void assertAutoShardingDataSource() {
+        Map<String, DataSource> dataSourceMap = getDataSourceMap("autoShardingDataSource");
+        assertNotNull(dataSourceMap.get("dbtbl_0"));
+        assertNotNull(dataSourceMap.get("dbtbl_1"));
+        ShardingRule shardingRule = getShardingRule("autoShardingDataSource");
+        assertThat(shardingRule.getTableRules().size(), is(1));
+        TableRule tableRule = shardingRule.getTableRules().iterator().next();
+        assertThat(tableRule.getLogicTable(), is("t_order"));
+        assertThat(tableRule.getActualDataNodes().size(), is(4));
+        assertTrue(tableRule.getActualDataNodes().contains(new DataNode("dbtbl_0", "t_order_0")));
+        assertTrue(tableRule.getActualDataNodes().contains(new DataNode("dbtbl_1", "t_order_1")));
+        assertTrue(tableRule.getActualDataNodes().contains(new DataNode("dbtbl_0", "t_order_2")));
+        assertTrue(tableRule.getActualDataNodes().contains(new DataNode("dbtbl_1", "t_order_3")));
+        assertTrue(null == tableRule.getDatabaseShardingStrategy());
+        assertTrue(Arrays.equals(tableRule.getTableShardingStrategy().getShardingColumns().toArray(new String[]{}),
+                new String[]{applicationContext.getBean("inlineStrategy", StandardShardingStrategyConfiguration.class).getShardingColumn()}));
+        assertTrue(tableRule.getGenerateKeyColumn().isPresent());
+        assertThat(tableRule.getGenerateKeyColumn().get(), is("order_id"));
+        assertThat(tableRule.getKeyGenerateAlgorithm(), instanceOf(IncrementKeyGenerateAlgorithm.class));
     }
     
     @Test

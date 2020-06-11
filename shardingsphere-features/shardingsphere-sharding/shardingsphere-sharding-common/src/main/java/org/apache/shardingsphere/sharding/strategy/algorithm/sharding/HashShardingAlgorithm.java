@@ -20,6 +20,7 @@ package org.apache.shardingsphere.sharding.strategy.algorithm.sharding;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.shardingsphere.sharding.api.sharding.ShardingAutoTableAlgorithm;
 import org.apache.shardingsphere.sharding.api.sharding.standard.PreciseShardingValue;
 import org.apache.shardingsphere.sharding.api.sharding.standard.RangeShardingValue;
 import org.apache.shardingsphere.sharding.api.sharding.standard.StandardShardingAlgorithm;
@@ -34,7 +35,7 @@ import java.util.Properties;
  * v is `MODULO_VALUE`.
  * All available targets will be returned if sharding value is `RangeShardingValue`</p>
  */
-public final class HashShardingAlgorithm implements StandardShardingAlgorithm<Comparable<?>> {
+public final class HashShardingAlgorithm implements StandardShardingAlgorithm<Comparable<?>>, ShardingAutoTableAlgorithm {
     
     private static final String MODULO_VALUE = "mod.value";
     
@@ -43,8 +44,12 @@ public final class HashShardingAlgorithm implements StandardShardingAlgorithm<Co
     private Properties properties = new Properties();
     
     @Override
-    public String doSharding(final Collection<String> availableTargetNames, final PreciseShardingValue<Comparable<?>> shardingValue) {
+    public void init() {
         Preconditions.checkNotNull(properties.get(MODULO_VALUE), "Modulo value cannot be null.");
+    }
+    
+    @Override
+    public String doSharding(final Collection<String> availableTargetNames, final PreciseShardingValue<Comparable<?>> shardingValue) {
         for (String each : availableTargetNames) {
             if (each.endsWith(hashShardingValue(shardingValue.getValue()) % getModuloValue() + "")) {
                 return each;
@@ -69,5 +74,11 @@ public final class HashShardingAlgorithm implements StandardShardingAlgorithm<Co
     @Override
     public String getType() {
         return "HASH_MOD";
+    }
+    
+    @Override
+    public int getAutoTablesAmount() {
+        Preconditions.checkNotNull(properties.get(MODULO_VALUE), "Modulo value cannot be null.");
+        return Integer.parseInt(properties.get(MODULO_VALUE).toString());
     }
 }

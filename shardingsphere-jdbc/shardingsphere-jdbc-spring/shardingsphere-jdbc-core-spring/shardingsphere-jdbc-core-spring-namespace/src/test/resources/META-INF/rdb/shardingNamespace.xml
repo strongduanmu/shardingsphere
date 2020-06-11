@@ -45,12 +45,18 @@
             <prop key="algorithm.expression">t_order_${order_id % 4}</prop>
         </props>
     </sharding:sharding-algorithm>
+    <sharding:sharding-algorithm id="modStrategyShardingAlgorithm" type="MOD">
+        <props>
+            <prop key="mod.value">4</prop>
+        </props>
+    </sharding:sharding-algorithm>
     
     <sharding:key-generate-algorithm id="incrementAlgorithm" type="INCREMENT" />
     
     <sharding:standard-strategy id="standardStrategy" sharding-column="user_id" algorithm-ref="standardModuloDatabaseShardingAlgorithm" />
     <sharding:standard-strategy id="rangeStandardStrategy" sharding-column="order_id" algorithm-ref="standardModuloTableShardingAlgorithm" />
     <sharding:standard-strategy id="inlineStrategy" sharding-column="order_id" algorithm-ref="inlineStrategyShardingAlgorithm" />
+    <sharding:standard-strategy id="modStrategy" sharding-column="order_id" algorithm-ref="modStrategyShardingAlgorithm" />
     <sharding:complex-strategy id="complexStrategy" sharding-columns="order_id,user_id" algorithm-ref="defaultComplexKeysShardingAlgorithm" />
     <sharding:hint-strategy id="hintStrategy" algorithm-ref="defaultHintShardingAlgorithm" />
     <sharding:none-strategy id="noneStrategy" />
@@ -64,25 +70,31 @@
             <sharding:table-rule logic-table="t_order" />
         </sharding:table-rules>
     </sharding:rule>
+
+    <sharding:rule id="autoShardingDataSourceWithAutoTableRule">
+        <sharding:auto-table-rules>
+            <sharding:auto-table-rule logic-table="t_order" actual-data-sources="dbtbl_0, dbtbl_1" sharding-strategy-ref="modStrategy" key-generator-ref="orderKeyGenerator" />
+        </sharding:auto-table-rules>
+    </sharding:rule>
+    
+    <encrypt:encrypt-algorithm id="aes_encryptor" type="AES">
+        <props>
+            <prop key="appToken">business</prop>
+        </props>
+    </encrypt:encrypt-algorithm>
+    <encrypt:encrypt-algorithm id="md5_encryptor" type="MD5" />
+    
     <encrypt:rule id="simpleShardingDataSourceEncryptRule">
-        <encrypt:tables>
-            <encrypt:table name="t_order">
-                <encrypt:column logic-column="user_id" plain-column="user_decrypt" cipher-column="user_encrypt" assisted-query-column="user_assisted" encryptor-ref="encryptor_aes" />
-                <encrypt:column logic-column="order_id" plain-column="order_decrypt" cipher-column="order_encrypt" assisted-query-column="order_assisted" encryptor-ref="encryptor_md5"/>
-            </encrypt:table>
-        </encrypt:tables>
-        <encrypt:encryptors>
-            <encrypt:encryptor id="encryptor_aes" type="AES">
-                <props>
-                    <prop key="appToken">business</prop>
-                </props>
-            </encrypt:encryptor>
-            <encrypt:encryptor id="encryptor_md5" type="MD5" />
-        </encrypt:encryptors>
+        <encrypt:table name="t_order">
+            <encrypt:column logic-column="user_id" cipher-column="user_encrypt" assisted-query-column="user_assisted" plain-column="user_decrypt" encrypt-algorithm-ref="aes_encryptor" />
+            <encrypt:column logic-column="order_id" cipher-column="order_encrypt" assisted-query-column="order_assisted" plain-column="order_decrypt" encrypt-algorithm-ref="md5_encryptor" />
+        </encrypt:table>
     </encrypt:rule>
     
     <shardingsphere:data-source id="simpleShardingDataSource" data-source-names="dbtbl_0" rule-refs="simpleShardingDataSourceShardingRule, simpleShardingDataSourceEncryptRule" />
-    
+
+    <shardingsphere:data-source id="autoShardingDataSource" data-source-names="dbtbl_0, dbtbl_1" rule-refs="autoShardingDataSourceWithAutoTableRule" />
+
     <sharding:rule id="masterSlaveShardingDataSourceByDefaultStrategyShardingRule" default-key-generator-ref="defaultKeyGenerator">
         <sharding:table-rules>
             <sharding:table-rule logic-table="t_order" actual-data-nodes="dbtbl_${0..1}.t_order_${0..3}" database-strategy-ref="standardStrategy" table-strategy-ref="inlineStrategy" key-generator-ref="orderKeyGenerator" />
@@ -101,8 +113,8 @@
         </sharding:table-rules>
     </sharding:rule>
     <master-slave:rule id="masterSlaveShardingDataSourceByUserStrategyMasterSlaveRule">
-        <master-slave:data-source-rule id="dbtbl_0" master-data-source-name="dbtbl_0_master" slave-data-source-names="dbtbl_0_slave_0,dbtbl_0_slave_1" strategy-ref="randomLoadBalanceAlgorithm"/>
-        <master-slave:data-source-rule id="dbtbl_1" master-data-source-name="dbtbl_1_master" slave-data-source-names="dbtbl_1_slave_0,dbtbl_1_slave_1" strategy-ref="randomLoadBalanceAlgorithm"/>
+        <master-slave:data-source-rule id="dbtbl_0" master-data-source-name="dbtbl_0_master" slave-data-source-names="dbtbl_0_slave_0,dbtbl_0_slave_1" load-balance-algorithm-ref="randomLoadBalanceAlgorithm" />
+        <master-slave:data-source-rule id="dbtbl_1" master-data-source-name="dbtbl_1_master" slave-data-source-names="dbtbl_1_slave_0,dbtbl_1_slave_1" load-balance-algorithm-ref="randomLoadBalanceAlgorithm" />
     </master-slave:rule>
     
     <shardingsphere:data-source id="masterSlaveShardingDataSourceByUserStrategy" data-source-names="dbtbl_0_master,dbtbl_0_slave_0,dbtbl_0_slave_1,dbtbl_1_master,dbtbl_1_slave_0,dbtbl_1_slave_1" rule-refs="masterSlaveShardingDataSourceByUserStrategyShardingRule, masterSlaveShardingDataSourceByUserStrategyMasterSlaveRule" />

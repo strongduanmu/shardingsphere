@@ -19,6 +19,9 @@ package org.apache.shardingsphere.sharding.api.config;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.shardingsphere.sharding.api.config.rule.KeyGeneratorConfiguration;
+import org.apache.shardingsphere.sharding.api.config.rule.ShardingAutoTableRuleConfiguration;
+import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.ShardingStrategyConfiguration;
 import org.apache.shardingsphere.infra.config.RuleConfiguration;
 
@@ -32,15 +35,17 @@ import java.util.LinkedList;
 @Setter
 public final class ShardingRuleConfiguration implements RuleConfiguration {
     
-    private Collection<TableRuleConfiguration> tableRuleConfigs = new LinkedList<>();
-    
+    private Collection<ShardingTableRuleConfiguration> tables = new LinkedList<>();
+
+    private Collection<ShardingAutoTableRuleConfiguration> autoTables = new LinkedList<>();
+
     private Collection<String> bindingTableGroups = new LinkedList<>();
     
     private Collection<String> broadcastTables = new LinkedList<>();
     
-    private ShardingStrategyConfiguration defaultDatabaseShardingStrategyConfig;
+    private ShardingStrategyConfiguration defaultDatabaseShardingStrategy;
     
-    private ShardingStrategyConfiguration defaultTableShardingStrategyConfig;
+    private ShardingStrategyConfiguration defaultTableShardingStrategy;
     
     private KeyGeneratorConfiguration defaultKeyGeneratorConfig;
 }

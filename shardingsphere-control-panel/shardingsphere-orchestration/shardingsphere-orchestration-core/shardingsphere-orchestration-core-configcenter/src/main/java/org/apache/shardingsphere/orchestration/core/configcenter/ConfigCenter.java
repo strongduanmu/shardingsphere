@@ -39,7 +39,6 @@ import org.apache.shardingsphere.infra.yaml.swapper.YamlRuleConfigurationSwapper
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -113,7 +112,7 @@ public final class ConfigCenter {
         for (RuleConfiguration each : ruleConfigurations) {
             if (each instanceof ShardingRuleConfiguration) {
                 ShardingRuleConfiguration config = (ShardingRuleConfiguration) each;
-                Preconditions.checkState(!config.getTableRuleConfigs().isEmpty() || null != config.getDefaultTableShardingStrategyConfig(),
+                Preconditions.checkState(!config.getTables().isEmpty() || null != config.getDefaultTableShardingStrategy(),
                         "No available sharding rule configuration in `%s` for orchestration.", shardingSchemaName);
                 configurations.add(each);
             } else if (each instanceof MasterSlaveRuleConfiguration) {
@@ -182,34 +181,6 @@ public final class ConfigCenter {
     }
     
     /**
-     * Judge is sharding rule or master-slave rule.
-     *
-     * @param shardingSchemaName sharding schema name
-     * @return is sharding rule or not
-     */
-    public boolean isShardingRule(final String shardingSchemaName) {
-        return repository.get(node.getRulePath(shardingSchemaName)).contains("- !SHARDING");
-    }
-    
-    /**
-     * Judge is encrypt rule or not.
-     * @param shardingSchemaName sharding schema name
-     * @return is encrypt rule or not
-     */
-    public boolean isEncryptRule(final String shardingSchemaName) {
-        return repository.get(node.getRulePath(shardingSchemaName)).contains("- !ENCRYPT");
-    }
-    
-    /**
-     * Judge is shadow rule or not.
-     * @param shardingSchemaName sharding schema name
-     * @return is shadow rule or not
-     */
-    public boolean isShadowRule(final String shardingSchemaName) {
-        return repository.get(node.getRulePath(shardingSchemaName)).contains("- !SHADOW");
-    }
-    
-    /**
      * Load data source configurations.
      *
      * @param shardingSchemaName sharding schema name
@@ -231,41 +202,6 @@ public final class ConfigCenter {
     public Collection<RuleConfiguration> loadRuleConfigurations(final String shardingSchemaName) {
         return new YamlRuleConfigurationSwapperEngine().swapToRuleConfigurations(
                 YamlEngine.unmarshal(repository.get(node.getRulePath(shardingSchemaName)), YamlRootRuleConfigurations.class).getRules());
-    }
-    
-    /**
-     * Load master-slave rule configuration.
-     *
-     * @param shardingSchemaName sharding schema name
-     * @return master-slave rule configuration
-     */
-    public MasterSlaveRuleConfiguration loadMasterSlaveRuleConfiguration(final String shardingSchemaName) {
-        return (MasterSlaveRuleConfiguration) new YamlRuleConfigurationSwapperEngine().swapToRuleConfigurations(
-                YamlEngine.unmarshal(repository.get(node.getRulePath(shardingSchemaName)), YamlRootRuleConfigurations.class).getRules()).iterator().next();
-    }
-    
-    /**
-     * Load encrypt rule configuration.
-     *
-     * @param shardingSchemaName sharding schema name
-     * @return encrypt rule configuration
-     */
-    public EncryptRuleConfiguration loadEncryptRuleConfiguration(final String shardingSchemaName) {
-        Collection<RuleConfiguration> ruleConfigurations = new YamlRuleConfigurationSwapperEngine().swapToRuleConfigurations(
-                YamlEngine.unmarshal(repository.get(node.getRulePath(shardingSchemaName)), YamlRootRuleConfigurations.class).getRules());
-        return ruleConfigurations.isEmpty() ? new EncryptRuleConfiguration(Collections.emptyMap(), Collections.emptyMap()) : (EncryptRuleConfiguration) ruleConfigurations.iterator().next();
-    }
-    
-    /**
-     * Load shadow rule configuration.
-     *
-     * @param shardingSchemaName sharding schema name
-     * @return shadow rule configuration
-     */
-    // TODO fix shadow
-    public ShadowRuleConfiguration loadShadowRuleConfiguration(final String shardingSchemaName) {
-        return (ShadowRuleConfiguration) new YamlRuleConfigurationSwapperEngine().swapToRuleConfigurations(
-                YamlEngine.unmarshal(repository.get(node.getRulePath(shardingSchemaName)), YamlRootRuleConfigurations.class).getRules()).iterator().next();
     }
     
     /**

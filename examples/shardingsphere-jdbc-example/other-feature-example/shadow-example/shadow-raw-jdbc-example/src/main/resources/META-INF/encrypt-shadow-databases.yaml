@@ -34,24 +34,24 @@ rules:
     ds: ds_0
 
 - !ENCRYPT
-  encryptors:
-    name_encryptror:
-      type: aes
-      props:
-        aes.key.value: 123456
-    pwd_encryptror:
-      type: assistedTest
   tables:
     t_user:
       columns:
         user_name:
           plainColumn: user_name_plain
           cipherColumn: user_name
-          encryptor: name_encryptror
+          encryptorName: name_encryptor
         pwd:
           cipherColumn: pwd
-          encryptor: pwd_encryptror
           assistedQueryColumn: assisted_query_pwd
+          encryptorName: pwd_encryptor
+  encryptors:
+    name_encryptor:
+      type: aes
+      props:
+        aes.key.value: 123456
+    pwd_encryptor:
+      type: assistedTest
 
 props:
   query.with.cipher.column: true

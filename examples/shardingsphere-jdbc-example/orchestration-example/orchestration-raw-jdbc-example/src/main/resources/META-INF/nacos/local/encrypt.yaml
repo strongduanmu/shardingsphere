@@ -24,17 +24,17 @@ dataSources:
 
 rules:
 - !ENCRYPT
-  encryptors:
-    status_encryptor:
-      type: aes
-      props:
-        aes.key.value: 123456
   tables:
     t_order:
       columns:
         status:
           cipherColumn: status
-          encryptor: status_encryptor
+          encryptorName: status_encryptor
+  encryptors:
+    status_encryptor:
+      type: aes
+      props:
+        aes.key.value: 123456
 
 props:
   query.with.cipher.column: true

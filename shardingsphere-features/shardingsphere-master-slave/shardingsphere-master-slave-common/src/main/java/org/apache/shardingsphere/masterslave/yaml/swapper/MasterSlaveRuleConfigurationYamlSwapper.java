@@ -17,17 +17,19 @@
 
 package org.apache.shardingsphere.masterslave.yaml.swapper;
 
-import com.google.common.base.Strings;
-import org.apache.shardingsphere.masterslave.api.config.LoadBalanceStrategyConfiguration;
-import org.apache.shardingsphere.masterslave.api.config.MasterSlaveDataSourceConfiguration;
-import org.apache.shardingsphere.masterslave.api.config.MasterSlaveRuleConfiguration;
-import org.apache.shardingsphere.masterslave.yaml.config.YamlMasterSlaveDataSourceConfiguration;
-import org.apache.shardingsphere.masterslave.yaml.config.YamlMasterSlaveRuleConfiguration;
 import org.apache.shardingsphere.infra.yaml.swapper.YamlRuleConfigurationSwapper;
+import org.apache.shardingsphere.masterslave.api.config.MasterSlaveRuleConfiguration;
+import org.apache.shardingsphere.masterslave.api.config.algorithm.LoadBalanceAlgorithmConfiguration;
+import org.apache.shardingsphere.masterslave.api.config.rule.MasterSlaveDataSourceRuleConfiguration;
+import org.apache.shardingsphere.masterslave.constant.MasterSlaveOrder;
+import org.apache.shardingsphere.masterslave.yaml.config.rule.YamlMasterSlaveDataSourceRuleConfiguration;
+import org.apache.shardingsphere.masterslave.yaml.config.algorithm.YamlMasterSlaveLoadBalanceAlgorithmConfiguration;
+import org.apache.shardingsphere.masterslave.yaml.config.YamlMasterSlaveRuleConfiguration;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
@@ -39,36 +41,39 @@ public final class MasterSlaveRuleConfigurationYamlSwapper implements YamlRuleCo
     @Override
     public YamlMasterSlaveRuleConfiguration swap(final MasterSlaveRuleConfiguration data) {
         YamlMasterSlaveRuleConfiguration result = new YamlMasterSlaveRuleConfiguration();
-        result.setDataSources(data.getDataSources().stream().collect(Collectors.toMap(MasterSlaveDataSourceConfiguration::getName, this::swap, (a, b) -> b, LinkedHashMap::new)));
+        result.setDataSources(data.getDataSources().stream().collect(Collectors.toMap(MasterSlaveDataSourceRuleConfiguration::getName, this::swap, (a, b) -> b, LinkedHashMap::new)));
         return result;
     }
     
-    private YamlMasterSlaveDataSourceConfiguration swap(final MasterSlaveDataSourceConfiguration group) {
-        YamlMasterSlaveDataSourceConfiguration result = new YamlMasterSlaveDataSourceConfiguration();
-        result.setName(group.getName());
-        result.setMasterDataSourceName(group.getMasterDataSourceName());
-        result.setSlaveDataSourceNames(group.getSlaveDataSourceNames());
-        if (null != group.getLoadBalanceStrategyConfiguration()) {
-            result.setLoadBalanceAlgorithmType(group.getLoadBalanceStrategyConfiguration().getType());
-        }
+    private YamlMasterSlaveDataSourceRuleConfiguration swap(final MasterSlaveDataSourceRuleConfiguration dataSourceRuleConfiguration) {
+        YamlMasterSlaveDataSourceRuleConfiguration result = new YamlMasterSlaveDataSourceRuleConfiguration();
+        result.setName(dataSourceRuleConfiguration.getName());
+        result.setMasterDataSourceName(dataSourceRuleConfiguration.getMasterDataSourceName());
+        result.setSlaveDataSourceNames(dataSourceRuleConfiguration.getSlaveDataSourceNames());
+        result.setLoadBalancerName(dataSourceRuleConfiguration.getLoadBalancerName());
         return result;
     }
     
     @Override
     public MasterSlaveRuleConfiguration swap(final YamlMasterSlaveRuleConfiguration yamlConfiguration) {
-        Collection<MasterSlaveDataSourceConfiguration> groups = new LinkedList<>();
-        for (Entry<String, YamlMasterSlaveDataSourceConfiguration> entry : yamlConfiguration.getDataSources().entrySet()) {
-            groups.add(swap(entry.getKey(), entry.getValue()));
+        Collection<MasterSlaveDataSourceRuleConfiguration> dataSources = new LinkedList<>();
+        for (Entry<String, YamlMasterSlaveDataSourceRuleConfiguration> entry : yamlConfiguration.getDataSources().entrySet()) {
+            dataSources.add(swap(entry.getKey(), entry.getValue()));
         }
-        return new MasterSlaveRuleConfiguration(groups);
+        Map<String, LoadBalanceAlgorithmConfiguration> loadBalancers = new LinkedHashMap<>(yamlConfiguration.getLoadBalancers().entrySet().size(), 1);
+        for (Entry<String, YamlMasterSlaveLoadBalanceAlgorithmConfiguration> entry : yamlConfiguration.getLoadBalancers().entrySet()) {
+            loadBalancers.put(entry.getKey(), swap(entry.getValue()));
+        }
+        return new MasterSlaveRuleConfiguration(dataSources, loadBalancers);
     }
     
-    private MasterSlaveDataSourceConfiguration swap(final String name, final YamlMasterSlaveDataSourceConfiguration yamlGroup) {
-        return new MasterSlaveDataSourceConfiguration(name, yamlGroup.getMasterDataSourceName(), yamlGroup.getSlaveDataSourceNames(), getLoadBalanceStrategyConfiguration(yamlGroup));
+    private MasterSlaveDataSourceRuleConfiguration swap(final String name, final YamlMasterSlaveDataSourceRuleConfiguration yamlDataSourceRuleConfiguration) {
+        return new MasterSlaveDataSourceRuleConfiguration(name, 
+                yamlDataSourceRuleConfiguration.getMasterDataSourceName(), yamlDataSourceRuleConfiguration.getSlaveDataSourceNames(), yamlDataSourceRuleConfiguration.getLoadBalancerName());
     }
     
-    private LoadBalanceStrategyConfiguration getLoadBalanceStrategyConfiguration(final YamlMasterSlaveDataSourceConfiguration yamlGroup) {
-        return Strings.isNullOrEmpty(yamlGroup.getLoadBalanceAlgorithmType()) ? null : new LoadBalanceStrategyConfiguration(yamlGroup.getLoadBalanceAlgorithmType(), yamlGroup.getProps());
+    private LoadBalanceAlgorithmConfiguration swap(final YamlMasterSlaveLoadBalanceAlgorithmConfiguration yamlLoadBalanceAlgorithmConfiguration) {
+        return new LoadBalanceAlgorithmConfiguration(yamlLoadBalanceAlgorithmConfiguration.getType(), yamlLoadBalanceAlgorithmConfiguration.getProps());
     }
     
     @Override
@@ -83,6 +88,6 @@ public final class MasterSlaveRuleConfigurationYamlSwapper implements YamlRuleCo
     
     @Override
     public int getOrder() {
-        return 10;
+        return MasterSlaveOrder.ORDER;
     }
 }

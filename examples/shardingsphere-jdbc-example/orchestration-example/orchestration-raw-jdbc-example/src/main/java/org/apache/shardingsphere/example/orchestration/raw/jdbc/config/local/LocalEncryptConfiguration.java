@@ -17,24 +17,24 @@
 
 package org.apache.shardingsphere.example.orchestration.raw.jdbc.config.local;
 
-import org.apache.shardingsphere.encrypt.api.config.EncryptColumnRuleConfiguration;
+import com.google.common.collect.ImmutableMap;
+import org.apache.shardingsphere.driver.orchestration.api.OrchestrationShardingSphereDataSourceFactory;
 import org.apache.shardingsphere.encrypt.api.config.EncryptRuleConfiguration;
-import org.apache.shardingsphere.encrypt.api.config.EncryptTableRuleConfiguration;
-import org.apache.shardingsphere.encrypt.api.config.EncryptorRuleConfiguration;
+import org.apache.shardingsphere.encrypt.api.config.algorithm.EncryptAlgorithmConfiguration;
+import org.apache.shardingsphere.encrypt.api.config.rule.EncryptColumnRuleConfiguration;
+import org.apache.shardingsphere.encrypt.api.config.rule.EncryptTableRuleConfiguration;
 import org.apache.shardingsphere.example.config.ExampleConfiguration;
 import org.apache.shardingsphere.example.core.api.DataSourceUtil;
 import org.apache.shardingsphere.orchestration.center.config.CenterConfiguration;
 import org.apache.shardingsphere.orchestration.center.config.OrchestrationConfiguration;
-import org.apache.shardingsphere.driver.orchestration.api.OrchestrationShardingSphereDataSourceFactory;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-public class LocalEncryptConfiguration implements ExampleConfiguration {
+public final class LocalEncryptConfiguration implements ExampleConfiguration {
     
     private final Map<String, CenterConfiguration> centerConfigurationMap;
     
@@ -53,18 +53,17 @@ public class LocalEncryptConfiguration implements ExampleConfiguration {
     }
     
     private EncryptRuleConfiguration getEncryptRuleConfiguration() {
+        return new EncryptRuleConfiguration(Collections.singleton(createEncryptTableRuleConfiguration()), ImmutableMap.of("status_encryptor", createEncryptAlgorithmConfiguration()));
+    }
+    
+    private EncryptTableRuleConfiguration createEncryptTableRuleConfiguration() {
+        EncryptColumnRuleConfiguration encryptColumnRuleConfiguration = new EncryptColumnRuleConfiguration("status", "status", "", "", "status_encryptor");
+        return new EncryptTableRuleConfiguration("t_order", Collections.singleton(encryptColumnRuleConfiguration));
+    }
+    
+    private EncryptAlgorithmConfiguration createEncryptAlgorithmConfiguration() {
         Properties properties = new Properties();
         properties.setProperty("aes.key.value", "123456");
-        EncryptorRuleConfiguration aesRuleConfiguration = new EncryptorRuleConfiguration("aes", properties);
-        EncryptColumnRuleConfiguration columnConfigAes = new EncryptColumnRuleConfiguration("", "status", "", "status_encryptor");
-        Map<String, EncryptColumnRuleConfiguration> columns = new HashMap<>();
-        EncryptTableRuleConfiguration tableConfig = new EncryptTableRuleConfiguration(columns);
-        columns.put("status", columnConfigAes);
-        tableConfig.getColumns().putAll(columns);
-        Map<String, EncryptorRuleConfiguration> encryptors = new HashMap<>();
-        encryptors.put("status_encryptor", aesRuleConfiguration);
-        Map<String, EncryptTableRuleConfiguration> tables = new HashMap<>();
-        tables.put("t_order", tableConfig);
-        return new EncryptRuleConfiguration(encryptors, tables);
+        return new EncryptAlgorithmConfiguration("aes", properties);
     }
 }

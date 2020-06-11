@@ -19,7 +19,7 @@ package org.apache.shardingsphere.orchestration.core.configcenter;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.shardingsphere.encrypt.api.config.EncryptRuleConfiguration;
-import org.apache.shardingsphere.encrypt.api.config.EncryptorRuleConfiguration;
+import org.apache.shardingsphere.encrypt.api.config.algorithm.EncryptAlgorithmConfiguration;
 import org.apache.shardingsphere.masterslave.api.config.MasterSlaveRuleConfiguration;
 import org.apache.shardingsphere.orchestration.center.ConfigCenterRepository;
 import org.apache.shardingsphere.orchestration.core.configuration.YamlDataSourceConfiguration;
@@ -53,9 +53,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -64,16 +62,16 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public final class ConfigCenterTest {
     
-    private static final String DATA_SOURCE_YAML = "" 
-            + "ds_0: !!" + YamlDataSourceConfiguration.class.getName() + "\n" 
+    private static final String DATA_SOURCE_YAML = ""
+            + "ds_0: !!" + YamlDataSourceConfiguration.class.getName() + "\n"
             + "  dataSourceClassName: org.apache.commons.dbcp2.BasicDataSource\n"
             + "  properties:\n"
             + "    driverClassName: com.mysql.jdbc.Driver\n"
             + "    url: jdbc:mysql://localhost:3306/ds_0\n"
-            + "    username: root\n" + "    password: root\n" 
-            + "ds_1: !!" + YamlDataSourceConfiguration.class.getName() + "\n" 
+            + "    username: root\n" + "    password: root\n"
+            + "ds_1: !!" + YamlDataSourceConfiguration.class.getName() + "\n"
             + "  dataSourceClassName: org.apache.commons.dbcp2.BasicDataSource\n"
-            + "  properties:\n" 
+            + "  properties:\n"
             + "    driverClassName: com.mysql.jdbc.Driver\n"
             + "    url: jdbc:mysql://localhost:3306/ds_1\n"
             + "    username: root\n"
@@ -95,14 +93,49 @@ public final class ConfigCenterTest {
             + "  tables:\n"
             + "    t_order:\n"
             + "      actualDataNodes: ds_${0..1}.t_order_${0..1}\n"
-            + "      logicTable: t_order\n" 
+            + "      logicTable: t_order\n"
             + "      tableStrategy:\n"
             + "        standard:\n"
             + "          shardingAlgorithm:\n"
-            + "            props:\n" 
+            + "            props:\n"
             + "              algorithm.expression: t_order_${order_id % 2}\n"
             + "            type: INLINE\n"
             + "          shardingColumn: order_id\n";
+    
+    private static final String SHARDING_AND_ENCRYPT_RULE_YAML = ""
+            + "rules:\n"
+            + "- !SHARDING\n"
+            + "  tables:\n"
+            + "    t_order:\n"
+            + "      actualDataNodes: ds_${0..1}.t_order_${0..1}\n"
+            + "      tableStrategy:\n"
+            + "        standard:\n"
+            + "          shardingColumn: order_id\n"
+            + "          shardingAlgorithm:\n"
+            + "            type: INLINE\n"
+            + "            props:\n"
+            + "              algorithm.expression: t_order_${order_id % 2}\n"
+            + "      keyGenerator:\n"
+            + "        type: SNOWFLAKE\n"
+            + "        column: order_id\n"
+            + "- !ENCRYPT\n"
+            + "  encryptors:\n"
+            + "    aes_encryptor:\n"
+            + "      type: aes\n"
+            + "      props:\n"
+            + "        aes.key.value: 123456abcd\n"
+            + "    md5_encryptor:\n"
+            + "      type: md5\n"
+            + "  tables:\n"
+            + "    t_encrypt:\n"
+            + "      columns:\n"
+            + "        user_id:\n"
+            + "          plainColumn: user_plain\n"
+            + "          cipherColumn: user_cipher\n"
+            + "          encryptorName: aes_encryptor\n"
+            + "        order_id:\n"
+            + "          cipherColumn: order_cipher\n"
+            + "          encryptorName: md5_encryptor";
     
     private static final String MASTER_SLAVE_RULE_YAML = ""
             + "rules:\n"
@@ -125,10 +158,10 @@ public final class ConfigCenterTest {
             + "      type: aes\n"
             + "  tables:\n"
             + "    t_order:\n"
-            + "      columns:\n" 
+            + "      columns:\n"
             + "        order_id:\n"
             + "          cipherColumn: order_id\n"
-            + "          encryptor: order_encryptor\n";
+            + "          encryptorName: order_encryptor\n";
     
     private static final String SHADOW_RULE_YAML = ""
             + "rules:\n"
@@ -141,18 +174,12 @@ public final class ConfigCenterTest {
             + "users:\n"
             + "  root1:\n"
             + "    authorizedSchemas: sharding_db\n"
-            + "    password: root1\n" 
+            + "    password: root1\n"
             + "  root2:\n"
             + "    authorizedSchemas: sharding_db,ms_db\n"
             + "    password: root2\n";
     
     private static final String PROPS_YAML = "sql.show: false\n";
-    
-    private static final String SHARDING_RULE_YAML_DEFAULT_TABLE_STRATEGY_NONE = ""
-            + "rules:\n"
-            + "- !SHARDING\n"
-            + "  defaultTableStrategy:\n"
-            + "    none: ''\n";
     
     private static final String DATA_SOURCE_YAML_WITH_CONNECTION_INIT_SQLS = ""
             + "ds_0: !!" + YamlDataSourceConfiguration.class.getName() + "\n"
@@ -421,38 +448,24 @@ public final class ConfigCenterTest {
     }
     
     @Test
-    public void assertIsShardingRule() {
-        when(configCenterRepository.get("/test/config/schema/sharding_db/rule")).thenReturn(SHARDING_RULE_YAML);
+    public void assertLoadShardingAndEncryptRuleConfiguration() {
+        when(configCenterRepository.get("/test/config/schema/sharding_db/rule")).thenReturn(SHARDING_AND_ENCRYPT_RULE_YAML);
         ConfigCenter configurationService = new ConfigCenter("test", configCenterRepository);
-        assertTrue(configurationService.isShardingRule("sharding_db"));
-    }
-
-    @Test
-    public void assertIsShardingRuleWithDefaultTableStrategyNone() {
-        when(configCenterRepository.get("/test/config/schema/sharding_db/rule")).thenReturn(SHARDING_RULE_YAML_DEFAULT_TABLE_STRATEGY_NONE);
-        ConfigCenter configurationService = new ConfigCenter("test", configCenterRepository);
-        assertTrue(configurationService.isShardingRule("sharding_db"));
-    }
-    
-    @Test
-    public void assertIsEncryptRule() {
-        when(configCenterRepository.get("/test/config/schema/sharding_db/rule")).thenReturn(ENCRYPT_RULE_YAML);
-        ConfigCenter configurationService = new ConfigCenter("test", configCenterRepository);
-        assertTrue(configurationService.isEncryptRule("sharding_db"));
-    }
-    
-    @Test
-    public void assertIsShadowRule() {
-        when(configCenterRepository.get("/test/config/schema/sharding_db/rule")).thenReturn(SHADOW_RULE_YAML);
-        ConfigCenter configurationService = new ConfigCenter("test", configCenterRepository);
-        assertTrue(configurationService.isShadowRule("sharding_db"));
-    }
-    
-    @Test
-    public void assertIsNotShardingRule() {
-        when(configCenterRepository.get("/test/config/schema/sharding_db/rule")).thenReturn(MASTER_SLAVE_RULE_YAML);
-        ConfigCenter configurationService = new ConfigCenter("test", configCenterRepository);
-        assertFalse(configurationService.isShardingRule("sharding_db"));
+        Collection<RuleConfiguration> ruleConfigurations = configurationService.loadRuleConfigurations("sharding_db");
+        assertThat(ruleConfigurations.size(), is(2));
+        for (RuleConfiguration each : ruleConfigurations) {
+            if (each instanceof ShardingRuleConfiguration) {
+                ShardingRuleConfiguration shardingRuleConfiguration = (ShardingRuleConfiguration) each;
+                assertThat(shardingRuleConfiguration.getTables().size(), is(1));
+                assertThat(shardingRuleConfiguration.getTables().iterator().next().getLogicTable(), is("t_order"));
+            } else if (each instanceof EncryptRuleConfiguration) {
+                EncryptRuleConfiguration encryptRuleConfiguration = (EncryptRuleConfiguration) each;
+                assertThat(encryptRuleConfiguration.getEncryptors().size(), is(2));
+                EncryptAlgorithmConfiguration encryptAlgorithmConfiguration = encryptRuleConfiguration.getEncryptors().get("aes_encryptor");
+                assertThat(encryptAlgorithmConfiguration.getType(), is("aes"));
+                assertThat(encryptAlgorithmConfiguration.getProperties().get("aes.key.value").toString(), is("123456abcd"));
+            }
+        }
     }
     
     @Test
@@ -462,28 +475,30 @@ public final class ConfigCenterTest {
         Collection<RuleConfiguration> actual = configurationService.loadRuleConfigurations("sharding_db");
         assertThat(actual.size(), is(1));
         ShardingRuleConfiguration actualShardingRuleConfiguration = (ShardingRuleConfiguration) actual.iterator().next();
-        assertThat(actualShardingRuleConfiguration.getTableRuleConfigs().size(), is(1));
-        assertThat(actualShardingRuleConfiguration.getTableRuleConfigs().iterator().next().getLogicTable(), is("t_order"));
+        assertThat(actualShardingRuleConfiguration.getTables().size(), is(1));
+        assertThat(actualShardingRuleConfiguration.getTables().iterator().next().getLogicTable(), is("t_order"));
     }
     
     @Test
     public void assertLoadMasterSlaveRuleConfiguration() {
         when(configCenterRepository.get("/test/config/schema/sharding_db/rule")).thenReturn(MASTER_SLAVE_RULE_YAML);
         ConfigCenter configurationService = new ConfigCenter("test", configCenterRepository);
-        MasterSlaveRuleConfiguration actual = configurationService.loadMasterSlaveRuleConfiguration("sharding_db");
-        assertThat(actual.getDataSources().iterator().next().getName(), is("ms_ds"));
+        Collection<RuleConfiguration> actual = configurationService.loadRuleConfigurations("sharding_db");
+        MasterSlaveRuleConfiguration masterSlaveRuleConfiguration = (MasterSlaveRuleConfiguration) actual.iterator().next();
+        assertThat(masterSlaveRuleConfiguration.getDataSources().size(), is(1));
+        assertThat(masterSlaveRuleConfiguration.getDataSources().iterator().next().getMasterDataSourceName(), is("master_ds"));
+        assertThat(masterSlaveRuleConfiguration.getDataSources().iterator().next().getSlaveDataSourceNames().size(), is(2));
     }
     
     @Test
     public void assertLoadEncryptRuleConfiguration() {
         when(configCenterRepository.get("/test/config/schema/sharding_db/rule")).thenReturn(ENCRYPT_RULE_YAML);
         ConfigCenter configurationService = new ConfigCenter("test", configCenterRepository);
-        EncryptRuleConfiguration actual = configurationService.loadEncryptRuleConfiguration("sharding_db");
+        EncryptRuleConfiguration actual = (EncryptRuleConfiguration) configurationService.loadRuleConfigurations("sharding_db").iterator().next();
         assertThat(actual.getEncryptors().size(), is(1));
-        Entry<String, EncryptorRuleConfiguration> entry = actual.getEncryptors().entrySet().iterator().next();
-        assertThat(entry.getKey(), is("order_encryptor"));
-        assertThat(entry.getValue().getType(), is("aes"));
-        assertThat(entry.getValue().getProperties().get("aes.key.value").toString(), is("123456"));
+        EncryptAlgorithmConfiguration encryptAlgorithmConfiguration = actual.getEncryptors().get("order_encryptor");
+        assertThat(encryptAlgorithmConfiguration.getType(), is("aes"));
+        assertThat(encryptAlgorithmConfiguration.getProperties().get("aes.key.value").toString(), is("123456"));
     }
     
     @Test
@@ -492,7 +507,7 @@ public final class ConfigCenterTest {
     public void assertLoadShadowRuleConfiguration() {
         when(configCenterRepository.get("/test/config/schema/sharding_db/rule")).thenReturn(SHADOW_RULE_YAML);
         ConfigCenter configurationService = new ConfigCenter("test", configCenterRepository);
-        ShadowRuleConfiguration actual = configurationService.loadShadowRuleConfiguration("sharding_db");
+        ShadowRuleConfiguration actual = (ShadowRuleConfiguration) configurationService.loadRuleConfigurations("sharding_db").iterator().next();
         assertThat(actual.getShadowMappings().get("ds"), is("shadow_ds"));
         assertThat(actual.getColumn(), is("shadow"));
     }

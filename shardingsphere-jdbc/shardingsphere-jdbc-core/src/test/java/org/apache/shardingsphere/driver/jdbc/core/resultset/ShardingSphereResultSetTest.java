@@ -23,7 +23,7 @@ import org.apache.shardingsphere.driver.jdbc.core.statement.ShardingSphereStatem
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
 import org.apache.shardingsphere.infra.executor.sql.context.ExecutionContext;
 import org.apache.shardingsphere.infra.merge.result.MergedResult;
-import org.apache.shardingsphere.kernal.context.SchemaContexts;
+import org.apache.shardingsphere.kernel.context.SchemaContexts;
 import org.apache.shardingsphere.sql.parser.binder.segment.table.TablesContext;
 import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
 import org.junit.Before;
@@ -204,6 +204,18 @@ public final class ShardingSphereResultSetTest {
     public void assertGetStringWithColumnLabel() throws SQLException {
         when(mergeResultSet.getValue(1, String.class)).thenReturn("value");
         assertThat(shardingSphereResultSet.getString("label"), is("value"));
+    }
+
+    @Test
+    public void assertGetNStringWithColumnIndex() throws SQLException {
+        when(mergeResultSet.getValue(1, String.class)).thenReturn("value");
+        assertThat(shardingSphereResultSet.getNString(1), is("value"));
+    }
+
+    @Test
+    public void assertGetNStringWithColumnLabel() throws SQLException {
+        when(mergeResultSet.getValue(1, String.class)).thenReturn("value");
+        assertThat(shardingSphereResultSet.getNString("label"), is("value"));
     }
     
     @Test

@@ -22,7 +22,7 @@ rules:
         columns:
           order_id:
             cipherColumn: order_id
-            encryptor: order_encryptor
+            encryptorName: order_encryptor
     encryptors:
       order_encryptor:
         type: aes

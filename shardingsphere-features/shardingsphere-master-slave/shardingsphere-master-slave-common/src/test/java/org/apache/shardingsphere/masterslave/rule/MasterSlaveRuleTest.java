@@ -17,14 +17,16 @@
 
 package org.apache.shardingsphere.masterslave.rule;
 
-import org.apache.shardingsphere.masterslave.api.config.LoadBalanceStrategyConfiguration;
-import org.apache.shardingsphere.masterslave.api.config.MasterSlaveDataSourceConfiguration;
+import com.google.common.collect.ImmutableMap;
 import org.apache.shardingsphere.masterslave.api.config.MasterSlaveRuleConfiguration;
+import org.apache.shardingsphere.masterslave.api.config.rule.MasterSlaveDataSourceRuleConfiguration;
+import org.apache.shardingsphere.masterslave.api.config.algorithm.LoadBalanceAlgorithmConfiguration;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -34,7 +36,7 @@ public final class MasterSlaveRuleTest {
     
     @Test(expected = IllegalArgumentException.class)
     public void assertNewWithEmptyDataSourceRule() {
-        new MasterSlaveRule(new MasterSlaveRuleConfiguration(Collections.emptyList()));
+        new MasterSlaveRule(new MasterSlaveRuleConfiguration(Collections.emptyList(), Collections.emptyMap()));
     }
     
     @Test
@@ -50,15 +52,15 @@ public final class MasterSlaveRuleTest {
     }
     
     private MasterSlaveRule createMasterSlaveRule() {
-        MasterSlaveDataSourceConfiguration configuration = new MasterSlaveDataSourceConfiguration(
-                "test_ms", "master_db", Arrays.asList("slave_db_0", "slave_db_1"), new LoadBalanceStrategyConfiguration("RANDOM"));
-        return new MasterSlaveRule(new MasterSlaveRuleConfiguration(Collections.singleton(configuration)));
+        MasterSlaveDataSourceRuleConfiguration configuration = new MasterSlaveDataSourceRuleConfiguration("test_ms", "master_db", Arrays.asList("slave_db_0", "slave_db_1"), "random");
+        return new MasterSlaveRule(new MasterSlaveRuleConfiguration(
+                Collections.singleton(configuration), ImmutableMap.of("random", new LoadBalanceAlgorithmConfiguration("RANDOM", new Properties()))));
     }
     
     private void assertDataSourceRule(final MasterSlaveDataSourceRule actual) {
         assertThat(actual.getName(), is("test_ms"));
         assertThat(actual.getMasterDataSourceName(), is("master_db"));
         assertThat(actual.getSlaveDataSourceNames(), is(Arrays.asList("slave_db_0", "slave_db_1")));
-        assertThat(actual.getLoadBalanceAlgorithm().getType(), is("RANDOM"));
+        assertThat(actual.getLoadBalancer().getType(), is("RANDOM"));
     }
 }

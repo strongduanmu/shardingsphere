@@ -29,21 +29,18 @@
                            ">
     <import resource="datasource/dataSource.xml" />
     
+    <encrypt:encrypt-algorithm id="aes_encryptor" type="AES">
+        <props>
+            <prop key="aes.key.value">123456</prop>
+        </props>
+    </encrypt:encrypt-algorithm>
+    <encrypt:encrypt-algorithm id="md5_encryptor" type="MD5" />
+    
     <encrypt:rule id="encryptRule">
-        <encrypt:tables>
-            <encrypt:table name="t_order">
-                <encrypt:column logic-column="user_id" plain-column="user_decrypt" cipher-column="user_encrypt" assisted-query-column="user_assisted" encryptor-ref="encryptor_aes" />
-                <encrypt:column logic-column="order_id" plain-column="order_decrypt" cipher-column="order_encrypt" assisted-query-column="order_assisted" encryptor-ref="encryptor_md5"/>
-            </encrypt:table>
-        </encrypt:tables>
-        <encrypt:encryptors>
-            <encrypt:encryptor id="encryptor_aes" type="AES">
-                <props>
-                    <prop key="aes.key.value">123456</prop>
-                </props>
-            </encrypt:encryptor>
-            <encrypt:encryptor id="encryptor_md5" type="MD5" />
-        </encrypt:encryptors>
+        <encrypt:table name="t_order">
+            <encrypt:column logic-column="user_id" cipher-column="user_encrypt" assisted-query-column="user_assisted" plain-column="user_decrypt" encrypt-algorithm-ref="aes_encryptor" />
+            <encrypt:column logic-column="order_id" cipher-column="order_encrypt" assisted-query-column="order_assisted" plain-column="order_decrypt" encrypt-algorithm-ref="md5_encryptor" />
+        </encrypt:table>
     </encrypt:rule>
     
     <shardingsphere:data-source id="encryptDataSource" data-source-names="dbtbl_0" rule-refs="encryptRule">

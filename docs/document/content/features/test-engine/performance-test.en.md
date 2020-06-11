@@ -1,5 +1,5 @@
 +++
-pre = "<b>3.6.5. </b>"
+pre = "<b>3.10.5. </b>"
 title = "Performance Test"
 weight = 5
 +++
@@ -251,11 +251,11 @@ shardingRule:
       loadBalanceAlgorithmType: ROUND_ROBIN
 encryptRule:
   encryptors:
-    encryptor_aes:
+    aes_encryptor:
       type: aes
       props:
         aes.key.value: 123456abc
-    encryptor_md5:
+    md5_encryptor:
       type: md5
   tables:
     sbtest:
@@ -263,10 +263,10 @@ encryptRule:
         c:
           plainColumn: c_plain
           cipherColumn: c_cipher
-          encryptor: encryptor_aes
+          encryptorName: aes_encryptor
         pad:
           cipherColumn: pad_cipher
-          encryptor: encryptor_md5    
+          encryptorName: md5_encryptor    
 ```
 
 #### Full Route Configuration

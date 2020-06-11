@@ -59,7 +59,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.shardingsphere</groupId>
-            <artifactId>shardingsphere-kernal-context</artifactId>
+            <artifactId>shardingsphere-kernel-context</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -115,6 +115,11 @@
         <dependency>
             <groupId>org.apache.shardingsphere</groupId>
             <artifactId>shardingsphere-transaction-xa-core</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.shardingsphere</groupId>
+            <artifactId>shardingsphere-orchestration-core-schema</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         

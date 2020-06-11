@@ -23,4 +23,7 @@ rules:
       masterDataSourceName: test_ds_master
       slaveDataSourceNames:
         - test_ds_slave
-      loadBalanceAlgorithmType: ROUND_ROBIN
+      loadBalancerName: roundRobin
+  loadBalancers:
+    roundRobin:
+      type: ROUND_ROBIN

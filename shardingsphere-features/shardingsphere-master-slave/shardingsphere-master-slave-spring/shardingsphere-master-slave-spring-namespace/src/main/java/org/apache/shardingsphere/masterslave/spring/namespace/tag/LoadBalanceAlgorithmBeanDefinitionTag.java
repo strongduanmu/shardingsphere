@@ -22,9 +22,11 @@ package org.apache.shardingsphere.masterslave.spring.namespace.tag;
  */
 public final class LoadBalanceAlgorithmBeanDefinitionTag {
     
-    public static final String LOAD_BALANCE_ALGORITHM_TAG = "load-balance-algorithm";
+    public static final String ROOT_TAG = "load-balance-algorithm";
     
-    public static final String ALGORITHM_TYPE_ATTRIBUTE = "type";
+    public static final String ID_ATTRIBUTE = "id";
     
-    public static final String ALGORITHM_PROPS_TAG = "props";
+    public static final String TYPE_ATTRIBUTE = "type";
+    
+    public static final String PROPS_TAG = "props";
 }

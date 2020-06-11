@@ -17,15 +17,17 @@
 
 package org.apache.shardingsphere.masterslave.yaml.swapper;
 
-import org.apache.shardingsphere.masterslave.api.config.LoadBalanceStrategyConfiguration;
-import org.apache.shardingsphere.masterslave.api.config.MasterSlaveDataSourceConfiguration;
+import com.google.common.collect.ImmutableMap;
 import org.apache.shardingsphere.masterslave.api.config.MasterSlaveRuleConfiguration;
-import org.apache.shardingsphere.masterslave.yaml.config.YamlMasterSlaveDataSourceConfiguration;
+import org.apache.shardingsphere.masterslave.api.config.algorithm.LoadBalanceAlgorithmConfiguration;
+import org.apache.shardingsphere.masterslave.api.config.rule.MasterSlaveDataSourceRuleConfiguration;
+import org.apache.shardingsphere.masterslave.yaml.config.rule.YamlMasterSlaveDataSourceRuleConfiguration;
 import org.apache.shardingsphere.masterslave.yaml.config.YamlMasterSlaveRuleConfiguration;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNull;
@@ -35,32 +37,33 @@ public final class MasterSlaveRuleConfigurationYamlSwapperTest {
     
     @Test
     public void assertSwapToYamlWithLoadBalanceAlgorithm() {
-        MasterSlaveDataSourceConfiguration dataSourceConfiguration = new MasterSlaveDataSourceConfiguration(
-                "ds", "master", Collections.singletonList("slave"), new LoadBalanceStrategyConfiguration("ROUND_ROBIN"));
-        YamlMasterSlaveRuleConfiguration actual = new MasterSlaveRuleConfigurationYamlSwapper().swap(new MasterSlaveRuleConfiguration(Collections.singleton(dataSourceConfiguration)));
+        MasterSlaveDataSourceRuleConfiguration dataSourceConfiguration = new MasterSlaveDataSourceRuleConfiguration("ds", "master", Collections.singletonList("slave"), "roundRobin");
+        YamlMasterSlaveRuleConfiguration actual = new MasterSlaveRuleConfigurationYamlSwapper().swap(new MasterSlaveRuleConfiguration(
+                Collections.singleton(dataSourceConfiguration), ImmutableMap.of("roundRobin", new LoadBalanceAlgorithmConfiguration("ROUND_ROBIN", new Properties()))));
         assertThat(actual.getDataSources().get("ds").getName(), is("ds"));
         assertThat(actual.getDataSources().get("ds").getMasterDataSourceName(), is("master"));
         assertThat(actual.getDataSources().get("ds").getSlaveDataSourceNames(), is(Collections.singletonList("slave")));
-        assertThat(actual.getDataSources().get("ds").getLoadBalanceAlgorithmType(), is("ROUND_ROBIN"));
+        assertThat(actual.getDataSources().get("ds").getLoadBalancerName(), is("roundRobin"));
     }
     
     @Test
     public void assertSwapToYamlWithoutLoadBalanceAlgorithm() {
-        MasterSlaveDataSourceConfiguration dataSourceConfiguration = new MasterSlaveDataSourceConfiguration("ds", "master", Collections.singletonList("slave"));
-        YamlMasterSlaveRuleConfiguration actual = new MasterSlaveRuleConfigurationYamlSwapper().swap(new MasterSlaveRuleConfiguration(Collections.singleton(dataSourceConfiguration)));
+        MasterSlaveDataSourceRuleConfiguration dataSourceConfiguration = new MasterSlaveDataSourceRuleConfiguration("ds", "master", Collections.singletonList("slave"), null);
+        YamlMasterSlaveRuleConfiguration actual = new MasterSlaveRuleConfigurationYamlSwapper().swap(
+                new MasterSlaveRuleConfiguration(Collections.singleton(dataSourceConfiguration), Collections.emptyMap()));
         assertThat(actual.getDataSources().get("ds").getName(), is("ds"));
         assertThat(actual.getDataSources().get("ds").getMasterDataSourceName(), is("master"));
         assertThat(actual.getDataSources().get("ds").getSlaveDataSourceNames(), is(Collections.singletonList("slave")));
-        assertNull(actual.getDataSources().get("ds").getLoadBalanceAlgorithmType());
+        assertNull(actual.getDataSources().get("ds").getLoadBalancerName());
     }
     
     @Test
     public void assertSwapToObjectWithLoadBalanceAlgorithmType() {
         YamlMasterSlaveRuleConfiguration yamlConfiguration = createYamlMasterSlaveRuleConfiguration();
-        yamlConfiguration.getDataSources().get("master_slave_ds").setLoadBalanceAlgorithmType("RANDOM");
+        yamlConfiguration.getDataSources().get("master_slave_ds").setLoadBalancerName("RANDOM");
         MasterSlaveRuleConfiguration actual = new MasterSlaveRuleConfigurationYamlSwapper().swap(yamlConfiguration);
         assertMasterSlaveRuleConfiguration(actual);
-        assertThat(actual.getDataSources().iterator().next().getLoadBalanceStrategyConfiguration().getType(), is("RANDOM"));
+        assertThat(actual.getDataSources().iterator().next().getLoadBalancerName(), is("RANDOM"));
     }
     
     @Test
@@ -68,12 +71,12 @@ public final class MasterSlaveRuleConfigurationYamlSwapperTest {
         YamlMasterSlaveRuleConfiguration yamlConfiguration = createYamlMasterSlaveRuleConfiguration();
         MasterSlaveRuleConfiguration actual = new MasterSlaveRuleConfigurationYamlSwapper().swap(yamlConfiguration);
         assertMasterSlaveRuleConfiguration(actual);
-        assertNull(actual.getDataSources().iterator().next().getLoadBalanceStrategyConfiguration());
+        assertNull(actual.getDataSources().iterator().next().getLoadBalancerName());
     }
     
     private YamlMasterSlaveRuleConfiguration createYamlMasterSlaveRuleConfiguration() {
         YamlMasterSlaveRuleConfiguration result = new YamlMasterSlaveRuleConfiguration();
-        result.getDataSources().put("master_slave_ds", new YamlMasterSlaveDataSourceConfiguration());
+        result.getDataSources().put("master_slave_ds", new YamlMasterSlaveDataSourceRuleConfiguration());
         result.getDataSources().get("master_slave_ds").setName("master_slave_ds");
         result.getDataSources().get("master_slave_ds").setMasterDataSourceName("master_ds");
         result.getDataSources().get("master_slave_ds").setSlaveDataSourceNames(Arrays.asList("slave_ds_0", "slave_ds_1"));
@@ -81,7 +84,7 @@ public final class MasterSlaveRuleConfigurationYamlSwapperTest {
     }
     
     private void assertMasterSlaveRuleConfiguration(final MasterSlaveRuleConfiguration actual) {
-        MasterSlaveDataSourceConfiguration group = actual.getDataSources().iterator().next();
+        MasterSlaveDataSourceRuleConfiguration group = actual.getDataSources().iterator().next();
         assertThat(group.getName(), is("master_slave_ds"));
         assertThat(group.getMasterDataSourceName(), is("master_ds"));
         assertThat(group.getSlaveDataSourceNames(), is(Arrays.asList("slave_ds_0", "slave_ds_1")));

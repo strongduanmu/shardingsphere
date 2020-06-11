@@ -93,12 +93,17 @@ rules:
       masterDataSourceName: db0_master
       slaveDataSourceNames:
         - db0_slave
-      loadBalanceAlgorithmType: RANDOM
+      loadBalancerName: random
     db_ms_1:
       masterDataSourceName: db1_master
       slaveDataSourceNames:
         - db1_slave
-      loadBalanceAlgorithmType: ROUND_ROBIN
+      loadBalancerName: roundRobin
+  loadBalancers:
+    random:
+        type: RANDOM
+    roundRobin:
+      type: ROUND_ROBIN
 
 orchestration:
   test_sharding_ms_registry_name:

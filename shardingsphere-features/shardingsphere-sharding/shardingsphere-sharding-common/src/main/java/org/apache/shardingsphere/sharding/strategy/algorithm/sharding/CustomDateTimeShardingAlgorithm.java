@@ -61,44 +61,65 @@ import java.util.Set;
  *
  * <p>examples: when shard by {@link IsoFields#QUARTER_OF_YEAR}, datetime.step.unit = Months and datetime.step.amount = 3 is a better choice.
  */
-public class CustomDateTimeShardingAlgorithm implements StandardShardingAlgorithm<Comparable<?>> {
-
+public final class CustomDateTimeShardingAlgorithm implements StandardShardingAlgorithm<Comparable<?>> {
+    
     private static final String DATE_TIME_FORMAT = "datetime.format";
-
+    
     private static final String TABLE_SUFFIX_FORMAT = "table.suffix.format";
-
+    
     private static final String DEFAULT_LOWER = "datetime.lower";
-
+    
     private static final String DEFAULT_UPPER = "datetime.upper";
-
+    
     private static final String STEP_UNIT = "datetime.step.unit";
-
+    
     private static final String STEP_AMOUNT = "datetime.step.amount";
-
+    
     private DateTimeFormatter datetimeFormatter;
-
+    
     private ChronoUnit stepUnit;
-
+    
     private int stepAmount;
-
-    private volatile boolean init;
-
+    
     @Getter
     @Setter
     private Properties properties = new Properties();
-
+    
+    @Override
+    public String getType() {
+        return "CUSTOM_DATE_TIME";
+    }
+    
+    @Override
+    public void init() {
+        Preconditions.checkNotNull(properties.getProperty(DATE_TIME_FORMAT));
+        Preconditions.checkNotNull(properties.getProperty(TABLE_SUFFIX_FORMAT));
+        Preconditions.checkNotNull(properties.getProperty(DEFAULT_LOWER));
+        stepUnit = properties.getProperty(STEP_UNIT) == null
+                ? ChronoUnit.DAYS
+                : generateStepUnit();
+        stepAmount = Integer.parseInt(properties.getProperty(STEP_AMOUNT, "1"));
+        datetimeFormatter = DateTimeFormatter.ofPattern(properties.getProperty(DATE_TIME_FORMAT));
+        try {
+            parseDateTimeForValue(properties.getProperty(DEFAULT_LOWER));
+            if (properties.getProperty(DEFAULT_UPPER) != null) {
+                parseDateTimeForValue(properties.getProperty(DEFAULT_UPPER));
+            }
+        } catch (DateTimeParseException e) {
+            throw new UnsupportedOperationException("can't apply shard value for default lower/upper values", e);
+        }
+    }
+    
     @Override
     public String doSharding(final Collection<String> availableTargetNames, final PreciseShardingValue<Comparable<?>> shardingValue) {
-        checkInit();
         return availableTargetNames.stream()
                 .filter(tableName -> tableName.endsWith(formatForDateTime(parseDateTimeForValue(shardingValue.getValue().toString()))))
                 .findFirst().orElseThrow(() -> new UnsupportedOperationException(
                         String.format("failed to shard value %s, and availableTables %s", shardingValue, availableTargetNames)));
     }
-
+    
     @Override
     public Collection<String> doSharding(final Collection<String> availableTargetNames, final RangeShardingValue<Comparable<?>> shardingValue) {
-        checkInit();
         boolean hasStart = shardingValue.getValueRange().hasLowerBound();
         boolean hasEnd = shardingValue.getValueRange().hasUpperBound();
         Set<String> tables = new HashSet<>();
@@ -121,50 +142,20 @@ public class CustomDateTimeShardingAlgorithm implements StandardShardingAlgorith
         mergeTableIfMatch(end, tables, availableTargetNames);
         return tables;
     }
-
+    
     private LocalDateTime parseDateTimeForValue(final String value) {
         return LocalDateTime.parse(value.substring(0, properties.getProperty(DATE_TIME_FORMAT).length()), datetimeFormatter);
     }
-
+    
     private String formatForDateTime(final LocalDateTime localDateTime) {
         return localDateTime.format(DateTimeFormatter.ofPattern(properties.get(TABLE_SUFFIX_FORMAT).toString()));
     }
-
+    
     private void mergeTableIfMatch(final LocalDateTime dateTime, final Collection<String> tables, final Collection<String> availableTargetNames) {
         String suffix = formatForDateTime(dateTime);
         availableTargetNames.parallelStream().filter(tableName -> tableName.endsWith(suffix)).findAny().map(tables::add);
     }
-
-    private void checkInit() {
-        if (!init) {
-            synchronized (this) {
-                if (!init) {
-                    verifyProperties();
-                    init = true;
-                }
-            }
-        }
-    }
-
-    private void verifyProperties() {
-        Preconditions.checkNotNull(properties.getProperty(DATE_TIME_FORMAT));
-        Preconditions.checkNotNull(properties.getProperty(TABLE_SUFFIX_FORMAT));
-        Preconditions.checkNotNull(properties.getProperty(DEFAULT_LOWER));
-        stepUnit = properties.getProperty(STEP_UNIT) == null
-                ? ChronoUnit.DAYS
-                : generateStepUnit();
-        stepAmount = Integer.parseInt(properties.getProperty(STEP_AMOUNT, "1"));
-        datetimeFormatter = DateTimeFormatter.ofPattern(properties.getProperty(DATE_TIME_FORMAT));
-        try {
-            parseDateTimeForValue(properties.getProperty(DEFAULT_LOWER));
-            if (properties.getProperty(DEFAULT_UPPER) != null) {
-                parseDateTimeForValue(properties.getProperty(DEFAULT_UPPER));
-            }
-        } catch (DateTimeParseException e) {
-            throw new UnsupportedOperationException("can't apply shard value for default lower/upper values", e);
-        }
-    }
-
+    
     private ChronoUnit generateStepUnit() {
         for (ChronoUnit unit : ChronoUnit.values()) {
             if (unit.toString().equalsIgnoreCase(properties.getProperty(STEP_UNIT))) {
@@ -174,10 +165,4 @@ public class CustomDateTimeShardingAlgorithm implements StandardShardingAlgorith
         throw new UnsupportedOperationException(
                 String.format("can't find step unit for specified datetime.step.unit prop: %s", properties.getProperty(STEP_UNIT)));
     }
-
-    @Override
-    public String getType() {
-        return "CUSTOM_DATE_TIME";
-    }
-
 }

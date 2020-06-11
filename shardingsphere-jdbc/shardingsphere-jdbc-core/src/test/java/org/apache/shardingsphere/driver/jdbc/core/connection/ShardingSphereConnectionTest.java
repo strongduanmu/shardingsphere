@@ -20,12 +20,12 @@ package org.apache.shardingsphere.driver.jdbc.core.connection;
 import org.apache.shardingsphere.driver.jdbc.core.fixture.BASEShardingTransactionManagerFixture;
 import org.apache.shardingsphere.driver.jdbc.core.fixture.XAShardingTransactionManagerFixture;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypes;
-import org.apache.shardingsphere.kernal.context.SchemaContext;
-import org.apache.shardingsphere.kernal.context.SchemaContexts;
-import org.apache.shardingsphere.kernal.context.schema.ShardingSphereSchema;
-import org.apache.shardingsphere.kernal.context.runtime.RuntimeContext;
+import org.apache.shardingsphere.kernel.context.SchemaContext;
+import org.apache.shardingsphere.kernel.context.SchemaContexts;
+import org.apache.shardingsphere.kernel.context.schema.ShardingSphereSchema;
+import org.apache.shardingsphere.kernel.context.runtime.RuntimeContext;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
-import org.apache.shardingsphere.sharding.api.config.TableRuleConfiguration;
+import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
 import org.apache.shardingsphere.transaction.ShardingTransactionManagerEngine;
 import org.apache.shardingsphere.transaction.core.TransactionOperationType;
 import org.apache.shardingsphere.transaction.core.TransactionType;
@@ -82,7 +82,7 @@ public final class ShardingSphereConnectionTest {
         when(schemaContext.getRuntimeContext()).thenReturn(runtimeContext);
         when(runtimeContext.getTransactionManagerEngine()).thenReturn(new ShardingTransactionManagerEngine());
         ShardingRuleConfiguration shardingRuleConfig = new ShardingRuleConfiguration();
-        shardingRuleConfig.getTableRuleConfigs().add(new TableRuleConfiguration("test"));
+        shardingRuleConfig.getTables().add(new ShardingTableRuleConfiguration("test"));
         connection = new ShardingSphereConnection(dataSourceMap, schemaContexts, TransactionType.LOCAL);
     }
     

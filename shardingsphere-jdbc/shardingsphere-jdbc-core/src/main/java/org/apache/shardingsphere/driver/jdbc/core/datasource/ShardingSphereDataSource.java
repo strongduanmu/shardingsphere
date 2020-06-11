@@ -19,6 +19,7 @@ package org.apache.shardingsphere.driver.jdbc.core.datasource;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.shardingsphere.driver.jdbc.core.connection.ShardingSphereConnection;
 import org.apache.shardingsphere.driver.jdbc.unsupported.AbstractUnsupportedOperationDataSource;
@@ -26,8 +27,8 @@ import org.apache.shardingsphere.infra.config.RuleConfiguration;
 import org.apache.shardingsphere.infra.database.DefaultSchema;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypes;
-import org.apache.shardingsphere.kernal.context.SchemaContexts;
-import org.apache.shardingsphere.kernal.context.SchemaContextsBuilder;
+import org.apache.shardingsphere.kernel.context.SchemaContexts;
+import org.apache.shardingsphere.kernel.context.SchemaContextsBuilder;
 import org.apache.shardingsphere.transaction.core.TransactionTypeHolder;
 
 import javax.sql.DataSource;
@@ -44,6 +45,7 @@ import java.util.logging.Logger;
 /**
  * ShardingSphere data source.
  */
+@RequiredArgsConstructor
 @Getter
 public final class ShardingSphereDataSource extends AbstractUnsupportedOperationDataSource implements AutoCloseable {
     

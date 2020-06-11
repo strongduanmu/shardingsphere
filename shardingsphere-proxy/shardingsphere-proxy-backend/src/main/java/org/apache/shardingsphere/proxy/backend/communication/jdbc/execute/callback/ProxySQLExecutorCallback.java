@@ -17,22 +17,21 @@
 
 package org.apache.shardingsphere.proxy.backend.communication.jdbc.execute.callback;
 
+import org.apache.shardingsphere.infra.executor.sql.ConnectionMode;
+import org.apache.shardingsphere.infra.executor.sql.QueryResult;
+import org.apache.shardingsphere.infra.executor.sql.raw.execute.result.ExecuteResult;
+import org.apache.shardingsphere.infra.executor.sql.raw.execute.result.query.ExecuteQueryResult;
+import org.apache.shardingsphere.infra.executor.sql.raw.execute.result.query.QueryHeader;
+import org.apache.shardingsphere.infra.executor.sql.raw.execute.result.update.ExecuteUpdateResult;
+import org.apache.shardingsphere.infra.executor.sql.resourced.jdbc.executor.impl.DefaultSQLExecutorCallback;
+import org.apache.shardingsphere.infra.executor.sql.resourced.jdbc.queryresult.MemoryQueryResult;
+import org.apache.shardingsphere.infra.executor.sql.resourced.jdbc.queryresult.StreamQueryResult;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
-import org.apache.shardingsphere.proxy.backend.communication.jdbc.execute.response.ExecuteQueryResponse;
-import org.apache.shardingsphere.proxy.backend.communication.jdbc.execute.response.ExecuteResponse;
-import org.apache.shardingsphere.proxy.backend.communication.jdbc.execute.response.ExecuteUpdateResponse;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.wrapper.JDBCExecutorWrapper;
-import org.apache.shardingsphere.proxy.backend.response.query.QueryHeader;
-import org.apache.shardingsphere.proxy.backend.schema.ShardingSphereSchemas;
-import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
+import org.apache.shardingsphere.proxy.backend.response.query.QueryHeaderBuilder;
 import org.apache.shardingsphere.sql.parser.binder.segment.select.projection.ProjectionsContext;
 import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.sql.parser.binder.statement.dml.SelectStatementContext;
-import org.apache.shardingsphere.infra.executor.sql.ConnectionMode;
-import org.apache.shardingsphere.infra.executor.sql.QueryResult;
-import org.apache.shardingsphere.infra.executor.sql.execute.jdbc.executor.impl.DefaultSQLExecutorCallback;
-import org.apache.shardingsphere.infra.executor.sql.execute.jdbc.queryresult.MemoryQueryResult;
-import org.apache.shardingsphere.infra.executor.sql.execute.jdbc.queryresult.StreamQueryResult;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -44,11 +43,7 @@ import java.util.List;
 /**
  * SQL executor callback for Proxy.
  */
-public final class ProxySQLExecutorCallback extends DefaultSQLExecutorCallback<ExecuteResponse> {
-    
-    static {
-        ShardingSphereServiceLoader.register(RuleProxySQLExecutorCallback.class);
-    }
+public final class ProxySQLExecutorCallback extends DefaultSQLExecutorCallback<ExecuteResult> {
     
     private final SQLStatementContext sqlStatementContext;
     
@@ -64,7 +59,7 @@ public final class ProxySQLExecutorCallback extends DefaultSQLExecutorCallback<E
 
     public ProxySQLExecutorCallback(final SQLStatementContext sqlStatementContext, final BackendConnection backendConnection, final JDBCExecutorWrapper jdbcExecutorWrapper,
                                     final boolean isExceptionThrown, final boolean isReturnGeneratedKeys, final boolean fetchMetaData) {
-        super(ShardingSphereSchemas.getInstance().getDatabaseType(), isExceptionThrown);
+        super(backendConnection.getSchema().getSchema().getDatabaseType(), isExceptionThrown);
         this.sqlStatementContext = sqlStatementContext;
         this.backendConnection = backendConnection;
         this.jdbcExecutorWrapper = jdbcExecutorWrapper;
@@ -73,7 +68,7 @@ public final class ProxySQLExecutorCallback extends DefaultSQLExecutorCallback<E
     }
     
     @Override
-    public ExecuteResponse executeSQL(final String sql, final Statement statement, final ConnectionMode connectionMode) throws SQLException {
+    public ExecuteResult executeSQL(final String sql, final Statement statement, final ConnectionMode connectionMode) throws SQLException {
         boolean withMetaData = false;
         if (fetchMetaData && !hasMetaData) {
             hasMetaData = true;
@@ -82,14 +77,14 @@ public final class ProxySQLExecutorCallback extends DefaultSQLExecutorCallback<E
         return executeSQL(statement, sql, connectionMode, withMetaData);
     }
     
-    private ExecuteResponse executeSQL(final Statement statement, final String sql, final ConnectionMode connectionMode, final boolean withMetadata) throws SQLException {
+    private ExecuteResult executeSQL(final Statement statement, final String sql, final ConnectionMode connectionMode, final boolean withMetadata) throws SQLException {
         backendConnection.add(statement);
         if (jdbcExecutorWrapper.executeSQL(statement, sql, isReturnGeneratedKeys)) {
             ResultSet resultSet = statement.getResultSet();
             backendConnection.add(resultSet);
-            return new ExecuteQueryResponse(withMetadata ? getQueryHeaders(sqlStatementContext, resultSet.getMetaData()) : null, createQueryResult(resultSet, connectionMode));
+            return new ExecuteQueryResult(withMetadata ? getQueryHeaders(sqlStatementContext, resultSet.getMetaData()) : null, createQueryResult(resultSet, connectionMode));
         }
-        return new ExecuteUpdateResponse(statement.getUpdateCount(), isReturnGeneratedKeys ? getGeneratedKey(statement) : 0L);
+        return new ExecuteUpdateResult(statement.getUpdateCount(), isReturnGeneratedKeys ? getGeneratedKey(statement) : 0L);
     }
     
     private List<QueryHeader> getQueryHeaders(final SQLStatementContext sqlStatementContext, final ResultSetMetaData resultSetMetaData) throws SQLException {
@@ -102,7 +97,7 @@ public final class ProxySQLExecutorCallback extends DefaultSQLExecutorCallback<E
     private List<QueryHeader> getQueryHeaders(final ProjectionsContext projectionsContext, final ResultSetMetaData resultSetMetaData) throws SQLException {
         List<QueryHeader> result = new LinkedList<>();
         for (int columnIndex = 1; columnIndex <= projectionsContext.getExpandProjections().size(); columnIndex++) {
-            result.add(new QueryHeader(projectionsContext, resultSetMetaData, backendConnection.getSchema(), columnIndex));
+            result.add(QueryHeaderBuilder.build(projectionsContext, resultSetMetaData, backendConnection.getSchema(), columnIndex));
         }
         return result;
     }
@@ -110,7 +105,7 @@ public final class ProxySQLExecutorCallback extends DefaultSQLExecutorCallback<E
     private List<QueryHeader> getQueryHeaders(final ResultSetMetaData resultSetMetaData) throws SQLException {
         List<QueryHeader> result = new LinkedList<>();
         for (int columnIndex = 1; columnIndex <= resultSetMetaData.getColumnCount(); columnIndex++) {
-            result.add(new QueryHeader(resultSetMetaData, backendConnection.getSchema(), columnIndex));
+            result.add(QueryHeaderBuilder.build(resultSetMetaData, backendConnection.getSchema(), columnIndex));
         }
         return result;
     }

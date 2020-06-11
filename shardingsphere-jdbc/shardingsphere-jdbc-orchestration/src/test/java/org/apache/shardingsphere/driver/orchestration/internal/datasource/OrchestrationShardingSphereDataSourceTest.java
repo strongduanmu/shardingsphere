@@ -17,13 +17,15 @@
 
 package org.apache.shardingsphere.driver.orchestration.internal.datasource;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.apache.shardingsphere.masterslave.api.config.LoadBalanceStrategyConfiguration;
-import org.apache.shardingsphere.masterslave.api.config.MasterSlaveDataSourceConfiguration;
+import org.apache.shardingsphere.driver.api.yaml.YamlShardingSphereDataSourceFactory;
+import org.apache.shardingsphere.driver.jdbc.core.datasource.ShardingSphereDataSource;
+import org.apache.shardingsphere.infra.config.DataSourceConfiguration;
+import org.apache.shardingsphere.infra.database.DefaultSchema;
 import org.apache.shardingsphere.masterslave.api.config.MasterSlaveRuleConfiguration;
-import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
-import org.apache.shardingsphere.sharding.api.config.TableRuleConfiguration;
-import org.apache.shardingsphere.sharding.rule.ShardingRule;
+import org.apache.shardingsphere.masterslave.api.config.algorithm.LoadBalanceAlgorithmConfiguration;
+import org.apache.shardingsphere.masterslave.api.config.rule.MasterSlaveDataSourceRuleConfiguration;
 import org.apache.shardingsphere.orchestration.center.config.CenterConfiguration;
 import org.apache.shardingsphere.orchestration.center.config.OrchestrationConfiguration;
 import org.apache.shardingsphere.orchestration.core.common.CenterType;
@@ -32,10 +34,9 @@ import org.apache.shardingsphere.orchestration.core.common.event.PropertiesChang
 import org.apache.shardingsphere.orchestration.core.common.event.RuleConfigurationsChangedEvent;
 import org.apache.shardingsphere.orchestration.core.registrycenter.event.DisabledStateChangedEvent;
 import org.apache.shardingsphere.orchestration.core.registrycenter.schema.OrchestrationSchema;
-import org.apache.shardingsphere.driver.api.yaml.YamlShardingSphereDataSourceFactory;
-import org.apache.shardingsphere.driver.jdbc.core.datasource.ShardingSphereDataSource;
-import org.apache.shardingsphere.infra.config.DataSourceConfiguration;
-import org.apache.shardingsphere.infra.database.DefaultSchema;
+import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
+import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
+import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -78,7 +79,7 @@ public final class OrchestrationShardingSphereDataSourceTest {
     }
     
     private static CenterConfiguration getRegistryCenterConfiguration() {
-        CenterConfiguration result = new CenterConfiguration("FourthTestRegistryCenter");
+        CenterConfiguration result = new CenterConfiguration("FourthTestRegistryCenter", new Properties());
         result.setOrchestrationType(CenterType.REGISTRY_CENTER.getValue());
         result.setNamespace("test_sharding_registry");
         result.setServerLists("localhost:3181");
@@ -86,7 +87,7 @@ public final class OrchestrationShardingSphereDataSourceTest {
     }
     
     private static CenterConfiguration getConfigCenterConfiguration() {
-        CenterConfiguration result = new CenterConfiguration("FourthTestConfigCenter");
+        CenterConfiguration result = new CenterConfiguration("FourthTestConfigCenter", new Properties());
         result.setOrchestrationType(CenterType.CONFIG_CENTER.getValue());
         result.setNamespace("test_sharding_config");
         result.setServerLists("localhost:3181");
@@ -94,7 +95,7 @@ public final class OrchestrationShardingSphereDataSourceTest {
     }
     
     private static CenterConfiguration getMetaDataCenterConfiguration() {
-        CenterConfiguration result = new CenterConfiguration("FirstTestMetaDataCenter");
+        CenterConfiguration result = new CenterConfiguration("FirstTestMetaDataCenter", new Properties());
         result.setOrchestrationType(CenterType.METADATA_CENTER.getValue());
         result.setNamespace("test_encrypt_metadata");
         result.setServerLists("localhost:3181");
@@ -116,14 +117,13 @@ public final class OrchestrationShardingSphereDataSourceTest {
     
     private ShardingRuleConfiguration getShardingRuleConfiguration() {
         ShardingRuleConfiguration result = new ShardingRuleConfiguration();
-        result.getTableRuleConfigs().add(new TableRuleConfiguration("logic_table", "ds_ms.table_${0..1}"));
+        result.getTables().add(new ShardingTableRuleConfiguration("logic_table", "ds_ms.table_${0..1}"));
         return result;
     }
     
     private MasterSlaveRuleConfiguration getMasterSlaveRuleConfiguration() {
-        MasterSlaveDataSourceConfiguration dataSourceConfiguration = new MasterSlaveDataSourceConfiguration(
-                "ds_ms", "ds_m", Collections.singletonList("ds_s"), new LoadBalanceStrategyConfiguration("ROUND_ROBIN"));
-        return new MasterSlaveRuleConfiguration(Collections.singleton(dataSourceConfiguration));
+        MasterSlaveDataSourceRuleConfiguration dataSourceConfiguration = new MasterSlaveDataSourceRuleConfiguration("ds_ms", "ds_m", Collections.singletonList("ds_s"), "roundRobin");
+        return new MasterSlaveRuleConfiguration(Collections.singleton(dataSourceConfiguration), ImmutableMap.of("roundRobin", new LoadBalanceAlgorithmConfiguration("ROUND_ROBIN", new Properties())));
     }
     
     @Test
