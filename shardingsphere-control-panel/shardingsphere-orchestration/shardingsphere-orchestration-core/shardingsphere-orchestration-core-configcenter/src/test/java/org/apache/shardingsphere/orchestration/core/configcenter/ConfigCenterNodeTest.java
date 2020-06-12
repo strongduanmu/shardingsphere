@@ -53,7 +53,7 @@ public final class ConfigCenterNodeTest {
     
     @Test
     public void assertGetPropsPath() {
-        assertThat(configurationNode.getPropsPath(), is("/test/config/props"));
+        assertThat(configurationNode.getPropsPath(), is("/test/config/properties"));
     }
     
     @Test
@@ -69,5 +69,15 @@ public final class ConfigCenterNodeTest {
         assertThat(actual, hasItems("/test/config/schema/logic_db"));
         assertThat(actual, hasItems("/test/config/schema/logic_db/rule"));
         assertThat(actual, hasItems("/test/config/schema/logic_db/datasource"));
+    }
+    
+    @Test
+    public void assertGetClusterPath() {
+        assertThat(configurationNode.getClusterPath(), is("/test/config/cluster"));
+    }
+    
+    @Test
+    public void assertGetMetricsPath() {
+        assertThat(configurationNode.getMetricsPath(), is("/test/config/metrics"));
     }
 }
