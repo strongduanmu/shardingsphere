@@ -20,16 +20,13 @@ package org.apache.shardingsphere.example.orchestration.raw.jdbc.config.local;
 import org.apache.shardingsphere.driver.orchestration.api.OrchestrationShardingSphereDataSourceFactory;
 import org.apache.shardingsphere.example.config.ExampleConfiguration;
 import org.apache.shardingsphere.example.core.api.DataSourceUtil;
+import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
 import org.apache.shardingsphere.orchestration.center.config.CenterConfiguration;
 import org.apache.shardingsphere.orchestration.center.config.OrchestrationConfiguration;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
-import org.apache.shardingsphere.sharding.api.config.algorithm.KeyGenerateAlgorithmConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.keygen.KeyGenerateStrategyConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.sharding.StandardShardingStrategyConfiguration;
-import org.apache.shardingsphere.sharding.spi.KeyGenerateAlgorithm;
-import org.apache.shardingsphere.sharding.strategy.algorithm.keygen.SnowflakeKeyGenerateAlgorithm;
-import org.apache.shardingsphere.sharding.strategy.algorithm.sharding.inline.InlineShardingAlgorithm;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
@@ -62,10 +59,11 @@ public final class LocalShardingDatabasesConfiguration implements ExampleConfigu
         result.getTables().add(getOrderItemTableRuleConfiguration());
         result.getBindingTableGroups().add("t_order, t_order_item");
         result.getBroadcastTables().add("t_address");
-        InlineShardingAlgorithm shardingAlgorithm = new InlineShardingAlgorithm();
-        shardingAlgorithm.getProperties().setProperty("algorithm.expression", "demo_ds_${user_id % 2}");
-        result.setDefaultDatabaseShardingStrategy(new StandardShardingStrategyConfiguration("user_id", shardingAlgorithm));
-        result.getKeyGenerators().put("snowflake", new KeyGenerateAlgorithmConfiguration("SNOWFLAKE", getProperties()));
+        result.setDefaultDatabaseShardingStrategy(new StandardShardingStrategyConfiguration("user_id", "inline"));
+        Properties props = new Properties();
+        props.setProperty("algorithm.expression", "demo_ds_${user_id % 2}");
+        result.getShardingAlgorithms() .put("inline", new ShardingSphereAlgorithmConfiguration("INLINE", props));
+        result.getKeyGenerators().put("snowflake", new ShardingSphereAlgorithmConfiguration("SNOWFLAKE", getProps()));
         return result;
     }
     
@@ -86,13 +84,7 @@ public final class LocalShardingDatabasesConfiguration implements ExampleConfigu
         return result;
     }
     
-    private static KeyGenerateAlgorithm getSnowflakeKeyGenerateAlgorithm() {
-        KeyGenerateAlgorithm result = new SnowflakeKeyGenerateAlgorithm();
-        result.setProperties(getProperties());
-        return result;
-    }
-    
-    private static Properties getProperties() {
+    private static Properties getProps() {
         Properties result = new Properties();
         result.setProperty("worker.id", "123");
         return result;

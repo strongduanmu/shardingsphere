@@ -17,10 +17,8 @@
 
 package org.apache.shardingsphere.sharding.yaml.swapper.strategy;
 
-import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
 import org.apache.shardingsphere.infra.yaml.swapper.YamlSwapper;
 import org.apache.shardingsphere.sharding.api.config.strategy.keygen.KeyGenerateStrategyConfiguration;
-import org.apache.shardingsphere.sharding.spi.KeyGenerateAlgorithm;
 import org.apache.shardingsphere.sharding.yaml.config.strategy.keygen.YamlKeyGenerateStrategyConfiguration;
 
 /**
@@ -28,12 +26,8 @@ import org.apache.shardingsphere.sharding.yaml.config.strategy.keygen.YamlKeyGen
  */
 public final class KeyGenerateStrategyConfigurationYamlSwapper implements YamlSwapper<YamlKeyGenerateStrategyConfiguration, KeyGenerateStrategyConfiguration> {
     
-    static {
-        ShardingSphereServiceLoader.register(KeyGenerateAlgorithm.class);
-    }
-    
     @Override
-    public YamlKeyGenerateStrategyConfiguration swap(final KeyGenerateStrategyConfiguration data) {
+    public YamlKeyGenerateStrategyConfiguration swapToYamlConfiguration(final KeyGenerateStrategyConfiguration data) {
         YamlKeyGenerateStrategyConfiguration result = new YamlKeyGenerateStrategyConfiguration();
         result.setColumn(data.getColumn());
         result.setKeyGeneratorName(data.getKeyGeneratorName());
@@ -41,7 +35,7 @@ public final class KeyGenerateStrategyConfigurationYamlSwapper implements YamlSw
     }
     
     @Override
-    public KeyGenerateStrategyConfiguration swap(final YamlKeyGenerateStrategyConfiguration yamlConfiguration) {
+    public KeyGenerateStrategyConfiguration swapToObject(final YamlKeyGenerateStrategyConfiguration yamlConfiguration) {
         return new KeyGenerateStrategyConfiguration(yamlConfiguration.getColumn(), yamlConfiguration.getKeyGeneratorName());
     }
 }

@@ -55,21 +55,21 @@ public class OrchestrationSpringBootRegistryMasterSlaveTest {
         testCenter.persist("/demo_spring_boot_ds_center/config/schema/logic_db/datasource", ""
                 + "ds_master: !!org.apache.shardingsphere.orchestration.core.configuration.YamlDataSourceConfiguration\n"
                 + "  dataSourceClassName: org.apache.commons.dbcp2.BasicDataSource\n"
-                + "  properties:\n"
+                + "  props:\n"
                 + "    url: jdbc:h2:mem:ds_master;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;MODE=MYSQL\n"
                 + "    maxTotal: 16\n"
                 + "    password: ''\n"
                 + "    username: root\n"
                 + "ds_slave_0: !!org.apache.shardingsphere.orchestration.core.configuration.YamlDataSourceConfiguration\n"
                 + "  dataSourceClassName: org.apache.commons.dbcp2.BasicDataSource\n"
-                + "  properties:\n"
+                + "  props:\n"
                 + "    url: jdbc:h2:mem:demo_ds_slave_0;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;MODE=MYSQL\n"
                 + "    maxTotal: 16\n"
                 + "    password: ''\n"
                 + "    username: root\n"
                 + "ds_slave_1: !!org.apache.shardingsphere.orchestration.core.configuration.YamlDataSourceConfiguration\n"
                 + "  dataSourceClassName: org.apache.commons.dbcp2.BasicDataSource\n"
-                + "  properties:\n"
+                + "  props:\n"
                 + "    url: jdbc:h2:mem:demo_ds_slave_1;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;MODE=MYSQL\n"
                 + "    maxTotal: 16\n"
                 + "    password: ''\n"
@@ -88,7 +88,7 @@ public class OrchestrationSpringBootRegistryMasterSlaveTest {
                 + "      slaveDataSourceNames: \n"
                 + "        - ds_slave_0\n" 
                 + "        - ds_slave_1\n");
-        testCenter.persist("/demo_spring_boot_ds_center/config/properties", "{}\n");
+        testCenter.persist("/demo_spring_boot_ds_center/config/props", "{}\n");
         testCenter.persist("/demo_spring_boot_ds_center/registry/datasources", "");
     }
     

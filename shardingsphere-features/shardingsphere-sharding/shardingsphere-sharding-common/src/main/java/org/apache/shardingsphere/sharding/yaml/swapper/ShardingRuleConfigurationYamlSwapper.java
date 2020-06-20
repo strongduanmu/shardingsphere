@@ -18,14 +18,12 @@
 package org.apache.shardingsphere.sharding.yaml.swapper;
 
 import org.apache.shardingsphere.infra.yaml.swapper.YamlRuleConfigurationSwapper;
+import org.apache.shardingsphere.infra.yaml.swapper.algorithm.ShardingSphereAlgorithmConfigurationYamlSwapper;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
-import org.apache.shardingsphere.sharding.api.config.rule.ShardingAutoTableRuleConfiguration;
-import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.constant.ShardingOrder;
 import org.apache.shardingsphere.sharding.yaml.config.YamlShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.yaml.config.rule.YamlShardingAutoTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.yaml.config.rule.YamlTableRuleConfiguration;
-import org.apache.shardingsphere.sharding.yaml.swapper.algorithm.KeyGenerateAlgorithmConfigurationYamlSwapper;
 import org.apache.shardingsphere.sharding.yaml.swapper.rule.ShardingAutoTableRuleConfigurationYamlSwapper;
 import org.apache.shardingsphere.sharding.yaml.swapper.rule.ShardingTableRuleConfigurationYamlSwapper;
 import org.apache.shardingsphere.sharding.yaml.swapper.strategy.KeyGenerateStrategyConfigurationYamlSwapper;
@@ -38,70 +36,88 @@ import java.util.Map.Entry;
  */
 public final class ShardingRuleConfigurationYamlSwapper implements YamlRuleConfigurationSwapper<YamlShardingRuleConfiguration, ShardingRuleConfiguration> {
     
-    private final ShardingTableRuleConfigurationYamlSwapper tableRuleConfigurationYamlSwapper = new ShardingTableRuleConfigurationYamlSwapper();
-
-    private final ShardingAutoTableRuleConfigurationYamlSwapper autoTableRuleConfigurationYamlSwapper = new ShardingAutoTableRuleConfigurationYamlSwapper();
+    private final ShardingTableRuleConfigurationYamlSwapper tableYamlSwapper = new ShardingTableRuleConfigurationYamlSwapper();
     
-    private final ShardingStrategyConfigurationYamlSwapper shardingStrategyConfigurationYamlSwapper = new ShardingStrategyConfigurationYamlSwapper();
+    private final ShardingAutoTableRuleConfigurationYamlSwapper autoTableYamlSwapper = new ShardingAutoTableRuleConfigurationYamlSwapper();
     
-    private final KeyGenerateStrategyConfigurationYamlSwapper keyGenerateStrategyConfigurationYamlSwapper = new KeyGenerateStrategyConfigurationYamlSwapper();
+    private final ShardingStrategyConfigurationYamlSwapper shardingStrategyYamlSwapper = new ShardingStrategyConfigurationYamlSwapper();
     
-    private final KeyGenerateAlgorithmConfigurationYamlSwapper keyGenerateAlgorithmConfigurationYamlSwapper = new KeyGenerateAlgorithmConfigurationYamlSwapper();
+    private final KeyGenerateStrategyConfigurationYamlSwapper keyGenerateStrategyYamlSwapper = new KeyGenerateStrategyConfigurationYamlSwapper();
+    
+    private final ShardingSphereAlgorithmConfigurationYamlSwapper algorithmSwapper = new ShardingSphereAlgorithmConfigurationYamlSwapper();
     
     @Override
-    public YamlShardingRuleConfiguration swap(final ShardingRuleConfiguration data) {
+    public YamlShardingRuleConfiguration swapToYamlConfiguration(final ShardingRuleConfiguration data) {
         YamlShardingRuleConfiguration result = new YamlShardingRuleConfiguration();
-        for (ShardingTableRuleConfiguration each : data.getTables()) {
-            result.getTables().put(each.getLogicTable(), tableRuleConfigurationYamlSwapper.swap(each));
-        }
-        for (ShardingAutoTableRuleConfiguration each : data.getAutoTables()) {
-            result.getAutoTables().put(each.getLogicTable(), autoTableRuleConfigurationYamlSwapper.swap(each));
-        }
+        data.getTables().forEach(each -> result.getTables().put(each.getLogicTable(), tableYamlSwapper.swapToYamlConfiguration(each)));
+        data.getAutoTables().forEach(each -> result.getAutoTables().put(each.getLogicTable(), autoTableYamlSwapper.swapToYamlConfiguration(each)));
         result.getBindingTables().addAll(data.getBindingTableGroups());
         result.getBroadcastTables().addAll(data.getBroadcastTables());
-        if (null != data.getDefaultDatabaseShardingStrategy()) {
-            result.setDefaultDatabaseStrategy(shardingStrategyConfigurationYamlSwapper.swap(data.getDefaultDatabaseShardingStrategy()));
-        }
-        if (null != data.getDefaultTableShardingStrategy()) {
-            result.setDefaultTableStrategy(shardingStrategyConfigurationYamlSwapper.swap(data.getDefaultTableShardingStrategy()));
-        }
-        if (null != data.getDefaultKeyGenerateStrategy()) {
-            result.setDefaultKeyGenerateStrategy(keyGenerateStrategyConfigurationYamlSwapper.swap(data.getDefaultKeyGenerateStrategy()));
-        }
-        if (null != data.getKeyGenerators()) {
-            data.getKeyGenerators().forEach((key, value) -> result.getKeyGenerators().put(key, keyGenerateAlgorithmConfigurationYamlSwapper.swap(value)));
-        }
+        setYamlDefaultStrategies(data, result);
+        setYamlAlgorithms(data, result);
         return result;
     }
     
+    private void setYamlDefaultStrategies(final ShardingRuleConfiguration data, final YamlShardingRuleConfiguration yamlConfiguration) {
+        if (null != data.getDefaultDatabaseShardingStrategy()) {
+            yamlConfiguration.setDefaultDatabaseStrategy(shardingStrategyYamlSwapper.swapToYamlConfiguration(data.getDefaultDatabaseShardingStrategy()));
+        }
+        if (null != data.getDefaultTableShardingStrategy()) {
+            yamlConfiguration.setDefaultTableStrategy(shardingStrategyYamlSwapper.swapToYamlConfiguration(data.getDefaultTableShardingStrategy()));
+        }
+        if (null != data.getDefaultKeyGenerateStrategy()) {
+            yamlConfiguration.setDefaultKeyGenerateStrategy(keyGenerateStrategyYamlSwapper.swapToYamlConfiguration(data.getDefaultKeyGenerateStrategy()));
+        }
+    }
+    
+    private void setYamlAlgorithms(final ShardingRuleConfiguration data, final YamlShardingRuleConfiguration yamlConfiguration) {
+        if (null != data.getShardingAlgorithms()) {
+            data.getShardingAlgorithms().forEach((key, value) -> yamlConfiguration.getShardingAlgorithms().put(key, algorithmSwapper.swapToYamlConfiguration(value)));
+        }
+        if (null != data.getKeyGenerators()) {
+            data.getKeyGenerators().forEach((key, value) -> yamlConfiguration.getKeyGenerators().put(key, algorithmSwapper.swapToYamlConfiguration(value)));
+        }
+    }
+    
     @Override
-    public ShardingRuleConfiguration swap(final YamlShardingRuleConfiguration yamlConfiguration) {
+    public ShardingRuleConfiguration swapToObject(final YamlShardingRuleConfiguration yamlConfiguration) {
         ShardingRuleConfiguration result = new ShardingRuleConfiguration();
         for (Entry<String, YamlTableRuleConfiguration> entry : yamlConfiguration.getTables().entrySet()) {
             YamlTableRuleConfiguration tableRuleConfig = entry.getValue();
             tableRuleConfig.setLogicTable(entry.getKey());
-            result.getTables().add(tableRuleConfigurationYamlSwapper.swap(tableRuleConfig));
+            result.getTables().add(tableYamlSwapper.swapToObject(tableRuleConfig));
         }
         for (Entry<String, YamlShardingAutoTableRuleConfiguration> entry : yamlConfiguration.getAutoTables().entrySet()) {
             YamlShardingAutoTableRuleConfiguration tableRuleConfig = entry.getValue();
             tableRuleConfig.setLogicTable(entry.getKey());
-            result.getAutoTables().add(autoTableRuleConfigurationYamlSwapper.swap(tableRuleConfig));
+            result.getAutoTables().add(autoTableYamlSwapper.swapToObject(tableRuleConfig));
         }
         result.getBindingTableGroups().addAll(yamlConfiguration.getBindingTables());
         result.getBroadcastTables().addAll(yamlConfiguration.getBroadcastTables());
+        setDefaultStrategies(yamlConfiguration, result);
+        setAlgorithms(yamlConfiguration, result);
+        return result;
+    }
+    
+    private void setDefaultStrategies(final YamlShardingRuleConfiguration yamlConfiguration, final ShardingRuleConfiguration ruleConfiguration) {
         if (null != yamlConfiguration.getDefaultDatabaseStrategy()) {
-            result.setDefaultDatabaseShardingStrategy(shardingStrategyConfigurationYamlSwapper.swap(yamlConfiguration.getDefaultDatabaseStrategy()));
+            ruleConfiguration.setDefaultDatabaseShardingStrategy(shardingStrategyYamlSwapper.swapToObject(yamlConfiguration.getDefaultDatabaseStrategy()));
         }
         if (null != yamlConfiguration.getDefaultTableStrategy()) {
-            result.setDefaultTableShardingStrategy(shardingStrategyConfigurationYamlSwapper.swap(yamlConfiguration.getDefaultTableStrategy()));
+            ruleConfiguration.setDefaultTableShardingStrategy(shardingStrategyYamlSwapper.swapToObject(yamlConfiguration.getDefaultTableStrategy()));
         }
         if (null != yamlConfiguration.getDefaultKeyGenerateStrategy()) {
-            result.setDefaultKeyGenerateStrategy(keyGenerateStrategyConfigurationYamlSwapper.swap(yamlConfiguration.getDefaultKeyGenerateStrategy()));
+            ruleConfiguration.setDefaultKeyGenerateStrategy(keyGenerateStrategyYamlSwapper.swapToObject(yamlConfiguration.getDefaultKeyGenerateStrategy()));
+        }
+    }
+    
+    private void setAlgorithms(final YamlShardingRuleConfiguration yamlConfiguration, final ShardingRuleConfiguration ruleConfiguration) {
+        if (null != yamlConfiguration.getShardingAlgorithms()) {
+            yamlConfiguration.getShardingAlgorithms().forEach((key, value) -> ruleConfiguration.getShardingAlgorithms().put(key, algorithmSwapper.swapToObject(value)));
         }
         if (null != yamlConfiguration.getKeyGenerators()) {
-            yamlConfiguration.getKeyGenerators().forEach((key, value) -> result.getKeyGenerators().put(key, keyGenerateAlgorithmConfigurationYamlSwapper.swap(value)));
+            yamlConfiguration.getKeyGenerators().forEach((key, value) -> ruleConfiguration.getKeyGenerators().put(key, algorithmSwapper.swapToObject(value)));
         }
-        return result;
     }
     
     @Override

@@ -30,21 +30,19 @@ public final class ConfigurationPropertiesTest {
     
     @Test
     public void assertGetValue() {
-        Properties properties = new Properties();
-        properties.setProperty(ConfigurationPropertyKey.SQL_SHOW.getKey(), Boolean.TRUE.toString());
-        properties.setProperty(ConfigurationPropertyKey.SQL_SIMPLE.getKey(), Boolean.TRUE.toString());
-        properties.setProperty(ConfigurationPropertyKey.ACCEPTOR_SIZE.getKey(), "20");
-        properties.setProperty(ConfigurationPropertyKey.EXECUTOR_SIZE.getKey(), "20");
-        properties.setProperty(ConfigurationPropertyKey.MAX_CONNECTIONS_SIZE_PER_QUERY.getKey(), "20");
-        properties.setProperty(ConfigurationPropertyKey.QUERY_WITH_CIPHER_COLUMN.getKey(), Boolean.FALSE.toString());
-        properties.setProperty(ConfigurationPropertyKey.PROXY_FRONTEND_FLUSH_THRESHOLD.getKey(), "20");
-        properties.setProperty(ConfigurationPropertyKey.PROXY_TRANSACTION_TYPE.getKey(), "XA");
-        properties.setProperty(ConfigurationPropertyKey.PROXY_OPENTRACING_ENABLED.getKey(), Boolean.TRUE.toString());
-        properties.setProperty(ConfigurationPropertyKey.PROXY_HINT_ENABLED.getKey(), Boolean.TRUE.toString());
-        properties.setProperty(ConfigurationPropertyKey.PROXY_BACKEND_MAX_CONNECTIONS.getKey(), "20");
-        properties.setProperty(ConfigurationPropertyKey.PROXY_BACKEND_CONNECTION_TIMEOUT_SECONDS.getKey(), "20");
-        properties.setProperty(ConfigurationPropertyKey.CHECK_TABLE_METADATA_ENABLED.getKey(), Boolean.TRUE.toString());
-        ConfigurationProperties actual = new ConfigurationProperties(properties);
+        Properties props = new Properties();
+        props.setProperty(ConfigurationPropertyKey.SQL_SHOW.getKey(), Boolean.TRUE.toString());
+        props.setProperty(ConfigurationPropertyKey.SQL_SIMPLE.getKey(), Boolean.TRUE.toString());
+        props.setProperty(ConfigurationPropertyKey.ACCEPTOR_SIZE.getKey(), "20");
+        props.setProperty(ConfigurationPropertyKey.EXECUTOR_SIZE.getKey(), "20");
+        props.setProperty(ConfigurationPropertyKey.MAX_CONNECTIONS_SIZE_PER_QUERY.getKey(), "20");
+        props.setProperty(ConfigurationPropertyKey.QUERY_WITH_CIPHER_COLUMN.getKey(), Boolean.FALSE.toString());
+        props.setProperty(ConfigurationPropertyKey.PROXY_FRONTEND_FLUSH_THRESHOLD.getKey(), "20");
+        props.setProperty(ConfigurationPropertyKey.PROXY_TRANSACTION_TYPE.getKey(), "XA");
+        props.setProperty(ConfigurationPropertyKey.PROXY_OPENTRACING_ENABLED.getKey(), Boolean.TRUE.toString());
+        props.setProperty(ConfigurationPropertyKey.PROXY_HINT_ENABLED.getKey(), Boolean.TRUE.toString());
+        props.setProperty(ConfigurationPropertyKey.CHECK_TABLE_METADATA_ENABLED.getKey(), Boolean.TRUE.toString());
+        ConfigurationProperties actual = new ConfigurationProperties(props);
         assertTrue(actual.getValue(ConfigurationPropertyKey.SQL_SHOW));
         assertTrue(actual.getValue(ConfigurationPropertyKey.SQL_SIMPLE));
         assertThat(actual.getValue(ConfigurationPropertyKey.ACCEPTOR_SIZE), is(20));
@@ -55,8 +53,6 @@ public final class ConfigurationPropertiesTest {
         assertThat(actual.getValue(ConfigurationPropertyKey.PROXY_TRANSACTION_TYPE), is("XA"));
         assertTrue(actual.getValue(ConfigurationPropertyKey.PROXY_OPENTRACING_ENABLED));
         assertTrue(actual.getValue(ConfigurationPropertyKey.PROXY_HINT_ENABLED));
-        assertThat(actual.getValue(ConfigurationPropertyKey.PROXY_BACKEND_MAX_CONNECTIONS), is(20));
-        assertThat(actual.getValue(ConfigurationPropertyKey.PROXY_BACKEND_CONNECTION_TIMEOUT_SECONDS), is(20));
         assertTrue(actual.getValue(ConfigurationPropertyKey.CHECK_TABLE_METADATA_ENABLED));
     }
     
@@ -73,8 +69,6 @@ public final class ConfigurationPropertiesTest {
         assertThat(actual.getValue(ConfigurationPropertyKey.PROXY_TRANSACTION_TYPE), is("LOCAL"));
         assertFalse(actual.getValue(ConfigurationPropertyKey.PROXY_OPENTRACING_ENABLED));
         assertFalse(actual.getValue(ConfigurationPropertyKey.PROXY_HINT_ENABLED));
-        assertThat(actual.getValue(ConfigurationPropertyKey.PROXY_BACKEND_MAX_CONNECTIONS), is(8));
-        assertThat(actual.getValue(ConfigurationPropertyKey.PROXY_BACKEND_CONNECTION_TIMEOUT_SECONDS), is(60));
         assertFalse(actual.getValue(ConfigurationPropertyKey.CHECK_TABLE_METADATA_ENABLED));
     }
 }

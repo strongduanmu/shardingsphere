@@ -6,7 +6,7 @@ chapter = true
 
 ## 简介
 
-Java API 是 ShardingSphere-JDBC 中所有配置方式的基础，其他配置最终都将转化成为Java API 的配置方式。
+Java API 是 ShardingSphere-JDBC 中所有配置方式的基础，其他配置最终都将转化成为 Java API 的配置方式。
 
 Java API 是最复杂也是最灵活的配置方式，适合需要通过编程进行动态配置的场景下使用。
 
@@ -24,9 +24,9 @@ Map<String, DataSource> dataSourceMap = // ...
 Collection<RuleConfiguration> configurations = // ...
 
 // 构建属性配置
-Properties properties = // ...
+Properties props = // ...
 
-DataSource dataSource = ShardingSphereDataSourceFactory.createDataSource(dataSourceMap, configurations, properties);
+DataSource dataSource = ShardingSphereDataSourceFactory.createDataSource(dataSourceMap, configurations, props);
 ```
 
 ### 创建携带治理功能的数据源
@@ -41,12 +41,12 @@ Map<String, DataSource> dataSourceMap = // ...
 Collection<RuleConfiguration> configurations = // ...
 
 // 构建属性配置
-Properties properties = // ...
+Properties props = // ...
 
 // 构建注册中心配置对象
 OrchestrationConfiguration orchestrationConfig = // ...
 
-DataSource dataSource = OrchestrationShardingSphereDataSourceFactory.createDataSource(dataSourceMap, configurations, properties, orchestrationConfig);
+DataSource dataSource = OrchestrationShardingSphereDataSourceFactory.createDataSource(dataSourceMap, configurations, props, orchestrationConfig);
 ```
 
 ### 使用数据源

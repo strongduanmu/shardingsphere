@@ -18,37 +18,25 @@
 package org.apache.shardingsphere.sharding.yaml.swapper.strategy;
 
 import com.google.common.base.Preconditions;
+import org.apache.shardingsphere.infra.yaml.swapper.YamlSwapper;
 import org.apache.shardingsphere.sharding.api.config.strategy.sharding.ComplexShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.sharding.HintShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.sharding.NoneShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.sharding.ShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.sharding.StandardShardingStrategyConfiguration;
-import org.apache.shardingsphere.sharding.api.sharding.complex.ComplexKeysShardingAlgorithm;
-import org.apache.shardingsphere.sharding.api.sharding.hint.HintShardingAlgorithm;
-import org.apache.shardingsphere.sharding.api.sharding.standard.StandardShardingAlgorithm;
-import org.apache.shardingsphere.sharding.yaml.config.strategy.sharding.YamlShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.yaml.config.strategy.sharding.YamlComplexShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.yaml.config.strategy.sharding.YamlHintShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.yaml.config.strategy.sharding.YamlNoneShardingStrategyConfiguration;
-import org.apache.shardingsphere.sharding.yaml.config.strategy.sharding.YamlShardingAlgorithmConfiguration;
+import org.apache.shardingsphere.sharding.yaml.config.strategy.sharding.YamlShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.yaml.config.strategy.sharding.YamlStandardShardingStrategyConfiguration;
-import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
-import org.apache.shardingsphere.sharding.spi.ShardingAlgorithm;
-import org.apache.shardingsphere.infra.spi.type.TypedSPIRegistry;
-import org.apache.shardingsphere.infra.exception.ShardingSphereException;
-import org.apache.shardingsphere.infra.yaml.swapper.YamlSwapper;
 
 /**
  * Sharding strategy configuration YAML swapper.
  */
 public final class ShardingStrategyConfigurationYamlSwapper implements YamlSwapper<YamlShardingStrategyConfiguration, ShardingStrategyConfiguration> {
     
-    static {
-        ShardingSphereServiceLoader.register(ShardingAlgorithm.class);
-    }
-    
     @Override
-    public YamlShardingStrategyConfiguration swap(final ShardingStrategyConfiguration data) {
+    public YamlShardingStrategyConfiguration swapToYamlConfiguration(final ShardingStrategyConfiguration data) {
         YamlShardingStrategyConfiguration result = new YamlShardingStrategyConfiguration();
         if (data instanceof StandardShardingStrategyConfiguration) {
             result.setStandard(createYamlStandardShardingStrategyConfiguration((StandardShardingStrategyConfiguration) data));
@@ -66,7 +54,7 @@ public final class ShardingStrategyConfigurationYamlSwapper implements YamlSwapp
     }
     
     @Override
-    public ShardingStrategyConfiguration swap(final YamlShardingStrategyConfiguration yamlConfiguration) {
+    public ShardingStrategyConfiguration swapToObject(final YamlShardingStrategyConfiguration yamlConfiguration) {
         int shardingStrategyConfigCount = 0;
         ShardingStrategyConfiguration result = null;
         if (null != yamlConfiguration.getStandard()) {
@@ -92,50 +80,32 @@ public final class ShardingStrategyConfigurationYamlSwapper implements YamlSwapp
     private YamlStandardShardingStrategyConfiguration createYamlStandardShardingStrategyConfiguration(final StandardShardingStrategyConfiguration data) {
         YamlStandardShardingStrategyConfiguration result = new YamlStandardShardingStrategyConfiguration();
         result.setShardingColumn(data.getShardingColumn());
-        result.setShardingAlgorithm(createYamlShardingAlgorithmConfiguration(data.getShardingAlgorithm()));
+        result.setShardingAlgorithmName(data.getShardingAlgorithmName());
         return result;
     }
     
     private YamlComplexShardingStrategyConfiguration createYamlComplexShardingStrategyConfiguration(final ComplexShardingStrategyConfiguration data) {
         YamlComplexShardingStrategyConfiguration result = new YamlComplexShardingStrategyConfiguration();
         result.setShardingColumns(data.getShardingColumns());
-        result.setShardingAlgorithm(createYamlShardingAlgorithmConfiguration(data.getShardingAlgorithm()));
+        result.setShardingAlgorithmName(data.getShardingAlgorithmName());
         return result;
     }
     
     private YamlHintShardingStrategyConfiguration createYamlHintShardingStrategyConfiguration(final HintShardingStrategyConfiguration data) {
         YamlHintShardingStrategyConfiguration result = new YamlHintShardingStrategyConfiguration();
-        result.setShardingAlgorithm(createYamlShardingAlgorithmConfiguration(data.getShardingAlgorithm()));
+        result.setShardingAlgorithmName(data.getShardingAlgorithmName());
         return result;
     }
     
     private StandardShardingStrategyConfiguration createStandardShardingStrategyConfiguration(final YamlStandardShardingStrategyConfiguration yamlConfiguration) {
-        return new StandardShardingStrategyConfiguration(yamlConfiguration.getShardingColumn(),
-                createShardingAlgorithm(StandardShardingAlgorithm.class, yamlConfiguration.getShardingAlgorithm()));
+        return new StandardShardingStrategyConfiguration(yamlConfiguration.getShardingColumn(), yamlConfiguration.getShardingAlgorithmName());
     }
     
     private ComplexShardingStrategyConfiguration createComplexShardingStrategyConfiguration(final YamlComplexShardingStrategyConfiguration yamlConfiguration) {
-        return new ComplexShardingStrategyConfiguration(yamlConfiguration.getShardingColumns(), 
-                createShardingAlgorithm(ComplexKeysShardingAlgorithm.class, yamlConfiguration.getShardingAlgorithm()));
+        return new ComplexShardingStrategyConfiguration(yamlConfiguration.getShardingColumns(), yamlConfiguration.getShardingAlgorithmName());
     }
     
     private HintShardingStrategyConfiguration createHintShardingStrategyConfiguration(final YamlHintShardingStrategyConfiguration yamlConfiguration) {
-        return new HintShardingStrategyConfiguration(createShardingAlgorithm(HintShardingAlgorithm.class, yamlConfiguration.getShardingAlgorithm()));
-    }
-    
-    private YamlShardingAlgorithmConfiguration createYamlShardingAlgorithmConfiguration(final ShardingAlgorithm shardingAlgorithm) {
-        YamlShardingAlgorithmConfiguration result = new YamlShardingAlgorithmConfiguration();
-        result.setType(shardingAlgorithm.getType());
-        result.setProps(shardingAlgorithm.getProperties());
-        return result;
-    }
-    
-    @SuppressWarnings("unchecked")
-    private <T extends ShardingAlgorithm> T createShardingAlgorithm(final Class<T> shardingAlgorithmClass, final YamlShardingAlgorithmConfiguration shardingAlgorithm) {
-        ShardingAlgorithm result = TypedSPIRegistry.getRegisteredService(ShardingAlgorithm.class, shardingAlgorithm.getType(), shardingAlgorithm.getProps());
-        if (!shardingAlgorithmClass.isAssignableFrom(result.getClass())) {
-            throw new ShardingSphereException("Class %s is not an implementation of %s", result.getClass().getName(), shardingAlgorithmClass.getName());
-        }
-        return (T) result;
+        return new HintShardingStrategyConfiguration(yamlConfiguration.getShardingAlgorithmName());
     }
 }

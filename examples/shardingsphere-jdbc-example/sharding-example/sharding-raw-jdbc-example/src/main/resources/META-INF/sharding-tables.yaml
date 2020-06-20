@@ -30,10 +30,7 @@ rules:
       tableStrategy: 
         standard:
           shardingColumn: order_id
-          shardingAlgorithm:
-            type: INLINE
-            props:
-              algorithm.expression: t_order_${order_id % 2}
+          shardingAlgorithmName: t_order_inline
       keyGenerateStrategy:
         column: order_id
         keyGeneratorName: snowflake
@@ -42,10 +39,7 @@ rules:
       tableStrategy:
         standard:
           shardingColumn: order_id
-          shardingAlgorithm:
-            type: INLINE
-            props:
-              algorithm.expression: t_order_item_${order_id % 2}
+          shardingAlgorithmName: t_order_item_inline
       keyGenerateStrategy:
         column: order_item_id
         keyGeneratorName: snowflake
@@ -54,10 +48,20 @@ rules:
   broadcastTables:
     - t_address
   
+  shardingAlgorithms:
+    t_order_inline:
+      type: INLINE
+      props:
+        algorithm.expression: t_order_${order_id % 2}
+    t_order_item_inline:
+      type: INLINE
+      props:
+        algorithm.expression: t_order_item_${order_id % 2}
+  
   keyGenerators:
     snowflake:
       type: SNOWFLAKE
-      properties:
+      props:
           worker.id: 123
 
 props:

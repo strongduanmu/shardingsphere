@@ -27,7 +27,7 @@
 #    instanceType: zookeeper
 #    serverLists: localhost:2181
 #    namespace: orchestration
-#    properties:
+#    props:
 #      overwrite: false
 #      retryIntervalMilliseconds: 500
 #      timeToLiveSeconds: 60
@@ -42,7 +42,21 @@
 #      password: sharding 
 #      authorizedSchemas: sharding_db
 #
-#properties:
+#metrics:
+#  name: prometheus
+#  host:  127.0.0.1
+#  port:  9190
+#
+#cluster:
+#  heartbeat:
+#    sql: select 1
+#    threadCount: 1
+#    interval: 60
+#    retryEnable: false
+#    retryMaximum: 3
+#    retryInterval: 3
+#
+#props:
 #  max.connections.size.per.query: 1
 #  acceptor.size: 16  # The default value is available processors count * 2.
 #  executor.size: 16  # Infinite by default.
@@ -52,6 +66,8 @@
 #    # BASE: Proxy will run with B.A.S.E transaction.
 #  proxy.transaction.type: LOCAL
 #  proxy.opentracing.enabled: false
+#  proxy.metrics.enabled: false
+#  proxy.cluster.enabled: false
 #  proxy.hint.enabled: false
 #  query.with.cipher.column: true
 #  sql.show: false
