@@ -17,33 +17,46 @@
 
 package org.apache.shardingsphere.orchestration.core.registrycenter.instance;
 
-import lombok.Getter;
 import java.lang.management.ManagementFactory;
 import java.util.UUID;
+
+import com.google.common.base.Strings;
+import org.apache.shardingsphere.infra.constant.Constants;
 import org.apache.shardingsphere.orchestration.core.common.utils.IpUtils;
 
 /**
  * Orchestration instance.
  */
-@Getter
 public final class OrchestrationInstance {
     
     private static final String DELIMITER = "@";
-    
+
     private static final OrchestrationInstance INSTANCE = new OrchestrationInstance();
     
-    private final String instanceId;
-    
+    private String instanceId;
+
     private OrchestrationInstance() {
-        instanceId = IpUtils.getIp() + DELIMITER + ManagementFactory.getRuntimeMXBean().getName().split(DELIMITER)[0] + DELIMITER + UUID.randomUUID().toString();
+        String tag = Strings.isNullOrEmpty(System.getProperty(Constants.PORT_KEY))
+                ? ManagementFactory.getRuntimeMXBean().getName().split(DELIMITER)[0] : System.getProperty(Constants.PORT_KEY);
+        instanceId = IpUtils.getIp() + DELIMITER + tag + DELIMITER + UUID.randomUUID().toString();
     }
-    
+
+    /**
+     * Getter for instanceId.
+     *
+     * @return  instanceId
+     */
+    public String getInstanceId() {
+        return instanceId;
+    }
+
     /**
      * Get instance.
-     * 
-     * @return instance
+     *
+     * @return  singleton instance
      */
     public static OrchestrationInstance getInstance() {
         return INSTANCE;
     }
+
 }
