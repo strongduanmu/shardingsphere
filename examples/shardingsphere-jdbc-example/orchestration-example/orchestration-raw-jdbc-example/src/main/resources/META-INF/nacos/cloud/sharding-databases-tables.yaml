@@ -16,8 +16,14 @@
 #
 
 orchestration:
-  demo_nacos_yaml_ds_sharding:
-    orchestrationType: config_center
+  name: demo_zookeeper_yaml_ds_sharding
+  registryRepositoryConfiguration:
+    instanceType: zookeeper
+    serverLists: localhost:2181
+    namespace: 
+    props:
+      overwrite: false
+  additionalConfigurationRepositoryConfiguration:
     instanceType: nacos
     serverLists: localhost:8848
     namespace:
@@ -25,11 +31,3 @@ orchestration:
       overwrite: false
       group: SHARDING_SPHERE_DEFAULT_GROUP
       timeout: 3000
-
-  demo_zookeeper_yaml_ds_sharding:
-    orchestrationType: registry_center,metadata_center
-    instanceType: zookeeper
-    serverLists: localhost:2181
-    namespace: 
-    props:
-      overwrite: false

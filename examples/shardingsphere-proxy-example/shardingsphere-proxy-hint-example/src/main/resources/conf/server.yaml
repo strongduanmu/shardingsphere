@@ -22,8 +22,8 @@
 ######################################################################################################
 #
 #orchestration:
-#  orchestration_ds:
-#    orchestrationType: registry_center,config_center,metadata_center
+#  name: orchestration_ds
+#  registryRepositoryConfiguration:
 #    instanceType: zookeeper
 #    serverLists: localhost:2181
 #    namespace: orchestration

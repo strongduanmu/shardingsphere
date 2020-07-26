@@ -99,12 +99,12 @@ public final class SelectStatementContext extends CommonSQLStatementContext<Sele
         containsSubquery = containsSubquery();
     }
     
-    public SelectStatementContext(final SchemaMetaData schemaMetaData, final String sql, final List<Object> parameters, final SelectStatement sqlStatement) {
+    public SelectStatementContext(final SchemaMetaData schemaMetaData, final List<Object> parameters, final SelectStatement sqlStatement) {
         super(sqlStatement);
         tablesContext = new TablesContext(getSimpleTableSegments());
         groupByContext = new GroupByContextEngine().createGroupByContext(sqlStatement);
         orderByContext = new OrderByContextEngine().createOrderBy(sqlStatement, groupByContext);
-        projectionsContext = new ProjectionsContextEngine(schemaMetaData).createProjectionsContext(sql, getSimpleTableSegments(), getSqlStatement().getProjections(), groupByContext, orderByContext);
+        projectionsContext = new ProjectionsContextEngine(schemaMetaData).createProjectionsContext(getSimpleTableSegments(), getSqlStatement().getProjections(), groupByContext, orderByContext);
         paginationContext = new PaginationContextEngine().createPaginationContext(sqlStatement, projectionsContext, parameters);
         containsSubquery = containsSubquery();
     }
@@ -283,13 +283,13 @@ public final class SelectStatementContext extends CommonSQLStatementContext<Sele
     private Collection<SimpleTableSegment> getTableFromSelect(final SelectStatement selectStatement) {
         Collection<SimpleTableSegment> result = new LinkedList<>();
         Collection<TableSegment> realTables = new LinkedList<>();
-        Collection<TableSegment> tmp = new LinkedList<>();
+        Collection<TableSegment> allTables = new LinkedList<>();
         for (TableReferenceSegment each : selectStatement.getTableReferences()) {
-            tmp.addAll(getTablesFromTableReference(each));
+            allTables.addAll(getTablesFromTableReference(each));
             realTables.addAll(getRealTablesFromTableReference(each));
         }
         if (selectStatement.getWhere().isPresent()) {
-            tmp.addAll(getAllTablesFromWhere(selectStatement.getWhere().get(), realTables));
+            allTables.addAll(getAllTablesFromWhere(selectStatement.getWhere().get(), realTables));
         }
         result.addAll(getAllTablesFromProjections(selectStatement.getProjections(), realTables));
         if (getSqlStatement().getGroupBy().isPresent()) {
@@ -298,7 +298,7 @@ public final class SelectStatementContext extends CommonSQLStatementContext<Sele
         if (getSqlStatement().getOrderBy().isPresent()) {
             result.addAll(getAllTablesFromOrderByItems(getSqlStatement().getOrderBy().get().getOrderByItems(), realTables));
         }
-        for (TableSegment each : tmp) {
+        for (TableSegment each : allTables) {
             if (each instanceof SubqueryTableSegment) {
                 result.addAll(getTableFromSelect(((SubqueryTableSegment) each).getSubquery().getSelect()));
             } else {
@@ -338,7 +338,6 @@ public final class SelectStatementContext extends CommonSQLStatementContext<Sele
         if (null != tableFactorSegment.getTable() && tableFactorSegment.getTable() instanceof SimpleTableSegment) {
             result.add(tableFactorSegment.getTable());
         }
-        // TODO subquery in from support not use alias
         if (null != tableFactorSegment.getTable() && tableFactorSegment.getTable() instanceof SubqueryTableSegment) {
             result.add(tableFactorSegment.getTable());
         }
@@ -355,7 +354,6 @@ public final class SelectStatementContext extends CommonSQLStatementContext<Sele
         if (null != tableFactorSegment.getTable() && tableFactorSegment.getTable() instanceof SimpleTableSegment) {
             result.add(tableFactorSegment.getTable());
         }
-        // TODO subquery in from support not use alias
         if (null != tableFactorSegment.getTable() && tableFactorSegment.getTable() instanceof SubqueryTableSegment) {
             result.add(tableFactorSegment.getTable());
         }
@@ -395,14 +393,14 @@ public final class SelectStatementContext extends CommonSQLStatementContext<Sele
     
     private Collection<TableSegment> getTablesFromJoinTable(final JoinedTableSegment joinedTableSegment, final Collection<TableSegment> tableSegments) {
         Collection<TableSegment> result = new LinkedList<>();
-        Collection<TableSegment> tmp = new LinkedList<>();
-        tmp.addAll(tableSegments);
+        Collection<TableSegment> realTables = new LinkedList<>();
+        realTables.addAll(tableSegments);
         if (null != joinedTableSegment.getTableFactor()) {
             result.addAll(getTablesFromTableFactor(joinedTableSegment.getTableFactor()));
-            tmp.addAll(getTablesFromTableFactor(joinedTableSegment.getTableFactor()));
+            realTables.addAll(getTablesFromTableFactor(joinedTableSegment.getTableFactor()));
         }
         if (null != joinedTableSegment.getJoinSpecification()) {
-            result.addAll(getTablesFromJoinSpecification(joinedTableSegment.getJoinSpecification(), tmp));
+            result.addAll(getTablesFromJoinSpecification(joinedTableSegment.getJoinSpecification(), realTables));
         }
         return result;
     }
