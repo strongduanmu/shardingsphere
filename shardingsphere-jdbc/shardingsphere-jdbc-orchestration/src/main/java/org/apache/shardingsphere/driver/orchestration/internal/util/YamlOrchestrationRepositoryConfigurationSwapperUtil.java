@@ -20,8 +20,8 @@ package org.apache.shardingsphere.driver.orchestration.internal.util;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationConfiguration;
-import org.apache.shardingsphere.orchestration.repository.common.configuration.config.YamlOrchestrationConfiguration;
-import org.apache.shardingsphere.orchestration.repository.common.configuration.swapper.OrchestrationRepositoryConfigurationYamlSwapper;
+import org.apache.shardingsphere.orchestration.core.common.yaml.config.YamlOrchestrationConfiguration;
+import org.apache.shardingsphere.orchestration.core.common.yaml.swapper.OrchestrationCenterConfigurationYamlSwapper;
 
 /**
  * YAML orchestration configuration swapper utility.
@@ -29,7 +29,7 @@ import org.apache.shardingsphere.orchestration.repository.common.configuration.s
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class YamlOrchestrationRepositoryConfigurationSwapperUtil {
     
-    private static final OrchestrationRepositoryConfigurationYamlSwapper SWAPPER = new OrchestrationRepositoryConfigurationYamlSwapper();
+    private static final OrchestrationCenterConfigurationYamlSwapper SWAPPER = new OrchestrationCenterConfigurationYamlSwapper();
     
     /**
      * Marshal YAML orchestration repository configuration map to instance configuration map.
@@ -38,10 +38,10 @@ public final class YamlOrchestrationRepositoryConfigurationSwapperUtil {
      * @return orchestration repository configuration map
      */
     public static OrchestrationConfiguration marshal(final YamlOrchestrationConfiguration orchestration) {
-        if (null == orchestration.getAdditionalConfigurationRepositoryConfiguration()) {
-            return new OrchestrationConfiguration(orchestration.getName(), SWAPPER.swapToObject(orchestration.getRegistryRepositoryConfiguration()));
+        if (null == orchestration.getAdditionalConfigCenter()) {
+            return new OrchestrationConfiguration(orchestration.getNamespace(), SWAPPER.swapToObject(orchestration.getRegistryCenter()), orchestration.isOverwrite());
         }
-        return new OrchestrationConfiguration(orchestration.getName(), 
-                SWAPPER.swapToObject(orchestration.getRegistryRepositoryConfiguration()), SWAPPER.swapToObject(orchestration.getAdditionalConfigurationRepositoryConfiguration()));
+        return new OrchestrationConfiguration(orchestration.getNamespace(), 
+                SWAPPER.swapToObject(orchestration.getRegistryCenter()), SWAPPER.swapToObject(orchestration.getAdditionalConfigCenter()), orchestration.isOverwrite());
     }
 }

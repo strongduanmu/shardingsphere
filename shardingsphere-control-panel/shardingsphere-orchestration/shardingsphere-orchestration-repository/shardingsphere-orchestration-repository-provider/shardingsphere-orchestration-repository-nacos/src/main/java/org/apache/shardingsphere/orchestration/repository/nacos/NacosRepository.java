@@ -26,10 +26,10 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.orchestration.repository.api.ConfigurationRepository;
+import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationCenterConfiguration;
 import org.apache.shardingsphere.orchestration.repository.api.listener.DataChangedEvent;
+import org.apache.shardingsphere.orchestration.repository.api.listener.DataChangedEvent.ChangedType;
 import org.apache.shardingsphere.orchestration.repository.api.listener.DataChangedEventListener;
-import org.apache.shardingsphere.orchestration.repository.api.util.ConfigKeyUtils;
-import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationRepositoryConfiguration;
 
 import java.util.List;
 import java.util.Properties;
@@ -40,6 +40,10 @@ import java.util.concurrent.Executor;
  */
 @Slf4j
 public final class NacosRepository implements ConfigurationRepository {
+    
+    private static final String DOT_SEPARATOR = ".";
+    
+    private static final String PATH_SEPARATOR = "/";
     
     private ConfigService configService;
     
@@ -55,12 +59,12 @@ public final class NacosRepository implements ConfigurationRepository {
      * @param config config center configuration
      */
     @Override
-    public void init(final OrchestrationRepositoryConfiguration config) {
+    public void init(final String namespace, final OrchestrationCenterConfiguration config) {
         try {
             nacosProperties = new NacosProperties(props);
             Properties props = new Properties();
             props.put(PropertyKeyConst.SERVER_ADDR, config.getServerLists());
-            props.put(PropertyKeyConst.NAMESPACE, null == config.getNamespace() ? "" : config.getNamespace());
+            props.put(PropertyKeyConst.NAMESPACE, null == namespace ? "" : namespace);
             configService = NacosFactory.createConfigService(props);
         } catch (final NacosException ex) {
             log.error("Init nacos config center exception for: {}", ex.toString());
@@ -76,7 +80,7 @@ public final class NacosRepository implements ConfigurationRepository {
     @Override
     public String get(final String key) {
         try {
-            String dataId = ConfigKeyUtils.pathToKey(key);
+            String dataId = pathToKey(key);
             String group = nacosProperties.getValue(NacosPropertyKey.GROUP);
             long timeoutMs = nacosProperties.getValue(NacosPropertyKey.TIMEOUT);
             return configService.getConfig(dataId, group, timeoutMs);
@@ -106,7 +110,7 @@ public final class NacosRepository implements ConfigurationRepository {
     @Override
     public void persist(final String key, final String value) {
         try {
-            String dataId = ConfigKeyUtils.pathToKey(key);
+            String dataId = pathToKey(key);
             String group = nacosProperties.getValue(NacosPropertyKey.GROUP);
             configService.publishConfig(dataId, group, value);
         } catch (final NacosException ex) {
@@ -118,12 +122,12 @@ public final class NacosRepository implements ConfigurationRepository {
      * Watch key or path of the config server.
      *
      * @param key key of data
-     * @param dataChangedEventListener data changed event listener
+     * @param listener data changed event listener
      */
     @Override
-    public void watch(final String key, final DataChangedEventListener dataChangedEventListener) {
+    public void watch(final String key, final DataChangedEventListener listener) {
         try {
-            String dataId = ConfigKeyUtils.pathToKey(key);
+            String dataId = pathToKey(key);
             String group = nacosProperties.getValue(NacosPropertyKey.GROUP);
             configService.addListener(dataId, group, new Listener() {
                 
@@ -134,7 +138,7 @@ public final class NacosRepository implements ConfigurationRepository {
                 
                 @Override
                 public void receiveConfigInfo(final String configInfo) {
-                    dataChangedEventListener.onChange(new DataChangedEvent(key, configInfo, DataChangedEvent.ChangedType.UPDATED));
+                    listener.onChange(new DataChangedEvent(key, configInfo, ChangedType.UPDATED));
                 }
             });
         } catch (final NacosException ex) {
@@ -145,11 +149,16 @@ public final class NacosRepository implements ConfigurationRepository {
     @Override
     public void delete(final String key) {
         try {
-            String dataId = ConfigKeyUtils.pathToKey(key);
+            String dataId = pathToKey(key);
             configService.removeConfig(dataId, nacosProperties.getValue(NacosPropertyKey.GROUP));
-        } catch (NacosException ex) {
+        } catch (final NacosException ex) {
             log.debug("Nacos remove config exception for: {}", ex.toString());
         }
+    }
+    
+    private String pathToKey(final String path) {
+        String key = path.replace(PATH_SEPARATOR, DOT_SEPARATOR);
+        return key.substring(key.indexOf(DOT_SEPARATOR) + 1);
     }
     
     @Override
@@ -163,6 +172,6 @@ public final class NacosRepository implements ConfigurationRepository {
      */
     @Override
     public String getType() {
-        return "nacos";
+        return "Nacos";
     }
 }

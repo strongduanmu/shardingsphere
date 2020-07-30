@@ -22,9 +22,9 @@ import org.apache.shardingsphere.scaling.core.config.RdbmsConfiguration;
 import org.apache.shardingsphere.scaling.core.datasource.DataSourceFactory;
 import org.apache.shardingsphere.scaling.core.execute.executor.AbstractShardingScalingExecutor;
 import org.apache.shardingsphere.scaling.core.execute.executor.channel.Channel;
-import org.apache.shardingsphere.scaling.core.job.position.LogPosition;
+import org.apache.shardingsphere.scaling.core.job.position.Position;
 import org.apache.shardingsphere.scaling.core.execute.executor.dumper.LogDumper;
-import org.apache.shardingsphere.scaling.core.job.position.NopLogPosition;
+import org.apache.shardingsphere.scaling.core.job.position.NopPosition;
 import org.apache.shardingsphere.scaling.core.execute.executor.record.Column;
 import org.apache.shardingsphere.scaling.core.execute.executor.record.DataRecord;
 import org.apache.shardingsphere.scaling.core.execute.executor.record.FinishedRecord;
@@ -32,6 +32,7 @@ import org.apache.shardingsphere.scaling.core.execute.executor.record.Placeholde
 import org.apache.shardingsphere.scaling.core.execute.executor.record.Record;
 import org.apache.shardingsphere.scaling.core.metadata.JdbcUri;
 import org.apache.shardingsphere.scaling.core.metadata.MetaDataManager;
+import org.apache.shardingsphere.scaling.mysql.binlog.BinlogPosition;
 import org.apache.shardingsphere.scaling.mysql.client.ConnectInfo;
 import org.apache.shardingsphere.scaling.mysql.client.MySQLClient;
 import org.apache.shardingsphere.scaling.mysql.binlog.event.AbstractBinlogEvent;
@@ -65,7 +66,7 @@ public final class MySQLBinlogDumper extends AbstractShardingScalingExecutor imp
     @Setter
     private Channel channel;
     
-    public MySQLBinlogDumper(final RdbmsConfiguration rdbmsConfiguration, final LogPosition binlogPosition) {
+    public MySQLBinlogDumper(final RdbmsConfiguration rdbmsConfiguration, final Position binlogPosition) {
         this.binlogPosition = (BinlogPosition) binlogPosition;
         if (!JDBCDataSourceConfiguration.class.equals(rdbmsConfiguration.getDataSourceConfiguration().getClass())) {
             throw new UnsupportedOperationException("MySQLBinlogDumper only support JDBCDataSourceConfiguration");
@@ -93,7 +94,7 @@ public final class MySQLBinlogDumper extends AbstractShardingScalingExecutor imp
                 handleEvent(channel, uri, event);
             }
         }
-        pushRecord(channel, new FinishedRecord(new NopLogPosition()));
+        pushRecord(channel, new FinishedRecord(new NopPosition()));
     }
     
     private void handleEvent(final Channel channel, final JdbcUri uri, final AbstractBinlogEvent event) {

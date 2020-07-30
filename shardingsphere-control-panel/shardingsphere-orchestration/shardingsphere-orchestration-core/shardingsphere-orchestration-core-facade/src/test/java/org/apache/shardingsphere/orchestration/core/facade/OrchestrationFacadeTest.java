@@ -17,6 +17,8 @@
 
 package org.apache.shardingsphere.orchestration.core.facade;
 
+import org.apache.shardingsphere.cluster.configuration.config.ClusterConfiguration;
+import org.apache.shardingsphere.cluster.configuration.config.HeartbeatConfiguration;
 import org.apache.shardingsphere.infra.auth.Authentication;
 import org.apache.shardingsphere.infra.auth.ProxyUser;
 import org.apache.shardingsphere.infra.config.DataSourceConfiguration;
@@ -24,12 +26,12 @@ import org.apache.shardingsphere.infra.config.RuleConfiguration;
 import org.apache.shardingsphere.metrics.configuration.config.MetricsConfiguration;
 import org.apache.shardingsphere.orchestration.core.config.ConfigCenter;
 import org.apache.shardingsphere.orchestration.core.facade.listener.OrchestrationListenerManager;
+import org.apache.shardingsphere.orchestration.core.facade.repository.OrchestrationRepositoryFacade;
 import org.apache.shardingsphere.orchestration.core.facade.util.FieldUtil;
 import org.apache.shardingsphere.orchestration.core.metadata.MetaDataCenter;
 import org.apache.shardingsphere.orchestration.core.registry.RegistryCenter;
-import org.apache.shardingsphere.orchestration.repository.api.RegistryRepository;
+import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationCenterConfiguration;
 import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationConfiguration;
-import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationRepositoryConfiguration;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,7 +44,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -52,7 +53,7 @@ public final class OrchestrationFacadeTest {
     private final OrchestrationFacade orchestrationFacade = OrchestrationFacade.getInstance();
     
     @Mock
-    private RegistryRepository registryRepository;
+    private OrchestrationRepositoryFacade repositoryFacade;
     
     @Mock
     private ConfigCenter configCenter;
@@ -68,13 +69,9 @@ public final class OrchestrationFacadeTest {
     
     @Before
     public void setUp() {
-        OrchestrationRepositoryConfiguration configuration1 = new OrchestrationRepositoryConfiguration("REG_TEST", new Properties());
-        configuration1.setNamespace("namespace_1");
-        OrchestrationRepositoryConfiguration configuration2 = new OrchestrationRepositoryConfiguration("CONFIG_TEST", new Properties());
-        configuration2.setNamespace("namespace_2");
-        OrchestrationConfiguration orchestrationConfiguration = new OrchestrationConfiguration("test_name", configuration1, configuration2);
+        OrchestrationConfiguration orchestrationConfiguration = new OrchestrationConfiguration("test_name", new OrchestrationCenterConfiguration("ALL", "127.0.0.1", new Properties()), false);
         orchestrationFacade.init(orchestrationConfiguration, Arrays.asList("sharding_db", "masterslave_db"));
-        FieldUtil.setField(orchestrationFacade, "registryRepository", registryRepository);
+        FieldUtil.setField(orchestrationFacade, "repositoryFacade", repositoryFacade);
         FieldUtil.setField(orchestrationFacade, "configCenter", configCenter);
         FieldUtil.setField(orchestrationFacade, "registryCenter", registryCenter);
         FieldUtil.setField(orchestrationFacade, "metaDataCenter", metaDataCenter);
@@ -82,19 +79,19 @@ public final class OrchestrationFacadeTest {
     }
     
     @Test
-    public void assertInitWithParameters() {
+    public void assertOnlineInstanceWithParameters() {
         Map<String, DataSourceConfiguration> dataSourceConfigurationMap = Collections.singletonMap("test_ds", mock(DataSourceConfiguration.class));
         Map<String, Collection<RuleConfiguration>> ruleConfigurationMap = Collections.singletonMap("sharding_db", Collections.singletonList(mock(RuleConfiguration.class)));
         ProxyUser proxyUser = new ProxyUser("root", Collections.singleton("db1"));
         Authentication authentication = new Authentication();
         authentication.getUsers().put("root", proxyUser);
         Properties props = new Properties();
-        orchestrationFacade.initConfigurations(Collections.singletonMap("sharding_db", dataSourceConfigurationMap), ruleConfigurationMap, authentication, props);
+        orchestrationFacade.onlineInstance(Collections.singletonMap("sharding_db", dataSourceConfigurationMap), ruleConfigurationMap, authentication, props);
         verify(configCenter).persistConfigurations("sharding_db", dataSourceConfigurationMap, ruleConfigurationMap.get("sharding_db"), false);
         verify(configCenter).persistGlobalConfiguration(authentication, props, false);
         verify(registryCenter).persistInstanceOnline();
         verify(registryCenter).persistDataSourcesNode();
-        verify(listenerManager).initListeners();
+        verify(listenerManager).init();
     }
     
     @Test
@@ -105,23 +102,29 @@ public final class OrchestrationFacadeTest {
     }
     
     @Test
-    public void assertInitWithoutParameters() {
-        orchestrationFacade.initConfigurations();
+    public void assertOnlineInstanceWithoutParameters() {
+        orchestrationFacade.onlineInstance();
         verify(registryCenter).persistInstanceOnline();
         verify(registryCenter).persistDataSourcesNode();
-        verify(listenerManager).initListeners();
+        verify(listenerManager).init();
     }
     
     @Test
-    public void assertCloseSuccess() {
-        orchestrationFacade.close();
-        verify(registryRepository).close();
+    public void assertInitClusterConfiguration() {
+        HeartbeatConfiguration heartBeatConfiguration = new HeartbeatConfiguration();
+        heartBeatConfiguration.setSql("select 1");
+        heartBeatConfiguration.setInterval(60);
+        heartBeatConfiguration.setRetryEnable(true);
+        heartBeatConfiguration.setRetryMaximum(3);
+        ClusterConfiguration clusterConfiguration = new ClusterConfiguration();
+        clusterConfiguration.setHeartbeat(heartBeatConfiguration);
+        orchestrationFacade.initClusterConfiguration(clusterConfiguration);
+        verify(configCenter).persistClusterConfiguration(clusterConfiguration, false);
     }
     
     @Test
-    public void assertCloseFailure() {
-        doThrow(new RuntimeException()).when(registryRepository).close();
+    public void assertClose() {
         orchestrationFacade.close();
-        verify(registryRepository).close();
+        verify(repositoryFacade).close();
     }
 }

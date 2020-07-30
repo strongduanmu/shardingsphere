@@ -21,7 +21,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.shardingsphere.orchestration.repository.api.ConfigurationRepository;
 import org.apache.shardingsphere.orchestration.repository.api.RegistryRepository;
-import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationRepositoryConfiguration;
+import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationCenterConfiguration;
 import org.apache.shardingsphere.orchestration.repository.api.listener.DataChangedEventListener;
 
 import java.util.Collections;
@@ -35,7 +35,7 @@ public final class TestOrchestrationRepository implements RegistryRepository, Co
     private Properties props = new Properties();
     
     @Override
-    public void init(final OrchestrationRepositoryConfiguration config) {
+    public void init(final String namespace, final OrchestrationCenterConfiguration config) {
     }
     
     @Override
@@ -57,11 +57,11 @@ public final class TestOrchestrationRepository implements RegistryRepository, Co
     }
     
     @Override
-    public void watch(final String key, final DataChangedEventListener dataChangedEventListener) {
+    public void delete(final String key) {
     }
     
     @Override
-    public void delete(final String key) {
+    public void watch(final String key, final DataChangedEventListener listener) {
     }
     
     @Override

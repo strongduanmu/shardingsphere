@@ -18,9 +18,10 @@
 package org.apache.shardingsphere.orchestration.repository.zookeeper;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationRepositoryConfiguration;
+import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationCenterConfiguration;
 import org.apache.shardingsphere.orchestration.repository.api.exception.OrchestrationException;
 import org.apache.shardingsphere.orchestration.repository.api.listener.DataChangedEvent;
+import org.apache.shardingsphere.orchestration.repository.api.listener.DataChangedEvent.ChangedType;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -46,9 +47,7 @@ public final class CuratorZookeeperRepositoryTest {
     public static void init() {
         EmbedTestingServer.start();
         serverLists = EmbedTestingServer.getTestingServerConnectionString();
-        OrchestrationRepositoryConfiguration configuration = new OrchestrationRepositoryConfiguration(REPOSITORY.getType(), new Properties());
-        configuration.setServerLists(serverLists);
-        REPOSITORY.init(configuration);
+        REPOSITORY.init("orchestration", new OrchestrationCenterConfiguration(REPOSITORY.getType(), serverLists, new Properties()));
     }
     
     @Test
@@ -87,7 +86,7 @@ public final class CuratorZookeeperRepositoryTest {
         Thread.sleep(50L);
         DataChangedEvent dataChangedEvent = dataChangedEventActual.get();
         assertNotNull(dataChangedEvent);
-        assertThat(dataChangedEvent.getChangedType(), is(DataChangedEvent.ChangedType.UPDATED));
+        assertThat(dataChangedEvent.getChangedType(), is(ChangedType.UPDATED));
         assertThat(dataChangedEvent.getKey(), is("/test/children_updated/1"));
         assertThat(dataChangedEvent.getValue(), is("value2"));
         assertThat(REPOSITORY.get("/test/children_updated/1"), is("value2"));
@@ -105,7 +104,7 @@ public final class CuratorZookeeperRepositoryTest {
         Thread.sleep(50L);
         DataChangedEvent dataChangedEvent = dataChangedEventActual.get();
         assertNotNull(dataChangedEvent);
-        assertThat(dataChangedEvent.getChangedType(), is(DataChangedEvent.ChangedType.DELETED));
+        assertThat(dataChangedEvent.getChangedType(), is(ChangedType.DELETED));
         assertThat(dataChangedEvent.getKey(), is("/test/children_deleted/5"));
         assertThat(dataChangedEvent.getValue(), is("value5"));
     }
@@ -118,7 +117,7 @@ public final class CuratorZookeeperRepositoryTest {
         Thread.sleep(50L);
         DataChangedEvent event = actualDataChangedEvent.get();
         assertNotNull(event);
-        assertThat(event.getChangedType(), is(DataChangedEvent.ChangedType.ADDED));
+        assertThat(event.getChangedType(), is(ChangedType.ADDED));
         assertThat(event.getKey(), is("/test/children_added/4"));
         assertThat(event.getValue(), is("value4"));
     }
@@ -136,10 +135,9 @@ public final class CuratorZookeeperRepositoryTest {
         props.setProperty(ZookeeperPropertyKey.MAX_RETRIES.getKey(), "1");
         props.setProperty(ZookeeperPropertyKey.TIME_TO_LIVE_SECONDS.getKey(), "1000");
         props.setProperty(ZookeeperPropertyKey.OPERATION_TIMEOUT_MILLISECONDS.getKey(), "2000");
-        OrchestrationRepositoryConfiguration configuration = new OrchestrationRepositoryConfiguration(repository.getType(), new Properties());
-        configuration.setServerLists(serverLists);
+        OrchestrationCenterConfiguration config = new OrchestrationCenterConfiguration(repository.getType(), serverLists, new Properties());
         repository.setProps(props);
-        repository.init(configuration);
+        repository.init("orchestration", config);
         assertThat(repository.getProps().getProperty(ZookeeperPropertyKey.RETRY_INTERVAL_MILLISECONDS.getKey()), is("1000"));
         assertThat(repository.getProps().getProperty(ZookeeperPropertyKey.MAX_RETRIES.getKey()), is("1"));
         assertThat(repository.getProps().getProperty(ZookeeperPropertyKey.TIME_TO_LIVE_SECONDS.getKey()), is("1000"));
@@ -153,10 +151,9 @@ public final class CuratorZookeeperRepositoryTest {
         final CuratorZookeeperRepository repository = new CuratorZookeeperRepository();
         Properties props = new Properties();
         props.setProperty(ZookeeperPropertyKey.TIME_TO_LIVE_SECONDS.getKey(), "0");
-        OrchestrationRepositoryConfiguration configuration = new OrchestrationRepositoryConfiguration(repository.getType(), new Properties());
-        configuration.setServerLists(serverLists);
+        OrchestrationCenterConfiguration config = new OrchestrationCenterConfiguration(repository.getType(), serverLists, new Properties());
         repository.setProps(props);
-        repository.init(configuration);
+        repository.init("orchestration", config);
         assertThat(repository.getProps().getProperty(ZookeeperPropertyKey.TIME_TO_LIVE_SECONDS.getKey()), is("0"));
         repository.persist("/test/children/build/2", "value1");
         assertThat(repository.get("/test/children/build/2"), is("value1"));
@@ -167,10 +164,9 @@ public final class CuratorZookeeperRepositoryTest {
         final CuratorZookeeperRepository repository = new CuratorZookeeperRepository();
         Properties props = new Properties();
         props.setProperty(ZookeeperPropertyKey.OPERATION_TIMEOUT_MILLISECONDS.getKey(), "0");
-        OrchestrationRepositoryConfiguration configuration = new OrchestrationRepositoryConfiguration(repository.getType(), new Properties());
-        configuration.setServerLists(serverLists);
+        OrchestrationCenterConfiguration config = new OrchestrationCenterConfiguration(repository.getType(), serverLists, new Properties());
         repository.setProps(props);
-        repository.init(configuration);
+        repository.init("orchestration", config);
         assertThat(repository.getProps().getProperty(ZookeeperPropertyKey.OPERATION_TIMEOUT_MILLISECONDS.getKey()), is("0"));
         repository.persist("/test/children/build/3", "value1");
         assertThat(repository.get("/test/children/build/3"), is("value1"));
@@ -181,10 +177,9 @@ public final class CuratorZookeeperRepositoryTest {
         final CuratorZookeeperRepository repository = new CuratorZookeeperRepository();
         Properties props = new Properties();
         props.setProperty(ZookeeperPropertyKey.DIGEST.getKey(), "any");
-        OrchestrationRepositoryConfiguration configuration = new OrchestrationRepositoryConfiguration(repository.getType(), new Properties());
-        configuration.setServerLists(serverLists);
+        OrchestrationCenterConfiguration config = new OrchestrationCenterConfiguration(repository.getType(), serverLists, new Properties());
         repository.setProps(props);
-        repository.init(configuration);
+        repository.init("orchestration", config);
         assertThat(repository.getProps().getProperty(ZookeeperPropertyKey.DIGEST.getKey()), is("any"));
         repository.persist("/test/children/build/4", "value1");
         assertThat(repository.get("/test/children/build/4"), is("value1"));
@@ -204,12 +199,11 @@ public final class CuratorZookeeperRepositoryTest {
     @Test
     public void assertZKCloseAndException() {
         CuratorZookeeperRepository repository = new CuratorZookeeperRepository();
-        OrchestrationRepositoryConfiguration configuration = new OrchestrationRepositoryConfiguration(repository.getType(), new Properties());
+        OrchestrationCenterConfiguration config = new OrchestrationCenterConfiguration(repository.getType(), serverLists, new Properties());
         Properties props = new Properties();
         props.setProperty(ZookeeperPropertyKey.DIGEST.getKey(), "digest");
-        configuration.setServerLists(serverLists);
         repository.setProps(props);
-        repository.init(configuration);
+        repository.init("orchestration", config);
         repository.close();
         try {
             repository.get("/test/children/1");

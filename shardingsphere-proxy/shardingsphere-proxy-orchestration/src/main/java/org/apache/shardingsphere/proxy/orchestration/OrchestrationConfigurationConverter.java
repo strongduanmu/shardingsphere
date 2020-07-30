@@ -28,8 +28,8 @@ import org.apache.shardingsphere.kernel.context.SchemaContextsBuilder;
 import org.apache.shardingsphere.kernel.context.schema.DataSourceParameter;
 import org.apache.shardingsphere.metrics.configuration.swapper.MetricsConfigurationYamlSwapper;
 import org.apache.shardingsphere.orchestration.core.facade.OrchestrationFacade;
-import org.apache.shardingsphere.orchestration.repository.common.configuration.config.YamlOrchestrationConfiguration;
-import org.apache.shardingsphere.orchestration.repository.common.configuration.swapper.OrchestrationConfigurationYamlSwapper;
+import org.apache.shardingsphere.orchestration.core.common.yaml.config.YamlOrchestrationConfiguration;
+import org.apache.shardingsphere.orchestration.core.common.yaml.swapper.OrchestrationConfigurationYamlSwapper;
 import org.apache.shardingsphere.proxy.config.ProxyConfiguration;
 import org.apache.shardingsphere.proxy.config.ShardingConfiguration;
 import org.apache.shardingsphere.proxy.config.converter.AbstractConfigurationConverter;
@@ -49,7 +49,7 @@ import java.util.Set;
 /**
  * Orchestration configuration converter.
  */
-public class OrchestrationConfigurationConverter extends AbstractConfigurationConverter {
+public final class OrchestrationConfigurationConverter extends AbstractConfigurationConverter {
     
     private final OrchestrationFacade orchestrationFacade = OrchestrationFacade.getInstance();
     
@@ -82,9 +82,9 @@ public class OrchestrationConfigurationConverter extends AbstractConfigurationCo
     private void initOrchestrationConfigurations(
             final YamlProxyServerConfiguration serverConfig, final Map<String, YamlProxyRuleConfiguration> ruleConfigs, final OrchestrationFacade orchestrationFacade) {
         if (isEmptyLocalConfiguration(serverConfig, ruleConfigs)) {
-            orchestrationFacade.initConfigurations();
+            orchestrationFacade.onlineInstance();
         } else {
-            orchestrationFacade.initConfigurations(getDataSourceConfigurationMap(ruleConfigs),
+            orchestrationFacade.onlineInstance(getDataSourceConfigurationMap(ruleConfigs),
                     getRuleConfigurations(ruleConfigs), new AuthenticationYamlSwapper().swapToObject(serverConfig.getAuthentication()), serverConfig.getProps());
         }
         orchestrationFacade.initMetricsConfiguration(Optional.ofNullable(serverConfig.getMetrics()).map(new MetricsConfigurationYamlSwapper()::swapToObject).orElse(null));
@@ -105,7 +105,7 @@ public class OrchestrationConfigurationConverter extends AbstractConfigurationCo
     
     private Map<String, Map<String, DataSourceParameter>> getDataSourceParametersMap(final OrchestrationFacade orchestrationFacade) {
         Map<String, Map<String, DataSourceParameter>> result = new LinkedHashMap<>();
-        for (String each : orchestrationFacade.getConfigCenter().getAllShardingSchemaNames()) {
+        for (String each : orchestrationFacade.getConfigCenter().getAllSchemaNames()) {
             result.put(each, DataSourceConverter.getDataSourceParameterMap(orchestrationFacade.getConfigCenter().loadDataSourceConfigurations(each)));
         }
         return result;
@@ -113,7 +113,7 @@ public class OrchestrationConfigurationConverter extends AbstractConfigurationCo
     
     private Map<String, Collection<RuleConfiguration>> getSchemaRules(final OrchestrationFacade orchestrationFacade) {
         Map<String, Collection<RuleConfiguration>> result = new LinkedHashMap<>();
-        for (String each : orchestrationFacade.getConfigCenter().getAllShardingSchemaNames()) {
+        for (String each : orchestrationFacade.getConfigCenter().getAllSchemaNames()) {
             result.put(each, orchestrationFacade.getConfigCenter().loadRuleConfigurations(each));
         }
         return result;

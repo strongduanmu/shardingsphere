@@ -16,21 +16,17 @@
 #
 
 orchestration:
-  name: demo_zookeeper_yaml_ds_shadow
-  registryRepositoryConfiguration:
-    instanceType: zookeeper
+  namespace: demo_zookeeper_yaml_ds_shadow
+  registryCenter:
+    type: ZooKeeper
     serverLists: localhost:2181
-    namespace:
-    props:
-      overwrite: false
-  additionalConfigurationRepositoryConfiguration:
-    instanceType: nacos
+  additionalConfigCenter:
+    type: Nacos
     serverLists: localhost:8848
-    namespace:
     props:
-      overwrite: false
       group: SHARDING_SPHERE_DEFAULT_GROUP
       timeout: 3000
+  overwrite: false
 
 dataSources:
   ds: !!com.zaxxer.hikari.HikariDataSource

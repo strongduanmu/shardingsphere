@@ -38,7 +38,7 @@ import org.apache.shardingsphere.masterslave.api.config.MasterSlaveRuleConfigura
 import org.apache.shardingsphere.metrics.configuration.config.MetricsConfiguration;
 import org.apache.shardingsphere.orchestration.repository.api.ConfigurationRepository;
 import org.apache.shardingsphere.orchestration.core.common.utils.IpUtils;
-import org.apache.shardingsphere.orchestration.core.common.configuration.YamlDataSourceConfiguration;
+import org.apache.shardingsphere.orchestration.core.common.yaml.config.YamlDataSourceConfiguration;
 import org.apache.shardingsphere.shadow.api.config.ShadowRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
 import org.junit.Ignore;
@@ -528,10 +528,10 @@ public final class ConfigCenterTest {
     }
     
     @Test
-    public void assertGetAllShardingSchemaNames() {
+    public void assertGetAllSchemaNames() {
         when(configurationRepository.get("/test/config/schema")).thenReturn("sharding_db,masterslave_db");
         ConfigCenter configurationService = new ConfigCenter("test", configurationRepository);
-        Collection<String> actual = configurationService.getAllShardingSchemaNames();
+        Collection<String> actual = configurationService.getAllSchemaNames();
         assertThat(actual.size(), is(2));
         assertThat(actual, hasItems("sharding_db"));
         assertThat(actual, hasItems("masterslave_db"));

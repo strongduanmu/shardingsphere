@@ -31,10 +31,11 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.shardingsphere.orchestration.repository.api.ConfigurationRepository;
 import org.apache.shardingsphere.orchestration.repository.api.RegistryRepository;
-import org.apache.shardingsphere.orchestration.repository.zookeeper.handler.CuratorZookeeperExceptionHandler;
+import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationCenterConfiguration;
 import org.apache.shardingsphere.orchestration.repository.api.listener.DataChangedEvent;
+import org.apache.shardingsphere.orchestration.repository.api.listener.DataChangedEvent.ChangedType;
 import org.apache.shardingsphere.orchestration.repository.api.listener.DataChangedEventListener;
-import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationRepositoryConfiguration;
+import org.apache.shardingsphere.orchestration.repository.zookeeper.handler.CuratorZookeeperExceptionHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException.OperationTimeoutException;
 import org.apache.zookeeper.ZooDefs;
@@ -62,13 +63,13 @@ public final class CuratorZookeeperRepository implements ConfigurationRepository
     private Properties props = new Properties();
     
     @Override
-    public void init(final OrchestrationRepositoryConfiguration config) {
+    public void init(final String namespace, final OrchestrationCenterConfiguration config) {
         ZookeeperProperties zookeeperProperties = new ZookeeperProperties(props);
-        client = buildCuratorClient(config, zookeeperProperties);
+        client = buildCuratorClient(namespace, config, zookeeperProperties);
         initCuratorClient(zookeeperProperties);
     }
     
-    private CuratorFramework buildCuratorClient(final OrchestrationRepositoryConfiguration config, final ZookeeperProperties zookeeperProperties) {
+    private CuratorFramework buildCuratorClient(final String namespace, final OrchestrationCenterConfiguration config, final ZookeeperProperties zookeeperProperties) {
         int retryIntervalMilliseconds = zookeeperProperties.getValue(ZookeeperPropertyKey.RETRY_INTERVAL_MILLISECONDS);
         int maxRetries = zookeeperProperties.getValue(ZookeeperPropertyKey.MAX_RETRIES);
         int timeToLiveSeconds = zookeeperProperties.getValue(ZookeeperPropertyKey.TIME_TO_LIVE_SECONDS);
@@ -77,7 +78,7 @@ public final class CuratorZookeeperRepository implements ConfigurationRepository
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
             .connectString(config.getServerLists())
             .retryPolicy(new ExponentialBackoffRetry(retryIntervalMilliseconds, maxRetries, retryIntervalMilliseconds * maxRetries))
-            .namespace(config.getNamespace());
+            .namespace(namespace);
         if (0 != timeToLiveSeconds) {
             builder.sessionTimeoutMs(timeToLiveSeconds * 1000);
         }
@@ -131,6 +132,20 @@ public final class CuratorZookeeperRepository implements ConfigurationRepository
     
     private TreeCache findTreeCache(final String key) {
         return caches.entrySet().stream().filter(entry -> key.startsWith(entry.getKey())).findFirst().map(Map.Entry::getValue).orElse(null);
+    }
+    
+    @Override
+    public List<String> getChildrenKeys(final String key) {
+        try {
+            List<String> result = client.getChildren().forPath(key);
+            result.sort(Comparator.reverseOrder());
+            return result;
+            // CHECKSTYLE:OFF
+        } catch (final Exception ex) {
+            // CHECKSTYLE:ON
+            CuratorZookeeperExceptionHandler.handleException(ex);
+            return Collections.emptyList();
+        }
     }
     
     @Override
@@ -195,39 +210,6 @@ public final class CuratorZookeeperRepository implements ConfigurationRepository
     }
     
     @Override
-    public List<String> getChildrenKeys(final String key) {
-        try {
-            List<String> result = client.getChildren().forPath(key);
-            result.sort(Comparator.reverseOrder());
-            return result;
-            // CHECKSTYLE:OFF
-        } catch (final Exception ex) {
-            // CHECKSTYLE:ON
-            CuratorZookeeperExceptionHandler.handleException(ex);
-            return Collections.emptyList();
-        }
-    }
-    
-    @Override
-    public void watch(final String key, final DataChangedEventListener dataChangedEventListener) {
-        final String path = key + "/";
-        if (!caches.containsKey(path)) {
-            addCacheData(key);
-        }
-        TreeCache cache = caches.get(path);
-        cache.getListenable().addListener((client, event) -> {
-            ChildData data = event.getData();
-            if (null == data || null == data.getPath()) {
-                return;
-            }
-            DataChangedEvent.ChangedType changedType = getChangedType(event);
-            if (DataChangedEvent.ChangedType.IGNORED != changedType) {
-                dataChangedEventListener.onChange(new DataChangedEvent(data.getPath(), null == data.getData() ? null : new String(data.getData(), Charsets.UTF_8), changedType));
-            }
-        });
-    }
-    
-    @Override
     public void delete(final String key) {
         try {
             if (isExisted(key)) {
@@ -240,17 +222,23 @@ public final class CuratorZookeeperRepository implements ConfigurationRepository
         }
     }
     
-    private DataChangedEvent.ChangedType getChangedType(final TreeCacheEvent event) {
-        switch (event.getType()) {
-            case NODE_ADDED:
-                return DataChangedEvent.ChangedType.ADDED;
-            case NODE_UPDATED:
-                return DataChangedEvent.ChangedType.UPDATED;
-            case NODE_REMOVED:
-                return DataChangedEvent.ChangedType.DELETED;
-            default:
-                return DataChangedEvent.ChangedType.IGNORED;
+    @Override
+    public void watch(final String key, final DataChangedEventListener listener) {
+        final String path = key + "/";
+        if (!caches.containsKey(path)) {
+            addCacheData(key);
         }
+        TreeCache cache = caches.get(path);
+        cache.getListenable().addListener((client, event) -> {
+            ChildData data = event.getData();
+            if (null == data || null == data.getPath()) {
+                return;
+            }
+            DataChangedEvent.ChangedType changedType = getChangedType(event);
+            if (ChangedType.IGNORED != changedType) {
+                listener.onChange(new DataChangedEvent(data.getPath(), null == data.getData() ? null : new String(data.getData(), Charsets.UTF_8), changedType));
+            }
+        });
     }
     
     private void addCacheData(final String cachePath) {
@@ -265,6 +253,19 @@ public final class CuratorZookeeperRepository implements ConfigurationRepository
         caches.put(cachePath + "/", cache);
     }
     
+    private ChangedType getChangedType(final TreeCacheEvent event) {
+        switch (event.getType()) {
+            case NODE_ADDED:
+                return ChangedType.ADDED;
+            case NODE_UPDATED:
+                return ChangedType.UPDATED;
+            case NODE_REMOVED:
+                return ChangedType.DELETED;
+            default:
+                return ChangedType.IGNORED;
+        }
+    }
+    
     @Override
     public void close() {
         caches.values().forEach(TreeCache::close);
@@ -272,7 +273,7 @@ public final class CuratorZookeeperRepository implements ConfigurationRepository
         CloseableUtils.closeQuietly(client);
     }
     
-    /* TODO wait 500ms,  close cache before close client, or will throw exception
+    /* TODO wait 500ms, close cache before close client, or will throw exception
      * Because of asynchronous processing, may cause client to close
      * first and cache has not yet closed the end.
      * Wait for new version of Curator to fix this.
@@ -288,6 +289,6 @@ public final class CuratorZookeeperRepository implements ConfigurationRepository
     
     @Override
     public String getType() {
-        return "zookeeper";
+        return "ZooKeeper";
     }
 }

@@ -29,22 +29,24 @@ import java.util.Optional;
 @Getter
 public final class OrchestrationConfiguration {
     
-    private final String name;
+    private final String namespace;
     
-    private final OrchestrationRepositoryConfiguration registryRepositoryConfiguration;
+    private final OrchestrationCenterConfiguration registryCenterConfiguration;
     
-    private final OrchestrationRepositoryConfiguration additionalConfigurationRepositoryConfiguration;
+    private final OrchestrationCenterConfiguration additionalConfigCenterConfiguration;
     
-    public OrchestrationConfiguration(final String name, final OrchestrationRepositoryConfiguration registryRepositoryConfiguration) {
-        this(name, registryRepositoryConfiguration, null);
+    private final boolean overwrite;
+    
+    public OrchestrationConfiguration(final String namespace, final OrchestrationCenterConfiguration orchestrationCenterConfig, final boolean overwrite) {
+        this(namespace, orchestrationCenterConfig, null, overwrite);
     }
     
     /**
-     * Get additional configuration repository configuration.
+     * Get additional config center configuration.
      * 
-     * @return additional configuration repository configuration
+     * @return additional config center configuration
      */
-    public Optional<OrchestrationRepositoryConfiguration> getAdditionalConfigurationRepositoryConfiguration() {
-        return Optional.ofNullable(additionalConfigurationRepositoryConfiguration);
+    public Optional<OrchestrationCenterConfiguration> getAdditionalConfigCenterConfiguration() {
+        return Optional.ofNullable(additionalConfigCenterConfiguration);
     }
 }

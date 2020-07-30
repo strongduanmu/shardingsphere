@@ -33,7 +33,7 @@ import org.apache.shardingsphere.orchestration.core.common.event.RuleConfigurati
 import org.apache.shardingsphere.orchestration.core.registry.event.DisabledStateChangedEvent;
 import org.apache.shardingsphere.orchestration.core.registry.schema.OrchestrationSchema;
 import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationConfiguration;
-import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationRepositoryConfiguration;
+import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationCenterConfiguration;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
@@ -71,25 +71,19 @@ public final class OrchestrationShardingSphereDataSourceTest {
     }
     
     private static OrchestrationConfiguration getOrchestrationConfiguration() {
-        return new OrchestrationConfiguration("test_name", getRegistryOrchestrationRepositoryConfiguration(), getConfigOrchestrationRepositoryConfiguration());
+        return new OrchestrationConfiguration("test_name", getRegistryCenterConfiguration(), getConfigCenterConfiguration(), true);
     }
     
-    private static OrchestrationRepositoryConfiguration getRegistryOrchestrationRepositoryConfiguration() {
+    private static OrchestrationCenterConfiguration getRegistryCenterConfiguration() {
         Properties properties = new Properties();
         properties.setProperty("overwrite", "true");
-        OrchestrationRepositoryConfiguration result = new OrchestrationRepositoryConfiguration("REG_TEST", properties);
-        result.setNamespace("test_sharding_registry");
-        result.setServerLists("localhost:3181");
-        return result;
+        return new OrchestrationCenterConfiguration("REG_TEST", "localhost:3181", properties);
     }
     
-    private static OrchestrationRepositoryConfiguration getConfigOrchestrationRepositoryConfiguration() {
+    private static OrchestrationCenterConfiguration getConfigCenterConfiguration() {
         Properties properties = new Properties();
         properties.setProperty("overwrite", "true");
-        OrchestrationRepositoryConfiguration result = new OrchestrationRepositoryConfiguration("CONFIG_TEST", properties);
-        result.setNamespace("test_sharding_config");
-        result.setServerLists("localhost:3181");
-        return result;
+        return new OrchestrationCenterConfiguration("CONFIG_TEST", "localhost:3181", properties);
     }
     
     @Test

@@ -1,6 +1,6 @@
 +++
-title = "7.Revealing Sharding-Proxy —— Database Middleware Oriented DBA"
-weight = 8
+title = "Revealing Sharding-Proxy —— Database Middleware Oriented DBA"
+weight = 12
 chapter = true
 +++
 
@@ -98,7 +98,7 @@ jdbc:mysql://127.0.0.1:3306/demo_ds?
 useServerPrepStmts=true&cachePrepStmts=true
 ```
 
-We get the expected message flow. The speed is much faster then normal query after test.
+We get the expected message flow. The speed is much faster than normal query after test.
 
 ![](https://shardingsphere.apache.org/blog/img/proxy8.jpg)
 

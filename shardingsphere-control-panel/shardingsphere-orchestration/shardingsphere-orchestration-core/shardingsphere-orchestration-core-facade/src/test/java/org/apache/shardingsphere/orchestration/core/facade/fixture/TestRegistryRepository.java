@@ -20,8 +20,8 @@ package org.apache.shardingsphere.orchestration.core.facade.fixture;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.shardingsphere.orchestration.repository.api.RegistryRepository;
+import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationCenterConfiguration;
 import org.apache.shardingsphere.orchestration.repository.api.listener.DataChangedEventListener;
-import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationRepositoryConfiguration;
 
 import java.util.Collections;
 import java.util.List;
@@ -34,7 +34,7 @@ public final class TestRegistryRepository implements RegistryRepository {
     private Properties props = new Properties();
     
     @Override
-    public void init(final OrchestrationRepositoryConfiguration config) {
+    public void init(final String namespace, final OrchestrationCenterConfiguration config) {
     }
     
     @Override
@@ -56,11 +56,11 @@ public final class TestRegistryRepository implements RegistryRepository {
     }
     
     @Override
-    public void watch(final String key, final DataChangedEventListener dataChangedEventListener) {
+    public void delete(final String key) {
     }
     
     @Override
-    public void delete(final String key) {
+    public void watch(final String key, final DataChangedEventListener listener) {
     }
     
     @Override
@@ -69,6 +69,6 @@ public final class TestRegistryRepository implements RegistryRepository {
     
     @Override
     public String getType() {
-        return "REG_TEST";
+        return "REG";
     }
 }

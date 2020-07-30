@@ -88,7 +88,7 @@ public final class HttpServerHandler extends SimpleChannelInboundHandler<FullHtt
     
     private void startJob(final ChannelHandlerContext channelHandlerContext, final String requestBody) {
         ScalingConfiguration scalingConfiguration = GSON.fromJson(requestBody, ScalingConfiguration.class);
-        ShardingScalingJob shardingScalingJob = new ShardingScalingJob("Local Sharding Scaling Job");
+        ShardingScalingJob shardingScalingJob = new ShardingScalingJob(scalingConfiguration.getJobConfiguration().getJobName(), scalingConfiguration.getJobConfiguration().getShardingItem());
         shardingScalingJob.getSyncConfigurations().addAll(SyncConfigurationUtil.toSyncConfigurations(scalingConfiguration));
         log.info("start job : {}", requestBody);
         SCALING_JOB_CONTROLLER.start(shardingScalingJob);
@@ -100,8 +100,8 @@ public final class HttpServerHandler extends SimpleChannelInboundHandler<FullHtt
         try {
             SyncProgress progresses = SCALING_JOB_CONTROLLER.getProgresses(jobId);
             response(GSON.toJson(ResponseContentUtil.build(progresses)), channelHandlerContext, HttpResponseStatus.OK);
-        } catch (ScalingJobNotFoundException e) {
-            response(GSON.toJson(ResponseContentUtil.handleBadRequest(e.getMessage())), channelHandlerContext, HttpResponseStatus.BAD_REQUEST);
+        } catch (ScalingJobNotFoundException ex) {
+            response(GSON.toJson(ResponseContentUtil.handleBadRequest(ex.getMessage())), channelHandlerContext, HttpResponseStatus.BAD_REQUEST);
         }
     }
     

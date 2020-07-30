@@ -17,26 +17,18 @@
 
 package org.apache.shardingsphere.orchestration.core.facade;
 
-import com.google.common.base.Preconditions;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.cluster.configuration.config.ClusterConfiguration;
 import org.apache.shardingsphere.infra.auth.Authentication;
 import org.apache.shardingsphere.infra.config.DataSourceConfiguration;
 import org.apache.shardingsphere.infra.config.RuleConfiguration;
-import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
-import org.apache.shardingsphere.infra.spi.type.TypedSPIRegistry;
 import org.apache.shardingsphere.metrics.configuration.config.MetricsConfiguration;
 import org.apache.shardingsphere.orchestration.core.config.ConfigCenter;
 import org.apache.shardingsphere.orchestration.core.facade.listener.OrchestrationListenerManager;
-import org.apache.shardingsphere.orchestration.core.facade.properties.OrchestrationProperties;
-import org.apache.shardingsphere.orchestration.core.facade.properties.OrchestrationPropertyKey;
+import org.apache.shardingsphere.orchestration.core.facade.repository.OrchestrationRepositoryFacade;
 import org.apache.shardingsphere.orchestration.core.metadata.MetaDataCenter;
 import org.apache.shardingsphere.orchestration.core.registry.RegistryCenter;
-import org.apache.shardingsphere.orchestration.repository.api.ConfigurationRepository;
-import org.apache.shardingsphere.orchestration.repository.api.RegistryRepository;
 import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationConfiguration;
-import org.apache.shardingsphere.orchestration.repository.api.config.OrchestrationRepositoryConfiguration;
 
 import java.util.Collection;
 import java.util.Map;
@@ -46,20 +38,11 @@ import java.util.Properties;
 /**
  * Orchestration facade.
  */
-@Slf4j
 public final class OrchestrationFacade implements AutoCloseable {
     
-    static {
-        // TODO avoid multiple loading
-        ShardingSphereServiceLoader.register(ConfigurationRepository.class);
-        ShardingSphereServiceLoader.register(RegistryRepository.class);
-    }
-    
-    private ConfigurationRepository configurationRepository;
-    
-    private RegistryRepository registryRepository;
-    
     private boolean isOverwrite;
+    
+    private OrchestrationRepositoryFacade repositoryFacade;
     
     @Getter
     private ConfigCenter configCenter;
@@ -72,73 +55,46 @@ public final class OrchestrationFacade implements AutoCloseable {
     
     private OrchestrationListenerManager listenerManager;
     
-    private String name;
-    
     /**
      * Initialize orchestration facade.
      *
-     * @param orchestrationConfig orchestration configuration
-     * @param shardingSchemaNames sharding schema names
+     * @param config orchestration configuration
+     * @param schemaNames schema names
      */
-    public void init(final OrchestrationConfiguration orchestrationConfig, final Collection<String> shardingSchemaNames) {
-        name = orchestrationConfig.getName();
-        initConfigCenter(orchestrationConfig);
-        initRegistryCenter(orchestrationConfig);
-        initMetaDataCenter();
-        initListenerManager(shardingSchemaNames);
-    }
-    
-    private void initConfigCenter(final OrchestrationConfiguration orchestrationConfig) {
-        OrchestrationRepositoryConfiguration configRepositoryConfiguration
-                = orchestrationConfig.getAdditionalConfigurationRepositoryConfiguration().orElse(orchestrationConfig.getRegistryRepositoryConfiguration());
-        Preconditions.checkNotNull(configRepositoryConfiguration, "Config center configuration cannot be null.");
-        configurationRepository = TypedSPIRegistry.getRegisteredService(ConfigurationRepository.class, configRepositoryConfiguration.getType(), configRepositoryConfiguration.getProps());
-        configurationRepository.init(configRepositoryConfiguration);
-        isOverwrite = new OrchestrationProperties(configRepositoryConfiguration.getProps()).getValue(OrchestrationPropertyKey.OVERWRITE);
-        configCenter = new ConfigCenter(name, configurationRepository);
-    }
-    
-    private void initRegistryCenter(final OrchestrationConfiguration orchestrationConfig) {
-        OrchestrationRepositoryConfiguration regRepositoryConfiguration = orchestrationConfig.getRegistryRepositoryConfiguration();
-        Preconditions.checkNotNull(regRepositoryConfiguration, "Registry center configuration cannot be null.");
-        registryRepository = TypedSPIRegistry.getRegisteredService(RegistryRepository.class, regRepositoryConfiguration.getType(), regRepositoryConfiguration.getProps());
-        registryRepository.init(regRepositoryConfiguration);
-        registryCenter = new RegistryCenter(name, registryRepository);
-    }
-    
-    private void initMetaDataCenter() {
-        metaDataCenter = new MetaDataCenter(name, configurationRepository);
-    }
-    
-    private void initListenerManager(final Collection<String> shardingSchemaNames) {
-        listenerManager = new OrchestrationListenerManager(
-                name, registryRepository, configurationRepository, shardingSchemaNames.isEmpty() ? configCenter.getAllShardingSchemaNames() : shardingSchemaNames);
+    public void init(final OrchestrationConfiguration config, final Collection<String> schemaNames) {
+        isOverwrite = config.isOverwrite();
+        repositoryFacade = new OrchestrationRepositoryFacade(config);
+        registryCenter = new RegistryCenter(config.getNamespace(), repositoryFacade.getRegistryRepository());
+        configCenter = new ConfigCenter(config.getNamespace(), repositoryFacade.getConfigurationRepository());
+        metaDataCenter = new MetaDataCenter(config.getNamespace(), repositoryFacade.getConfigurationRepository());
+        listenerManager = new OrchestrationListenerManager(config.getNamespace(), 
+                repositoryFacade.getRegistryRepository(), repositoryFacade.getConfigurationRepository(), schemaNames.isEmpty() ? configCenter.getAllSchemaNames() : schemaNames);
     }
     
     /**
-     * Initialize configurations of orchestration.
+     * Online instance.
+     */
+    public void onlineInstance() {
+        registryCenter.persistInstanceOnline();
+        registryCenter.persistDataSourcesNode();
+        listenerManager.init();
+    }
+    
+    /**
+     * Online instance.
      *
      * @param dataSourceConfigurationMap schema data source configuration map
      * @param schemaRuleMap schema rule map
      * @param authentication authentication
      * @param props properties
      */
-    public void initConfigurations(final Map<String, Map<String, DataSourceConfiguration>> dataSourceConfigurationMap, 
-                                   final Map<String, Collection<RuleConfiguration>> schemaRuleMap, final Authentication authentication, final Properties props) {
+    public void onlineInstance(final Map<String, Map<String, DataSourceConfiguration>> dataSourceConfigurationMap,
+                               final Map<String, Collection<RuleConfiguration>> schemaRuleMap, final Authentication authentication, final Properties props) {
         configCenter.persistGlobalConfiguration(authentication, props, isOverwrite);
         for (Entry<String, Map<String, DataSourceConfiguration>> entry : dataSourceConfigurationMap.entrySet()) {
             configCenter.persistConfigurations(entry.getKey(), dataSourceConfigurationMap.get(entry.getKey()), schemaRuleMap.get(entry.getKey()), isOverwrite);
         }
-        initConfigurations();
-    }
-    
-    /**
-     * Initialize configurations of orchestration.
-     */
-    public void initConfigurations() {
-        registryCenter.persistInstanceOnline();
-        registryCenter.persistDataSourcesNode();
-        listenerManager.initListeners();
+        onlineInstance();
     }
     
     /**
@@ -161,14 +117,7 @@ public final class OrchestrationFacade implements AutoCloseable {
     
     @Override
     public void close() {
-        try {
-            configurationRepository.close();
-            registryRepository.close();
-            // CHECKSTYLE:OFF
-        } catch (final Exception ex) {
-            // CHECKSTYLE:ON
-            log.warn("RegCenter exception for: {}", ex.getMessage());
-        }
+        repositoryFacade.close();
     }
     
     /**
