@@ -30,10 +30,30 @@ execute
     | repairTable
     | renameTableSpecification
     | dropTable
-    | dropDatabase
     | truncateTable
     | createIndex
     | dropIndex
+    | createProcedure
+    | alterProcedure
+    | dropProcedure
+    | createFunction
+    | alterFunction
+    | dropFunction
+    | createDatabase
+    | alterDatabase
+    | dropDatabase
+    | createEvent
+    | alterEvent
+    | dropEvent
+    | alterInstance
+    | createLogfileGroup
+    | alterLogfileGroup
+    | dropLogfileGroup
+    | createServer
+    | alterServer
+    | dropServer
+    | createTrigger
+    | dropTrigger
     | setTransaction
     | beginTransaction
     | setAutoCommit

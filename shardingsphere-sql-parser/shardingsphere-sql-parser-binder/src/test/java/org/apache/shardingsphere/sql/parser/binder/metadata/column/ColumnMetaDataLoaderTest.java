@@ -39,7 +39,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ColumnMetaDataLoaderTest {
+public final class ColumnMetaDataLoaderTest {
     
     private static final String TEST_CATALOG = "catalog";
     
@@ -75,6 +75,7 @@ public class ColumnMetaDataLoaderTest {
         when(primaryResultSet.getString("COLUMN_NAME")).thenReturn("pk_col");
         when(databaseMetaData.getColumns(TEST_CATALOG, null, TEST_TABLE, "%")).thenReturn(columnResultSet);
         when(columnResultSet.next()).thenReturn(true, true, false);
+        when(columnResultSet.getString("TABLE_NAME")).thenReturn(TEST_TABLE);
         when(columnResultSet.getString("COLUMN_NAME")).thenReturn("pk_col", "col");
         when(columnResultSet.getInt("DATA_TYPE")).thenReturn(Types.INTEGER, Types.VARCHAR);
         when(columnResultSet.getString("TYPE_NAME")).thenReturn("INT", "VARCHAR");

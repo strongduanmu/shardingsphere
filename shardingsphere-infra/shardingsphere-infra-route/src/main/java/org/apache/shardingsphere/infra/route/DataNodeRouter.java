@@ -22,7 +22,7 @@ import org.apache.shardingsphere.infra.spi.order.OrderedSPIRegistry;
 import org.apache.shardingsphere.sql.parser.binder.SQLStatementContextFactory;
 import org.apache.shardingsphere.sql.parser.binder.statement.CommonSQLStatementContext;
 import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.sql.parser.sql.statement.SQLStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
@@ -49,6 +49,7 @@ public final class DataNodeRouter {
     
     private final ConfigurationProperties props;
     
+    @SuppressWarnings("rawtypes")
     private final Map<ShardingSphereRule, RouteDecorator> decorators;
     
     private final SPIRoutingHook routingHook;
@@ -72,7 +73,7 @@ public final class DataNodeRouter {
         routingHook.start(sql);
         try {
             RouteContext result = executeRoute(sqlStatement, parameters);
-            routingHook.finishSuccess(result, metaData.getSchema().getConfiguredSchemaMetaData());
+            routingHook.finishSuccess(result, metaData.getRuleSchemaMetaData().getConfiguredSchemaMetaData());
             return result;
             // CHECKSTYLE:OFF
         } catch (final Exception ex) {
@@ -82,7 +83,7 @@ public final class DataNodeRouter {
         }
     }
     
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private RouteContext executeRoute(final SQLStatement sqlStatement, final List<Object> parameters) {
         RouteContext result = createRouteContext(sqlStatement, parameters);
         for (Entry<ShardingSphereRule, RouteDecorator> entry : decorators.entrySet()) {
@@ -93,11 +94,11 @@ public final class DataNodeRouter {
     
     private RouteContext createRouteContext(final SQLStatement sqlStatement, final List<Object> parameters) {
         try {
-            SQLStatementContext sqlStatementContext = SQLStatementContextFactory.newInstance(metaData.getSchema().getSchemaMetaData(), parameters, sqlStatement);
+            SQLStatementContext<?> sqlStatementContext = SQLStatementContextFactory.newInstance(metaData.getRuleSchemaMetaData().getSchemaMetaData(), parameters, sqlStatement);
             return new RouteContext(sqlStatementContext, parameters, new RouteResult());
             // TODO should pass parameters for master-slave
         } catch (final IndexOutOfBoundsException ex) {
-            return new RouteContext(new CommonSQLStatementContext(sqlStatement), parameters, new RouteResult());
+            return new RouteContext(new CommonSQLStatementContext<>(sqlStatement), parameters, new RouteResult());
         }
     }
 }

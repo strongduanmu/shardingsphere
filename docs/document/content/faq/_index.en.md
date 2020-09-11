@@ -17,8 +17,6 @@ Answer:
 
 ShardingSphere uses lombok to enable minimal coding. For more details about using and installment, please refer to the official website of [lombok](https://projectlombok.org/download.html).
 
-shardingsphere-orchestration-reg module needs to execute `mvn install` command first, and generate gRPC java files according to protobuf files.
-
 ## 3. Why is xsd unable to be found when Spring Namespace is used?
 
 Answer:
@@ -238,8 +236,8 @@ Answer:
 
 Answer:
 
-1. Update to 4.0.1 above.
-2. Configure`allow.range.query.with.inline.sharding` to `true` (Default value is `false`).
+1. Update to 5.x above.
+2. Configure`allow-range-query-with-inline-sharding` to `true` (Default value is `false`).
 3. A tip here: then each range query will be broadcast to every sharding table.
 
 ## 20. Why there may be an error when configure both shardingsphere-jdbc-spring-boot-starter and a spring-boot-starter of certain datasource pool(such as druid)?

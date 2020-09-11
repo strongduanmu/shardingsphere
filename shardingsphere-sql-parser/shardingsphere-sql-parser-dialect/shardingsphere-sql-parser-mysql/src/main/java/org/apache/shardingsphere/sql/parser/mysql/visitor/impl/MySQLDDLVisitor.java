@@ -21,10 +21,15 @@ import com.google.common.base.Preconditions;
 import org.antlr.v4.runtime.Token;
 import org.apache.shardingsphere.sql.parser.api.ASTNode;
 import org.apache.shardingsphere.sql.parser.api.visitor.statement.DDLVisitor;
-import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.KeyPart_Context;
-import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.KeyParts_Context;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AddColumnSpecificationContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AlterDatabaseContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AlterDefinitionClauseContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AlterEventContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AlterFunctionContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AlterInstanceContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AlterLogfileGroupContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AlterProcedureContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AlterServerContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AlterSpecificationContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.AlterTableContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ChangeColumnSpecificationContext;
@@ -34,19 +39,34 @@ import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.Constra
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateDatabaseContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateDefinitionClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateDefinitionContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateEventContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateFunctionContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateIndexContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateLikeClauseContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateLogfileGroupContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateProcedureContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateServerContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateTableContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateTriggerContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CreateViewContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DropColumnSpecificationContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DropDatabaseContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DropEventContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DropFunctionContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DropIndexContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DropLogfileGroupContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DropPrimaryKeySpecificationContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DropProcedureContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DropServerContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DropTableContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DropTriggerContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DropViewContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.FirstOrAfterColumnContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ForeignKeyOptionContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.GeneratedOptionContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.IndexDefinition_Context;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.KeyPart_Context;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.KeyParts_Context;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ModifyColumnSpecificationContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ReferenceDefinitionContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.RenameColumnSpecificationContext;
@@ -54,33 +74,54 @@ import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.RenameT
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.StorageOptionContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.TruncateTableContext;
 import org.apache.shardingsphere.sql.parser.mysql.visitor.MySQLVisitor;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.AlterDefinitionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.CreateDefinitionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.column.ColumnDefinitionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.column.alter.AddColumnDefinitionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.column.alter.DropColumnDefinitionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.column.alter.ModifyColumnDefinitionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.column.alter.RenameColumnSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.column.position.ColumnAfterPositionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.column.position.ColumnFirstPositionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.column.position.ColumnPositionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.constraint.ConstraintDefinitionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.ddl.constraint.DropPrimaryKeySegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.column.ColumnSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.generic.DataTypeSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.generic.table.SimpleTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.AlterTableStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.CreateDatabaseStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.CreateIndexStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.CreateTableStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.CreateViewStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.DropDatabaseStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.DropIndexStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.DropTableStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.DropViewStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.RenameTableStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.TruncateStatement;
-import org.apache.shardingsphere.sql.parser.sql.value.collection.CollectionValue;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.AlterDefinitionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.CreateDefinitionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.ColumnDefinitionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.alter.AddColumnDefinitionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.alter.DropColumnDefinitionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.alter.ModifyColumnDefinitionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.alter.RenameColumnSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.position.ColumnAfterPositionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.position.ColumnFirstPositionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.column.position.ColumnPositionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.constraint.ConstraintDefinitionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.constraint.DropPrimaryKeySegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.index.IndexSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.DataTypeSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterDatabaseStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterEventStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterFunctionStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterInstanceStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterLogfileGroupStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterProcedureStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterServerStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterTableStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateDatabaseStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateEventStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateFunctionStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateIndexStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateLogfileGroupStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateProcedureStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateServerStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateTableStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateTriggerStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateViewStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropDatabaseStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropEventStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropFunctionStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropIndexStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropLogfileGroupStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropProcedureStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropServerStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropTableStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropTriggerStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropViewStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.RenameTableStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.TruncateStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.value.collection.CollectionValue;
+import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -104,12 +145,17 @@ public final class MySQLDDLVisitor extends MySQLVisitor implements DDLVisitor {
     
     @Override
     public ASTNode visitCreateDatabase(final CreateDatabaseContext ctx) {
-        return new CreateDatabaseStatement();
+        return new CreateDatabaseStatement(ctx.schemaName().getText());
+    }
+    
+    @Override
+    public ASTNode visitAlterDatabase(final AlterDatabaseContext ctx) {
+        return new AlterDatabaseStatement();
     }
     
     @Override
     public ASTNode visitDropDatabase(final DropDatabaseContext ctx) {
-        return new DropDatabaseStatement();
+        return new DropDatabaseStatement(ctx.schemaName().getText());
     }
     
     @Override
@@ -120,7 +166,7 @@ public final class MySQLDDLVisitor extends MySQLVisitor implements DDLVisitor {
     @SuppressWarnings("unchecked")
     @Override
     public ASTNode visitCreateTable(final CreateTableContext ctx) {
-        CreateTableStatement result = new CreateTableStatement((SimpleTableSegment) visit(ctx.tableName()));
+        CreateTableStatement result = new CreateTableStatement((SimpleTableSegment) visit(ctx.tableName()), null != ctx.notExistClause_());
         if (null != ctx.createDefinitionClause()) {
             CollectionValue<CreateDefinitionSegment> createDefinitions = (CollectionValue<CreateDefinitionSegment>) visit(ctx.createDefinitionClause());
             for (CreateDefinitionSegment each : createDefinitions.getValue()) {
@@ -147,6 +193,20 @@ public final class MySQLDDLVisitor extends MySQLVisitor implements DDLVisitor {
             if (null != each.checkConstraintDefinition()) {
                 result.getValue().add((ConstraintDefinitionSegment) visit(each.checkConstraintDefinition()));
             }
+            if (null != each.indexDefinition_()) {
+                result.getValue().add((ConstraintDefinitionSegment) visit(each.indexDefinition_()));
+            }
+        }
+        return result;
+    }
+    
+    @Override
+    public ASTNode visitIndexDefinition_(final IndexDefinition_Context ctx) {
+        ConstraintDefinitionSegment result = new ConstraintDefinitionSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex());
+        CollectionValue<ColumnSegment> columnSegments = (CollectionValue<ColumnSegment>) visit(ctx.keyParts_());
+        result.getIndexColumns().addAll(columnSegments.getValue());
+        if (null != ctx.indexName()) {
+            result.setIndexName((IndexSegment) visit(ctx.indexName()));
         }
         return result;
     }
@@ -273,7 +333,15 @@ public final class MySQLDDLVisitor extends MySQLVisitor implements DDLVisitor {
             result.getPrimaryKeyColumns().addAll(((CollectionValue<ColumnSegment>) visit(ctx.primaryKeyOption().keyParts_())).getValue());
         }
         if (null != ctx.foreignKeyOption()) {
-            result.setReferencedTable((SimpleTableSegment) visit(ctx.foreignKeyOption().referenceDefinition()));
+            result.setReferencedTable((SimpleTableSegment) visit(ctx.foreignKeyOption()));
+        }
+        if (null != ctx.uniqueOption_()) {
+            CollectionValue<ColumnSegment> columnSegments = (CollectionValue<ColumnSegment>) visit(ctx.uniqueOption_().keyParts_());
+            result.getIndexColumns().addAll(columnSegments.getValue());
+            if (null != ctx.uniqueOption_().indexName()) {
+                result.setIndexName(new IndexSegment(ctx.uniqueOption_().indexName().start.getStartIndex(), ctx.uniqueOption_().indexName().stop.getStopIndex(),
+                        (IdentifierValue) visit(ctx.uniqueOption_().indexName())));
+            }
         }
         return result;
     }
@@ -385,5 +453,95 @@ public final class MySQLDDLVisitor extends MySQLVisitor implements DDLVisitor {
             }
         }
         return result;
+    }
+
+    @Override
+    public ASTNode visitCreateProcedure(final CreateProcedureContext ctx) {
+        return new CreateProcedureStatement();
+    }
+
+    @Override
+    public ASTNode visitAlterProcedure(final AlterProcedureContext ctx) {
+        return new AlterProcedureStatement();
+    }
+
+    @Override
+    public ASTNode visitDropProcedure(final DropProcedureContext ctx) {
+        return new DropProcedureStatement();
+    }
+
+    @Override
+    public ASTNode visitCreateFunction(final CreateFunctionContext ctx) {
+        return new CreateFunctionStatement();
+    }
+
+    @Override
+    public ASTNode visitAlterFunction(final AlterFunctionContext ctx) {
+        return new AlterFunctionStatement();
+    }
+
+    @Override
+    public ASTNode visitDropFunction(final DropFunctionContext ctx) {
+        return new DropFunctionStatement();
+    }
+
+    @Override
+    public ASTNode visitCreateEvent(final CreateEventContext ctx) {
+        return new CreateEventStatement();
+    }
+
+    @Override
+    public ASTNode visitAlterEvent(final AlterEventContext ctx) {
+        return new AlterEventStatement();
+    }
+
+    @Override
+    public ASTNode visitDropEvent(final DropEventContext ctx) {
+        return new DropEventStatement();
+    }
+
+    @Override
+    public ASTNode visitAlterInstance(final AlterInstanceContext ctx) {
+        return new AlterInstanceStatement();
+    }
+
+    @Override
+    public ASTNode visitCreateLogfileGroup(final CreateLogfileGroupContext ctx) {
+        return new CreateLogfileGroupStatement();
+    }
+
+    @Override
+    public ASTNode visitAlterLogfileGroup(final AlterLogfileGroupContext ctx) {
+        return new AlterLogfileGroupStatement();
+    }
+
+    @Override
+    public ASTNode visitDropLogfileGroup(final DropLogfileGroupContext ctx) {
+        return new DropLogfileGroupStatement();
+    }
+
+    @Override
+    public ASTNode visitCreateServer(final CreateServerContext ctx) {
+        return new CreateServerStatement();
+    }
+
+    @Override
+    public ASTNode visitAlterServer(final AlterServerContext ctx) {
+        return new AlterServerStatement();
+    }
+
+    @Override
+    public ASTNode visitDropServer(final DropServerContext ctx) {
+        return new DropServerStatement();
+    }
+
+    @Override
+    public ASTNode visitCreateTrigger(final CreateTriggerContext ctx) {
+        return new CreateTriggerStatement();
+    }
+
+    @Override
+    public ASTNode visitDropTrigger(final DropTriggerContext ctx) {
+        return new DropTriggerStatement();
     }
 }

@@ -19,6 +19,7 @@ package org.apache.shardingsphere.example.transaction.base.seata.raw.jdbc;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -36,7 +37,8 @@ import static org.junit.Assert.assertThat;
      - config.ype = "file"
      - service.vgroup_mapping.my_test_tx_group = "default"
  */
-public class SeataATOrderServiceTest {
+@Ignore
+public final class SeataATOrderServiceTest {
     
     private SeataATOrderService orderService;
     

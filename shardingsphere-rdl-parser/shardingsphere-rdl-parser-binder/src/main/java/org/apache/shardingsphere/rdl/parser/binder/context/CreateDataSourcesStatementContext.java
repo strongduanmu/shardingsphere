@@ -18,41 +18,32 @@
 package org.apache.shardingsphere.rdl.parser.binder.context;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
+import org.apache.shardingsphere.rdl.parser.binder.util.DataSourceConnectionUrlUtil;
 import org.apache.shardingsphere.rdl.parser.statement.rdl.CreateDataSourcesStatement;
+import org.apache.shardingsphere.rdl.parser.statement.rdl.DataSourceConnectionSegment;
 import org.apache.shardingsphere.sql.parser.binder.statement.CommonSQLStatementContext;
-
-import java.util.Collection;
-import java.util.LinkedList;
 
 /**
  * Create dataSource statement context.
  */
+@Getter
 public final class CreateDataSourcesStatementContext extends CommonSQLStatementContext<CreateDataSourcesStatement> {
     
-    public CreateDataSourcesStatementContext(final CreateDataSourcesStatement sqlStatement) {
+    private final DatabaseType databaseType;
+    
+    public CreateDataSourcesStatementContext(final CreateDataSourcesStatement sqlStatement, final DatabaseType databaseType) {
         super(sqlStatement);
+        this.databaseType = databaseType;
     }
     
     /**
-     * Get dataSource contexts.
+     * Get url.
      *
-     * @return dataSource contexts
+     * @param segment segment
+     * @return url
      */
-    public Collection<DataSourceContext> getDataSourceContexts() {
-        return new LinkedList<>();
-    }
-    
-    @RequiredArgsConstructor
-    @Getter
-    public static final class DataSourceContext {
-        
-        private final String name;
-        
-        private final String url;
-        
-        private final String userName;
-        
-        private final String password;
+    public String getUrl(final DataSourceConnectionSegment segment) {
+        return DataSourceConnectionUrlUtil.getUrl(segment, databaseType);
     }
 }

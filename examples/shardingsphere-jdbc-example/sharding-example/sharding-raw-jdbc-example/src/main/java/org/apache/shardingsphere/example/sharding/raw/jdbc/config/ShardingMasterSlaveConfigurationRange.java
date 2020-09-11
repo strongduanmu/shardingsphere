@@ -44,7 +44,7 @@ public final class ShardingMasterSlaveConfigurationRange implements ExampleConfi
     }
     
     private static Map<String, DataSource> createDataSourceMap() {
-        final Map<String, DataSource> result = new HashMap<>();
+        Map<String, DataSource> result = new HashMap<>();
         result.put("demo_ds_master_0", DataSourceUtil.createDataSource("demo_ds_master_0"));
         result.put("demo_ds_master_0_slave_0", DataSourceUtil.createDataSource("demo_ds_master_0_slave_0"));
         result.put("demo_ds_master_0_slave_1", DataSourceUtil.createDataSource("demo_ds_master_0_slave_1"));
@@ -90,7 +90,7 @@ public final class ShardingMasterSlaveConfigurationRange implements ExampleConfi
     
     private static Properties getProperties() {
         Properties result = new Properties();
-        result.setProperty("worker.id", "123");
+        result.setProperty("worker-id", "123");
         return result;
     }
 }

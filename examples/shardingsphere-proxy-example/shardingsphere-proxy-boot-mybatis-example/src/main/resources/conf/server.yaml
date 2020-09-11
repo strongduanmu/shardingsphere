@@ -17,12 +17,12 @@
 
 ######################################################################################################
 #
-# If you want to configure orchestration, authorization and proxy properties, please refer to this file.
+# If you want to configure governance, authorization and proxy properties, please refer to this file.
 #
 ######################################################################################################
 #
-#orchestration:
-#  namespace: orchestration_ds
+#governance:
+#  name: governance_ds
 #  registryCenter:
 #    type: ZooKeeper
 #    serverLists: localhost:2181
@@ -41,11 +41,6 @@ authentication:
       password: sharding
       authorizedSchemas: sharding_db
 
-metrics:
-   name: prometheus
-   host:  127.0.0.1
-   port:  9190
-
 props:
   max.connections.size.per.query: 1
   acceptor.size: 16  # The default value is available processors count * 2.
@@ -59,6 +54,6 @@ props:
   proxy.hint.enabled: false
   query.with.cipher.column: true
   sql.show: false
-  allow.range.query.with.inline.sharding: false
+  allow-range-query-with-inline-sharding: false
   check.table.metadata.enabled: false
 

@@ -17,12 +17,12 @@
 
 ######################################################################################################
 # 
-# If you want to configure orchestration, authorization and proxy properties, please refer to this file.
+# If you want to configure governance, authorization and proxy properties, please refer to this file.
 # 
 ######################################################################################################
 #
-#orchestration:
-#  namespace: orchestration_ds
+#governance:
+#  name: governance_ds
 #  registryCenter:
 #    type: ZooKeeper
 #    serverLists: localhost:2181
@@ -54,4 +54,4 @@ props:
   proxy.hint.enabled: false
   query.with.cipher.column: true
   sql.show: false
-  allow.range.query.with.inline.sharding: false
+  allow-range-query-with-inline-sharding: false

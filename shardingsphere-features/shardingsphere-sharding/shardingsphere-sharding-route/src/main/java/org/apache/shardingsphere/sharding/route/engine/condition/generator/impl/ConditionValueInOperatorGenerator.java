@@ -24,8 +24,8 @@ import org.apache.shardingsphere.sharding.route.engine.condition.ExpressionCondi
 import org.apache.shardingsphere.sharding.route.engine.condition.generator.ConditionValue;
 import org.apache.shardingsphere.sharding.route.engine.condition.generator.ConditionValueGenerator;
 import org.apache.shardingsphere.sharding.route.spi.SPITimeService;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.expr.ExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.predicate.value.PredicateInRightValue;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.value.PredicateInRightValue;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -38,10 +38,10 @@ public final class ConditionValueInOperatorGenerator implements ConditionValueGe
     
     @Override
     public Optional<RouteValue> generate(final PredicateInRightValue predicateRightValue, final Column column, final List<Object> parameters) {
-        List<Comparable> routeValues = new LinkedList<>();
+        List<Comparable<?>> routeValues = new LinkedList<>();
         SPITimeService timeService = new SPITimeService();
         for (ExpressionSegment each : predicateRightValue.getSqlExpressions()) {
-            Optional<Comparable> routeValue = new ConditionValue(each, parameters).getValue();
+            Optional<Comparable<?>> routeValue = new ConditionValue(each, parameters).getValue();
             if (routeValue.isPresent()) {
                 routeValues.add(routeValue.get());
                 continue;

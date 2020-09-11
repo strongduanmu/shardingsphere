@@ -17,7 +17,8 @@
 
 package org.apache.shardingsphere.proxy.backend.communication.jdbc.connection;
 
-import org.apache.shardingsphere.proxy.backend.metrics.MetricsUtils;
+import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
+import org.apache.shardingsphere.transaction.ShardingTransactionManagerEngine;
 import org.apache.shardingsphere.transaction.core.TransactionType;
 import org.apache.shardingsphere.transaction.spi.ShardingTransactionManager;
 
@@ -40,14 +41,14 @@ public final class BackendTransactionManager implements TransactionManager {
         connection = backendConnection;
         transactionType = connection.getTransactionType();
         localTransactionManager = new LocalTransactionManager(backendConnection);
-        shardingTransactionManager = null == connection.getSchema() ? null 
-                : connection.getSchema().getRuntimeContext().getTransactionManagerEngine().getTransactionManager(transactionType);
+        ShardingTransactionManagerEngine engine = ProxyContext.getInstance().getTransactionContexts().getEngines().get(connection.getSchemaName());
+        shardingTransactionManager = null == engine ? null : engine.getTransactionManager(transactionType);
     }
     
     @Override
     public void begin() {
-        if (!connection.getStateHandler().isInTransaction()) {
-            connection.getStateHandler().setStatus(ConnectionStatus.TRANSACTION);
+        if (!connection.getStatusHandler().isInTransaction()) {
+            connection.getStatusHandler().switchInTransactionStatus();
             connection.releaseConnections(false);
         }
         if (TransactionType.LOCAL == transactionType || null == shardingTransactionManager) {
@@ -55,37 +56,34 @@ public final class BackendTransactionManager implements TransactionManager {
         } else {
             shardingTransactionManager.begin();
         }
-        MetricsUtils.buriedTransactionMetric("begin");
     }
     
     @Override
     public void commit() throws SQLException {
-        if (connection.getStateHandler().isInTransaction()) {
+        if (connection.getStatusHandler().isInTransaction()) {
             try {
                 if (TransactionType.LOCAL == transactionType || null == shardingTransactionManager) {
                     localTransactionManager.commit();
                 } else {
                     shardingTransactionManager.commit();
                 }
-                MetricsUtils.buriedTransactionMetric("commit");
             } finally {
-                connection.getStateHandler().setStatus(ConnectionStatus.TERMINATED);
+                connection.getStatusHandler().switchReadyStatus();
             }
         }
     }
     
     @Override
     public void rollback() throws SQLException {
-        if (connection.getStateHandler().isInTransaction()) {
+        if (connection.getStatusHandler().isInTransaction()) {
             try {
                 if (TransactionType.LOCAL == transactionType || null == shardingTransactionManager) {
                     localTransactionManager.rollback();
                 } else {
                     shardingTransactionManager.rollback();
                 }
-                MetricsUtils.buriedTransactionMetric("rollback");
             } finally {
-                connection.getStateHandler().setStatus(ConnectionStatus.TERMINATED);
+                connection.getStatusHandler().switchReadyStatus();
             }
         }
     }

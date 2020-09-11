@@ -24,11 +24,11 @@ import org.apache.shardingsphere.infra.rewrite.engine.GenericSQLRewriteEngine;
 import org.apache.shardingsphere.infra.rewrite.engine.RouteSQLRewriteEngine;
 import org.apache.shardingsphere.infra.rewrite.engine.result.SQLRewriteResult;
 import org.apache.shardingsphere.infra.route.context.RouteContext;
+import org.apache.shardingsphere.infra.route.context.RouteResult;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
 import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
 import org.apache.shardingsphere.infra.spi.order.OrderedSPIRegistry;
 import org.apache.shardingsphere.sql.parser.binder.metadata.schema.SchemaMetaData;
-import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
 
 import java.util.Collection;
 import java.util.List;
@@ -43,14 +43,15 @@ public final class SQLRewriteEntry {
         ShardingSphereServiceLoader.register(SQLRewriteContextDecorator.class);
     }
     
-    private final SchemaMetaData schemaMetaData;
+    private final SchemaMetaData metaData;
     
     private final ConfigurationProperties props;
     
+    @SuppressWarnings("rawtypes")
     private final Map<ShardingSphereRule, SQLRewriteContextDecorator> decorators;
     
-    public SQLRewriteEntry(final SchemaMetaData schemaMetaData, final ConfigurationProperties props, final Collection<ShardingSphereRule> rules) {
-        this.schemaMetaData = schemaMetaData;
+    public SQLRewriteEntry(final SchemaMetaData metaData, final ConfigurationProperties props, final Collection<ShardingSphereRule> rules) {
+        this.metaData = metaData;
         this.props = props;
         decorators = OrderedSPIRegistry.getRegisteredServices(rules, SQLRewriteContextDecorator.class);
     }
@@ -64,19 +65,19 @@ public final class SQLRewriteEntry {
      * @return route unit and SQL rewrite result map
      */
     public SQLRewriteResult rewrite(final String sql, final List<Object> parameters, final RouteContext routeContext) {
-        SQLRewriteContext sqlRewriteContext = createSQLRewriteContext(sql, parameters, routeContext.getSqlStatementContext(), routeContext);
-        return routeContext.getRouteResult().getRouteUnits().isEmpty()
-                ? new GenericSQLRewriteEngine().rewrite(sqlRewriteContext) : new RouteSQLRewriteEngine().rewrite(sqlRewriteContext, routeContext.getRouteResult());
+        SQLRewriteContext sqlRewriteContext = createSQLRewriteContext(sql, parameters, routeContext);
+        RouteResult routeResult = routeContext.getRouteResult();
+        return routeResult.getRouteUnits().isEmpty() ? new GenericSQLRewriteEngine().rewrite(sqlRewriteContext) : new RouteSQLRewriteEngine().rewrite(sqlRewriteContext, routeResult);
     }
     
-    private SQLRewriteContext createSQLRewriteContext(final String sql, final List<Object> parameters, final SQLStatementContext sqlStatementContext, final RouteContext routeContext) {
-        SQLRewriteContext result = new SQLRewriteContext(schemaMetaData, sqlStatementContext, sql, parameters);
+    private SQLRewriteContext createSQLRewriteContext(final String sql, final List<Object> parameters, final RouteContext routeContext) {
+        SQLRewriteContext result = new SQLRewriteContext(metaData, routeContext.getSqlStatementContext(), sql, parameters);
         decorate(decorators, result, routeContext);
         result.generateSQLTokens();
         return result;
     }
     
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private void decorate(final Map<ShardingSphereRule, SQLRewriteContextDecorator> decorators, final SQLRewriteContext sqlRewriteContext, final RouteContext routeContext) {
         decorators.forEach((key, value) -> value.decorate(key, props, sqlRewriteContext, routeContext));
     }

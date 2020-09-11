@@ -36,27 +36,32 @@ shardingsphere
   ├─document
   │  ├─archetypes
   │  ├─content
+  │  │  ├─dev-manual
   │  │  ├─downloads
   │  │  ├─faq
   │  │  ├─features
-  │  │  │  ├─orchestration
+  │  │  │  ├─encrypt
+  │  │  │  ├─governance
+  │  │  │  ├─pluggable-architecture
   │  │  │  ├─read-write-split
+  │  │  │  ├─replica
+  │  │  │  ├─scaling
+  │  │  │  ├─shadow
   │  │  │  ├─sharding
   │  │  │  │  ├─concept
-  │  │  │  │  ├─other-features
   │  │  │  │  ├─principle
   │  │  │  │  └─use-norms
-  │  │  │  ├─spi
   │  │  │  ├─test-engine
   │  │  │  └─transaction
   │  │  │      ├─concept
-  │  │  │      ├─function
-  │  │  │      └─principle
-  │  │  ├─manual
+  │  │  │      ├─principle
+  │  │  │      └─use-norms
+  │  │  ├─user-manual
   │  │  │  ├─shardingsphere-jdbc
   │  │  │  │  ├─configuration
   │  │  │  │  └─usage
   │  │  │  ├─shardingsphere-proxy
+  │  │  │  ├─shardingsphere-scaling
   │  │  │  ├─shardingsphere-sidecar
   │  │  │  └─shardingsphere-ui
   │  │  ├─overview
@@ -101,5 +106,5 @@ Anyone with a GitHub account can ask questions (error reports) about shardingsph
 
 ## Appointment
 
-- Unless otherwise specified, please use Hugo `0.37.1` version.
+- Unless otherwise specified, please use Hugo `0.70.0` version.
 - asf-site branches are updated by the official on a regular basis, you do not need to submit pull request to asf-site.

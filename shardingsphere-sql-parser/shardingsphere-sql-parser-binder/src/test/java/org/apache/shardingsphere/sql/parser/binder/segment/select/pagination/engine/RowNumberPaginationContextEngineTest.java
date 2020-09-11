@@ -21,16 +21,16 @@ import org.apache.shardingsphere.sql.parser.binder.segment.select.pagination.Pag
 import org.apache.shardingsphere.sql.parser.binder.segment.select.projection.Projection;
 import org.apache.shardingsphere.sql.parser.binder.segment.select.projection.ProjectionsContext;
 import org.apache.shardingsphere.sql.parser.binder.segment.select.projection.impl.ColumnProjection;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.column.ColumnSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.expr.simple.LiteralExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.pagination.PaginationValueSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.pagination.rownum.NumberLiteralRowNumberValueSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.pagination.rownum.ParameterMarkerRowNumberValueSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.predicate.AndPredicate;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.predicate.PredicateSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.predicate.value.PredicateCompareRightValue;
-import org.apache.shardingsphere.sql.parser.sql.value.identifier.IdentifierValue;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.pagination.PaginationValueSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.pagination.rownum.NumberLiteralRowNumberValueSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.pagination.rownum.ParameterMarkerRowNumberValueSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.AndPredicate;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.PredicateSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.value.PredicateCompareRightValue;
+import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -99,7 +99,7 @@ public final class RowNumberPaginationContextEngineTest {
     
     @Test
     public void assertCreatePaginationContextWhenParameterMarkerRowNumberValueSegment() {
-        PredicateCompareRightValue predicateCompareRightValue = new PredicateCompareRightValue(">", new ParameterMarkerExpressionSegment(0, 10, 0));
+        PredicateCompareRightValue predicateCompareRightValue = new PredicateCompareRightValue(0, 10, ">", new ParameterMarkerExpressionSegment(0, 10, 0));
         AndPredicate andPredicate = new AndPredicate();
         andPredicate.getPredicates().add(new PredicateSegment(0, 10, new ColumnSegment(0, 10, new IdentifierValue(ROW_NUMBER_COLUMN_NAME)), predicateCompareRightValue));
         Projection projectionWithRowNumberAlias = new ColumnProjection(null, ROW_NUMBER_COLUMN_NAME, ROW_NUMBER_COLUMN_ALIAS);
@@ -114,7 +114,7 @@ public final class RowNumberPaginationContextEngineTest {
     }
     
     private void assertCreatePaginationContextWhenRowNumberAliasPresentAndRowNumberPredicatedNotEmptyWithGivenOperator(final String operator) {
-        PredicateCompareRightValue predicateCompareRightValue = new PredicateCompareRightValue(operator, new LiteralExpressionSegment(0, 10, 100));
+        PredicateCompareRightValue predicateCompareRightValue = new PredicateCompareRightValue(0, 10, operator, new LiteralExpressionSegment(0, 10, 100));
         AndPredicate andPredicate = new AndPredicate();
         andPredicate.getPredicates().add(new PredicateSegment(0, 10, new ColumnSegment(0, 10, new IdentifierValue(ROW_NUMBER_COLUMN_NAME)), predicateCompareRightValue));
         Projection projectionWithRowNumberAlias = new ColumnProjection(null, ROW_NUMBER_COLUMN_NAME, ROW_NUMBER_COLUMN_ALIAS);
@@ -133,7 +133,7 @@ public final class RowNumberPaginationContextEngineTest {
     }
     
     private void assertCreatePaginationContextWhenOffsetSegmentInstanceOfNumberLiteralRowNumberValueSegmentWithGivenOperator(final String operator) {
-        PredicateCompareRightValue predicateCompareRightValue = new PredicateCompareRightValue(operator, new LiteralExpressionSegment(0, 10, 100));
+        PredicateCompareRightValue predicateCompareRightValue = new PredicateCompareRightValue(0, 10, operator, new LiteralExpressionSegment(0, 10, 100));
         AndPredicate andPredicate = new AndPredicate();
         andPredicate.getPredicates().add(new PredicateSegment(0, 10, new ColumnSegment(0, 10, new IdentifierValue(ROW_NUMBER_COLUMN_NAME)), predicateCompareRightValue));
         Projection projectionWithRowNumberAlias = new ColumnProjection(null, ROW_NUMBER_COLUMN_NAME, ROW_NUMBER_COLUMN_ALIAS);

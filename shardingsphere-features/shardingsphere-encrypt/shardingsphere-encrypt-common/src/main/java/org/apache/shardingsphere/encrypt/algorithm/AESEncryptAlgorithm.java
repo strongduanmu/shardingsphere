@@ -42,7 +42,7 @@ import java.util.Properties;
 @Setter
 public final class AESEncryptAlgorithm implements EncryptAlgorithm {
     
-    private static final String AES_KEY = "aes.key.value";
+    private static final String AES_KEY = "aes-key-value";
     
     private Properties props = new Properties();
     
@@ -55,7 +55,7 @@ public final class AESEncryptAlgorithm implements EncryptAlgorithm {
     
     private byte[] createSecretKey() {
         Preconditions.checkArgument(props.containsKey(AES_KEY), String.format("%s can not be null.", AES_KEY));
-        return Arrays.copyOf(DigestUtils.sha1(props.get(AES_KEY).toString()), 16);
+        return Arrays.copyOf(DigestUtils.sha1(props.getProperty(AES_KEY)), 16);
     }
     
     @SneakyThrows

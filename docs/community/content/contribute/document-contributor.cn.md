@@ -37,27 +37,32 @@ shardingsphere
   ├─document
   │  ├─archetypes
   │  ├─content
+  │  │  ├─dev-manual
   │  │  ├─downloads
   │  │  ├─faq
   │  │  ├─features
-  │  │  │  ├─orchestration
+  │  │  │  ├─encrypt
+  │  │  │  ├─governance
+  │  │  │  ├─pluggable-architecture
   │  │  │  ├─read-write-split
+  │  │  │  ├─replica
+  │  │  │  ├─scaling
+  │  │  │  ├─shadow
   │  │  │  ├─sharding
   │  │  │  │  ├─concept
-  │  │  │  │  ├─other-features
   │  │  │  │  ├─principle
   │  │  │  │  └─use-norms
-  │  │  │  ├─spi
   │  │  │  ├─test-engine
   │  │  │  └─transaction
   │  │  │      ├─concept
   │  │  │      ├─function
-  │  │  │      └─principle
-  │  │  ├─manual
+  │  │  │      └─use-norms
+  │  │  ├─user-manual
   │  │  │  ├─shardingsphere-jdbc
   │  │  │  │  ├─configuration
   │  │  │  │  └─usage
   │  │  │  ├─shardingsphere-proxy
+  │  │  │  ├─shardingsphere-scaling
   │  │  │  ├─shardingsphere-sidecar
   │  │  │  └─shardingsphere-ui
   │  │  ├─overview
@@ -106,6 +111,6 @@ ShardingSphere文档使用Markdown编写，并使用Hugo进行处理生成html�
 
 ## 约定
 
-- 非特别说明，请使用Hugo的`0.37.1`版本
+- 非特别说明，请使用Hugo的`0.70.0`版本
 
 - asf-site分支由官方定期更新，您无需向asf-site提交pull request

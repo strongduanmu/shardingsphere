@@ -19,16 +19,18 @@ package org.apache.shardingsphere.sql.parser.postgresql.visitor.impl;
 
 import org.apache.shardingsphere.sql.parser.api.ASTNode;
 import org.apache.shardingsphere.sql.parser.api.visitor.statement.DALVisitor;
+import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.AnalyzeContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.ConfigurationParameterClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.ResetParameterContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.SetContext;
 import org.apache.shardingsphere.sql.parser.autogen.PostgreSQLStatementParser.ShowContext;
 import org.apache.shardingsphere.sql.parser.postgresql.visitor.PostgreSQLVisitor;
-import org.apache.shardingsphere.sql.parser.sql.segment.dal.VariableAssignSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dal.VariableSegment;
-import org.apache.shardingsphere.sql.parser.sql.statement.dal.SetStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.dal.dialect.postgresql.ResetParameterStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.dal.dialect.postgresql.ShowStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dal.VariableAssignSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dal.VariableSegment;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.dal.PostgreSQLAnalyzeTableStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.dal.PostgreSQLResetParameterStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.dal.PostgreSQLSetStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.dal.PostgreSQLShowStatement;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -40,12 +42,12 @@ public final class PostgreSQLDALVisitor extends PostgreSQLVisitor implements DAL
     
     @Override
     public ASTNode visitShow(final ShowContext ctx) {
-        return new ShowStatement();
+        return new PostgreSQLShowStatement();
     }
     
     @Override
     public ASTNode visitSet(final SetContext ctx) {
-        SetStatement result = new SetStatement();
+        PostgreSQLSetStatement result = new PostgreSQLSetStatement();
         Collection<VariableAssignSegment> variableAssigns = new LinkedList<>();
         if (null != ctx.configurationParameterClause()) {
             VariableAssignSegment variableAssignSegment = (VariableAssignSegment) visit(ctx.configurationParameterClause());
@@ -82,6 +84,11 @@ public final class PostgreSQLDALVisitor extends PostgreSQLVisitor implements DAL
     
     @Override
     public ASTNode visitResetParameter(final ResetParameterContext ctx) {
-        return new ResetParameterStatement();
+        return new PostgreSQLResetParameterStatement();
+    }
+    
+    @Override
+    public ASTNode visitAnalyze(final AnalyzeContext ctx) {
+        return new PostgreSQLAnalyzeTableStatement();
     }
 }

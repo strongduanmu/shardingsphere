@@ -17,15 +17,18 @@
 
 package org.apache.shardingsphere.masterslave.route.engine;
 
+import org.apache.shardingsphere.infra.route.decorator.RouteDecorator;
+import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
+import org.apache.shardingsphere.infra.spi.order.OrderedSPIRegistry;
 import org.apache.shardingsphere.masterslave.api.config.rule.MasterSlaveDataSourceRuleConfiguration;
 import org.apache.shardingsphere.masterslave.api.config.MasterSlaveRuleConfiguration;
 import org.apache.shardingsphere.masterslave.rule.MasterSlaveRule;
 import org.apache.shardingsphere.masterslave.route.engine.impl.MasterVisitedManager;
 import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.predicate.LockSegment;
-import org.apache.shardingsphere.sql.parser.sql.statement.SQLStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.dml.InsertStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.dml.SelectStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.LockSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.InsertStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.route.context.RouteContext;
@@ -63,7 +66,7 @@ public final class MasterSlaveRouteDecoratorTest {
     private MasterSlaveRule masterSlaveRule;
     
     @Mock
-    private SQLStatementContext sqlStatementContext;
+    private SQLStatementContext<SQLStatement> sqlStatementContext;
     
     @Mock
     private InsertStatement insertStatement;
@@ -72,12 +75,16 @@ public final class MasterSlaveRouteDecoratorTest {
     private SelectStatement selectStatement;
     
     private MasterSlaveRouteDecorator routeDecorator;
+
+    static {
+        ShardingSphereServiceLoader.register(RouteDecorator.class);
+    }
     
     @Before
     public void setUp() {
-        routeDecorator = new MasterSlaveRouteDecorator();
         masterSlaveRule = new MasterSlaveRule(new MasterSlaveRuleConfiguration(
                 Collections.singleton(new MasterSlaveDataSourceRuleConfiguration(DATASOURCE_NAME, MASTER_DATASOURCE, Collections.singletonList(SLAVE_DATASOURCE), null)), Collections.emptyMap()));
+        routeDecorator = (MasterSlaveRouteDecorator) OrderedSPIRegistry.getRegisteredServices(Collections.singleton(masterSlaveRule), RouteDecorator.class).get(masterSlaveRule);
     }
     
     @After

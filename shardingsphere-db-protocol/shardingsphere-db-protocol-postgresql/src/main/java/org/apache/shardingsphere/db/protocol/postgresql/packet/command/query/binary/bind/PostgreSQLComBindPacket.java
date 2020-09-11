@@ -67,10 +67,14 @@ public final class PostgreSQLComBindPacket extends PostgreSQLCommandPacket {
     }
     
     private List<Object> getParameters(final PostgreSQLPacketPayload payload, final List<PostgreSQLBinaryStatementParameterType> parameterTypes) throws SQLException {
-        int parametersCount = payload.readInt2();
-        List<Object> result = new ArrayList<>(parametersCount);
-        for (int parameterIndex = 0; parameterIndex < parametersCount; parameterIndex++) {
-            payload.readInt4();
+        int parameterCount = payload.readInt2();
+        List<Object> result = new ArrayList<>(parameterCount);
+        for (int parameterIndex = 0; parameterIndex < parameterCount; parameterIndex++) {
+            int paramValueLen = payload.readInt4();
+            if (-1 == paramValueLen) {
+                result.add(null);
+                continue;
+            }
             PostgreSQLBinaryProtocolValue binaryProtocolValue = PostgreSQLBinaryProtocolValueFactory.getBinaryProtocolValue(parameterTypes.get(parameterIndex).getColumnType());
             result.add(binaryProtocolValue.read(payload));
         }

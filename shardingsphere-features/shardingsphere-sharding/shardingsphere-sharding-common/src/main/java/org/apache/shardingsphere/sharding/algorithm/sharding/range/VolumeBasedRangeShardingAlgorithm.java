@@ -31,20 +31,20 @@ import java.util.Properties;
  */
 public final class VolumeBasedRangeShardingAlgorithm extends AbstractRangeShardingAlgorithm {
     
-    private static final String RANGE_LOWER_KEY = "range.lower";
+    private static final String RANGE_LOWER_KEY = "range-lower";
     
-    private static final String RANGE_UPPER_KEY = "range.upper";
+    private static final String RANGE_UPPER_KEY = "range-upper";
     
-    private static final String SHARDING_VOLUME_KEY = "sharding.volume";
+    private static final String SHARDING_VOLUME_KEY = "sharding-volume";
     
     @Override
     public Map<Integer, Range<Long>> calculatePartitionRange(final Properties props) {
         Preconditions.checkState(props.containsKey(RANGE_LOWER_KEY), "Lower range cannot be null.");
         Preconditions.checkState(props.containsKey(RANGE_UPPER_KEY), "Upper range cannot be null.");
         Preconditions.checkState(props.containsKey(SHARDING_VOLUME_KEY), "Sharding volume cannot be null.");
-        long lower = Long.parseLong(props.get(RANGE_LOWER_KEY).toString());
-        long upper = Long.parseLong(props.get(RANGE_UPPER_KEY).toString());
-        long volume = Long.parseLong(props.get(SHARDING_VOLUME_KEY).toString());
+        long lower = Long.parseLong(props.getProperty(RANGE_LOWER_KEY));
+        long upper = Long.parseLong(props.getProperty(RANGE_UPPER_KEY));
+        long volume = Long.parseLong(props.getProperty(SHARDING_VOLUME_KEY));
         Preconditions.checkArgument(upper - lower >= volume, "Range can not be smaller than volume.");
         int partitionSize = Math.toIntExact(LongMath.divide(upper - lower, volume, RoundingMode.CEILING));
         Map<Integer, Range<Long>> result = Maps.newHashMapWithExpectedSize(partitionSize + 2);

@@ -18,9 +18,9 @@
 package org.apache.shardingsphere.sharding.route.engine.condition.generator;
 
 import com.google.common.base.Preconditions;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.expr.ExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.expr.simple.LiteralExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,13 +30,13 @@ import java.util.Optional;
  */
 public final class ConditionValue {
     
-    private final Comparable value;
+    private final Comparable<?> value;
     
     public ConditionValue(final ExpressionSegment expressionSegment, final List<Object> parameters) {
         value = getValue(expressionSegment, parameters);
     }
     
-    private Comparable getValue(final ExpressionSegment expressionSegment, final List<Object> parameters) {
+    private Comparable<?> getValue(final ExpressionSegment expressionSegment, final List<Object> parameters) {
         if (expressionSegment instanceof ParameterMarkerExpressionSegment) {
             return getValue((ParameterMarkerExpressionSegment) expressionSegment, parameters);
         }
@@ -46,16 +46,16 @@ public final class ConditionValue {
         return null;
     }
     
-    private Comparable getValue(final ParameterMarkerExpressionSegment expressionSegment, final List<Object> parameters) {
+    private Comparable<?> getValue(final ParameterMarkerExpressionSegment expressionSegment, final List<Object> parameters) {
         Object result = parameters.get(expressionSegment.getParameterMarkerIndex());
         Preconditions.checkArgument(result instanceof Comparable, "Sharding value must implements Comparable.");
-        return (Comparable) result;
+        return (Comparable<?>) result;
     }
     
-    private Comparable getValue(final LiteralExpressionSegment expressionSegment) {
+    private Comparable<?> getValue(final LiteralExpressionSegment expressionSegment) {
         Object result = expressionSegment.getLiterals();
         Preconditions.checkArgument(result instanceof Comparable, "Sharding value must implements Comparable.");
-        return (Comparable) result;
+        return (Comparable<?>) result;
     }
     
     /**
@@ -63,7 +63,7 @@ public final class ConditionValue {
      * 
      * @return condition value
      */
-    public Optional<Comparable> getValue() {
+    public Optional<Comparable<?>> getValue() {
         return Optional.ofNullable(value);
     }
 }

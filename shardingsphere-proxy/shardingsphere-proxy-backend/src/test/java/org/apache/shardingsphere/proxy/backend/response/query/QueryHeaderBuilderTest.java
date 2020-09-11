@@ -17,13 +17,13 @@
 
 package org.apache.shardingsphere.proxy.backend.response.query;
 
+import org.apache.shardingsphere.infra.context.SchemaContext;
+import org.apache.shardingsphere.infra.context.schema.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.database.metadata.DataSourceMetaData;
 import org.apache.shardingsphere.infra.executor.sql.raw.execute.result.query.QueryHeader;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
-import org.apache.shardingsphere.infra.metadata.datasource.DataSourceMetas;
+import org.apache.shardingsphere.infra.metadata.datasource.DataSourceMetaDatas;
 import org.apache.shardingsphere.infra.metadata.schema.RuleSchemaMetaData;
-import org.apache.shardingsphere.kernel.context.SchemaContext;
-import org.apache.shardingsphere.kernel.context.schema.ShardingSphereSchema;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sql.parser.binder.metadata.column.ColumnMetaData;
 import org.apache.shardingsphere.sql.parser.binder.metadata.index.IndexMetaData;
@@ -135,10 +135,10 @@ public final class QueryHeaderBuilderTest {
         ShardingSphereMetaData metaData = mock(ShardingSphereMetaData.class);
         RuleSchemaMetaData ruleSchemaMetaData = mock(RuleSchemaMetaData.class);
         when(ruleSchemaMetaData.getConfiguredSchemaMetaData()).thenReturn(schemaMetaData);
-        when(metaData.getSchema()).thenReturn(ruleSchemaMetaData);
-        DataSourceMetas dataSourceMetas = mock(DataSourceMetas.class);
-        when(dataSourceMetas.getDataSourceMetaData("ds_0")).thenReturn(mock(DataSourceMetaData.class));
-        when(metaData.getDataSources()).thenReturn(dataSourceMetas);
+        when(metaData.getRuleSchemaMetaData()).thenReturn(ruleSchemaMetaData);
+        DataSourceMetaDatas dataSourceMetaDatas = mock(DataSourceMetaDatas.class);
+        when(dataSourceMetaDatas.getDataSourceMetaData("ds_0")).thenReturn(mock(DataSourceMetaData.class));
+        when(metaData.getDataSourceMetaDatas()).thenReturn(dataSourceMetaDatas);
         ShardingSphereSchema shardingSphereSchema = mock(ShardingSphereSchema.class);
         when(result.getSchema()).thenReturn(shardingSphereSchema);
         when(shardingSphereSchema.getMetaData()).thenReturn(metaData);

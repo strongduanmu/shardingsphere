@@ -19,11 +19,11 @@ package org.apache.shardingsphere.sql.parser.binder.segment.insert.values;
 
 import lombok.Getter;
 import lombok.ToString;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.assignment.AssignmentSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.column.ColumnSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.expr.ExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.expr.simple.LiteralExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.AssignmentSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,8 +33,9 @@ import java.util.stream.Collectors;
 
 @Getter
 @ToString
-public class OnDuplicateUpdateContext {
-    private final int parametersCount;
+public final class OnDuplicateUpdateContext {
+    
+    private final int parameterCount;
     
     private final List<ExpressionSegment> valueExpressions;
     
@@ -44,13 +45,13 @@ public class OnDuplicateUpdateContext {
     
     public OnDuplicateUpdateContext(final Collection<AssignmentSegment> assignments, final List<Object> parameters, final int parametersOffset) {
         List<ExpressionSegment> expressionSegments = assignments.stream().map(AssignmentSegment::getValue).collect(Collectors.toList());
-        parametersCount = calculateParametersCount(expressionSegments);
+        parameterCount = calculateParameterCount(expressionSegments);
         valueExpressions = getValueExpressions(expressionSegments);
         this.parameters = getParameters(parameters, parametersOffset);
         columns = assignments.stream().map(AssignmentSegment::getColumn).collect(Collectors.toList());
     }
     
-    private int calculateParametersCount(final Collection<ExpressionSegment> assignments) {
+    private int calculateParameterCount(final Collection<ExpressionSegment> assignments) {
         int result = 0;
         for (ExpressionSegment each : assignments) {
             if (each instanceof ParameterMarkerExpressionSegment) {
@@ -67,11 +68,11 @@ public class OnDuplicateUpdateContext {
     }
     
     private List<Object> getParameters(final List<Object> parameters, final int parametersOffset) {
-        if (0 == parametersCount) {
+        if (0 == parameterCount) {
             return Collections.emptyList();
         }
-        List<Object> result = new ArrayList<>(parametersCount);
-        result.addAll(parameters.subList(parametersOffset, parametersOffset + parametersCount));
+        List<Object> result = new ArrayList<>(parameterCount);
+        result.addAll(parameters.subList(parametersOffset, parametersOffset + parameterCount));
         return result;
     }
     

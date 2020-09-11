@@ -96,6 +96,7 @@ unreservedWord
     | RULE | SYNONYM | COLLECTION | SCRIPT | KILL | BACKUP | LOG | SHOWPLAN
     | SUBSCRIBE | QUERY | NOTIFICATIONS | CHECKPOINT | SEQUENCE | INSTANCE | DO | DEFINER | LOCAL | CASCADED
     | NEXT | NAME | INTEGER | TYPE | MAX | MIN | SUM | COUNT | AVG | FIRST | DATETIME2
+    | OUTPUT | INSERTED | DELETED
     ;
 
 schemaName
@@ -119,6 +120,10 @@ name
     ;
 
 columnNames
+    : LP_ columnName (COMMA_ columnName)* RP_
+    ;
+
+columnNamesWithSort
     : LP_ columnNameWithSort (COMMA_ columnNameWithSort)* RP_
     ;
 

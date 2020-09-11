@@ -20,6 +20,7 @@ package org.apache.shardingsphere.infra.executor.sql.group;
 import org.apache.shardingsphere.infra.executor.kernel.InputGroup;
 import org.apache.shardingsphere.infra.executor.sql.context.ExecutionUnit;
 import org.apache.shardingsphere.infra.executor.sql.context.SQLUnit;
+import org.apache.shardingsphere.infra.route.context.RouteContext;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
 import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
 import org.apache.shardingsphere.infra.spi.order.OrderedSPIRegistry;
@@ -33,7 +34,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /**
- * Named execute group engine.
+ * Abstract execute group engine.
  * 
  * @param <T> type of input value
  */
@@ -43,6 +44,7 @@ public abstract class AbstractExecuteGroupEngine<T> implements ExecuteGroupEngin
         ShardingSphereServiceLoader.register(ExecuteGroupDecorator.class);
     }
     
+    @SuppressWarnings("rawtypes")
     private final Map<ShardingSphereRule, ExecuteGroupDecorator> decorators;
     
     protected AbstractExecuteGroupEngine(final Collection<ShardingSphereRule> rules) {
@@ -50,15 +52,15 @@ public abstract class AbstractExecuteGroupEngine<T> implements ExecuteGroupEngin
     }
     
     @Override
-    public final Collection<InputGroup<T>> generate(final Collection<ExecutionUnit> executionUnits) throws SQLException {
+    public final Collection<InputGroup<T>> generate(final RouteContext routeContext, final Collection<ExecutionUnit> executionUnits) throws SQLException {
         Collection<InputGroup<T>> result = new LinkedList<>();
-        for (Entry<String, List<SQLUnit>> entry : getSQLUnitGroups(executionUnits).entrySet()) {
+        for (Entry<String, List<SQLUnit>> entry : aggregateSQLUnitGroups(executionUnits).entrySet()) {
             result.addAll(generateSQLExecuteGroups(entry.getKey(), entry.getValue()));
         }
-        return decorate(result);
+        return decorate(routeContext, result);
     }
     
-    private Map<String, List<SQLUnit>> getSQLUnitGroups(final Collection<ExecutionUnit> executionUnits) {
+    private Map<String, List<SQLUnit>> aggregateSQLUnitGroups(final Collection<ExecutionUnit> executionUnits) {
         Map<String, List<SQLUnit>> result = new LinkedHashMap<>(executionUnits.size(), 1);
         for (ExecutionUnit each : executionUnits) {
             if (!result.containsKey(each.getDataSourceName())) {
@@ -71,11 +73,11 @@ public abstract class AbstractExecuteGroupEngine<T> implements ExecuteGroupEngin
     
     protected abstract List<InputGroup<T>> generateSQLExecuteGroups(String dataSourceName, List<SQLUnit> sqlUnits) throws SQLException;
     
-    @SuppressWarnings("unchecked")
-    private Collection<InputGroup<T>> decorate(final Collection<InputGroup<T>> inputGroups) {
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private Collection<InputGroup<T>> decorate(final RouteContext routeContext, final Collection<InputGroup<T>> inputGroups) {
         Collection<InputGroup<T>> result = inputGroups;
         for (Entry<ShardingSphereRule, ExecuteGroupDecorator> each : decorators.entrySet()) {
-            result = each.getValue().decorate(each.getKey(), result);
+            result = each.getValue().decorate(routeContext, each.getKey(), result);
         }
         return result;
     }

@@ -18,13 +18,16 @@
 package org.apache.shardingsphere.sharding.route.engine.validator.impl;
 
 import org.apache.shardingsphere.infra.exception.ShardingSphereException;
+import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
+import org.apache.shardingsphere.infra.route.context.RouteContext;
+import org.apache.shardingsphere.infra.route.context.RouteResult;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sql.parser.binder.segment.table.TablesContext;
 import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.sql.parser.binder.statement.dml.DeleteStatementContext;
-import org.apache.shardingsphere.sql.parser.sql.segment.generic.table.SimpleTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.statement.dml.DeleteStatement;
-import org.apache.shardingsphere.sql.parser.sql.value.identifier.IdentifierValue;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.DeleteStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 import org.junit.Test;
 import org.mockito.Mock;
 
@@ -32,7 +35,9 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-public class ShardingDeleteStatementValidatorTest {
+import static org.mockito.Mockito.mock;
+
+public final class ShardingDeleteStatementValidatorTest {
 
     @Mock
     private ShardingRule shardingRule;
@@ -42,7 +47,8 @@ public class ShardingDeleteStatementValidatorTest {
         DeleteStatement sqlStatement = new DeleteStatement();
         sqlStatement.getTables().addAll(createMultiTablesContext().getTables());
         SQLStatementContext<DeleteStatement> sqlStatementContext = new DeleteStatementContext(sqlStatement);
-        new ShardingDeleteStatementValidator().validate(shardingRule, sqlStatementContext, Collections.emptyList());
+        RouteContext routeContext = new RouteContext(sqlStatementContext, Collections.emptyList(), new RouteResult());
+        new ShardingDeleteStatementValidator().preValidate(shardingRule, routeContext, mock(ShardingSphereMetaData.class));
     }
 
     private TablesContext createMultiTablesContext() {

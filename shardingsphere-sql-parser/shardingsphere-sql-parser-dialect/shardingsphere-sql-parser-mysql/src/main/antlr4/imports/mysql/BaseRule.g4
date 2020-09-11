@@ -154,7 +154,7 @@ variable
     ;
 
 scope
-    : GLOBAL | PERSIST | PERSIST_ONLY | SESSION | LOCAL
+    : GLOBAL | PERSIST | PERSIST_ONLY | SESSION | LOCAL | NEW
     ;
 
 schemaName
@@ -539,7 +539,11 @@ caseElse_
     ;
 
 intervalExpression
-    : INTERVAL expr intervalUnit_
+    : INTERVAL intervalValue
+    ;
+    
+intervalValue
+    : expr intervalUnit_
     ;
 
 intervalUnit_
@@ -549,7 +553,7 @@ intervalUnit_
     ;
 
 subquery
-    : 'Default does not match anything'
+    : 'refer subquery in DMStement.g4'
     ;
 
 orderByClause
@@ -561,11 +565,11 @@ orderByItem
     ;
 
 dataType
-    : dataTypeName dataTypeLength? characterSet_? collateClause_? ZEROFILL? | dataTypeName collectionOptions characterSet_? collateClause_?
+    : dataTypeName dataTypeLength? characterSet_? collateClause_? (UNSIGNED | SIGNED)? ZEROFILL? | dataTypeName collectionOptions characterSet_? collateClause_?
     ;
 
 dataTypeName
-    : (UNSIGNED | SIGNED)? INTEGER | INT | SMALLINT | TINYINT | MEDIUMINT | BIGINT | DECIMAL| NUMERIC | FLOAT | DOUBLE | BIT | BOOL | BOOLEAN
+    : INTEGER | INT | SMALLINT | TINYINT | MEDIUMINT | BIGINT | DECIMAL| NUMERIC | FLOAT | DOUBLE | BIT | BOOL | BOOLEAN
     | DEC | DATE | DATETIME | TIMESTAMP | TIME | YEAR | CHAR | VARCHAR | BINARY | VARBINARY | TINYBLOB | TINYTEXT | BLOB
     | TEXT | MEDIUMBLOB | MEDIUMTEXT | LONGBLOB | LONGTEXT | ENUM | SET | GEOMETRY | POINT | LINESTRING | POLYGON
     | MULTIPOINT | MULTILINESTRING | MULTIPOLYGON | GEOMETRYCOLLECTION | JSON | UNSIGNED | SIGNED
@@ -580,7 +584,7 @@ collectionOptions
     ;
 
 characterSet_
-    : (CHARACTER | CHAR) SET EQ_? ignoredIdentifier_
+    : (CHARSET | CHAR SET) EQ_? ignoredIdentifier_
     ;
 
 collateClause_
@@ -600,11 +604,11 @@ fieldOrVarSpec
     ;
 
 notExistClause_
-    : (IF NOT EXISTS)?
+    : IF NOT EXISTS
     ;
 
 existClause_
-    : (IF EXISTS)?
+    : IF EXISTS
     ;
 
 pattern
@@ -613,4 +617,16 @@ pattern
 
 connectionId_
     : NUMBER_
+    ;
+    
+labelName
+    : identifier
+    ;
+    
+cursorName
+    : identifier
+    ;
+    
+conditionName
+    : identifier
     ;

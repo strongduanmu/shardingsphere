@@ -429,7 +429,133 @@ whereOrCurrentClause
 	| WHERE CURRENT OF cursorName
 	;
 
-
 havingClause
     : HAVING aExpr
     ;
+
+call
+    : CALL funcName LP_ callClauses? RP_
+    ;
+
+callClauses
+    : (ALL | DISTINCT)? funcArgList sortClause?
+    | VARIADIC funcArgExpr sortClause
+    | funcArgList COMMA_ VARIADIC funcArgExpr sortClause
+    | ASTERISK_
+    ;
+
+doStatement
+    : DO dostmtOptList
+    ;
+
+dostmtOptList
+    : dostmtOptItem+
+    ;
+
+dostmtOptItem
+    : STRING_ | LANGUAGE nonReservedWordOrSconst
+    ;
+
+lock
+    : LOCK TABLE? relationExprList (IN lockType MODE)? NOWAIT?
+    ;
+
+lockType
+    : ACCESS SHARE
+    | ROW SHARE
+    | ROW EXCLUSIVE
+    | SHARE UPDATE EXCLUSIVE
+    | SHARE
+    | SHARE ROW EXCLUSIVE
+    | EXCLUSIVE
+    | ACCESS EXCLUSIVE
+    ;
+
+checkpoint
+    : CHECKPOINT
+    ;
+
+copy
+    : COPY (BINARY)? qualifiedName (LP_ columnList RP_)? (FROM | TO) PROGRAM?
+      (STRING_ | STDIN | STDOUT) copyDelimiter? (WITH)? copyOptions whereClause?
+    | COPY LP_ preparableStmt RP_ TO PROGRAM? (STRING_ | STDIN | STDOUT) WITH? copyOptions
+    ;
+
+copyOptions
+    : copyOptList | LP_ copyGenericOptList RP_
+    ;
+
+copyGenericOptList
+    : copyGenericOptElem (COMMA_ copyGenericOptElem)*
+    ;
+
+copyGenericOptElem
+    : colLabel copyGenericOptArg
+    ;
+
+copyGenericOptArg
+    : booleanOrString
+    | numericOnly
+    | ASTERISK_
+    | LP_ copyGenericOptArgList RP_
+    ;
+
+copyGenericOptArgList
+    : copyGenericOptArgListItem (COMMA_ copyGenericOptArgListItem)*
+    ;
+
+copyGenericOptArgListItem
+    : booleanOrString
+    ;
+
+copyOptList
+    : copyOptItem*
+    ;
+
+copyOptItem
+    : BINARY
+    | FREEZE
+    | DELIMITER (AS)? STRING_
+    | NULL (AS)? STRING_
+    | CSV
+    | HEADER
+    | QUOTE (AS)? STRING_
+    | ESCAPE (AS)? STRING_
+    | FORCE QUOTE columnList
+    | FORCE QUOTE ASTERISK_
+    | FORCE NOT NULL columnList
+    | FORCE NULL columnList
+    | ENCODING STRING_
+    ;
+
+copyDelimiter
+    : (USING)? DELIMITERS STRING_
+    ;
+
+deallocate
+    : DEALLOCATE PREPARE? (name | ALL)
+    ;
+
+fetch
+    : FETCH fetchArgs
+    ;
+
+fetchArgs
+    : cursorName
+    | (FROM | IN) cursorName
+    | NEXT (FROM | IN)? cursorName
+    | PRIOR (FROM | IN)? cursorName
+    | FIRST (FROM | IN)? cursorName
+    | LAST (FROM | IN)? cursorName
+    | ABSOLUTE signedIconst (FROM | IN)? cursorName
+    | RELATIVE signedIconst (FROM | IN)? cursorName
+    | signedIconst (FROM | IN)? cursorName
+    | ALL (FROM | IN)? cursorName
+    | FORWARD (FROM | IN)? cursorName
+    | FORWARD signedIconst (FROM | IN)? cursorName
+    | FORWARD ALL (FROM | IN)? cursorName
+    | BACKWARD (FROM | IN)? cursorName
+    | BACKWARD signedIconst (FROM | IN)? cursorName
+    | BACKWARD ALL (FROM | IN)? cursorName
+    ;
+

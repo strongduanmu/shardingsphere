@@ -24,7 +24,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLServerErrorCode;
 import org.apache.shardingsphere.db.protocol.mysql.packet.handshake.MySQLAuthPluginData;
 import org.apache.shardingsphere.infra.auth.ProxyUser;
-import org.apache.shardingsphere.proxy.backend.schema.ProxySchemaContexts;
+import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,20 +37,20 @@ import java.util.Optional;
 @Getter
 public final class MySQLAuthenticationHandler {
     
-    private static final ProxySchemaContexts PROXY_SCHEMA_CONTEXTS = ProxySchemaContexts.getInstance();
+    private static final ProxyContext PROXY_SCHEMA_CONTEXTS = ProxyContext.getInstance();
     
     private final MySQLAuthPluginData authPluginData = new MySQLAuthPluginData();
     
     /**
      * Login.
      *
-     * @param userName user name.
+     * @param username username.
      * @param authResponse auth response
      * @param database database
      * @return login success or failure
      */
-    public Optional<MySQLServerErrorCode> login(final String userName, final byte[] authResponse, final String database) {
-        Optional<ProxyUser> user = getUser(userName);
+    public Optional<MySQLServerErrorCode> login(final String username, final byte[] authResponse, final String database) {
+        Optional<ProxyUser> user = getUser(username);
         if (!user.isPresent() || !isPasswordRight(user.get().getPassword(), authResponse)) {
             return Optional.of(MySQLServerErrorCode.ER_ACCESS_DENIED_ERROR);
         }
@@ -88,7 +88,7 @@ public final class MySQLAuthenticationHandler {
     }
     
     private byte[] xor(final byte[] input, final byte[] secret) {
-        final byte[] result = new byte[input.length];
+        byte[] result = new byte[input.length];
         for (int i = 0; i < input.length; ++i) {
             result[i] = (byte) (input[i] ^ secret[i]);
         }

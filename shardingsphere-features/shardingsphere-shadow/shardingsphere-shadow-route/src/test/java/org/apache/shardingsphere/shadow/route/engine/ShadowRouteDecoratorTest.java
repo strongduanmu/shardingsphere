@@ -17,19 +17,19 @@
 
 package org.apache.shardingsphere.shadow.route.engine;
 
-import org.apache.shardingsphere.shadow.api.config.ShadowRuleConfiguration;
-import org.apache.shardingsphere.shadow.rule.ShadowRule;
-import org.apache.shardingsphere.sql.parser.binder.segment.insert.values.InsertValueContext;
-import org.apache.shardingsphere.sql.parser.binder.statement.ddl.CreateTableStatementContext;
-import org.apache.shardingsphere.sql.parser.binder.statement.dml.InsertStatementContext;
-import org.apache.shardingsphere.sql.parser.sql.statement.ddl.CreateTableStatement;
-import org.apache.shardingsphere.sql.parser.sql.statement.dml.InsertStatement;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.route.context.RouteContext;
 import org.apache.shardingsphere.infra.route.context.RouteMapper;
 import org.apache.shardingsphere.infra.route.context.RouteResult;
 import org.apache.shardingsphere.infra.route.context.RouteUnit;
+import org.apache.shardingsphere.shadow.api.config.ShadowRuleConfiguration;
+import org.apache.shardingsphere.shadow.rule.ShadowRule;
+import org.apache.shardingsphere.sql.parser.binder.segment.insert.values.InsertValueContext;
+import org.apache.shardingsphere.sql.parser.binder.statement.ddl.CreateTableStatementContext;
+import org.apache.shardingsphere.sql.parser.binder.statement.dml.InsertStatementContext;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateTableStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLInsertStatement;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,6 +43,7 @@ import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -59,7 +60,7 @@ public class ShadowRouteDecoratorTest {
     private InsertStatementContext sqlStatementContext;
     
     @Mock
-    private InsertStatement insertStatement;
+    private MySQLInsertStatement insertStatement;
     
     @Mock
     private CreateTableStatementContext createTableStatementContext;
@@ -76,7 +77,6 @@ public class ShadowRouteDecoratorTest {
         routeDecorator = new ShadowRouteDecorator();
         ShadowRuleConfiguration shadowRuleConfiguration = new ShadowRuleConfiguration(SHADOW_COLUMN, Collections.singletonMap(ACTUAL_DATASOURCE, SHADOW_DATASOURCE));
         shadowRule = new ShadowRule(shadowRuleConfiguration);
-        
     }
     
     @Test
@@ -100,8 +100,8 @@ public class ShadowRouteDecoratorTest {
         RouteContext routeContext = mockNonDMLSQLRouteContext();
         RouteContext actual = routeDecorator.decorate(routeContext, mock(ShardingSphereMetaData.class), shadowRule, new ConfigurationProperties(new Properties()));
         assertThat(actual.getRouteResult().getRouteUnits().size(), is(2));
-        assertThat(actual.getRouteResult().getActualDataSourceNames().contains(SHADOW_DATASOURCE), is(true));
-        assertThat(actual.getRouteResult().getActualDataSourceNames().contains(ACTUAL_DATASOURCE), is(true));
+        assertTrue(actual.getRouteResult().getActualDataSourceNames().contains(SHADOW_DATASOURCE));
+        assertTrue(actual.getRouteResult().getActualDataSourceNames().contains(ACTUAL_DATASOURCE));
     }
     
     @Test
@@ -110,7 +110,7 @@ public class ShadowRouteDecoratorTest {
         routeContext.getRouteResult().getRouteUnits().add(mockRouteUnit());
         RouteContext actual = routeDecorator.decorate(routeContext, mock(ShardingSphereMetaData.class), shadowRule, new ConfigurationProperties(new Properties()));
         assertThat(actual.getRouteResult().getRouteUnits().size(), is(1));
-        assertThat(actual.getRouteResult().getActualDataSourceNames().contains(SHADOW_DATASOURCE), is(true));
+        assertTrue(actual.getRouteResult().getActualDataSourceNames().contains(SHADOW_DATASOURCE));
     }
     
     @Test
@@ -128,8 +128,8 @@ public class ShadowRouteDecoratorTest {
         routeContext.getRouteResult().getRouteUnits().add(mockRouteUnit());
         RouteContext actual = routeDecorator.decorate(routeContext, mock(ShardingSphereMetaData.class), shadowRule, new ConfigurationProperties(new Properties()));
         assertThat(actual.getRouteResult().getRouteUnits().size(), is(2));
-        assertThat(actual.getRouteResult().getActualDataSourceNames().contains(SHADOW_DATASOURCE), is(true));
-        assertThat(actual.getRouteResult().getActualDataSourceNames().contains(ACTUAL_DATASOURCE), is(true));
+        assertTrue(actual.getRouteResult().getActualDataSourceNames().contains(SHADOW_DATASOURCE));
+        assertTrue(actual.getRouteResult().getActualDataSourceNames().contains(ACTUAL_DATASOURCE));
     }
     
     @Test
@@ -138,7 +138,7 @@ public class ShadowRouteDecoratorTest {
         routeContext.getRouteResult().getRouteUnits().add(mockRouteUnit());
         RouteContext actual = routeDecorator.decorate(routeContext, mock(ShardingSphereMetaData.class), shadowRule, new ConfigurationProperties(new Properties()));
         assertThat(actual.getRouteResult().getRouteUnits().size(), is(1));
-        assertThat(actual.getRouteResult().getActualDataSourceNames().contains(SHADOW_DATASOURCE), is(true));
+        assertTrue(actual.getRouteResult().getActualDataSourceNames().contains(SHADOW_DATASOURCE));
         Collection<RouteMapper> tableMappers = actual.getRouteResult().getRouteUnits().iterator().next().getTableMappers();
         assertThat(tableMappers.size(), is(1));
         assertThat(tableMappers.iterator().next().getActualName(), is("table_0"));

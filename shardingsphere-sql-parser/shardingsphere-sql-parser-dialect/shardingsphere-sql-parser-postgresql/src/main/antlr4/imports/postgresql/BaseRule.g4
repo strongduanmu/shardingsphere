@@ -522,7 +522,6 @@ aExpr
     | aExpr MOD_ aExpr
     | aExpr CARET_ aExpr
     | aExpr comparisonOperator aExpr
-    | LP_ aExpr RP_ optIndirection
     | aExpr qualOp aExpr
     | qualOp aExpr
     | aExpr qualOp
@@ -594,6 +593,7 @@ cExpr
     | columnref
     | aexprConst
     | PARAM indirectionEl?
+    | LP_ aExpr RP_ optIndirection
     | caseExpr
     | funcExpr
     | selectWithParens
@@ -635,8 +635,7 @@ caseExpr
     ;
 
 whenClauseList
-    : whenClause
-    | whenClauseList whenClause
+    : whenClause+
     ;
 
 whenClause
@@ -673,7 +672,11 @@ subqueryOp
     ;
 
 allOp
-    : mathOperator
+    : op | mathOperator
+    ;
+
+op
+    : (AND_ | OR_ | NOT_ | TILDE_ | VERTICAL_BAR_ | AMPERSAND_ | SIGNED_LEFT_SHIFT_ | SIGNED_RIGHT_SHIFT_ | CARET_ | MOD_ | COLON_ | PLUS_ | MINUS_ | ASTERISK_ |   SLASH_ | BACKSLASH_ |   DOT_ | DOT_ASTERISK_ |  SAFE_EQ_ |   DEQ_ | EQ_ | CQ_ | NEQ_ | GT_ | GTE_ | LT_ | LTE_ | POUND_ | LP_ | RP_ | LBE_ | RBE_ | LBT_ | RBT_ | COMMA_ | DQ_ | SQ_ | BQ_ | QUESTION_ |   AT_ | SEMI_ | TILDE_TILDE_ |  NOT_TILDE_TILDE_ | TYPE_CAST_ )+
     ;
 
 mathOperator
@@ -705,9 +708,7 @@ anyOperator
     ;
 
 frameClause
-    : RANGE frameExtent windowExclusionClause?
-    | ROWS frameExtent windowExclusionClause?
-    | GROUPS frameExtent windowExclusionClause?
+    : (RANGE|ROWS|GROUPS) frameExtent windowExclusionClause?
     ;
 
 frameExtent
@@ -756,17 +757,16 @@ arrayExpr
     ;
 
 arrayExprList
-    : arrayExpr | arrayExprList COMMA_ arrayExpr
+    : arrayExpr (COMMA_ arrayExpr)*
     ;
 
 funcArgList
-    : funcArgExpr
-    | funcArgList COMMA_ funcArgExpr
+    : funcArgExpr (COMMA_ funcArgExpr)*
     ;
 
 paramName
     : typeFunctionName
-;
+    ;
 
 funcArgExpr
     : aExpr
@@ -775,8 +775,7 @@ funcArgExpr
     ;
 
 typeList
-    : typeName
-    | typeList COMMA_ typeName
+    : typeName (COMMA_ typeName)*
     ;
 
 funcApplication
@@ -816,8 +815,8 @@ typeFunctionName
     ;
 
 functionTable
-    : functionExprWindowless optOrdinality
-    | ROWS FROM LP_ rowsFromList RP_ optOrdinality
+    : functionExprWindowless ordinality?
+    | ROWS FROM LP_ rowsFromList RP_ ordinality?
     ;
 
 xmlTable
@@ -826,8 +825,7 @@ xmlTable
     ;
 
 xmlTableColumnList
-    : xmlTableColumnEl
-    | xmlTableColumnList COMMA_ xmlTableColumnEl
+    : xmlTableColumnEl (COMMA_ xmlTableColumnEl)*
     ;
 
 xmlTableColumnEl
@@ -849,8 +847,7 @@ xmlTableColumnOptionEl
     ;
 
 xmlNamespaceList
-    : xmlNamespaceEl
-    | xmlNamespaceList COMMA_ xmlNamespaceEl
+    : xmlNamespaceEl (COMMA_ xmlNamespaceEl)*
     ;
 
 xmlNamespaceEl
@@ -875,8 +872,8 @@ functionExprWindowless
     : funcApplication | functionExprCommonSubexpr
     ;
 
-optOrdinality
-    : WITH ORDINALITY |
+ordinality
+    : WITH ORDINALITY
     ;
 
 functionExprCommonSubexpr
@@ -922,7 +919,7 @@ functionExprCommonSubexpr
     | XMLPARSE LP_ documentOrContent aExpr xmlWhitespaceOption RP_
     | XMLPI LP_ NAME identifier RP_
     | XMLPI LP_ NAME identifier COMMA_ aExpr RP_
-    | XMLROOT LP_ aExpr COMMA_ xmlRootVersion optXmlRootStandalone RP_
+    | XMLROOT LP_ aExpr COMMA_ xmlRootVersion xmlRootStandalone? RP_
     | XMLSERIALIZE LP_ documentOrContent aExpr AS simpleTypeName RP_
     ;
 
@@ -965,7 +962,7 @@ extractArg
     ;
 
 genericType
-    :    typeFunctionName typeModifiers? | typeFunctionName attrs typeModifiers?
+    : typeFunctionName typeModifiers? | typeFunctionName attrs typeModifiers?
     ;
 
 typeModifiers
@@ -973,20 +970,20 @@ typeModifiers
     ;
 
 numeric
-    : INT | INTEGER | SMALLINT | BIGINT| REAL | FLOAT optFloat | DOUBLE PRECISION | DECIMAL typeModifiers? | DEC typeModifiers? | NUMERIC typeModifiers? | BOOLEAN
+    : INT | INTEGER | SMALLINT | BIGINT| REAL | FLOAT optFloat | DOUBLE PRECISION | DECIMAL typeModifiers? | DEC typeModifiers? | NUMERIC typeModifiers? | BOOLEAN | FLOAT8 | FLOAT4 | INT2 | INT4 | INT8
 	;
 
 constDatetime
-    : TIMESTAMP LP_ NUMBER_ RP_ optTimezone
-    | TIMESTAMP optTimezone
-    | TIME LP_ NUMBER_ RP_ optTimezone
-    | TIME optTimezone
+    : TIMESTAMP LP_ NUMBER_ RP_ timezone?
+    | TIMESTAMP timezone?
+    | TIME LP_ NUMBER_ RP_ timezone?
+    | TIME timezone?
+    | DATE
     ;
 
-optTimezone
+timezone
     : WITH TIME ZONE
     | WITHOUT TIME ZONE
-    |
     ;
 
 character
@@ -1024,6 +1021,9 @@ attrName
 
 colLable
     : identifier
+    | colNameKeyword
+    | typeFuncNameKeyword
+    | reservedKeyword
     ;
 
 bit
@@ -1115,8 +1115,7 @@ xmlAttributes
     ;
 
 xmlAttributeList
-    : xmlAttributeEl
-    | xmlAttributeList COMMA_ xmlAttributeEl
+    : xmlAttributeEl (COMMA_ xmlAttributeEl)*
     ;
 
 xmlAttributeEl
@@ -1147,36 +1146,33 @@ xmlRootVersion
     | VERSION NO VALUE
     ;
 
-optXmlRootStandalone
+xmlRootStandalone
     : COMMA_ STANDALONE YES
     | COMMA_ STANDALONE NO
     | COMMA_ STANDALONE NO VALUE
-    |
     ;
 
 rowsFromItem
-    : functionExprWindowless optColumnDefList
+    : functionExprWindowless columnDefList
     ;
 
 rowsFromList
-    : rowsFromItem
-	| rowsFromList COMMA_ rowsFromItem
+    : rowsFromItem (COMMA_ rowsFromItem)*
     ;
 
-optColumnDefList
+columnDefList
     : AS LP_ tableFuncElementList RP_
     ;
 
 tableFuncElementList
-    : tableFuncElement
-    | tableFuncElementList COMMA_ tableFuncElement
+    : tableFuncElement (COMMA_ tableFuncElement)*
     ;
 
 tableFuncElement
-    :  typeName optCollateClause
+    : colId typeName collateClause?
     ;
 
-optCollateClause
+collateClause
     : COLLATE anyName
     ;
 
@@ -1259,8 +1255,7 @@ partitionClause
     ;
 
 indexParams
-    : indexElem
-    | indexParams COMMA_ indexElem
+    : indexElem (COMMA_ indexElem)*
     ;
 
 indexElemOptions
@@ -1286,13 +1281,8 @@ reloptions
     : LP_ reloptionList RP_
     ;
 
-optReloptions
-    : WITH reloptions |
-    ;
-
 reloptionList
-    : reloptionElem
-    | reloptionList COMMA_ reloptionElem
+    : reloptionElem (COMMA_ reloptionElem)*
 	;
 
 reloptionElem
@@ -1329,7 +1319,7 @@ dataTypeName
     : INT | INT2 | INT4 | INT8 | SMALLINT | INTEGER | BIGINT | DECIMAL | NUMERIC | REAL | FLOAT | FLOAT4 | FLOAT8 | DOUBLE PRECISION | SMALLSERIAL | SERIAL | BIGSERIAL
     | MONEY | VARCHAR | CHARACTER | CHAR | TEXT | NAME | BYTEA | TIMESTAMP | DATE | TIME | INTERVAL | BOOLEAN | ENUM | POINT
     | LINE | LSEG | BOX | PATH | POLYGON | CIRCLE | CIDR | INET | MACADDR | MACADDR8 | BIT | VARBIT | TSVECTOR | TSQUERY | UUID | XML
-    | JSON | INT4RANGE | INT8RANGE | NUMRANGE | TSRANGE | TSTZRANGE | DATERANGE | ARRAY | identifier
+    | JSON | INT4RANGE | INT8RANGE | NUMRANGE | TSRANGE | TSTZRANGE | DATERANGE | ARRAY | identifier | constDatetime | typeName
     ;
 
 dataTypeLength
@@ -1351,3 +1341,433 @@ ignoredIdentifier_
 ignoredIdentifiers_
     : ignoredIdentifier_ (COMMA_ ignoredIdentifier_)*
     ;
+
+signedIconst
+    : NUMBER_
+    | PLUS_ NUMBER_
+    | MINUS_ NUMBER_
+    ;
+
+booleanOrString
+    : TRUE
+    | FALSE
+    | ON
+    | nonReservedWord
+    | STRING_
+    ;
+
+nonReservedWord
+    : identifier
+    | unreservedWord
+    | colNameKeyword
+    | typeFuncNameKeyword
+    ;
+
+colNameKeyword
+    : BETWEEN
+    | BIGINT
+    | BIT
+    | BOOLEAN
+    | CHAR
+    | CHARACTER
+    | COALESCE
+    | DEC
+    | DECIMAL
+    | EXISTS
+    | EXTRACT
+    | FLOAT
+    | GREATEST
+    | GROUPING
+    | INOUT
+    | INT
+    | INTEGER
+    | INTERVAL
+    | LEAST
+    | NATIONAL
+    | NCHAR
+    | NONE
+    | NULLIF
+    | NUMERIC
+    | OUT
+    | OVERLAY
+    | POSITION
+    | PRECISION
+    | REAL
+    | ROW
+    | SETOF
+    | SMALLINT
+    | SUBSTRING
+    | TIME
+    | TIMESTAMP
+    | TREAT
+    | TRIM
+    | VALUES
+    | VARCHAR
+    | XMLATTRIBUTES
+    | XMLCONCAT
+    | XMLELEMENT
+    | XMLEXISTS
+    | XMLFOREST
+    | XMLNAMESPACES
+    | XMLPARSE
+    | XMLPI
+    | XMLROOT
+    | XMLSERIALIZE
+    | XMLTABLE
+    ;
+
+databaseName
+    : colId
+    ;
+
+roleSpec
+    : identifier
+    | nonReservedWord
+    | CURRENT_USER
+    | SESSION_USER
+    ;
+
+varName
+    : colId
+    | varName DOT_ colId
+    ;
+
+varList
+    : varValue (COMMA_ varValue)*
+    ;
+
+varValue
+    : booleanOrString | numericOnly
+    ;
+
+zoneValue
+    : STRING_
+    | identifier
+    | INTERVAL STRING_ optInterval
+    | INTERVAL LP_ NUMBER_ RP_ STRING_
+    | numericOnly
+    | DEFAULT
+    | LOCAL
+    ;
+
+numericOnly
+    : NUMBER_
+    | PLUS_ NUMBER_
+    | MINUS_ NUMBER_
+    ;
+
+isoLevel
+    : READ UNCOMMITTED
+    | READ COMMITTED
+    | REPEATABLE READ
+    | SERIALIZABLE
+    ;
+
+columnDef
+    : colId typeName createGenericOptions? colQualList
+    ;
+
+colQualList
+    : colConstraint*
+    ;
+
+colConstraint
+    : CONSTRAINT name colConstraintElem
+    | colConstraintElem
+    | constraintAttr
+    | COLLATE anyName
+    ;
+
+constraintAttr
+    : DEFERRABLE
+    | NOT DEFERRABLE
+    | INITIALLY DEFERRED
+    | INITIALLY IMMEDIATE
+    ;
+
+colConstraintElem
+    : NOT NULL
+    | NULL
+    | UNIQUE (WITH definition)? consTableSpace
+    | PRIMARY KEY (WITH definition)? consTableSpace
+    | CHECK LP_ aExpr RP_ noInherit?
+    | DEFAULT bExpr
+    | GENERATED generatedWhen AS IDENTITY parenthesizedSeqOptList?
+    | GENERATED generatedWhen AS LP_ aExpr RP_ STORED
+    | REFERENCES qualifiedName optColumnList? keyMatch? keyActions?
+    ;
+
+parenthesizedSeqOptList
+    : LP_ seqOptList RP_
+    ;
+
+seqOptList
+    : seqOptElem+
+    ;
+
+seqOptElem
+    : AS simpleTypeName
+    | CACHE numericOnly
+    | CYCLE
+    | NO CYCLE
+    | INCREMENT BY? numericOnly
+    | MAXVALUE numericOnly
+    | MINVALUE numericOnly
+    | NO MAXVALUE
+    | NO MINVALUE
+    | OWNED BY anyName
+    | SEQUENCE NAME anyName
+    | START WITH? numericOnly
+    | RESTART
+    | RESTART WITH? numericOnly
+    ;
+
+optColumnList
+    : LP_ columnList RP_
+    ;
+
+columnElem
+    : colId
+    ;
+
+columnList
+    : columnElem (COMMA_ columnElem)*
+    ;
+
+generatedWhen
+    : ALWAYS
+    | BY DEFAULT
+    ;
+
+noInherit
+    : NO INHERIT
+    ;
+
+consTableSpace
+    : USING INDEX TABLESPACE name
+    ;
+
+definition
+    : LP_ defList RP_
+    ;
+
+defList
+    : defElem (COMMA_ defElem)*
+    ;
+
+defElem
+    : (colLabel EQ_ defArg) | colLabel
+    ;
+
+colLabel
+    : identifier
+    | unreservedWord
+    | colNameKeyword
+    | typeFuncNameKeyword
+    | reservedKeyword
+    ;
+
+keyActions
+    : keyUpdate
+    | keyDelete
+    | keyUpdate keyDelete
+    | keyDelete keyUpdate
+    ;
+
+keyDelete
+    : ON DELETE keyAction
+    ;
+
+keyUpdate
+    : ON UPDATE keyAction
+    ;
+
+keyAction
+    : NO ACTION
+    | RESTRICT
+    | CASCADE
+    | SET NULL
+    | SET DEFAULT
+    ;
+
+keyMatch
+    : MATCH FULL | MATCH PARTIAL | MATCH SIMPLE
+    ;
+
+createGenericOptions
+    : OPTIONS LP_ genericOptionList RP_
+    ;
+
+genericOptionList
+    : genericOptionElem (COMMA_ genericOptionElem)*
+    ;
+
+genericOptionElem
+    : genericOptionName genericOptionArg
+    ;
+
+genericOptionArg
+    : STRING_
+    ;
+
+genericOptionName
+    : colLable
+    ;
+
+replicaIdentity
+    : NOTHING
+    | FULL
+    | DEFAULT
+    | USING INDEX name
+    ;
+
+operArgtypes
+    : LP_ typeName RP_
+    | LP_ typeName COMMA_ typeName RP_
+    | LP_ NONE COMMA_ typeName RP_
+    | LP_ typeName COMMA_ NONE RP_
+    ;
+
+funcArg
+    : argClass paramName funcType
+    | paramName argClass funcType
+    | paramName funcType
+    | argClass funcType
+    | funcType
+    ;
+
+argClass
+    : IN
+    | OUT
+    | INOUT
+    | IN OUT
+    | VARIADIC
+    ;
+
+funcArgsList
+    : funcArg (COMMA_ funcArg)*
+    ;
+
+nonReservedWordOrSconst
+    : nonReservedWord
+    | STRING_
+    ;
+
+fileName
+    : STRING_
+    ;
+
+roleList
+    : roleSpec (COMMA_ roleSpec)*
+    ;
+
+setResetClause
+    : SET setRest
+    | variableResetStmt
+    ;
+
+setRest
+    : TRANSACTION transactionModeList
+    | SESSION CHARACTERISTICS AS TRANSACTION transactionModeList
+    | setRestMore
+    ;
+
+transactionModeList
+    : transactionModeItem (COMMA_? transactionModeItem)*
+    ;
+
+transactionModeItem
+    : ISOLATION LEVEL isoLevel
+    | READ ONLY
+    | READ WRITE
+    | DEFERRABLE
+    | NOT DEFERRABLE
+    ;
+
+setRestMore
+    : genericSet
+    | varName FROM CURRENT
+    | TIME ZONE zoneValue
+    | CATALOG STRING_
+    | SCHEMA STRING_
+    | NAMES encoding?
+    | ROLE nonReservedWord | STRING_
+    | SESSION AUTHORIZATION nonReservedWord | STRING_
+    | SESSION AUTHORIZATION DEFAULT
+    | XML OPTION documentOrContent
+    | TRANSACTION SNAPSHOT STRING_
+    ;
+
+encoding
+    : STRING_
+    | DEFAULT
+    ;
+
+genericSet
+    : varName (EQ_|TO) (varList | DEFAULT)
+    ;
+
+variableResetStmt
+    : RESET resetRest
+    ;
+
+resetRest
+    : genericReset
+    | TIME ZONE
+    | TRANSACTION ISOLATION LEVEL
+    | SESSION AUTHORIZATION
+    ;
+
+genericReset
+    : varName
+    | ALL
+    ;
+
+relationExprList
+    : relationExpr (COMMA_ relationExpr)*
+    ;
+
+relationExpr
+    : qualifiedName
+    | qualifiedName ASTERISK_
+    | ONLY qualifiedName
+    | ONLY LP_ qualifiedName RP_
+    ;
+
+commonFuncOptItem
+    : CALLED ON NULL INPUT
+    | RETURNS NULL ON NULL INPUT
+    | STRICT
+    | IMMUTABLE
+    | STABLE
+    | VOLATILE
+    | EXTERNAL SECURITY DEFINER
+    | EXTERNAL SECURITY INVOKER
+    | SECURITY DEFINER
+    | SECURITY INVOKER
+    | LEAKPROOF
+    | NOT LEAKPROOF
+    | COST numericOnly
+    | ROWS numericOnly
+    | SUPPORT anyName
+    | functionSetResetClause
+    | PARALLEL colId
+    ;
+
+functionSetResetClause
+    : SET setRestMore
+    | variableResetStmt
+    ;
+
+rowSecurityCmd
+    : ALL | SELECT | INSERT	| UPDATE | DELETE
+    ;
+
+event
+    : SELECT | UPDATE | DELETE | INSERT
+    ;
+
+typeNameList
+    : typeName (COMMA_ typeName)*
+    ;
+
