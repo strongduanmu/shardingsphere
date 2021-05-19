@@ -15,22 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.governance.core.yaml.persisted;
+package org.apache.shardingsphere.distsql.parser.statement.rdl.drop.impl;
 
 import lombok.Getter;
-import lombok.Setter;
-import org.apache.shardingsphere.infra.yaml.config.YamlConfiguration;
-import org.apache.shardingsphere.infra.yaml.config.YamlRuleConfiguration;
+import org.apache.shardingsphere.distsql.parser.statement.rdl.drop.DropRDLStatement;
 
 import java.util.Collection;
 import java.util.LinkedList;
 
 /**
- * Persisted rule configuration for YAML.
+ * Drop database discovery rule statement.
  */
 @Getter
-@Setter
-public final class PersistedYamlRuleConfiguration implements YamlConfiguration {
+public final class DropDatabaseDiscoveryRuleStatement extends DropRDLStatement {
     
-    private Collection<YamlRuleConfiguration> rules = new LinkedList<>();
+    private final Collection<String> ruleNames = new LinkedList<>();
 }
