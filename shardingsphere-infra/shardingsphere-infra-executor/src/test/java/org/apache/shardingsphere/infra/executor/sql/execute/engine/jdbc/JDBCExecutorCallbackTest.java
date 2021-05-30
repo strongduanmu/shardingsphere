@@ -89,6 +89,7 @@ public final class JDBCExecutorCallbackTest {
         Field field = JDBCExecutorCallback.class.getDeclaredField("CACHED_DATASOURCE_METADATA");
         field.setAccessible(true);
         Map<String, DataSourceMetaData> cachedDataSourceMetaData = (Map<String, DataSourceMetaData>) field.get(jdbcExecutorCallback);
+        cachedDataSourceMetaData.clear();
         assertThat(cachedDataSourceMetaData.size(), is(0));
         jdbcExecutorCallback.execute(units, true, Collections.emptyMap());
         assertThat(cachedDataSourceMetaData.size(), is(1));
