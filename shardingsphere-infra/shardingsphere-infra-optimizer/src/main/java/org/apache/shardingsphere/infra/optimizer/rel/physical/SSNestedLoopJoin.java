@@ -68,7 +68,7 @@ public class SSNestedLoopJoin extends SSAbstractJoin implements SSRel {
     @Override
     public final Join copy(final RelTraitSet traitSet, final RexNode conditionExpr, final RelNode left, final RelNode right, final JoinRelType joinType, final boolean semiJoinDone) {
         return new SSNestedLoopJoin(getCluster(), traitSet, Collections.emptyList(), left, right,
-                condition, variablesSet, joinType);
+                conditionExpr, variablesSet, joinType);
     }
     
 }
