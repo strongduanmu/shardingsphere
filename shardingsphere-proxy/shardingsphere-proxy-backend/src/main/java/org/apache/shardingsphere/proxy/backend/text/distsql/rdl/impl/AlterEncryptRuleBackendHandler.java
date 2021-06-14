@@ -18,25 +18,17 @@
 package org.apache.shardingsphere.proxy.backend.text.distsql.rdl.impl;
 
 import org.apache.shardingsphere.distsql.parser.segment.rdl.EncryptRuleSegment;
-import org.apache.shardingsphere.distsql.parser.statement.rdl.alter.AlterEncryptRuleStatement;
+import org.apache.shardingsphere.distsql.parser.statement.rdl.alter.impl.AlterEncryptRuleStatement;
 import org.apache.shardingsphere.encrypt.api.config.EncryptRuleConfiguration;
 import org.apache.shardingsphere.encrypt.api.config.rule.EncryptTableRuleConfiguration;
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithm;
-import org.apache.shardingsphere.encrypt.yaml.config.YamlEncryptRuleConfiguration;
 import org.apache.shardingsphere.encrypt.yaml.converter.EncryptRuleStatementConverter;
-import org.apache.shardingsphere.governance.core.registry.listener.event.rule.RuleConfigurationsAlteredEvent;
-import org.apache.shardingsphere.infra.config.RuleConfiguration;
-import org.apache.shardingsphere.infra.eventbus.ShardingSphereEventBus;
 import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
 import org.apache.shardingsphere.infra.spi.typed.TypedSPIRegistry;
 import org.apache.shardingsphere.infra.yaml.swapper.YamlRuleConfigurationSwapperEngine;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
-import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.exception.EncryptRulesNotExistedException;
 import org.apache.shardingsphere.proxy.backend.exception.InvalidEncryptorsException;
-import org.apache.shardingsphere.proxy.backend.response.header.ResponseHeader;
-import org.apache.shardingsphere.proxy.backend.response.header.update.UpdateResponseHeader;
-import org.apache.shardingsphere.proxy.backend.text.SchemaRequiredBackendHandler;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -48,56 +40,67 @@ import java.util.stream.Collectors;
 /**
  * Alter encrypt rule backend handler.
  */
-public final class AlterEncryptRuleBackendHandler extends SchemaRequiredBackendHandler<AlterEncryptRuleStatement> {
-
+public final class AlterEncryptRuleBackendHandler extends RDLBackendHandler<AlterEncryptRuleStatement> {
+    
     static {
+        // TODO consider about register once only
         ShardingSphereServiceLoader.register(EncryptAlgorithm.class);
     }
-
+    
     public AlterEncryptRuleBackendHandler(final AlterEncryptRuleStatement sqlStatement, final BackendConnection backendConnection) {
         super(sqlStatement, backendConnection);
     }
     
     @Override
-    public ResponseHeader execute(final String schemaName, final AlterEncryptRuleStatement sqlStatement) {
-        Optional<EncryptRuleConfiguration> ruleConfig = ProxyContext.getInstance().getMetaData(schemaName).getRuleMetaData().getConfigurations().stream()
-                .filter(each -> each instanceof EncryptRuleConfiguration).map(each -> (EncryptRuleConfiguration) each).findFirst();
+    public void before(final String schemaName, final AlterEncryptRuleStatement sqlStatement) {
+        Optional<EncryptRuleConfiguration> ruleConfig = getEncryptRuleConfiguration(schemaName);
         if (!ruleConfig.isPresent()) {
-            throw new EncryptRulesNotExistedException(schemaName, getAlteredTables(sqlStatement));
+            throw new EncryptRulesNotExistedException(schemaName, getAlteredRuleNames(sqlStatement));
         }
         check(schemaName, sqlStatement, ruleConfig.get());
-        YamlEncryptRuleConfiguration alterConfig = alter(ruleConfig.get(), sqlStatement);
-        Collection<RuleConfiguration> rules = new YamlRuleConfigurationSwapperEngine().swapToRuleConfigurations(Collections.singleton(alterConfig));
-        post(schemaName, rules);
-        return new UpdateResponseHeader(sqlStatement);
     }
-
-    private Collection<String> getAlteredTables(final AlterEncryptRuleStatement sqlStatement) {
-        return sqlStatement.getEncryptRules().stream().map(EncryptRuleSegment::getTableName).collect(Collectors.toList());
+    
+    @Override
+    public void doExecute(final String schemaName, final AlterEncryptRuleStatement sqlStatement) {
+        EncryptRuleConfiguration encryptRuleConfiguration = getEncryptRuleConfiguration(schemaName).get();
+        EncryptRuleConfiguration alteredEncryptRuleConfiguration = new YamlRuleConfigurationSwapperEngine()
+                .swapToRuleConfigurations(Collections.singletonList(EncryptRuleStatementConverter.convert(sqlStatement.getRules()))).stream()
+                .map(each -> (EncryptRuleConfiguration) each).findFirst().get();
+        drop(sqlStatement, encryptRuleConfiguration);
+        encryptRuleConfiguration.getTables().addAll(alteredEncryptRuleConfiguration.getTables());
+        encryptRuleConfiguration.getEncryptors().putAll(alteredEncryptRuleConfiguration.getEncryptors());
     }
-
+    
+    private void drop(final AlterEncryptRuleStatement sqlStatement, final EncryptRuleConfiguration encryptRuleConfiguration) {
+        getAlteredRuleNames(sqlStatement).forEach(each -> {
+            EncryptTableRuleConfiguration encryptTableRuleConfiguration = encryptRuleConfiguration.getTables()
+                    .stream().filter(tableRule -> tableRule.getName().equals(each)).findAny().get();
+            encryptRuleConfiguration.getTables().remove(encryptTableRuleConfiguration);
+            encryptTableRuleConfiguration.getColumns().forEach(column -> encryptRuleConfiguration.getEncryptors().remove(column.getEncryptorName()));
+        });
+    }
+    
     private void check(final String schemaName, final AlterEncryptRuleStatement sqlStatement, final EncryptRuleConfiguration encryptRuleConfiguration) {
         checkAlteredTables(schemaName, encryptRuleConfiguration, sqlStatement);
         checkEncryptors(sqlStatement);
     }
-
-    private void checkAlteredTables(final String schemaName, final EncryptRuleConfiguration encryptRuleConfiguration,
-                                    final AlterEncryptRuleStatement sqlStatement) {
+    
+    private void checkAlteredTables(final String schemaName, final EncryptRuleConfiguration encryptRuleConfiguration, final AlterEncryptRuleStatement sqlStatement) {
         Collection<String> existTables = getExistTables(encryptRuleConfiguration);
-        Collection<String> notExistTables = getAlteredTables(sqlStatement).stream()
+        Collection<String> notExistTables = getAlteredRuleNames(sqlStatement).stream()
                 .filter(each -> !existTables.contains(each)).collect(Collectors.toList());
         if (!notExistTables.isEmpty()) {
             throw new EncryptRulesNotExistedException(schemaName, notExistTables);
         }
     }
-
+    
     private Collection<String> getExistTables(final EncryptRuleConfiguration encryptRuleConfiguration) {
         return encryptRuleConfiguration.getTables().stream().map(EncryptTableRuleConfiguration::getName).collect(Collectors.toList());
     }
-
+    
     private void checkEncryptors(final AlterEncryptRuleStatement sqlStatement) {
         Collection<String> encryptors = new LinkedHashSet<>();
-        sqlStatement.getEncryptRules().stream().forEach(each -> encryptors.addAll(each.getColumns().stream()
+        sqlStatement.getRules().forEach(each -> encryptors.addAll(each.getColumns().stream()
                 .map(column -> column.getEncryptor().getAlgorithmName()).collect(Collectors.toSet())));
         Collection<String> invalidEncryptors = encryptors.stream().filter(each -> !TypedSPIRegistry.findRegisteredService(EncryptAlgorithm.class, each, new Properties()).isPresent())
                 .collect(Collectors.toList());
@@ -106,18 +109,8 @@ public final class AlterEncryptRuleBackendHandler extends SchemaRequiredBackendH
         }
     }
     
-    private YamlEncryptRuleConfiguration alter(final EncryptRuleConfiguration encryptRuleConfiguration, final AlterEncryptRuleStatement sqlStatement) {
-        YamlEncryptRuleConfiguration alterYamlEncryptRuleConfiguration
-                = EncryptRuleStatementConverter.convert(sqlStatement.getEncryptRules());
-        YamlEncryptRuleConfiguration result = new YamlRuleConfigurationSwapperEngine()
-                .swapToYamlRuleConfigurations(Collections.singletonList(encryptRuleConfiguration)).stream()
-                .map(each -> (YamlEncryptRuleConfiguration) each).findFirst().get();
-        result.getTables().putAll(alterYamlEncryptRuleConfiguration.getTables());
-        result.getEncryptors().putAll(alterYamlEncryptRuleConfiguration.getEncryptors());
-        return result;
-    }
-
-    private void post(final String schemaName, final Collection<RuleConfiguration> rules) {
-        ShardingSphereEventBus.getInstance().post(new RuleConfigurationsAlteredEvent(schemaName, rules));
+    private Collection<String> getAlteredRuleNames(final AlterEncryptRuleStatement sqlStatement) {
+        return sqlStatement.getRules()
+                .stream().map(EncryptRuleSegment::getTableName).collect(Collectors.toList());
     }
 }

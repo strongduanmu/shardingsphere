@@ -20,7 +20,7 @@ package org.apache.shardingsphere.proxy.backend.text.distsql.rql.impl;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
-import org.apache.shardingsphere.distsql.parser.statement.rql.show.ShowEncryptRulesStatement;
+import org.apache.shardingsphere.distsql.parser.statement.rql.show.impl.ShowEncryptRulesStatement;
 import org.apache.shardingsphere.encrypt.api.config.EncryptRuleConfiguration;
 import org.apache.shardingsphere.encrypt.api.config.rule.EncryptColumnRuleConfiguration;
 import org.apache.shardingsphere.encrypt.api.config.rule.EncryptTableRuleConfiguration;
@@ -108,7 +108,8 @@ public final class EncryptRulesQueryBackendHandler extends SchemaRequiredBackend
     @Override
     public Collection<Object> getRowData() {
         Entry<String, EncryptColumnRuleConfiguration> entry = data.next();
-        Properties encryptProps = encryptors.get(entry.getValue().getEncryptorName()).getProps();
+        Properties encryptProps = Objects.nonNull(encryptors.get(entry.getValue().getEncryptorName()))
+                ? encryptors.get(entry.getValue().getEncryptorName()).getProps() : null;
         return Arrays.asList(Splitter.on(".").splitToList(entry.getKey()).get(0), entry.getValue().getLogicColumn(),
                 entry.getValue().getCipherColumn(), entry.getValue().getPlainColumn(), encryptors.get(entry.getValue().getEncryptorName()).getType(),
                 Objects.nonNull(encryptProps) ? Joiner.on(",").join(encryptProps.entrySet().stream()

@@ -18,10 +18,10 @@
 package org.apache.shardingsphere.governance.core.registry;
 
 import lombok.SneakyThrows;
-import org.apache.shardingsphere.governance.core.registry.service.config.impl.DataSourceRegistryService;
-import org.apache.shardingsphere.governance.core.registry.service.config.impl.GlobalRuleRegistryService;
-import org.apache.shardingsphere.governance.core.registry.service.config.impl.PropertiesRegistryService;
-import org.apache.shardingsphere.governance.core.registry.service.config.impl.SchemaRuleRegistryService;
+import org.apache.shardingsphere.governance.core.registry.config.service.impl.DataSourceRegistryService;
+import org.apache.shardingsphere.governance.core.registry.config.service.impl.GlobalRuleRegistryService;
+import org.apache.shardingsphere.governance.core.registry.config.service.impl.PropertiesRegistryService;
+import org.apache.shardingsphere.governance.core.registry.config.service.impl.SchemaRuleRegistryService;
 import org.apache.shardingsphere.governance.repository.spi.RegistryCenterRepository;
 import org.apache.shardingsphere.infra.config.RuleConfiguration;
 import org.apache.shardingsphere.infra.config.datasource.DataSourceConfiguration;
@@ -125,10 +125,9 @@ public final class RegistryCenterTest {
         return result;
     }
     
+    @SuppressWarnings("unchecked")
     private Collection<RuleConfiguration> createRuleConfigurations() {
-        // TODO use RuleConfigurationFixture instead of ShardingRuleConfiguration for test case
-        return Collections.emptyList();
-//        return new YamlRuleConfigurationSwapperEngine().swapToRuleConfigurations(YamlEngine.unmarshal(readYAML(SCHEMA_RULE_YAML), Collection.class));
+        return new YamlRuleConfigurationSwapperEngine().swapToRuleConfigurations(YamlEngine.unmarshal(readYAML(SCHEMA_RULE_YAML), Collection.class));
     }
     
     @SuppressWarnings("unchecked")

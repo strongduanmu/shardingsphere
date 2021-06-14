@@ -30,6 +30,7 @@ import org.apache.shardingsphere.proxy.backend.response.header.query.impl.QueryH
 import org.apache.shardingsphere.proxy.backend.response.header.update.UpdateResponseHeader;
 import org.apache.shardingsphere.proxy.backend.text.TextProtocolBackendHandler;
 import org.apache.shardingsphere.proxy.frontend.command.executor.ResponseType;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.InsertStatement;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,7 +46,6 @@ import java.util.Collections;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -84,8 +84,9 @@ public final class PostgreSQLComQueryExecutorTest {
         QueryResponseHeader queryResponseHeader = mock(QueryResponseHeader.class);
         when(textProtocolBackendHandler.execute()).thenReturn(queryResponseHeader);
         Collection<DatabasePacket<?>> actual = queryExecutor.execute();
-        assertTrue(actual.isEmpty());
-        assertNull(queryExecutor.getResponseType());
+        assertThat(actual.size(), is(1));
+        assertThat(actual.iterator().next(), is(instanceOf(PostgreSQLRowDescriptionPacket.class)));
+        assertThat(queryExecutor.getResponseType(), is(ResponseType.QUERY));
         verify(queryResponseHeader).getQueryHeaders();
     }
     
@@ -103,8 +104,7 @@ public final class PostgreSQLComQueryExecutorTest {
     
     @Test
     public void assertExecuteUpdate() throws SQLException {
-        UpdateResponseHeader updateResponseHeader = mock(UpdateResponseHeader.class);
-        when(textProtocolBackendHandler.execute()).thenReturn(updateResponseHeader);
+        when(textProtocolBackendHandler.execute()).thenReturn(new UpdateResponseHeader(mock(InsertStatement.class)));
         Collection<DatabasePacket<?>> actual = queryExecutor.execute();
         assertThat(actual.size(), is(1));
         assertThat(actual.iterator().next(), is(instanceOf(PostgreSQLCommandCompletePacket.class)));

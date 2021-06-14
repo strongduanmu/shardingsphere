@@ -21,7 +21,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
 import org.apache.shardingsphere.dbdiscovery.api.config.DatabaseDiscoveryRuleConfiguration;
 import org.apache.shardingsphere.dbdiscovery.api.config.rule.DatabaseDiscoveryDataSourceRuleConfiguration;
-import org.apache.shardingsphere.distsql.parser.statement.rql.show.ShowDatabaseDiscoveryRulesStatement;
+import org.apache.shardingsphere.distsql.parser.statement.rql.show.impl.ShowDatabaseDiscoveryRulesStatement;
 import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
@@ -86,7 +86,8 @@ public final class DatabaseDiscoveryRulesQueryBackendHandler extends SchemaRequi
     @Override
     public Collection<Object> getRowData() {
         DatabaseDiscoveryDataSourceRuleConfiguration ruleConfig = data.next();
-        Properties discoverProps = discoverTypes.get(ruleConfig.getDiscoveryTypeName()).getProps();
+        Properties discoverProps = Objects.nonNull(discoverTypes.get(ruleConfig.getDiscoveryTypeName())) 
+                ? discoverTypes.get(ruleConfig.getDiscoveryTypeName()).getProps() : null;
         return Arrays.asList(ruleConfig.getName(), Joiner.on(",").join(ruleConfig.getDataSourceNames()),
                 discoverTypes.get(ruleConfig.getDiscoveryTypeName()).getType(),
                 Objects.nonNull(discoverProps) ? Joiner.on(",").join(discoverProps.entrySet().stream()

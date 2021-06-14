@@ -24,7 +24,6 @@ import org.apache.shardingsphere.driver.executor.DriverJDBCExecutor;
 import org.apache.shardingsphere.driver.executor.batch.BatchExecutionUnit;
 import org.apache.shardingsphere.driver.executor.batch.BatchPreparedStatementExecutor;
 import org.apache.shardingsphere.driver.executor.callback.impl.PreparedStatementExecuteQueryCallback;
-import org.apache.shardingsphere.driver.executor.callback.impl.StatementExecuteQueryCallback;
 import org.apache.shardingsphere.driver.jdbc.adapter.AbstractPreparedStatementAdapter;
 import org.apache.shardingsphere.driver.jdbc.core.connection.ShardingSphereConnection;
 import org.apache.shardingsphere.driver.jdbc.core.constant.SQLExceptionConstant;
@@ -47,7 +46,6 @@ import org.apache.shardingsphere.infra.executor.check.SQLCheckEngine;
 import org.apache.shardingsphere.infra.executor.kernel.model.ExecutionGroup;
 import org.apache.shardingsphere.infra.executor.kernel.model.ExecutionGroupContext;
 import org.apache.shardingsphere.infra.executor.sql.context.ExecutionContext;
-import org.apache.shardingsphere.infra.executor.sql.context.SQLUnit;
 import org.apache.shardingsphere.infra.executor.sql.execute.engine.ConnectionMode;
 import org.apache.shardingsphere.infra.executor.sql.execute.engine.SQLExecutorExceptionHandler;
 import org.apache.shardingsphere.infra.executor.sql.execute.engine.driver.jdbc.JDBCExecutionUnit;
@@ -60,10 +58,8 @@ import org.apache.shardingsphere.infra.executor.sql.execute.result.ExecuteResult
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.impl.driver.jdbc.type.stream.JDBCStreamQueryResult;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.update.UpdateResult;
-import org.apache.shardingsphere.infra.executor.sql.optimize.execute.CalciteExecutor;
-import org.apache.shardingsphere.infra.executor.sql.optimize.execute.CalciteJDBCExecutor;
-import org.apache.shardingsphere.infra.executor.sql.optimize.schema.CalciteLogicSchema;
-import org.apache.shardingsphere.infra.executor.sql.optimize.schema.row.CalciteRowExecutor;
+import org.apache.shardingsphere.infra.executor.sql.federate.execute.FederateExecutor;
+import org.apache.shardingsphere.infra.executor.sql.federate.execute.FederateJDBCExecutor;
 import org.apache.shardingsphere.infra.executor.sql.prepare.driver.DriverExecutionPrepareEngine;
 import org.apache.shardingsphere.infra.executor.sql.prepare.driver.jdbc.JDBCDriverType;
 import org.apache.shardingsphere.infra.executor.sql.prepare.driver.jdbc.StatementOption;
@@ -116,9 +112,12 @@ public final class ShardingSpherePreparedStatement extends AbstractPreparedState
     @Getter
     private final ParameterMetaData parameterMetaData;
     
+    private final DriverJDBCExecutor driverJDBCExecutor;
+    
     private final RawExecutor rawExecutor;
     
-    private final DriverJDBCExecutor driverJDBCExecutor;
+    @Getter(AccessLevel.PROTECTED)
+    private final FederateExecutor federateExecutor;
     
     private final BatchPreparedStatementExecutor batchPreparedStatementExecutor;
     
@@ -129,9 +128,6 @@ public final class ShardingSpherePreparedStatement extends AbstractPreparedState
     private ExecutionContext executionContext;
     
     private ResultSet currentResultSet;
-    
-    @Getter(AccessLevel.PROTECTED)
-    private CalciteExecutor calciteExecutor;
 
     public ShardingSpherePreparedStatement(final ShardingSphereConnection connection, final String sql) throws SQLException {
         this(connection, sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, ResultSet.HOLD_CURSORS_OVER_COMMIT, false);
@@ -166,8 +162,10 @@ public final class ShardingSpherePreparedStatement extends AbstractPreparedState
         parameterMetaData = new ShardingSphereParameterMetaData(sqlStatement);
         statementOption = returnGeneratedKeys ? new StatementOption(true) : new StatementOption(resultSetType, resultSetConcurrency, resultSetHoldability);
         JDBCExecutor jdbcExecutor = new JDBCExecutor(metaDataContexts.getExecutorEngine(), connection.isHoldTransaction());
-        rawExecutor = new RawExecutor(metaDataContexts.getExecutorEngine(), connection.isHoldTransaction());
         driverJDBCExecutor = new DriverJDBCExecutor(metaDataContexts, jdbcExecutor);
+        rawExecutor = new RawExecutor(metaDataContexts.getExecutorEngine(), connection.isHoldTransaction(), metaDataContexts.getProps());
+        // TODO Consider FederateRawExecutor
+        federateExecutor = new FederateJDBCExecutor(DefaultSchema.LOGIC_NAME, metaDataContexts.getOptimizeContextFactory(), metaDataContexts.getProps(), jdbcExecutor);
         batchPreparedStatementExecutor = new BatchPreparedStatementExecutor(metaDataContexts, jdbcExecutor);
         kernelProcessor = new KernelProcessor();
     }
@@ -189,8 +187,8 @@ public final class ShardingSpherePreparedStatement extends AbstractPreparedState
     }
     
     private List<ResultSet> getResultSetsForShardingSphereResultSet() throws SQLException {
-        if (null != calciteExecutor) {
-            return Collections.singletonList(calciteExecutor.getResultSet());
+        if (executionContext.getRouteContext().isFederated()) {
+            return Collections.singletonList(federateExecutor.getResultSet());
         }
         return statements.stream().map(this::getResultSet).collect(Collectors.toList());
     }
@@ -200,8 +198,8 @@ public final class ShardingSpherePreparedStatement extends AbstractPreparedState
             return rawExecutor.execute(createRawExecutionGroupContext(), executionContext.getSqlStatementContext(),
                     new RawSQLExecutorCallback()).stream().map(each -> (QueryResult) each).collect(Collectors.toList());
         }
-        if (executionContext.getRouteContext().isToCalcite()) {
-            return executeQueryByCalcite();
+        if (executionContext.getRouteContext().isFederated()) {
+            return executeFederatedQuery();
         }
         ExecutionGroupContext<JDBCExecutionUnit> executionGroupContext = createExecutionGroupContext();
         cacheStatements(executionGroupContext.getInputGroups());
@@ -209,24 +207,19 @@ public final class ShardingSpherePreparedStatement extends AbstractPreparedState
                 new PreparedStatementExecuteQueryCallback(metaDataContexts.getDefaultMetaData().getResource().getDatabaseType(), sqlStatement, SQLExecutorExceptionHandler.isExceptionThrown()));
     }
     
-    private List<QueryResult> executeQueryByCalcite() throws SQLException {
+    private List<QueryResult> executeFederatedQuery() throws SQLException {
         if (executionContext.getExecutionUnits().isEmpty()) {
             return Collections.emptyList();
         }
-        calciteExecutor = createCalciteExecutor();
-        SQLUnit sqlUnit = executionContext.getExecutionUnits().iterator().next().getSqlUnit();
-        return calciteExecutor.executeQuery(sqlUnit.getSql(), sqlUnit.getParameters());
+        PreparedStatementExecuteQueryCallback callback = new PreparedStatementExecuteQueryCallback(metaDataContexts.getDefaultMetaData().getResource().getDatabaseType(), 
+                 sqlStatement, SQLExecutorExceptionHandler.isExceptionThrown());
+        return federateExecutor.executeQuery(executionContext, callback, createDriverExecutionPrepareEngine());
     }
     
-    private CalciteExecutor createCalciteExecutor() {
+    private DriverExecutionPrepareEngine<JDBCExecutionUnit, Connection> createDriverExecutionPrepareEngine() {
         int maxConnectionsSizePerQuery = metaDataContexts.getProps().<Integer>getValue(ConfigurationPropertyKey.MAX_CONNECTIONS_SIZE_PER_QUERY);
-        StatementExecuteQueryCallback callback = new StatementExecuteQueryCallback(metaDataContexts.getDefaultMetaData().getResource().getDatabaseType(),
-                executionContext.getSqlStatementContext().getSqlStatement(), SQLExecutorExceptionHandler.isExceptionThrown());
-        CalciteRowExecutor executor = new CalciteRowExecutor(metaDataContexts.getDefaultMetaData().getRuleMetaData().getRules(),
-                maxConnectionsSizePerQuery, connection, driverJDBCExecutor.getJdbcExecutor(), executionContext, callback);
-        // TODO Consider CalciteRawExecutor
-        CalciteLogicSchema logicSchema = new CalciteLogicSchema(metaDataContexts.getOptimizeContextFactory().getSchemaMetadatas().getSchemas().get(DefaultSchema.LOGIC_NAME), executor);
-        return new CalciteJDBCExecutor(metaDataContexts.getOptimizeContextFactory().create(DefaultSchema.LOGIC_NAME, logicSchema));
+        return new DriverExecutionPrepareEngine<>(JDBCDriverType.PREPARED_STATEMENT, maxConnectionsSizePerQuery, connection, 
+                statementOption, metaDataContexts.getDefaultMetaData().getRuleMetaData().getRules());
     }
     
     @Override
@@ -281,6 +274,10 @@ public final class ShardingSpherePreparedStatement extends AbstractPreparedState
                 Collection<ExecuteResult> executeResults = rawExecutor.execute(createRawExecutionGroupContext(), executionContext.getSqlStatementContext(), new RawSQLExecutorCallback());
                 return executeResults.iterator().next() instanceof QueryResult;
             }
+            if (executionContext.getRouteContext().isFederated()) {
+                List<QueryResult> queryResults = executeFederatedQuery();
+                return !queryResults.isEmpty();
+            }
             ExecutionGroupContext<JDBCExecutionUnit> executionGroupContext = createExecutionGroupContext();
             cacheStatements(executionGroupContext.getInputGroups());
             return driverJDBCExecutor.execute(executionGroupContext,
@@ -297,9 +294,7 @@ public final class ShardingSpherePreparedStatement extends AbstractPreparedState
     }
     
     private ExecutionGroupContext<JDBCExecutionUnit> createExecutionGroupContext() throws SQLException {
-        int maxConnectionsSizePerQuery = metaDataContexts.getProps().<Integer>getValue(ConfigurationPropertyKey.MAX_CONNECTIONS_SIZE_PER_QUERY);
-        DriverExecutionPrepareEngine<JDBCExecutionUnit, Connection> prepareEngine = new DriverExecutionPrepareEngine<>(
-                JDBCDriverType.PREPARED_STATEMENT, maxConnectionsSizePerQuery, connection, statementOption, metaDataContexts.getDefaultMetaData().getRuleMetaData().getRules());
+        DriverExecutionPrepareEngine<JDBCExecutionUnit, Connection> prepareEngine = createDriverExecutionPrepareEngine();
         return prepareEngine.prepare(executionContext.getRouteContext(), executionContext.getExecutionUnits());
     }
     
@@ -344,6 +339,9 @@ public final class ShardingSpherePreparedStatement extends AbstractPreparedState
         List<ResultSet> result = new ArrayList<>(statements.size());
         for (Statement each : statements) {
             result.add(each.getResultSet());
+        }
+        if (executionContext.getRouteContext().isFederated()) {
+            result.add(federateExecutor.getResultSet());
         }
         return result;
     }

@@ -20,7 +20,7 @@ package org.apache.shardingsphere.driver.jdbc.adapter;
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.driver.jdbc.adapter.executor.ForceExecuteTemplate;
 import org.apache.shardingsphere.driver.jdbc.unsupported.AbstractUnsupportedOperationStatement;
-import org.apache.shardingsphere.infra.executor.sql.optimize.execute.CalciteExecutor;
+import org.apache.shardingsphere.infra.executor.sql.federate.execute.FederateExecutor;
 
 import java.sql.SQLException;
 import java.sql.SQLWarning;
@@ -51,16 +51,9 @@ public abstract class AbstractStatementAdapter extends AbstractUnsupportedOperat
         closed = true;
         try {
             forceExecuteTemplate.execute((Collection) getRoutedStatements(), Statement::close);
-            closeCalciteExecutor();
+            getFederateExecutor().close();
         } finally {
             getRoutedStatements().clear();
-        }
-    }
-    
-    private void closeCalciteExecutor() throws SQLException {
-        CalciteExecutor executor = getCalciteExecutor();
-        if (null != executor) {
-            executor.close();
         }
     }
     
@@ -212,5 +205,5 @@ public abstract class AbstractStatementAdapter extends AbstractUnsupportedOperat
     
     protected abstract Collection<? extends Statement> getRoutedStatements();
     
-    protected abstract CalciteExecutor getCalciteExecutor();
+    protected abstract FederateExecutor getFederateExecutor();
 }
