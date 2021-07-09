@@ -37,57 +37,52 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Physical reation operator nested loop join.
+ * Join physical reation operator using sort merge join algorithm.
  */
-public final class SSNestedLoopJoin extends SSAbstractJoin implements SSRel {
+public final class SSSortMergeJoin extends SSAbstractJoin implements SSRel {
     
-    protected SSNestedLoopJoin(final RelOptCluster cluster, final RelTraitSet traitSet, final List<RelHint> hints, 
-                               final RelNode left, final RelNode right, final RexNode condition, 
-                               final Set<CorrelationId> variablesSet, final JoinRelType joinType) {
+    protected SSSortMergeJoin(final RelOptCluster cluster, final RelTraitSet traitSet, final List<RelHint> hints, 
+                              final RelNode left, final RelNode right, final RexNode condition,
+                              final Set<CorrelationId> variablesSet, final JoinRelType joinType) {
         super(cluster, traitSet, hints, left, right, condition, variablesSet, joinType);
     }
 
     @Override
+    public Join copy(final RelTraitSet traitSet, final RexNode conditionExpr, final RelNode left, final RelNode right,
+                     final JoinRelType joinType, final boolean semiJoinDone) {
+        return new SSHashJoin(left.getCluster(), traitSet, Collections.emptyList(), left, right, conditionExpr, this.variablesSet, joinType);
+    }
+
+    @Override
     public RelOptCost computeSelfCost(final RelOptPlanner planner, final RelMetadataQuery mq) {
-        RelNode inner = getInner();
-        RelNode outer = getOuter();
-        Double innerRowCount = mq.getRowCount(inner);
-        Double outerRowCount = mq.getRowCount(outer);
-        if (innerRowCount == null || outerRowCount == null) {
+        Double leftRowCount = mq.getRowCount(left);
+        Double rightRowCount = mq.getRowCount(right);
+        if (leftRowCount == null || rightRowCount == null) {
             return planner.getCostFactory().makeTinyCost();
         }
-        if (Double.isInfinite(innerRowCount) || Double.isInfinite(outerRowCount)) {
+        if (Double.isInfinite(leftRowCount) || Double.isInfinite(rightRowCount)) {
             return planner.getCostFactory().makeHugeCost();
         }
-        double rowCount = innerRowCount * outerRowCount;
+        double rowCount = Math.max(leftRowCount, rightRowCount);
         return planner.getCostFactory().makeCost(rowCount, rowCount, 0);
-        
     }
 
     /**
-     * Create <code>SSNestedLoopJoin</code>.
-     * @param left left input of this join
+     * create <code>SSSortMergeJoin</code>.
+     * @param left left left input of this join
      * @param right right input of this join
      * @param condition join condition
      * @param variablesSet variables that are set by the LHS and used by the RHS and are not available to nodes above this Join in the tree
-     * @param joinType join type
-     * @return <code>SSNestedLoopJoin</code>
+     * @param joinRelType join type
+     * @return <code>SSSortMergeJoin</code>
      */
-    public static SSNestedLoopJoin create(final RelNode left, final RelNode right, final RexNode condition, 
-                                 final Set<CorrelationId> variablesSet, final JoinRelType joinType) {
+    public static SSSortMergeJoin create(final RelNode left, final RelNode right, final RexNode condition,
+                                         final Set<CorrelationId> variablesSet, final JoinRelType joinRelType) {
         final RelOptCluster cluster = left.getCluster();
         final RelMetadataQuery mq = cluster.getMetadataQuery();
-        final RelTraitSet traitSet =
-                cluster.traitSetOf(ShardingSphereConvention.INSTANCE)
-                        .replaceIfs(RelCollationTraitDef.INSTANCE, 
-                            () -> RelMdCollation.enumerableNestedLoopJoin(mq, left, right, joinType));
-        return new SSNestedLoopJoin(cluster, traitSet, Collections.emptyList(), left, right, condition, variablesSet, joinType);
+        final RelTraitSet traitSet = cluster.traitSetOf(ShardingSphereConvention.INSTANCE)
+                .replaceIfs(RelCollationTraitDef.INSTANCE, () -> RelMdCollation.enumerableNestedLoopJoin(mq, left, right, joinRelType));
+        return new SSSortMergeJoin(cluster, traitSet, Collections.emptyList(), left, right, condition, variablesSet, joinRelType);
+        
     }
-    
-    @Override
-    public Join copy(final RelTraitSet traitSet, final RexNode conditionExpr, final RelNode left, final RelNode right, final JoinRelType joinType, final boolean semiJoinDone) {
-        return new SSNestedLoopJoin(getCluster(), traitSet, Collections.emptyList(), left, right,
-                conditionExpr, variablesSet, joinType);
-    }
-    
 }

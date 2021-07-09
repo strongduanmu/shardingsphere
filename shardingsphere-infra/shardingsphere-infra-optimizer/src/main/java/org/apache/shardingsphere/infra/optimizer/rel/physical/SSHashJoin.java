@@ -18,6 +18,8 @@
 package org.apache.shardingsphere.infra.optimizer.rel.physical;
 
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
@@ -37,7 +39,7 @@ import java.util.Set;
 /**
  * Join physical reation operator using hash join algorithm.
  */
-public final class SSHashJoin extends Join implements SSRel {
+public final class SSHashJoin extends SSAbstractJoin implements SSRel {
     
     protected SSHashJoin(final RelOptCluster cluster, final RelTraitSet traitSet, final List<RelHint> hints,
                          final RelNode left, final RelNode right, final RexNode condition, 
@@ -50,6 +52,22 @@ public final class SSHashJoin extends Join implements SSRel {
                      final JoinRelType joinType, final boolean semiJoinDone) {
         // TODO
         return new SSHashJoin(left.getCluster(), traitSet, Collections.emptyList(), left, right, conditionExpr, this.variablesSet, joinType);
+    }
+
+    @Override
+    public RelOptCost computeSelfCost(final RelOptPlanner planner, final RelMetadataQuery mq) {
+        RelNode build = getInner();
+        RelNode probe = getOuter();
+        Double buildRowCount = mq.getRowCount(build);
+        Double probeRowCount = mq.getRowCount(probe);
+        if (buildRowCount == null || probeRowCount == null) {
+            return planner.getCostFactory().makeTinyCost();
+        }
+        if (Double.isInfinite(buildRowCount) || Double.isInfinite(probeRowCount)) {
+            return planner.getCostFactory().makeHugeCost();
+        }
+        double rowCount = buildRowCount + probeRowCount;
+        return planner.getCostFactory().makeCost(rowCount, buildRowCount * 2.0 + probeRowCount, 0);
     }
 
     /**
