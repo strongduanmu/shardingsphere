@@ -26,11 +26,14 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.schema.Statistic;
+import org.apache.calcite.schema.Statistics;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.shardingsphere.infra.metadata.schema.model.ColumnMetaData;
 import org.apache.shardingsphere.infra.metadata.schema.model.TableMetaData;
+import org.apache.shardingsphere.infra.optimizer.statistics.StatisticsProvider;
 
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -72,5 +75,10 @@ public final class ShardingSphereCalciteTable extends AbstractTable implements T
         }
         
         return typeFactory.createStructType(columnDataTypes);
+    }
+
+    @Override
+    public Statistic getStatistic() {
+        return Statistics.of(StatisticsProvider.get(schemaName).getRowCount(tableName), Collections.emptyList());
     }
 }
