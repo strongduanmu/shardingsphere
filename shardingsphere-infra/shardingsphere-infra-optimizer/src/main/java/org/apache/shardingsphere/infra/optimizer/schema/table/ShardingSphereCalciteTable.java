@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.infra.optimizer.schema.table;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptTable.ToRelContext;
@@ -39,17 +40,14 @@ import java.util.Map;
 
 @Getter
 @Setter
-public final class ShardingSphereCalciteTable extends AbstractTable
-        implements TranslatableTable {
+@RequiredArgsConstructor
+public final class ShardingSphereCalciteTable extends AbstractTable implements TranslatableTable {
 
-    private String tableName;
+    private final String schemaName;
+    
+    private final String tableName;
 
-    private TableMetaData tableMetaData;
-
-    public ShardingSphereCalciteTable(final String tableName, final TableMetaData tableMetaData) {
-        this.tableName = tableName;
-        this.tableMetaData = tableMetaData;
-    }
+    private final TableMetaData tableMetaData;
 
     @Override
     public RelNode toRel(final ToRelContext context, final RelOptTable relOptTable) {

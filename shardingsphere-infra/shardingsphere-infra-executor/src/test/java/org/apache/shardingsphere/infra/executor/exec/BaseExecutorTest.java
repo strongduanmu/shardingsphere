@@ -166,7 +166,7 @@ public abstract class BaseExecutorTest {
         RelOptCluster cluster = RelOptCluster.create(planner, rexBuilder);
     
         SchemaPlus rootSchema = Frameworks.createRootSchema(true);
-        rootSchema.add(schemaName, new ShardingSphereCalciteSchema(schema));
+        rootSchema.add(schemaName, new ShardingSphereCalciteSchema(schemaName, schema));
         CalciteSchema schema = CalciteSchema.from(rootSchema);
     
         RelOptSchema catalog = new CalciteCatalogReader(schema,

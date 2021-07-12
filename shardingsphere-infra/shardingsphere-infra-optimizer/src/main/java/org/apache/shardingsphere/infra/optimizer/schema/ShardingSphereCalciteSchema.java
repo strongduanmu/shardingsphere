@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.infra.optimizer.schema;
 
+import lombok.RequiredArgsConstructor;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
@@ -30,18 +31,17 @@ import java.util.stream.Collectors;
 /**
  * Calcite schema for optimizing sql using calcite optimizing framework.
  */
+@RequiredArgsConstructor
 public final class ShardingSphereCalciteSchema extends AbstractSchema {
 
+    private final String schemaName;
+    
     private final ShardingSphereSchema schema;
-
-    public ShardingSphereCalciteSchema(final ShardingSphereSchema schema) {
-        this.schema = schema;
-    }
 
     @Override
     protected Map<String, Table> getTableMap() {
         Collection<String> tableNames = schema.getAllTableNames();
-        return tableNames.stream().map(tableName -> new ShardingSphereCalciteTable(tableName, schema.get(tableName)))
+        return tableNames.stream().map(tableName -> new ShardingSphereCalciteTable(schemaName, tableName, schema.get(tableName)))
                 .collect(Collectors.toMap(ShardingSphereCalciteTable::getTableName, Function.identity()));
     }
 }

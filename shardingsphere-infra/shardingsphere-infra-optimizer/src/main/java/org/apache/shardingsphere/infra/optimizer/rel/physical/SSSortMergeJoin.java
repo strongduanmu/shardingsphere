@@ -21,13 +21,12 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.shardingsphere.infra.optimizer.planner.ShardingSphereConvention;
@@ -74,14 +73,17 @@ public final class SSSortMergeJoin extends SSAbstractJoin implements SSRel {
      * @param condition join condition
      * @param variablesSet variables that are set by the LHS and used by the RHS and are not available to nodes above this Join in the tree
      * @param joinRelType join type
+     * @param collations collation list for this sort merge join
      * @return <code>SSSortMergeJoin</code>
      */
     public static SSSortMergeJoin create(final RelNode left, final RelNode right, final RexNode condition,
-                                         final Set<CorrelationId> variablesSet, final JoinRelType joinRelType) {
+                                         final Set<CorrelationId> variablesSet, final JoinRelType joinRelType,
+                                         final List<RelCollation> collations) {
         final RelOptCluster cluster = left.getCluster();
-        final RelMetadataQuery mq = cluster.getMetadataQuery();
-        final RelTraitSet traitSet = cluster.traitSetOf(ShardingSphereConvention.INSTANCE)
-                .replaceIfs(RelCollationTraitDef.INSTANCE, () -> RelMdCollation.enumerableNestedLoopJoin(mq, left, right, joinRelType));
+        final RelTraitSet traitSet = cluster.traitSetOf(ShardingSphereConvention.INSTANCE);
+        if (collations != null && !collations.isEmpty()) {
+            traitSet.replace(collations);
+        }
         return new SSSortMergeJoin(cluster, traitSet, Collections.emptyList(), left, right, condition, variablesSet, joinRelType);
         
     }

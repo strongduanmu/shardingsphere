@@ -84,7 +84,7 @@ public final class SSHashJoin extends SSAbstractJoin implements SSRel {
         final RelOptCluster cluster = left.getCluster();
         final RelMetadataQuery mq = cluster.getMetadataQuery();
         final RelTraitSet traitSet = cluster.traitSetOf(ShardingSphereConvention.INSTANCE)
-                .replaceIfs(RelCollationTraitDef.INSTANCE, () -> RelMdCollation.enumerableNestedLoopJoin(mq, left, right, joinRelType));
+                .replaceIfs(RelCollationTraitDef.INSTANCE, () -> RelMdCollation.enumerableHashJoin(mq, left, right, joinRelType));
         return new SSHashJoin(cluster, traitSet, Collections.emptyList(), left, right, condition, variablesSet, joinRelType);
     }
 }

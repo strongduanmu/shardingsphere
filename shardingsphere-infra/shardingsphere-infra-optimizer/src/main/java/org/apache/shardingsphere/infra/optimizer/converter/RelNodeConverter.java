@@ -110,7 +110,7 @@ public class RelNodeConverter {
 
     private CalciteSchema createRootSchema(final String schemaName) {
         SchemaPlus rootSchema = Frameworks.createRootSchema(true);
-        rootSchema.add(schemaName, new ShardingSphereCalciteSchema(shardingSphereSchema));
+        rootSchema.add(schemaName, new ShardingSphereCalciteSchema(schemaName, shardingSphereSchema));
         return CalciteSchema.from(rootSchema);
     }
 }
