@@ -17,6 +17,15 @@
 
 package org.apache.shardingsphere.infra.optimizer.statistics;
 
+import org.apache.shardingsphere.infra.database.metadata.DataSourceMetaData;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
+import org.apache.shardingsphere.infra.metadata.resource.ShardingSphereResource;
+import org.apache.shardingsphere.sharding.rule.ShardingRule;
+import org.apache.shardingsphere.sharding.rule.TableRule;
+
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -30,19 +39,54 @@ import java.util.concurrent.ConcurrentHashMap;
  * </ul>
  */
 public final class StatisticsProvider {
-    
-    private static Map<String, StatisticsProvider> providers = new ConcurrentHashMap<>();
-    
-    private StatisticsProvider() {
-        
-    }  
-    
-    public static StatisticsProvider get(String schemaName) {
-        return providers.get(schemaName);
+
+    private static Map<String, StatisticsProvider> statisticsProviders = new ConcurrentHashMap<>();
+
+    private final ShardingSphereResource shardingSphereResource;
+
+    private final ShardingRule shardingRule;
+
+    private StatisticsHandler statisticsHandler;
+
+    private TablesStatistics tablesStatistics;
+
+    private StatisticsProvider(final ShardingSphereResource shardingSphereResource,
+                               final ShardingRule shardingRule, final DatabaseType databaseType) {
+        this.shardingSphereResource = shardingSphereResource;
+        this.shardingRule = shardingRule;
+        tablesStatistics = new TablesStatistics();
+        if(databaseType instanceof MySQLDatabaseType) {
+            // TODO use SPI
+            statisticsHandler = new MySQLStatisticsHandler();
+        }
     }
-    
-    public Double getRowCount(String tableName) {
-        // TODO 
-        return null;
+
+    public double getRowCount(String tableName) {
+        return tablesStatistics.getTableRowCount(tableName);
+    }
+
+    public void analyzeTable(String table) {
+        analyzeTable(shardingRule.getTableRule(table));
+    }
+
+    private void analyzeTable(TableRule tableRule) {
+        Map<Map.Entry<String, Integer>, Collection<DataSourceMetaData>> map = new HashMap<>();
+        long rowCount = statisticsHandler.handleTableRowCount(tableRule.getDatasourceToTablesMap(), shardingSphereResource);
+        String logicalTableName = tableRule.getLogicTable();
+        TableStatistics table = tablesStatistics.getOrCreate(logicalTableName);
+        table.setRowCount(rowCount);
+    }
+
+    public static void addStatisticsProvider(final String schemaName, final ShardingSphereResource shardingSphereResource,
+                                             final ShardingRule shardingRule, final DatabaseType databaseType) {
+        if(statisticsProviders.containsKey(schemaName)) {
+            return;
+        }
+        StatisticsProvider statisticsProvider = new StatisticsProvider(shardingSphereResource, shardingRule, databaseType);
+        statisticsProviders.put(schemaName, statisticsProvider);
+    }
+
+    public static StatisticsProvider get(String schemaName) {
+        return statisticsProviders.get(schemaName);
     }
 }
