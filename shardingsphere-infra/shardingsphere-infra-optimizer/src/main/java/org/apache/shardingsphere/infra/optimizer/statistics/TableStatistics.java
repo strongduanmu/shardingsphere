@@ -40,4 +40,13 @@ public final class TableStatistics {
         this.tableName = tableName;
         columnCardinality = new HashMap<>();
     }
+
+    /**
+     * Get column cardinality.
+     * @param columnName column name
+     * @return column cardinality, or 0 if column cardinality not exist
+     */
+    public long getCardinality(final String columnName) {
+        return columnCardinality.getOrDefault(columnName, 0L);
+    }
 }

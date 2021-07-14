@@ -79,6 +79,6 @@ public final class ShardingSphereCalciteTable extends AbstractTable implements T
 
     @Override
     public Statistic getStatistic() {
-        return Statistics.of(StatisticsProvider.get(schemaName).getRowCount(tableName), Collections.emptyList());
+        return Statistics.of(StatisticsProvider.get(schemaName).getTableRowCount(tableName), Collections.emptyList());
     }
 }

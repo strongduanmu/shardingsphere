@@ -59,4 +59,18 @@ public final class TablesStatistics {
         }
         return table.getRowCount();
     }
+
+    /**
+     * Get column cardinality for logical table.
+     * @param tableName logical table name
+     * @param columnName column name
+     * @return column cardinality
+     */
+    public long getColumnCardinality(final String tableName, final String columnName) {
+        TableStatistics table = tableStatistics.get(tableName);
+        if (table == null) {
+            return 0L;
+        }
+        return table.getCardinality(columnName);
+    }
 }

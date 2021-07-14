@@ -55,21 +55,40 @@ public final class StatisticsProvider {
         this.shardingSphereResource = shardingSphereResource;
         this.shardingRule = shardingRule;
         tablesStatistics = new TablesStatistics();
-        if(databaseType instanceof MySQLDatabaseType) {
+        if (databaseType instanceof MySQLDatabaseType) {
             // TODO use SPI
             statisticsHandler = new MySQLStatisticsHandler();
         }
     }
 
-    public double getRowCount(String tableName) {
+    /**
+     * Get logical table row count.
+     * @param tableName logical table name
+     * @return logical table row count
+     */
+    public double getTableRowCount(final String tableName) {
         return tablesStatistics.getTableRowCount(tableName);
     }
 
-    public void analyzeTable(String table) {
+    /**
+     * Get column cardinality for logical table.
+     * @param tableName logical table name
+     * @param columnName column name
+     * @return column cardinality
+     */
+    public double getColumnCardinality(final String tableName, final String columnName) {
+        return tablesStatistics.getColumnCardinality(tableName, columnName);
+    }
+
+    /**
+     * Analyze table for collecting table statistics. 
+     * @param table table name
+     */
+    public void analyzeTable(final String table) {
         analyzeTable(shardingRule.getTableRule(table));
     }
 
-    private void analyzeTable(TableRule tableRule) {
+    private void analyzeTable(final TableRule tableRule) {
         Map<Map.Entry<String, Integer>, Collection<DataSourceMetaData>> map = new HashMap<>();
         long rowCount = statisticsHandler.handleTableRowCount(tableRule.getDatasourceToTablesMap(), shardingSphereResource);
         String logicalTableName = tableRule.getLogicTable();
@@ -77,16 +96,28 @@ public final class StatisticsProvider {
         table.setRowCount(rowCount);
     }
 
+    /**
+     * Add a new statistics provider for a database.
+     * @param schemaName schema name or database name
+     * @param shardingSphereResource datasource resource
+     * @param shardingRule sharding table rule
+     * @param databaseType database type
+     */
     public static void addStatisticsProvider(final String schemaName, final ShardingSphereResource shardingSphereResource,
                                              final ShardingRule shardingRule, final DatabaseType databaseType) {
-        if(statisticsProviders.containsKey(schemaName)) {
+        if (statisticsProviders.containsKey(schemaName)) {
             return;
         }
         StatisticsProvider statisticsProvider = new StatisticsProvider(shardingSphereResource, shardingRule, databaseType);
         statisticsProviders.put(schemaName, statisticsProvider);
     }
 
-    public static StatisticsProvider get(String schemaName) {
+    /**
+     * Get statistics provider.
+     * @param schemaName schema name or database name
+     * @return <code>StatisticsProvider</code> instance.
+     */
+    public static StatisticsProvider get(final String schemaName) {
         return statisticsProviders.get(schemaName);
     }
 }
