@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.infra.optimizer.statistics;
 
 import org.apache.shardingsphere.infra.metadata.resource.ShardingSphereResource;
+import org.apache.shardingsphere.infra.metadata.schema.model.TableMetaData;
 
 import java.util.Collection;
 import java.util.Map;
@@ -34,4 +35,14 @@ public interface StatisticsHandler {
      * @return table row count of logical table.
      */
     long handleTableRowCount(Map<String, Collection<String>> datasourceToTables, ShardingSphereResource shardingSphereResource);
+
+    /**
+     * query cardinality of columns for logical table.
+     * @param datasourceToTables sharding tables
+     * @param tableMetaData table column metadata
+     * @param shardingSphereResource resource related to DataSource
+     * @return column cardinality
+     */
+    Map<String, Long> handleTableColumnCardinality(Map<String, Collection<String>> datasourceToTables, TableMetaData tableMetaData,
+                                                          ShardingSphereResource shardingSphereResource);
 }

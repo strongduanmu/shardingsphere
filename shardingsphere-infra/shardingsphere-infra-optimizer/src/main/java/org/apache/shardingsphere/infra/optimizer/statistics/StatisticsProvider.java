@@ -17,15 +17,13 @@
 
 package org.apache.shardingsphere.infra.optimizer.statistics;
 
-import org.apache.shardingsphere.infra.database.metadata.DataSourceMetaData;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
 import org.apache.shardingsphere.infra.metadata.resource.ShardingSphereResource;
+import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sharding.rule.TableRule;
 
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -45,15 +43,18 @@ public final class StatisticsProvider {
     private final ShardingSphereResource shardingSphereResource;
 
     private final ShardingRule shardingRule;
+    
+    private final ShardingSphereSchema shardingSphereSchema;
 
     private StatisticsHandler statisticsHandler;
 
     private TablesStatistics tablesStatistics;
 
-    private StatisticsProvider(final ShardingSphereResource shardingSphereResource,
+    private StatisticsProvider(final ShardingSphereResource shardingSphereResource, final ShardingSphereSchema shardingSphereSchema,
                                final ShardingRule shardingRule, final DatabaseType databaseType) {
         this.shardingSphereResource = shardingSphereResource;
         this.shardingRule = shardingRule;
+        this.shardingSphereSchema = shardingSphereSchema;
         tablesStatistics = new TablesStatistics();
         if (databaseType instanceof MySQLDatabaseType) {
             // TODO use SPI
@@ -89,26 +90,30 @@ public final class StatisticsProvider {
     }
 
     private void analyzeTable(final TableRule tableRule) {
-        Map<Map.Entry<String, Integer>, Collection<DataSourceMetaData>> map = new HashMap<>();
         long rowCount = statisticsHandler.handleTableRowCount(tableRule.getDatasourceToTablesMap(), shardingSphereResource);
         String logicalTableName = tableRule.getLogicTable();
         TableStatistics table = tablesStatistics.getOrCreate(logicalTableName);
         table.setRowCount(rowCount);
+        Map<String, Long> columnCardinality = statisticsHandler.handleTableColumnCardinality(tableRule.getDatasourceToTablesMap(), 
+                shardingSphereSchema.get(tableRule.getLogicTable()), shardingSphereResource);
+        table.setColumnCardinality(columnCardinality);
     }
 
     /**
      * Add a new statistics provider for a database.
      * @param schemaName schema name or database name
      * @param shardingSphereResource datasource resource
+     * @param shardingSphereSchema logical database schema
      * @param shardingRule sharding table rule
      * @param databaseType database type
      */
     public static void addStatisticsProvider(final String schemaName, final ShardingSphereResource shardingSphereResource,
-                                             final ShardingRule shardingRule, final DatabaseType databaseType) {
+                                             final ShardingSphereSchema shardingSphereSchema, final ShardingRule shardingRule, 
+                                             final DatabaseType databaseType) {
         if (statisticsProviders.containsKey(schemaName)) {
             return;
         }
-        StatisticsProvider statisticsProvider = new StatisticsProvider(shardingSphereResource, shardingRule, databaseType);
+        StatisticsProvider statisticsProvider = new StatisticsProvider(shardingSphereResource, shardingSphereSchema, shardingRule, databaseType);
         statisticsProviders.put(schemaName, statisticsProvider);
     }
 
