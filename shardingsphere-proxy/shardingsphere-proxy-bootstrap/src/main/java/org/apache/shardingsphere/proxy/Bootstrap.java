@@ -22,20 +22,15 @@ import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.infra.mode.ShardingSphereMode;
 import org.apache.shardingsphere.infra.mode.builder.ModeBuilderEngine;
 import org.apache.shardingsphere.infra.mode.config.ModeConfiguration;
-import org.apache.shardingsphere.infra.mode.config.StandalonePersistRepositoryConfiguration;
-import org.apache.shardingsphere.infra.mode.impl.standalone.StandaloneMode;
 import org.apache.shardingsphere.infra.yaml.config.swapper.mode.ModeConfigurationYamlSwapper;
 import org.apache.shardingsphere.proxy.arguments.BootstrapArguments;
 import org.apache.shardingsphere.proxy.config.ProxyConfigurationLoader;
 import org.apache.shardingsphere.proxy.config.YamlProxyConfiguration;
 import org.apache.shardingsphere.proxy.frontend.ShardingSphereProxy;
 import org.apache.shardingsphere.proxy.initializer.BootstrapInitializer;
-import org.apache.shardingsphere.proxy.initializer.impl.GovernanceBootstrapInitializer;
-import org.apache.shardingsphere.proxy.initializer.impl.StandardBootstrapInitializer;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.Properties;
 
 /**
  * ShardingSphere-Proxy Bootstrap.
@@ -53,25 +48,13 @@ public final class Bootstrap {
     public static void main(final String[] args) throws IOException, SQLException {
         BootstrapArguments bootstrapArgs = new BootstrapArguments(args);
         YamlProxyConfiguration yamlConfig = ProxyConfigurationLoader.load(bootstrapArgs.getConfigurationPath());
-        BootstrapInitializer initializer = createBootstrapInitializer(yamlConfig);
-        initializer.init(yamlConfig);
+        ShardingSphereMode mode = ModeBuilderEngine.build(getModeConfiguration(yamlConfig));
+        new BootstrapInitializer(mode).init(yamlConfig);
         new ShardingSphereProxy().start(bootstrapArgs.getPort());
     }
     
-    private static BootstrapInitializer createBootstrapInitializer(final YamlProxyConfiguration yamlConfig) {
-        ModeConfiguration modeConfig = getModeConfiguration(yamlConfig);
-        ShardingSphereMode mode = ModeBuilderEngine.build(modeConfig);
-        // TODO split to pluggable SPI
-        if (mode instanceof StandaloneMode) {
-            return new StandardBootstrapInitializer(mode, modeConfig.isOverwrite());
-        }
-        // TODO process MemoryMode
-        return new GovernanceBootstrapInitializer(mode, modeConfig.isOverwrite());
-    }
-    
     private static ModeConfiguration getModeConfiguration(final YamlProxyConfiguration yamlConfig) {
-        return null == yamlConfig.getServerConfiguration().getMode()
-                ? new ModeConfiguration("Standalone", new StandalonePersistRepositoryConfiguration("Local", new Properties()), true)
-                : new ModeConfigurationYamlSwapper().swapToObject(yamlConfig.getServerConfiguration().getMode());
+        return null == yamlConfig.getServerConfiguration().getMode() 
+                ? new ModeConfiguration("Memory", null, true) : new ModeConfigurationYamlSwapper().swapToObject(yamlConfig.getServerConfiguration().getMode());
     }
 }

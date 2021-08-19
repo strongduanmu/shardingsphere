@@ -17,7 +17,7 @@
 
 package org.apache.shardingsphere.proxy.backend;
 
-import lombok.SneakyThrows;
+import org.apache.shardingsphere.infra.context.manager.ContextManager;
 import org.apache.shardingsphere.infra.context.metadata.MetaDataContexts;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeRegistry;
@@ -32,8 +32,9 @@ import org.apache.shardingsphere.proxy.backend.text.admin.DatabaseAdminUpdateBac
 import org.apache.shardingsphere.proxy.backend.text.data.impl.BroadcastDatabaseBackendHandler;
 import org.apache.shardingsphere.proxy.backend.text.data.impl.SchemaAssignedDatabaseBackendHandler;
 import org.apache.shardingsphere.proxy.backend.text.data.impl.UnicastDatabaseBackendHandler;
-import org.apache.shardingsphere.proxy.backend.text.sctl.set.ShardingCTLSetBackendHandler;
-import org.apache.shardingsphere.proxy.backend.text.sctl.show.ShardingCTLShowBackendHandler;
+import org.apache.shardingsphere.proxy.backend.text.distsql.ral.common.HintDistSQLBackendHandler;
+import org.apache.shardingsphere.proxy.backend.text.distsql.ral.common.SetDistSQLBackendHandler;
+import org.apache.shardingsphere.proxy.backend.text.distsql.ral.common.ShowDistSQLBackendHandler;
 import org.apache.shardingsphere.proxy.backend.text.skip.SkipBackendHandler;
 import org.apache.shardingsphere.proxy.backend.text.transaction.TransactionBackendHandler;
 import org.apache.shardingsphere.sql.parser.exception.SQLParsingException;
@@ -47,7 +48,6 @@ import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.Collections;
 
@@ -67,7 +67,6 @@ public final class TextProtocolBackendHandlerFactoryTest {
     
     @Before
     public void setUp() {
-        setTransactionContexts();
         when(backendConnection.getTransactionStatus().getTransactionType()).thenReturn(TransactionType.LOCAL);
         when(backendConnection.getDefaultSchemaName()).thenReturn("schema");
         MetaDataContexts metaDataContexts = mock(MetaDataContexts.class, RETURNS_DEEP_STUBS);
@@ -75,9 +74,11 @@ public final class TextProtocolBackendHandlerFactoryTest {
         ShardingSphereMetaData shardingSphereMetaData = mockShardingSphereMetaData();
         when(metaDataContexts.getAllSchemaNames().contains("schema")).thenReturn(true);
         when(metaDataContexts.getMetaDataMap().get("schema")).thenReturn(shardingSphereMetaData);
-        TransactionContexts transactionContexts = mock(TransactionContexts.class);
-        ProxyContext proxyContext = ProxyContext.getInstance();
-        proxyContext.init(metaDataContexts, transactionContexts);
+        ContextManager contextManager = mock(ContextManager.class, RETURNS_DEEP_STUBS);
+        when(contextManager.getMetaDataContexts()).thenReturn(metaDataContexts);
+        TransactionContexts transactionContexts = mockTransactionContexts();
+        when(contextManager.getTransactionContexts()).thenReturn(transactionContexts);
+        ProxyContext.getInstance().init(contextManager);
     }
     
     private ShardingSphereMetaData mockShardingSphereMetaData() {
@@ -87,37 +88,29 @@ public final class TextProtocolBackendHandlerFactoryTest {
         return result;
     }
     
-    private void mockGlobalRuleMetaData(final MetaDataContexts metaDataContexts) {
+    private void mockGlobalRuleMetaData(final org.apache.shardingsphere.infra.context.metadata.MetaDataContexts metaDataContexts) {
         ShardingSphereRuleMetaData globalRuleMetaData = mock(ShardingSphereRuleMetaData.class);
         when(globalRuleMetaData.getRules()).thenReturn(Collections.emptyList());
         when(metaDataContexts.getGlobalRuleMetaData()).thenReturn(globalRuleMetaData);
     }
     
-    @SneakyThrows(ReflectiveOperationException.class)
-    private void setTransactionContexts() {
-        Field transactionContexts = ProxyContext.getInstance().getClass().getDeclaredField("transactionContexts");
-        transactionContexts.setAccessible(true);
-        transactionContexts.set(ProxyContext.getInstance(), createTransactionContexts());
-    }
-    
-    private TransactionContexts createTransactionContexts() {
+    private TransactionContexts mockTransactionContexts() {
         TransactionContexts result = mock(TransactionContexts.class, RETURNS_DEEP_STUBS);
         when(result.getEngines().get("schema")).thenReturn(new ShardingTransactionManagerEngine());
         return result;
     }
     
     @Test
-    public void assertNewInstanceWithSCTL() throws SQLException {
-        String sql = "sctl:set transaction_type=XA";
+    public void assertNewInstanceWithCommonDistSQL() throws SQLException {
+        String sql = "set variable transaction_type=LOCAL";
         TextProtocolBackendHandler actual = TextProtocolBackendHandlerFactory.newInstance(databaseType, sql, backendConnection);
-        assertThat(actual, instanceOf(ShardingCTLSetBackendHandler.class));
-    }
-    
-    @Test
-    public void assertNewInstanceSCTLWithComment() throws SQLException {
-        String sql = "/*ApplicationName=DataGrip 2018.1.4*/ sctl:show cached_connections;";
-        TextProtocolBackendHandler actual = TextProtocolBackendHandlerFactory.newInstance(databaseType, sql, backendConnection);
-        assertThat(actual, instanceOf(ShardingCTLShowBackendHandler.class));
+        assertThat(actual, instanceOf(SetDistSQLBackendHandler.class));
+        sql = "show variable transaction_type";
+        actual = TextProtocolBackendHandlerFactory.newInstance(databaseType, sql, backendConnection);
+        assertThat(actual, instanceOf(ShowDistSQLBackendHandler.class));
+        sql = "set sharding hint database_value=1";
+        actual = TextProtocolBackendHandlerFactory.newInstance(databaseType, sql, backendConnection);
+        assertThat(actual, instanceOf(HintDistSQLBackendHandler.class));
     }
     
     @Test

@@ -22,7 +22,6 @@ import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.infra.config.RuleConfiguration;
 import org.apache.shardingsphere.infra.config.function.DistributedRuleConfiguration;
 import org.apache.shardingsphere.infra.config.function.EnhancedRuleConfiguration;
-import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
 import org.apache.shardingsphere.infra.rule.builder.level.DefaultKernelRuleConfigurationBuilder;
@@ -32,7 +31,6 @@ import org.apache.shardingsphere.infra.rule.builder.scope.SchemaRuleBuilder;
 import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
 import org.apache.shardingsphere.infra.spi.ordered.OrderedSPIRegistry;
 
-import javax.sql.DataSource;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -56,20 +54,16 @@ public final class ShardingSphereRulesBuilder {
     /**
      * Build schema rules.
      *
-     * @param schemaName schema name
-     * @param schemaRuleConfigs schema rule configurations
-     * @param databaseType database type
-     * @param dataSourceMap data source map
+     * @param materials rules builder materials
      * @return built schema rules
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static Collection<ShardingSphereRule> buildSchemaRules(final String schemaName, final Collection<RuleConfiguration> schemaRuleConfigs,
-                                                                  final DatabaseType databaseType, final Map<String, DataSource> dataSourceMap) {
-        Map<RuleConfiguration, SchemaRuleBuilder> builders = getSchemaRuleBuilders(schemaRuleConfigs);
+    public static Collection<ShardingSphereRule> buildSchemaRules(final ShardingSphereRulesBuilderMaterials materials) {
+        Map<RuleConfiguration, SchemaRuleBuilder> builders = getSchemaRuleBuilders(materials.getSchemaRuleConfigs());
         appendDefaultKernelSchemaRuleConfigurationBuilder(builders);
         Collection<ShardingSphereRule> result = new LinkedList<>();
         for (Entry<RuleConfiguration, SchemaRuleBuilder> entry : builders.entrySet()) {
-            result.add(entry.getValue().build(schemaName, dataSourceMap, databaseType, entry.getKey(), result));
+            result.add(entry.getValue().build(materials, entry.getKey(), result));
         }
         return result;
     }
@@ -89,15 +83,15 @@ public final class ShardingSphereRulesBuilder {
                 }
             }
         }
-        result.putAll(OrderedSPIRegistry.getRegisteredServices(distributedRuleConfigs, SchemaRuleBuilder.class, Comparator.reverseOrder()));
-        result.putAll(OrderedSPIRegistry.getRegisteredServices(enhancedRuleConfigs, SchemaRuleBuilder.class));
+        result.putAll(OrderedSPIRegistry.getRegisteredServices(SchemaRuleBuilder.class, distributedRuleConfigs, Comparator.reverseOrder()));
+        result.putAll(OrderedSPIRegistry.getRegisteredServices(SchemaRuleBuilder.class, enhancedRuleConfigs));
         return result;
     }
     
     @SuppressWarnings("rawtypes")
     private static void appendDefaultKernelSchemaRuleConfigurationBuilder(final Map<RuleConfiguration, SchemaRuleBuilder> builders) {
         Map<SchemaRuleBuilder, DefaultKernelRuleConfigurationBuilder> defaultBuilders = 
-                OrderedSPIRegistry.getRegisteredServices(getMissedKernelSchemaRuleBuilders(builders.values()), DefaultKernelRuleConfigurationBuilder.class);
+                OrderedSPIRegistry.getRegisteredServices(DefaultKernelRuleConfigurationBuilder.class, getMissedKernelSchemaRuleBuilders(builders.values()));
         // TODO consider about order for new put items
         for (Entry<SchemaRuleBuilder, DefaultKernelRuleConfigurationBuilder> entry : defaultBuilders.entrySet()) {
             builders.put(entry.getValue().build(), entry.getKey());
@@ -120,7 +114,7 @@ public final class ShardingSphereRulesBuilder {
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static Collection<ShardingSphereRule> buildGlobalRules(final Collection<RuleConfiguration> globalRuleConfigs, final Map<String, ShardingSphereMetaData> mataDataMap) {
-        Map<RuleConfiguration, GlobalRuleBuilder> builders = new LinkedHashMap<>(OrderedSPIRegistry.getRegisteredServices(globalRuleConfigs, GlobalRuleBuilder.class));
+        Map<RuleConfiguration, GlobalRuleBuilder> builders = new LinkedHashMap<>(OrderedSPIRegistry.getRegisteredServices(GlobalRuleBuilder.class, globalRuleConfigs));
         appendDefaultKernelGlobalRuleConfigurationBuilder(builders);
         Collection<ShardingSphereRule> result = new LinkedList<>();
         for (Entry<RuleConfiguration, GlobalRuleBuilder> entry : builders.entrySet()) {
@@ -132,7 +126,7 @@ public final class ShardingSphereRulesBuilder {
     @SuppressWarnings("rawtypes")
     private static void appendDefaultKernelGlobalRuleConfigurationBuilder(final Map<RuleConfiguration, GlobalRuleBuilder> builders) {
         Map<GlobalRuleBuilder, DefaultKernelRuleConfigurationBuilder> defaultBuilders =
-                OrderedSPIRegistry.getRegisteredServices(getMissedKernelGlobalRuleBuilders(builders.values()), DefaultKernelRuleConfigurationBuilder.class);
+                OrderedSPIRegistry.getRegisteredServices(DefaultKernelRuleConfigurationBuilder.class, getMissedKernelGlobalRuleBuilders(builders.values()));
         // TODO consider about order for new put items
         for (Entry<GlobalRuleBuilder, DefaultKernelRuleConfigurationBuilder> entry : defaultBuilders.entrySet()) {
             builders.put(entry.getValue().build(), entry.getKey());
