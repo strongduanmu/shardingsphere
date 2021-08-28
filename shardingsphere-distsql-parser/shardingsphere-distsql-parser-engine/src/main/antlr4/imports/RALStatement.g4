@@ -19,34 +19,22 @@ grammar RALStatement;
 
 import Keyword, Literals, Symbol;
 
-showScalingJobList
-    : SHOW SCALING JOB LIST
+setVariable
+    : SET VARIABLE variableName EQ variableValue
     ;
 
-showScalingJobStatus
-    : SHOW SCALING JOB STATUS jobId
+showVariable
+    : SHOW VARIABLE variableName
     ;
 
-startScalingJob
-    : START SCALING JOB jobId
+clearHint
+    : CLEAR HINT
     ;
 
-stopScalingJob
-    : STOP SCALING JOB jobId
+variableName
+    : IDENTIFIER
     ;
 
-dropScalingJob
-    : DROP SCALING JOB jobId
-    ;
-
-resetScalingJob
-    : RESET SCALING JOB jobId
-    ;
-
-checkScalingJob
-    : CHECK SCALING JOB jobId
-    ;
-
-jobId
-    : INT
+variableValue
+    : IDENTIFIER
     ;

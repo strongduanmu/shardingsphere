@@ -25,6 +25,7 @@ import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 /**
@@ -48,7 +49,17 @@ public final class ShardingSphereResource {
      * @return all instance data sources
      */
     public Collection<DataSource> getAllInstanceDataSources() {
-        return dataSources.entrySet().stream().filter(entry -> dataSourcesMetaData.getAllInstanceDataSourceNames().contains(entry.getKey())).map(Map.Entry::getValue).collect(Collectors.toSet());
+        return dataSources.entrySet().stream().filter(entry -> dataSourcesMetaData.getAllInstanceDataSourceNames().contains(entry.getKey())).map(Entry::getValue).collect(Collectors.toSet());
+    }
+    
+    /**
+     * Get not existed resource name.
+     * 
+     * @param resourceNames resource names to be judged
+     * @return not existed resource names
+     */
+    public Collection<String> getNotExistedResources(final Collection<String> resourceNames) {
+        return resourceNames.stream().filter(each -> !dataSources.containsKey(each)).collect(Collectors.toSet());
     }
     
     /**
@@ -63,7 +74,13 @@ public final class ShardingSphereResource {
         }
     }
     
-    private void close(final DataSource dataSource) throws SQLException {
+    /**
+     * Close data source.
+     *
+     * @param dataSource data source to be closed
+     * @throws SQLException exception
+     */
+    public void close(final DataSource dataSource) throws SQLException {
         if (dataSource instanceof AutoCloseable) {
             try {
                 ((AutoCloseable) dataSource).close();

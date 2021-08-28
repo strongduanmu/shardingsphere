@@ -83,12 +83,11 @@ public abstract class BaseITCase {
     }
     
     @After
-    public final void tearDown() {
+    public final void tearDown() throws Exception {
         if (targetDataSource instanceof ShardingSphereDataSource) {
-            ((ShardingSphereDataSource) targetDataSource).getMetaDataContexts().getExecutorEngine().close();
+            ((ShardingSphereDataSource) targetDataSource).getContextManager().close();
         }
     }
     
     protected abstract String getSQL() throws ParseException;
-    
 }

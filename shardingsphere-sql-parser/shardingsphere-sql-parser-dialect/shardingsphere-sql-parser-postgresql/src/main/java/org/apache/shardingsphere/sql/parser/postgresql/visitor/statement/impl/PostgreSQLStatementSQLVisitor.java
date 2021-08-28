@@ -101,6 +101,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.constant.OrderDirection;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.constraint.ConstraintSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.index.IndexSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.AssignmentSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.ColumnAssignmentSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.InsertValuesSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.SetAssignmentSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
@@ -206,7 +207,7 @@ public abstract class PostgreSQLStatementSQLVisitor extends PostgreSQLStatementB
     
     @Override
     public final ASTNode visitTableName(final TableNameContext ctx) {
-        SimpleTableSegment result = new SimpleTableSegment(new TableNameSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), (IdentifierValue) visit(ctx.name())));
+        SimpleTableSegment result = new SimpleTableSegment(new TableNameSegment(ctx.name().getStart().getStartIndex(), ctx.name().getStop().getStopIndex(), (IdentifierValue) visit(ctx.name())));
         OwnerContext owner = ctx.owner();
         if (null != owner) {
             result.setOwner(new OwnerSegment(owner.getStart().getStartIndex(), owner.getStop().getStopIndex(), (IdentifierValue) visit(owner.identifier())));
@@ -269,8 +270,11 @@ public abstract class PostgreSQLStatementSQLVisitor extends PostgreSQLStatementB
         if (null != ctx.comparisonOperator()) {
             return createCommonBinaryOperationSegment(ctx, ctx.comparisonOperator().getText());
         }
-        if (null != ctx.logicalOperator()) {
-            return createCommonBinaryOperationSegment(ctx, ctx.logicalOperator().getText());
+        if (null != ctx.andOperator()) {
+            return createCommonBinaryOperationSegment(ctx, ctx.andOperator().getText());
+        }
+        if (null != ctx.orOperator()) {
+            return createCommonBinaryOperationSegment(ctx, ctx.orOperator().getText());
         }
         super.visitAExpr(ctx);
         String text = ctx.start.getInputStream().getText(new Interval(ctx.start.getStartIndex(), ctx.stop.getStopIndex()));
@@ -651,8 +655,11 @@ public abstract class PostgreSQLStatementSQLVisitor extends PostgreSQLStatementB
     @Override
     public ASTNode visitSetClause(final SetClauseContext ctx) {
         ColumnSegment columnSegment = (ColumnSegment) visit(ctx.setTarget());
+        List<ColumnSegment> columnSegments = new LinkedList<>();
+        columnSegments.add(columnSegment);
         ExpressionSegment expressionSegment = (ExpressionSegment) visit(ctx.aExpr());
-        return new AssignmentSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(), columnSegment, expressionSegment);
+        AssignmentSegment result = new ColumnAssignmentSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(), columnSegments, expressionSegment);
+        return result;
     }
     
     @Override
@@ -675,11 +682,13 @@ public abstract class PostgreSQLStatementSQLVisitor extends PostgreSQLStatementB
         SimpleTableSegment result;
         if (null != ctx.colId()) {
             ColIdContext colId = ctx.relationExpr().qualifiedName().colId();
-            result = new SimpleTableSegment(colId.start.getStartIndex(), colId.stop.getStopIndex(), new IdentifierValue(colId.getText()));
+            TableNameSegment tableName = new TableNameSegment(colId.start.getStartIndex(), colId.stop.getStopIndex(), new IdentifierValue(colId.getText()));
+            result = new SimpleTableSegment(tableName);
             result.setAlias(new AliasSegment(ctx.colId().start.getStartIndex(), ctx.stop.getStopIndex(), new IdentifierValue(ctx.colId().getText())));
         } else {
             ColIdContext colId = ctx.relationExpr().qualifiedName().colId();
-            result = new SimpleTableSegment(colId.start.getStartIndex(), colId.stop.getStopIndex(), new IdentifierValue(colId.getText()));
+            TableNameSegment tableName = new TableNameSegment(colId.start.getStartIndex(), colId.stop.getStopIndex(), new IdentifierValue(colId.getText()));
+            result = new SimpleTableSegment(tableName);
         }
         return result;
     }
@@ -950,7 +959,8 @@ public abstract class PostgreSQLStatementSQLVisitor extends PostgreSQLStatementB
             return result;
         }
         //        TODO deal with functionTable and xmlTable
-        return new SimpleTableSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(), new IdentifierValue("not support"));
+        TableNameSegment tableName = new TableNameSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(), new IdentifierValue("not support"));
+        return new SimpleTableSegment(tableName);
     }
     
     private JoinTableSegment visitJoinedTable(final JoinedTableContext ctx, final JoinTableSegment tableSegment) {
@@ -1001,11 +1011,13 @@ public abstract class PostgreSQLStatementSQLVisitor extends PostgreSQLStatementB
         QualifiedNameContext qualifiedName = ctx.qualifiedName();
         if (null != qualifiedName.indirection()) {
             AttrNameContext tableName = qualifiedName.indirection().indirectionEl().attrName();
-            SimpleTableSegment table = new SimpleTableSegment(tableName.start.getStartIndex(), tableName.stop.getStopIndex(), new IdentifierValue(tableName.getText()));
+            SimpleTableSegment table = new SimpleTableSegment(new TableNameSegment(tableName.start.getStartIndex(), 
+                    tableName.stop.getStopIndex(), new IdentifierValue(tableName.getText())));
             table.setOwner(new OwnerSegment(qualifiedName.colId().start.getStartIndex(), qualifiedName.colId().stop.getStopIndex(), new IdentifierValue(qualifiedName.colId().getText())));
             return table;
         }
-        return new SimpleTableSegment(qualifiedName.colId().start.getStartIndex(), qualifiedName.colId().stop.getStopIndex(), new IdentifierValue(qualifiedName.colId().getText()));
+        return new SimpleTableSegment(new TableNameSegment(qualifiedName.colId().start.getStartIndex(), 
+                qualifiedName.colId().stop.getStopIndex(), new IdentifierValue(qualifiedName.colId().getText())));
     }
     
     @Override

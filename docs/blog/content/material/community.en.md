@@ -1,6 +1,6 @@
 +++
 title = "Exploration and expansion of the community"
-weight = 5
+weight = 9
 chapter = true
 +++
 
@@ -36,7 +36,7 @@ Recently, more and more Chinese projects entered the Apache foundation. There ar
 
 ### 03 What is Apache ShardingSphere?
 
-Apache ShardingSphere (TLP) is an open-source ecosystem consisted of a set of distributed database solutions. From the GitHub data, its community is active and growing up fast, which benefits from its stable micro-core and scalable architecture.
+Apache ShardingSphere (TLP) is an open-source ecosystem consisting of a set of distributed database solutions. From the GitHub data, its community is active and growing up fast, which benefits from its stable micro-core and scalable architecture.
 
 ### 04 Apache ShardingSphere Community Statistics
 

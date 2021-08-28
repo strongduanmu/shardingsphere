@@ -18,23 +18,21 @@
 package org.apache.shardingsphere.sharding.merge.dql.groupby;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
-import org.apache.shardingsphere.infra.merge.result.MergedResult;
-import org.apache.shardingsphere.infra.merge.result.impl.memory.MemoryMergedResult;
-import org.apache.shardingsphere.infra.merge.result.impl.memory.MemoryQueryResultRow;
-import org.apache.shardingsphere.sharding.merge.dql.groupby.aggregation.AggregationUnit;
-import org.apache.shardingsphere.sharding.merge.dql.groupby.aggregation.AggregationUnitFactory;
-import org.apache.shardingsphere.sharding.rule.ShardingRule;
-import org.apache.shardingsphere.infra.metadata.schema.model.ColumnMetaData;
-import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
-import org.apache.shardingsphere.infra.metadata.schema.model.TableMetaData;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.Projection;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.AggregationDistinctProjection;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.AggregationProjection;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
+import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
+import org.apache.shardingsphere.infra.merge.result.impl.memory.MemoryMergedResult;
+import org.apache.shardingsphere.infra.merge.result.impl.memory.MemoryQueryResultRow;
+import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
+import org.apache.shardingsphere.infra.metadata.schema.model.ColumnMetaData;
+import org.apache.shardingsphere.infra.metadata.schema.model.TableMetaData;
+import org.apache.shardingsphere.sharding.merge.dql.groupby.aggregation.AggregationUnit;
+import org.apache.shardingsphere.sharding.merge.dql.groupby.aggregation.AggregationUnitFactory;
+import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sql.parser.sql.common.constant.AggregationType;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 
@@ -58,7 +56,7 @@ public final class GroupByMemoryMergedResult extends MemoryMergedResult<Sharding
     
     @Override
     protected List<MemoryQueryResultRow> init(final ShardingRule shardingRule, final ShardingSphereSchema schema, 
-                                              final SQLStatementContext sqlStatementContext, final List<QueryResult> queryResults, final MergedResult mergedResult) throws SQLException {
+                                              final SQLStatementContext sqlStatementContext, final List<QueryResult> queryResults) throws SQLException {
         SelectStatementContext selectStatementContext = (SelectStatementContext) sqlStatementContext;
         Map<GroupByValue, MemoryQueryResultRow> dataMap = new HashMap<>(1024);
         Map<GroupByValue, Map<AggregationProjection, AggregationUnit>> aggregationMap = new HashMap<>(1024);
@@ -118,7 +116,8 @@ public final class GroupByMemoryMergedResult extends MemoryMergedResult<Sharding
     }
     
     private List<Boolean> getValueCaseSensitive(final QueryResult queryResult, final SelectStatementContext selectStatementContext, final ShardingSphereSchema schema) throws SQLException {
-        List<Boolean> result = Lists.newArrayList(false);
+        List<Boolean> result = new ArrayList<>();
+        result.add(false);
         for (int columnIndex = 1; columnIndex <= queryResult.getMetaData().getColumnCount(); columnIndex++) {
             result.add(getValueCaseSensitiveFromTables(queryResult, selectStatementContext, schema, columnIndex));
         }
@@ -127,7 +126,7 @@ public final class GroupByMemoryMergedResult extends MemoryMergedResult<Sharding
     
     private boolean getValueCaseSensitiveFromTables(final QueryResult queryResult, 
                                                     final SelectStatementContext selectStatementContext, final ShardingSphereSchema schema, final int columnIndex) throws SQLException {
-        for (SimpleTableSegment each : selectStatementContext.getAllSimpleTableSegments()) {
+        for (SimpleTableSegment each : selectStatementContext.getAllTables()) {
             String tableName = each.getTableName().getIdentifier().getValue();
             TableMetaData tableMetaData = schema.get(tableName);
             Map<String, ColumnMetaData> columns = tableMetaData.getColumns();

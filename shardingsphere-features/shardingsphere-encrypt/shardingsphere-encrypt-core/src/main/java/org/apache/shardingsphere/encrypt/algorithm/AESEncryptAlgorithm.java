@@ -21,14 +21,13 @@ import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithm;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
+import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
@@ -55,7 +54,7 @@ public final class AESEncryptAlgorithm implements EncryptAlgorithm {
     }
     
     private byte[] createSecretKey() {
-        Preconditions.checkArgument(props.containsKey(AES_KEY), String.format("%s can not be null.", AES_KEY));
+        Preconditions.checkArgument(props.containsKey(AES_KEY), "%s can not be null.", AES_KEY);
         return Arrays.copyOf(DigestUtils.sha1(props.getProperty(AES_KEY)), 16);
     }
     
@@ -65,8 +64,8 @@ public final class AESEncryptAlgorithm implements EncryptAlgorithm {
         if (null == plaintext) {
             return null;
         }
-        byte[] result = getCipher(Cipher.ENCRYPT_MODE).doFinal(StringUtils.getBytesUtf8(String.valueOf(plaintext)));
-        return Base64.encodeBase64String(result);
+        byte[] result = getCipher(Cipher.ENCRYPT_MODE).doFinal(String.valueOf(plaintext).getBytes(StandardCharsets.UTF_8));
+        return DatatypeConverter.printBase64Binary(result);
     }
     
     @SneakyThrows(GeneralSecurityException.class)
@@ -75,7 +74,7 @@ public final class AESEncryptAlgorithm implements EncryptAlgorithm {
         if (null == ciphertext) {
             return null;
         }
-        byte[] result = getCipher(Cipher.DECRYPT_MODE).doFinal(Base64.decodeBase64(ciphertext));
+        byte[] result = getCipher(Cipher.DECRYPT_MODE).doFinal(DatatypeConverter.parseBase64Binary(ciphertext));
         return new String(result, StandardCharsets.UTF_8);
     }
     

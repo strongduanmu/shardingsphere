@@ -18,12 +18,15 @@
 package org.apache.shardingsphere.proxy.backend.text.admin.mysql.executor;
 
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.infra.context.metadata.impl.StandardMetaDataContexts;
+import org.apache.shardingsphere.mode.manager.ContextManager;
+import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
 import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.rule.ShardingSphereRuleMetaData;
 import org.apache.shardingsphere.infra.metadata.user.Grantee;
+import org.apache.shardingsphere.infra.optimize.context.OptimizeContextFactory;
+import org.apache.shardingsphere.mode.persist.PersistService;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.junit.Before;
@@ -54,10 +57,13 @@ public final class ShowDatabasesExecutorTest {
     @Before
     public void setUp() throws IllegalAccessException, NoSuchFieldException {
         showDatabasesExecutor = new ShowDatabasesExecutor();
-        Field metaDataContexts = ProxyContext.getInstance().getClass().getDeclaredField("metaDataContexts");
-        metaDataContexts.setAccessible(true);
-        metaDataContexts.set(ProxyContext.getInstance(), new StandardMetaDataContexts(getMetaDataMap(), mock(ShardingSphereRuleMetaData.class), 
-                mock(ExecutorEngine.class), new ConfigurationProperties(new Properties())));
+        Field contextManagerField = ProxyContext.getInstance().getClass().getDeclaredField("contextManager");
+        contextManagerField.setAccessible(true);
+        ContextManager contextManager = mock(ContextManager.class, RETURNS_DEEP_STUBS);
+        MetaDataContexts metaDataContexts = new MetaDataContexts(mock(PersistService.class), getMetaDataMap(), mock(ShardingSphereRuleMetaData.class),
+                mock(ExecutorEngine.class), new ConfigurationProperties(new Properties()), mock(OptimizeContextFactory.class));
+        when(contextManager.getMetaDataContexts()).thenReturn(metaDataContexts);
+        contextManagerField.set(ProxyContext.getInstance(), contextManager);
     }
     
     private Map<String, ShardingSphereMetaData> getMetaDataMap() {
@@ -65,7 +71,7 @@ public final class ShowDatabasesExecutorTest {
         for (int i = 0; i < 10; i++) {
             ShardingSphereMetaData metaData = mock(ShardingSphereMetaData.class, RETURNS_DEEP_STUBS);
             when(metaData.getResource().getDatabaseType()).thenReturn(new MySQLDatabaseType());
-            when(metaData.getRuleMetaData()).thenReturn(new ShardingSphereRuleMetaData(Collections.emptyList(), Collections.emptyList()));
+            when(metaData.getRuleMetaData().getRules()).thenReturn(Collections.emptyList());
             result.put(String.format(SCHEMA_PATTERN, i), metaData);
         }
         return result;

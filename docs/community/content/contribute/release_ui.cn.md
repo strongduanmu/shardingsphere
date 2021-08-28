@@ -1,6 +1,6 @@
 +++
 title = "ShardingSphere-UI发布指南"
-weight = 8
+weight = 9
 chapter = true
 +++
 
@@ -217,7 +217,7 @@ diff -r apache-shardingsphere-${RELEASE.VERSION}-shardingsphere-ui-src shardings
 - `NOTICE`文件中的年份正确
 - 只存在文本文件，不存在二进制文件
 - 所有文件的开头都有ASF许可证
-- 能够正确编译，单元测试可以通过 (./mvnw install)
+- 能够正确编译，单元测试可以通过 (./mvnw -T 1C install)
 - 检查是否有多余文件或文件夹，例如空文件夹等
 
 **检查二进制包的文件内容**
@@ -378,6 +378,7 @@ docker tag e9ea51023687 apache/shardingsphere-ui:${RELEASE.VERSION}
 3.4 发布Docker镜像
 
 ```shell
+docker login
 docker push apache/shardingsphere-ui:latest
 docker push apache/shardingsphere-ui:${RELEASE_VERSION}
 ```
@@ -423,7 +424,7 @@ Hi all,
 
 Apache ShardingSphere Team is glad to announce the new release of Apache ShardingSphere UI ${RELEASE.VERSION}.
 
-ShardingSphere is an open-source ecosystem consisted of a set of distributed database solutions, including 2 independent products, ShardingSphere-JDBC & ShardingSphere-Proxy.
+ShardingSphere is an open-source ecosystem consisting of a set of distributed database solutions, including 2 independent products, ShardingSphere-JDBC & ShardingSphere-Proxy.
 They both provide functions of data scale out, distributed transaction and distributed governance, applicable in a variety of situations such as Java isomorphism and heterogeneous language.
 Apache ShardingSphere aiming at reasonably making full use of the computation and storage capacity of existed database in distributed system, rather than a totally new database.
 As the cornerstone of enterprises, relational database still takes a huge market share.

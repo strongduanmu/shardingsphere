@@ -27,10 +27,10 @@ import org.apache.shardingsphere.encrypt.api.config.rule.EncryptTableRuleConfigu
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithm;
 import org.apache.shardingsphere.encrypt.spi.QueryAssistedEncryptAlgorithm;
 import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmFactory;
-import org.apache.shardingsphere.infra.rule.level.FeatureRule;
-import org.apache.shardingsphere.infra.rule.scope.SchemaRule;
-import org.apache.shardingsphere.infra.rule.type.TableContainedRule;
-import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
+import org.apache.shardingsphere.infra.rule.identifier.level.FeatureRule;
+import org.apache.shardingsphere.infra.rule.identifier.scope.SchemaRule;
+import org.apache.shardingsphere.infra.rule.identifier.type.TableContainedRule;
+import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -144,7 +144,7 @@ public final class EncryptRule implements FeatureRule, SchemaRule, TableContaine
      */
     public List<Object> getEncryptValues(final String logicTable, final String logicColumn, final List<Object> originalValues) {
         Optional<EncryptAlgorithm> encryptor = findEncryptor(logicTable, logicColumn);
-        Preconditions.checkArgument(encryptor.isPresent(), String.format("Can not find QueryAssistedEncryptAlgorithm by %s.%s.", logicTable, logicColumn));
+        Preconditions.checkArgument(encryptor.isPresent(), "Can not find QueryAssistedEncryptAlgorithm by %s.%s.", logicTable, logicColumn);
         return originalValues.stream().map(input -> null == input ? null : String.valueOf(encryptor.get().encrypt(input.toString()))).collect(Collectors.toList());
     }
     

@@ -15,18 +15,20 @@
 # limitations under the License.
 #
 
-governance:
-  name: demo_yaml_ds_encrypt
-  registryCenter:
+mode:
+  type: Cluster
+  repository:
     type: ZooKeeper
-    serverLists: localhost:2181
+    props:
+      namespace: demo_yaml_ds_encrypt
+      serverLists: localhost:2181
   overwrite: true
 
 dataSources:
   uinque_ds:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
     driverClassName: com.mysql.jdbc.Driver
-    jdbcUrl: jdbc:mysql://localhost:3306/demo_ds
+    jdbcUrl: jdbc:mysql://localhost:3306/demo_ds?serverTimezone=UTC&useSSL=false&useUnicode=true&characterEncoding=UTF-8
     username: root
     password:
 

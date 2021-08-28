@@ -1,6 +1,6 @@
 +++
 title = "Code of Conduct" 
-weight = 4
+weight = 5
 chapter = true
 +++
 
@@ -15,7 +15,7 @@ The following code of conduct is based on full compliance with [ASF CODE OF COND
 
 ## Contributor Covenant Submitting of Conduct
 
- - Make sure all the test cases are passed, Make sure `./mvnw clean install` can be compiled and tested successfully.
+ - Make sure all the test cases are passed, Make sure `./mvnw -T 1C clean install` can be compiled and tested successfully.
  - Make sure the test coverage rate is not lower than the master branch.
  - Make sure to check codes with Checkstyle. codes that violate check rules should have special reasons. Find checkstyle template from `https://github.com/apache/shardingsphere/blob/master/src/resources/checkstyle.xml`, please use checkstyle `8.8` to run the rules.
  - Careful consideration for each `pull request`; Small and frequent `pull request` with complete unit function is welcomed.
@@ -49,6 +49,7 @@ The following code of conduct is based on full compliance with [ASF CODE OF COND
  - Use English in all the logs and javadoc.
  - Include Javadoc, todo and fixme only in the comments.
  - Only `public` classes and methods need javadoc, other methods, classes and override methods do not need javadoc.
+ - conditional operator(<expression1> ? <expression2> : <expression3>) `nested use` is forbidden.
 
 ## Contributor Covenant Unit Test of Conduct
 

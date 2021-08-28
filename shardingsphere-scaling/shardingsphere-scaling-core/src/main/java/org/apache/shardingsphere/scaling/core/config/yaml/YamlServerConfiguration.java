@@ -19,19 +19,19 @@ package org.apache.shardingsphere.scaling.core.config.yaml;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.shardingsphere.governance.core.yaml.config.pojo.YamlGovernanceConfiguration;
-import org.apache.shardingsphere.infra.yaml.config.YamlConfiguration;
+import org.apache.shardingsphere.infra.yaml.config.pojo.YamlConfiguration;
+import org.apache.shardingsphere.infra.yaml.config.pojo.mode.YamlModeConfiguration;
 
 /**
  * Global server configuration.
  */
-@Setter
 @Getter
+@Setter
 public final class YamlServerConfiguration implements YamlConfiguration {
     
     private YamlScalingConfiguration scaling = new YamlScalingConfiguration();
     
-    private YamlGovernanceConfiguration governance;
+    private YamlModeConfiguration mode;
     
     @Getter
     @Setter

@@ -17,15 +17,19 @@
 
 package org.apache.shardingsphere.proxy.backend.communication;
 
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.mode.manager.ContextManager;
+import org.apache.shardingsphere.mode.persist.PersistService;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.infra.context.metadata.impl.StandardMetaDataContexts;
+import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
 import org.apache.shardingsphere.infra.database.type.dialect.H2DatabaseType;
 import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.rule.ShardingSphereRuleMetaData;
+import org.apache.shardingsphere.infra.optimize.context.OptimizeContextFactory;
+import org.apache.shardingsphere.infra.optimize.core.metadata.FederateSchemaMetadatas;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.MySQLStatement;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,7 +39,6 @@ import java.util.Map;
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -45,10 +48,13 @@ public final class DatabaseCommunicationEngineFactoryTest {
     
     @Before
     public void setUp() throws IllegalAccessException, NoSuchFieldException {
-        Field metaDataContexts = ProxyContext.getInstance().getClass().getDeclaredField("metaDataContexts");
-        metaDataContexts.setAccessible(true);
-        metaDataContexts.set(ProxyContext.getInstance(), new StandardMetaDataContexts(getMetaDataMap(), mock(ShardingSphereRuleMetaData.class), 
-                mock(ExecutorEngine.class), new ConfigurationProperties(new Properties())));
+        Field contextManagerField = ProxyContext.getInstance().getClass().getDeclaredField("contextManager");
+        contextManagerField.setAccessible(true);
+        MetaDataContexts metaDataContexts = new MetaDataContexts(mock(PersistService.class), getMetaDataMap(), mock(ShardingSphereRuleMetaData.class),
+                mock(ExecutorEngine.class), new ConfigurationProperties(new Properties()), mockOptimizeContextFactory());
+        ContextManager contextManager = mock(ContextManager.class, RETURNS_DEEP_STUBS);
+        when(contextManager.getMetaDataContexts()).thenReturn(metaDataContexts);
+        contextManagerField.set(ProxyContext.getInstance(), contextManager);
         BackendConnection backendConnection = mock(BackendConnection.class, RETURNS_DEEP_STUBS);
         when(backendConnection.getSchemaName()).thenReturn("schema");
         when(backendConnection.isSerialExecute()).thenReturn(true);
@@ -60,14 +66,18 @@ public final class DatabaseCommunicationEngineFactoryTest {
         when(result.getRuleMetaData().getRules()).thenReturn(Collections.emptyList());
         return Collections.singletonMap("schema", result);
     }
+
+    private OptimizeContextFactory mockOptimizeContextFactory() {
+        OptimizeContextFactory result = mock(OptimizeContextFactory.class);
+        when(result.getSchemaMetadatas()).thenReturn(new FederateSchemaMetadatas(Collections.emptyMap()));
+        return result;
+    }
     
     @Test
     public void assertNewTextProtocolInstance() {
         BackendConnection backendConnection = mock(BackendConnection.class);
         when(backendConnection.getSchemaName()).thenReturn("schema");
-        DatabaseCommunicationEngine engine =
-                DatabaseCommunicationEngineFactory.getInstance().newTextProtocolInstance(mock(MySQLStatement.class), "schemaName", backendConnection);
-        assertNotNull(engine);
+        DatabaseCommunicationEngine engine = DatabaseCommunicationEngineFactory.getInstance().newTextProtocolInstance(mock(SQLStatementContext.class), "schemaName", backendConnection);
         assertThat(engine, instanceOf(DatabaseCommunicationEngine.class));
     }
     
@@ -76,8 +86,7 @@ public final class DatabaseCommunicationEngineFactoryTest {
         BackendConnection backendConnection = mock(BackendConnection.class);
         when(backendConnection.getSchemaName()).thenReturn("schema");
         DatabaseCommunicationEngine engine =
-                DatabaseCommunicationEngineFactory.getInstance().newBinaryProtocolInstance(mock(MySQLStatement.class), "schemaName", Collections.emptyList(), backendConnection);
-        assertNotNull(engine);
+                DatabaseCommunicationEngineFactory.getInstance().newBinaryProtocolInstance(mock(SQLStatementContext.class), "schemaName", Collections.emptyList(), backendConnection);
         assertThat(engine, instanceOf(DatabaseCommunicationEngine.class));
     }
 }

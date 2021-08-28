@@ -19,13 +19,12 @@ package org.apache.shardingsphere.driver.jdbc.core.resultset;
 
 import org.apache.shardingsphere.driver.jdbc.core.connection.ShardingSphereConnection;
 import org.apache.shardingsphere.driver.jdbc.core.statement.ShardingSphereStatement;
-import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.infra.context.metadata.MetaDataContexts;
-import org.apache.shardingsphere.infra.context.metadata.impl.StandardMetaDataContexts;
-import org.apache.shardingsphere.infra.executor.sql.context.ExecutionContext;
-import org.apache.shardingsphere.infra.merge.result.MergedResult;
 import org.apache.shardingsphere.infra.binder.segment.table.TablesContext;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
+import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
+import org.apache.shardingsphere.infra.executor.sql.context.ExecutionContext;
+import org.apache.shardingsphere.infra.merge.result.MergedResult;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -56,6 +55,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -91,10 +91,10 @@ public final class ShardingSphereResultSetTest {
     }
     
     private ShardingSphereStatement getShardingSphereStatement() {
-        ShardingSphereConnection connection = mock(ShardingSphereConnection.class);
-        MetaDataContexts metaDataContexts = mock(StandardMetaDataContexts.class);
+        ShardingSphereConnection connection = mock(ShardingSphereConnection.class, RETURNS_DEEP_STUBS);
+        MetaDataContexts metaDataContexts = mock(MetaDataContexts.class);
         when(metaDataContexts.getProps()).thenReturn(new ConfigurationProperties(new Properties()));
-        when(connection.getMetaDataContexts()).thenReturn(metaDataContexts);
+        when(connection.getContextManager().getMetaDataContexts()).thenReturn(metaDataContexts);
         ShardingSphereStatement result = mock(ShardingSphereStatement.class);
         when(result.getConnection()).thenReturn(connection);
         return result;
@@ -121,6 +121,12 @@ public final class ShardingSphereResultSetTest {
     public void assertGetBooleanWithColumnLabel() throws SQLException {
         when(mergeResultSet.getValue(1, boolean.class)).thenReturn(true);
         assertTrue(shardingSphereResultSet.getBoolean("label"));
+    }
+    
+    @Test
+    public void assertGetBooleanWithColumnLabelCaseInsensitive() throws SQLException {
+        when(mergeResultSet.getValue(1, boolean.class)).thenReturn(true);
+        assertTrue(shardingSphereResultSet.getBoolean("lABel"));
     }
     
     @Test

@@ -52,5 +52,14 @@ execute
     | alterSystem
     | setConstraints
     | analyze
+    | associateStatistics
+    | disassociateStatistics
+    | audit
+    | noAudit
+    | comment
+    | flashbackDatabase
+    | flashbackTable
+    | purge
+    | rename
     ) SEMI_?
     ;

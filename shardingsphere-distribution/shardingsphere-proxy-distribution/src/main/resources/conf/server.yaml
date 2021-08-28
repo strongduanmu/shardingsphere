@@ -21,22 +21,19 @@
 # 
 ######################################################################################################
 
-#governance:
-#  name: governance_ds
-#  registryCenter:
+#mode:
+#  type: Cluster
+#  repository:
 #    type: ZooKeeper
-#    serverLists: localhost:2181
 #    props:
+#      namespace: governance_ds
+#      serverLists: localhost:2181
 #      retryIntervalMilliseconds: 500
 #      timeToLiveSeconds: 60
 #      maxRetries: 3
 #      operationTimeoutMilliseconds: 500
 #  overwrite: false
-
-#scaling:
-#  blockQueueSize: 10000
-#  workerThread: 40
-
+  
 #rules:
 #  - !AUTHORITY
 #    users:
@@ -44,6 +41,10 @@
 #      - sharding@:sharding
 #    provider:
 #      type: NATIVE
+
+#scaling:
+#  blockQueueSize: 10000
+#  workerThread: 40
 
 #props:
 #  max-connections-size-per-query: 1
@@ -59,3 +60,7 @@
 #  sql-show: false
 #  check-table-metadata-enabled: false
 #  lock-wait-timeout-milliseconds: 50000 # The maximum time to wait for a lock
+#    # Proxy backend query fetch size. A larger value may increase the memory usage of ShardingSphere Proxy.
+#    # The default value is -1, which means set the minimum value for different JDBC drivers.
+#  proxy-backend-query-fetch-size: -1
+#  check-duplicate-table-enabled: false

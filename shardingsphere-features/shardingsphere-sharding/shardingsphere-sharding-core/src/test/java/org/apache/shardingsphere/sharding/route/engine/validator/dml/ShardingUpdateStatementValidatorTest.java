@@ -17,7 +17,6 @@
 
 package org.apache.shardingsphere.sharding.route.engine.validator.dml;
 
-import com.google.common.collect.Lists;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.UpdateStatementContext;
 import org.apache.shardingsphere.infra.exception.ShardingSphereException;
@@ -25,6 +24,7 @@ import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
 import org.apache.shardingsphere.sharding.route.engine.validator.dml.impl.ShardingUpdateStatementValidator;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.AssignmentSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.ColumnAssignmentSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.SetAssignmentSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.BinaryOperationExpression;
@@ -33,6 +33,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.P
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.JoinTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableNameSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.UpdateStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLUpdateStatement;
@@ -44,6 +45,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 import static org.mockito.Mockito.mock;
@@ -59,13 +61,13 @@ public final class ShardingUpdateStatementValidatorTest {
     public void assertValidateUpdateModifyMultiTables() {
         UpdateStatement updateStatement = createUpdateStatement();
         JoinTableSegment joinTableSegment = new JoinTableSegment();
-        joinTableSegment.setLeft(new SimpleTableSegment(0, 0, new IdentifierValue("user")));
-        joinTableSegment.setRight(new SimpleTableSegment(0, 0, new IdentifierValue("order")));
+        joinTableSegment.setLeft(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("user"))));
+        joinTableSegment.setRight(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("order"))));
         updateStatement.setTableSegment(joinTableSegment);
         SQLStatementContext<UpdateStatement> sqlStatementContext = new UpdateStatementContext(updateStatement);
-        Collection<String> tableNames = Lists.newArrayList("order", "order_item");
-        when(shardingRule.getShardingLogicTableNames(sqlStatementContext.getTablesContext().getTableNames())).thenReturn(tableNames);
-        when(shardingRule.isAllBindingTables(tableNames)).thenReturn(true);
+        Collection<String> tableNames = sqlStatementContext.getTablesContext().getTableNames();
+        when(shardingRule.isAllShardingTables(tableNames)).thenReturn(false);
+        when(shardingRule.tableRuleExists(tableNames)).thenReturn(true);
         new ShardingUpdateStatementValidator().preValidate(shardingRule, sqlStatementContext, Collections.emptyList(), mock(ShardingSphereSchema.class));
     }
     
@@ -104,17 +106,22 @@ public final class ShardingUpdateStatementValidatorTest {
     
     private UpdateStatement createUpdateStatement() {
         UpdateStatement result = new MySQLUpdateStatement();
-        result.setTableSegment(new SimpleTableSegment(0, 0, new IdentifierValue("user")));
+        result.setTableSegment(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("user"))));
+        List<ColumnSegment> columns = new LinkedList<>();
+        columns.add(new ColumnSegment(0, 0, new IdentifierValue("id")));
+        AssignmentSegment assignment = new ColumnAssignmentSegment(0, 0, columns, new LiteralExpressionSegment(0, 0, ""));
         result.setSetAssignment(
-                new SetAssignmentSegment(0, 0, Collections.singletonList(new AssignmentSegment(0, 0, new ColumnSegment(0, 0, new IdentifierValue("id")), new LiteralExpressionSegment(0, 0, "")))));
+                new SetAssignmentSegment(0, 0, Collections.singletonList(assignment)));
         return result;
     }
     
     private UpdateStatement createUpdateStatementAndParameters(final Object shardingColumnParameter) {
         UpdateStatement result = new MySQLUpdateStatement();
-        result.setTableSegment(new SimpleTableSegment(0, 0, new IdentifierValue("user")));
-        Collection<AssignmentSegment> assignments = Collections.singletonList(
-                new AssignmentSegment(0, 0, new ColumnSegment(0, 0, new IdentifierValue("id")), new LiteralExpressionSegment(0, 0, shardingColumnParameter)));
+        result.setTableSegment(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("user"))));
+        List<ColumnSegment> columns = new LinkedList<>();
+        columns.add(new ColumnSegment(0, 0, new IdentifierValue("id")));
+        AssignmentSegment assignment = new ColumnAssignmentSegment(0, 0, columns, new LiteralExpressionSegment(0, 0, shardingColumnParameter));
+        Collection<AssignmentSegment> assignments = Collections.singletonList(assignment);
         SetAssignmentSegment setAssignmentSegment = new SetAssignmentSegment(0, 0, assignments);
         result.setSetAssignment(setAssignmentSegment);
         ColumnSegment left = new ColumnSegment(0, 0, new IdentifierValue("id"));

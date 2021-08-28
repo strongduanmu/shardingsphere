@@ -19,7 +19,9 @@ package org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal;
 
 import lombok.Setter;
 import lombok.ToString;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.RemoveAvailable;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dal.FromSchemaSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dal.ShowLikeSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.AbstractSQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dal.DALStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.MySQLStatement;
@@ -33,14 +35,36 @@ import java.util.Optional;
 @ToString
 public final class MySQLShowTablesStatement extends AbstractSQLStatement implements DALStatement, MySQLStatement {
     
-    private RemoveAvailable fromSchema;
+    private FromSchemaSegment fromSchema;
+    
+    private ShowLikeSegment like;
+    
+    private WhereSegment where;
     
     /**
-     * Get from schema.
+     * Get from schema segment.
      * 
-     * @return from schema
+     * @return from schema segment
      */
-    public Optional<RemoveAvailable> getFromSchema() {
+    public Optional<FromSchemaSegment> getFromSchema() {
         return Optional.ofNullable(fromSchema);
+    }
+    
+    /**
+     * Get like segment.
+     *
+     * @return like segment
+     */
+    public Optional<ShowLikeSegment> getLike() {
+        return Optional.ofNullable(like);
+    }
+    
+    /**
+     * Get where segment.
+     *
+     * @return where segment
+     */
+    public Optional<WhereSegment> getWhere() {
+        return Optional.ofNullable(where);
     }
 }

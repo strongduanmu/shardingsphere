@@ -17,9 +17,8 @@
 
 package org.apache.shardingsphere.proxy.backend.communication.jdbc.transaction;
 
-import java.lang.reflect.Field;
-import java.sql.SQLException;
 import lombok.SneakyThrows;
+import org.apache.shardingsphere.mode.manager.ContextManager;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.transaction.ShardingTransactionManagerEngine;
@@ -31,6 +30,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+
+import java.lang.reflect.Field;
+import java.sql.SQLException;
 
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -65,12 +67,15 @@ public final class BackendTransactionManagerTest {
     
     @SneakyThrows(ReflectiveOperationException.class)
     private void setTransactionContexts() {
-        Field transactionContexts = ProxyContext.getInstance().getClass().getDeclaredField("transactionContexts");
-        transactionContexts.setAccessible(true);
-        transactionContexts.set(ProxyContext.getInstance(), getTransactionContexts());
+        Field contextManagerField = ProxyContext.getInstance().getClass().getDeclaredField("contextManager");
+        contextManagerField.setAccessible(true);
+        ContextManager contextManager = mock(ContextManager.class, RETURNS_DEEP_STUBS);
+        TransactionContexts transactionContexts = mockTransactionContexts();
+        when(contextManager.getTransactionContexts()).thenReturn(transactionContexts);
+        contextManagerField.set(ProxyContext.getInstance(), contextManager);
     }
     
-    private TransactionContexts getTransactionContexts() {
+    private TransactionContexts mockTransactionContexts() {
         TransactionContexts result = mock(TransactionContexts.class, RETURNS_DEEP_STUBS);
         ShardingTransactionManagerEngine transactionManagerEngine = mock(ShardingTransactionManagerEngine.class);
         when(result.getEngines().get("schema")).thenReturn(transactionManagerEngine);
@@ -83,6 +88,7 @@ public final class BackendTransactionManagerTest {
         newBackendTransactionManager(TransactionType.LOCAL, false);
         backendTransactionManager.begin();
         verify(transactionStatus).setInTransaction(true);
+        verify(backendConnection).closeDatabaseCommunicationEngines(true);
         verify(backendConnection).closeConnections(false);
         verify(localTransactionManager).begin();
     }

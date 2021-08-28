@@ -45,6 +45,7 @@ import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -83,12 +84,13 @@ public final class JDBCExecutorCallbackTest {
             
             @Override
             protected Optional<Integer> getSaneResult(final SQLStatement sqlStatement) {
-                return Optional.of(0);
+                return Optional.empty();
             }
         };
         Field field = JDBCExecutorCallback.class.getDeclaredField("CACHED_DATASOURCE_METADATA");
         field.setAccessible(true);
         Map<String, DataSourceMetaData> cachedDataSourceMetaData = (Map<String, DataSourceMetaData>) field.get(jdbcExecutorCallback);
+        assertTrue(cachedDataSourceMetaData.isEmpty());
         cachedDataSourceMetaData.clear();
         assertThat(cachedDataSourceMetaData.size(), is(0));
         jdbcExecutorCallback.execute(units, true, Collections.emptyMap());

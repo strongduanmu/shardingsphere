@@ -20,13 +20,16 @@ package org.apache.shardingsphere.infra.binder.statement;
 import org.apache.shardingsphere.infra.binder.SQLStatementContextFactory;
 import org.apache.shardingsphere.infra.binder.statement.dml.InsertStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
-import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
+import org.apache.shardingsphere.infra.database.DefaultSchema;
+import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.AssignmentSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.ColumnAssignmentSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.SetAssignmentSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ProjectionsSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.pagination.limit.LimitSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableNameSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.InsertStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.MySQLStatement;
@@ -39,9 +42,13 @@ import org.apache.shardingsphere.sql.parser.sql.dialect.statement.sqlserver.dml.
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 
 public final class SQLStatementContextFactoryTest {
@@ -52,7 +59,7 @@ public final class SQLStatementContextFactoryTest {
         MySQLSelectStatement selectStatement = new MySQLSelectStatement();
         selectStatement.setLimit(new LimitSegment(0, 10, null, null));
         selectStatement.setProjections(projectionsSegment);
-        SQLStatementContext<?> sqlStatementContext = SQLStatementContextFactory.newInstance(mock(ShardingSphereSchema.class), null, selectStatement);
+        SQLStatementContext<?> sqlStatementContext = SQLStatementContextFactory.newInstance(mockMetaDataMap(), Collections.emptyList(), selectStatement, DefaultSchema.LOGIC_NAME);
         assertNotNull(sqlStatementContext);
         assertTrue(sqlStatementContext instanceof SelectStatementContext);
     }
@@ -60,8 +67,11 @@ public final class SQLStatementContextFactoryTest {
     @Test
     public void assertSQLStatementContextCreatedWhenSQLStatementInstanceOfMySQLInsertStatement() {
         MySQLInsertStatement insertStatement = new MySQLInsertStatement();
+        List<ColumnSegment> columnSegments = new LinkedList<>();
+        columnSegments.add(new ColumnSegment(0, 0, new IdentifierValue("IdentifierValue")));
+        AssignmentSegment assignment = new ColumnAssignmentSegment(0, 0, columnSegments, null);
         insertStatement.setSetAssignment(new SetAssignmentSegment(0, 0,
-                Collections.singleton(new AssignmentSegment(0, 0, new ColumnSegment(0, 0, new IdentifierValue("IdentifierValue")), null))));
+                Collections.singleton(assignment)));
         assertSQLStatementContextCreatedWhenSQLStatementInstanceOfInsertStatement(insertStatement);
     }
     
@@ -86,16 +96,20 @@ public final class SQLStatementContextFactoryTest {
     }
     
     private void assertSQLStatementContextCreatedWhenSQLStatementInstanceOfInsertStatement(final InsertStatement insertStatement) {
-        insertStatement.setTable(new SimpleTableSegment(0, 0, new IdentifierValue("tbl")));
-        SQLStatementContext<?> sqlStatementContext = SQLStatementContextFactory.newInstance(mock(ShardingSphereSchema.class), null, insertStatement);
+        insertStatement.setTable(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("tbl"))));
+        SQLStatementContext<?> sqlStatementContext = SQLStatementContextFactory.newInstance(mockMetaDataMap(), Collections.emptyList(), insertStatement, DefaultSchema.LOGIC_NAME);
         assertNotNull(sqlStatementContext);
         assertTrue(sqlStatementContext instanceof InsertStatementContext);
     }
     
     @Test
     public void assertSQLStatementContextCreatedWhenSQLStatementNotInstanceOfSelectStatementAndInsertStatement() {
-        SQLStatementContext<?> sqlStatementContext = SQLStatementContextFactory.newInstance(mock(ShardingSphereSchema.class), null, mock(MySQLStatement.class));
+        SQLStatementContext<?> sqlStatementContext = SQLStatementContextFactory.newInstance(mockMetaDataMap(), Collections.emptyList(), mock(MySQLStatement.class), DefaultSchema.LOGIC_NAME);
         assertNotNull(sqlStatementContext);
         assertTrue(sqlStatementContext instanceof CommonSQLStatementContext);
+    }
+    
+    private Map<String, ShardingSphereMetaData> mockMetaDataMap() {
+        return Collections.singletonMap(DefaultSchema.LOGIC_NAME, mock(ShardingSphereMetaData.class, RETURNS_DEEP_STUBS));
     }
 }

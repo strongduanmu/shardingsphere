@@ -17,16 +17,16 @@
 
 package org.apache.shardingsphere.sharding.route.engine.condition.generator.impl;
 
-import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
 import org.apache.shardingsphere.infra.datetime.DatetimeService;
 import org.apache.shardingsphere.sharding.route.engine.condition.Column;
 import org.apache.shardingsphere.sharding.route.engine.condition.value.RangeShardingConditionValue;
 import org.apache.shardingsphere.sharding.route.engine.condition.value.ShardingConditionValue;
+import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.BetweenExpression;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.complex.CommonExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.util.SafeNumberOperationUtils;
+import org.apache.shardingsphere.sql.parser.sql.common.util.SafeNumberOperationUtil;
 import org.junit.Test;
 
 import java.util.Calendar;
@@ -78,8 +78,8 @@ public final class ConditionValueBetweenOperatorGeneratorTest {
         RangeShardingConditionValue<Comparable<?>> rangeShardingConditionValue = (RangeShardingConditionValue<Comparable<?>>) shardingConditionValue.get();
         assertThat(rangeShardingConditionValue.getColumnName(), is(column.getName()));
         assertThat(rangeShardingConditionValue.getTableName(), is(column.getTableName()));
-        assertTrue(SafeNumberOperationUtils.safeContains(rangeShardingConditionValue.getValueRange(), between));
-        assertTrue(SafeNumberOperationUtils.safeContains(rangeShardingConditionValue.getValueRange(), and));
+        assertTrue(SafeNumberOperationUtil.safeContains(rangeShardingConditionValue.getValueRange(), between));
+        assertTrue(SafeNumberOperationUtil.safeContains(rangeShardingConditionValue.getValueRange(), and));
     }
     
     @Test(expected = ClassCastException.class)

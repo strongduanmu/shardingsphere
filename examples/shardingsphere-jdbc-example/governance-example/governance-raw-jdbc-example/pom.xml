@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.shardingsphere.example</groupId>
         <artifactId>governance-example</artifactId>
-        <version>5.0.0-alpha</version>
+        <version>5.0.0-RC1-SNAPSHOT</version>
     </parent>
     <artifactId>governance-raw-jdbc-example</artifactId>
     <name>${project.artifactId}</name>
@@ -41,11 +41,11 @@
         </dependency>
         <dependency>
             <groupId>org.apache.shardingsphere</groupId>
-            <artifactId>shardingsphere-jdbc-governance</artifactId>
+            <artifactId>shardingsphere-jdbc-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.shardingsphere</groupId>
-            <artifactId>shardingsphere-governance-repository-zookeeper-curator</artifactId>
+            <artifactId>shardingsphere-cluster-mode-repository-zookeeper-curator</artifactId>
         </dependency>
     </dependencies>
 </project>

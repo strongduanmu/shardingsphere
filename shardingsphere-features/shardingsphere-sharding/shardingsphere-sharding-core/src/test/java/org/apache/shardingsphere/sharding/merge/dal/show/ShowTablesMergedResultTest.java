@@ -18,7 +18,6 @@
 package org.apache.shardingsphere.sharding.merge.dal.show;
 
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
 import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.metadata.schema.model.TableMetaData;
@@ -56,12 +55,12 @@ public final class ShowTablesMergedResultTest {
         ShardingTableRuleConfiguration tableRuleConfig = new ShardingTableRuleConfiguration("table", "ds.table_${0..2}");
         ShardingRuleConfiguration shardingRuleConfig = new ShardingRuleConfiguration();
         shardingRuleConfig.getTables().add(tableRuleConfig);
-        return new ShardingRule(shardingRuleConfig, mock(DatabaseType.class), Collections.singletonMap("ds", mock(DataSource.class, RETURNS_DEEP_STUBS)));
+        return new ShardingRule(shardingRuleConfig, Collections.singletonMap("ds", mock(DataSource.class, RETURNS_DEEP_STUBS)));
     }
     
     private ShardingSphereSchema buildSchema() {
         Map<String, TableMetaData> tableMetaDataMap = new HashMap<>(1, 1);
-        tableMetaDataMap.put("table", new TableMetaData(Collections.emptyList(), Collections.emptyList()));
+        tableMetaDataMap.put("table", new TableMetaData("table", Collections.emptyList(), Collections.emptyList()));
         return new ShardingSphereSchema(tableMetaDataMap);
     }
     

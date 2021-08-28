@@ -44,7 +44,7 @@ public final class ShardingStandardRoutingEngineTest extends AbstractRoutingEngi
     
     @Test
     public void assertRouteByNonConditions() {
-        ShardingStandardRoutingEngine standardRoutingEngine = createShardingStandardRoutingEngine("t_order", new ShardingConditions(Collections.emptyList()));
+        ShardingStandardRoutingEngine standardRoutingEngine = createShardingStandardRoutingEngine("t_order", new ShardingConditions(Collections.emptyList(), false));
         RouteContext routeContext = new RouteContext();
         standardRoutingEngine.route(routeContext, createBasedShardingRule());
         List<RouteUnit> routeUnits = new ArrayList<>(routeContext.getRouteUnits());
@@ -89,7 +89,7 @@ public final class ShardingStandardRoutingEngineTest extends AbstractRoutingEngi
     
     @Test
     public void assertRouteByHint() {
-        ShardingStandardRoutingEngine standardRoutingEngine = createShardingStandardRoutingEngine("t_hint_test", new ShardingConditions(Collections.emptyList()));
+        ShardingStandardRoutingEngine standardRoutingEngine = createShardingStandardRoutingEngine("t_hint_test", new ShardingConditions(Collections.emptyList(), false));
         HintManager hintManager = HintManager.getInstance();
         hintManager.addDatabaseShardingValue("t_hint_test", 1);
         hintManager.addTableShardingValue("t_hint_test", 1);
@@ -120,7 +120,7 @@ public final class ShardingStandardRoutingEngineTest extends AbstractRoutingEngi
     
     @Test
     public void assertRouteByMixedWithHintDatasourceOnly() {
-        ShardingStandardRoutingEngine standardRoutingEngine = createShardingStandardRoutingEngine("t_hint_ds_test", new ShardingConditions(Collections.emptyList()));
+        ShardingStandardRoutingEngine standardRoutingEngine = createShardingStandardRoutingEngine("t_hint_ds_test", new ShardingConditions(Collections.emptyList(), false));
         HintManager hintManager = HintManager.getInstance();
         hintManager.addDatabaseShardingValue("t_hint_ds_test", 1);
         RouteContext routeContext = new RouteContext();
@@ -154,7 +154,7 @@ public final class ShardingStandardRoutingEngineTest extends AbstractRoutingEngi
     
     @Test
     public void assertRouteByMixedWithHintTableOnly() {
-        ShardingStandardRoutingEngine standardRoutingEngine = createShardingStandardRoutingEngine("t_hint_table_test", new ShardingConditions(Collections.emptyList()));
+        ShardingStandardRoutingEngine standardRoutingEngine = createShardingStandardRoutingEngine("t_hint_table_test", new ShardingConditions(Collections.emptyList(), false));
         HintManager hintManager = HintManager.getInstance();
         hintManager.addTableShardingValue("t_hint_table_test", 1);
         RouteContext routeContext = new RouteContext();
@@ -169,6 +169,19 @@ public final class ShardingStandardRoutingEngineTest extends AbstractRoutingEngi
         assertThat(routeUnits.get(1).getTableMappers().size(), is(1));
         assertThat(routeUnits.get(1).getTableMappers().iterator().next().getActualName(), is("t_hint_table_test_1"));
         assertThat(routeUnits.get(1).getTableMappers().iterator().next().getLogicName(), is("t_hint_table_test"));
+    }
+    
+    @Test
+    public void assertRouteByIntervalTableShardingStrategyOnly() {
+        ShardingStandardRoutingEngine standardRoutingEngine = createShardingStandardRoutingEngine("t_interval_test", createIntervalShardingConditions("t_interval_test"));
+        RouteContext routeContext = new RouteContext();
+        standardRoutingEngine.route(routeContext, createIntervalTableShardingRule());
+        List<RouteUnit> routeUnits = new ArrayList<>(routeContext.getRouteUnits());
+        assertThat(routeContext.getRouteUnits().size(), is(1));
+        assertThat(routeUnits.get(0).getDataSourceMapper().getActualName(), is("ds_0"));
+        assertThat(routeUnits.get(0).getTableMappers().size(), is(1));
+        assertThat(routeUnits.get(0).getTableMappers().iterator().next().getActualName(), is("t_interval_test_202101"));
+        assertThat(routeUnits.get(0).getTableMappers().iterator().next().getLogicName(), is("t_interval_test"));
     }
     
     private ShardingStandardRoutingEngine createShardingStandardRoutingEngine(final String logicTableName, final ShardingConditions shardingConditions) {

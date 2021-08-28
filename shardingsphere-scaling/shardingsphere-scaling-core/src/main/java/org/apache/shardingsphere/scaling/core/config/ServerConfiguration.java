@@ -19,13 +19,13 @@ package org.apache.shardingsphere.scaling.core.config;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.shardingsphere.governance.repository.api.config.GovernanceConfiguration;
+import org.apache.shardingsphere.infra.config.mode.ModeConfiguration;
 
 /**
  * Global server configuration.
  */
-@Setter
 @Getter
+@Setter
 public final class ServerConfiguration {
     
     private int port = 8080;
@@ -34,5 +34,5 @@ public final class ServerConfiguration {
     
     private int workerThread = 30;
     
-    private GovernanceConfiguration governanceConfig;
+    private ModeConfiguration modeConfiguration;
 }

@@ -17,12 +17,12 @@
 
 package org.apache.shardingsphere.authority.provider.natived.builder.dialect;
 
-import org.apache.shardingsphere.authority.provider.natived.builder.StoragePrivilegeHandler;
 import org.apache.shardingsphere.authority.model.PrivilegeType;
+import org.apache.shardingsphere.authority.provider.natived.builder.StoragePrivilegeHandler;
 import org.apache.shardingsphere.authority.provider.natived.model.privilege.NativePrivileges;
 import org.apache.shardingsphere.infra.metadata.user.ShardingSphereUser;
-import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
-import org.apache.shardingsphere.infra.spi.typed.TypedSPIRegistry;
+import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
+import org.apache.shardingsphere.spi.typed.TypedSPIRegistry;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -85,7 +86,7 @@ public final class MySQLPrivilegeHandlerTest {
     }
     
     private Collection<ShardingSphereUser> createUsers() {
-        LinkedList<ShardingSphereUser> result = new LinkedList<>();
+        Collection<ShardingSphereUser> result = new LinkedList<>();
         result.add(new ShardingSphereUser("root", "", "localhost"));
         result.add(new ShardingSphereUser("mysql.sys", "", "localhost"));
         return result;
@@ -130,35 +131,35 @@ public final class MySQLPrivilegeHandlerTest {
     private ResultSet mockGlobalPrivilegeResultSet() throws SQLException {
         ResultSet result = mock(ResultSet.class);
         when(result.next()).thenReturn(true, true, false);
-        when(result.getBoolean("Super_priv")).thenReturn(true, false);
-        when(result.getBoolean("Reload_priv")).thenReturn(true, false);
-        when(result.getBoolean("Shutdown_priv")).thenReturn(true, false);
-        when(result.getBoolean("Process_priv")).thenReturn(false, false);
-        when(result.getBoolean("File_priv")).thenReturn(false, false);
-        when(result.getBoolean("Show_db_priv")).thenReturn(false, false);
-        when(result.getBoolean("Repl_slave_priv")).thenReturn(false, false);
-        when(result.getBoolean("Repl_client_priv")).thenReturn(false, false);
-        when(result.getBoolean("Create_user_priv")).thenReturn(false, false);
-        when(result.getBoolean("Create_tablespace_priv")).thenReturn(false, false);
-        when(result.getBoolean("Select_priv")).thenReturn(true, false);
-        when(result.getBoolean("Insert_priv")).thenReturn(true, false);
-        when(result.getBoolean("Update_priv")).thenReturn(true, false);
-        when(result.getBoolean("Delete_priv")).thenReturn(true, false);
-        when(result.getBoolean("Create_priv")).thenReturn(true, false);
-        when(result.getBoolean("Alter_priv")).thenReturn(true, false);
-        when(result.getBoolean("Drop_priv")).thenReturn(false, false);
-        when(result.getBoolean("Grant_priv")).thenReturn(false, false);
-        when(result.getBoolean("Index_priv")).thenReturn(false, false);
-        when(result.getBoolean("References_priv")).thenReturn(false, false);
-        when(result.getBoolean("Create_tmp_table_priv")).thenReturn(false, false);
-        when(result.getBoolean("Lock_tables_priv")).thenReturn(false, false);
-        when(result.getBoolean("Execute_priv")).thenReturn(false, false);
-        when(result.getBoolean("Create_view_priv")).thenReturn(false, false);
-        when(result.getBoolean("Show_view_priv")).thenReturn(false, false);
-        when(result.getBoolean("Create_routine_priv")).thenReturn(false, false);
-        when(result.getBoolean("Alter_routine_priv")).thenReturn(false, false);
-        when(result.getBoolean("Event_priv")).thenReturn(false, false);
-        when(result.getBoolean("Trigger_priv")).thenReturn(false, false);
+        when(result.getObject("Super_priv")).thenReturn(true, false);
+        when(result.getObject("Reload_priv")).thenReturn(true, false);
+        when(result.getObject("Shutdown_priv")).thenReturn(true, false);
+        when(result.getObject("Process_priv")).thenReturn(false, false);
+        when(result.getObject("File_priv")).thenReturn(false, false);
+        when(result.getObject("Show_db_priv")).thenReturn(false, false);
+        when(result.getObject("Repl_slave_priv")).thenReturn(false, false);
+        when(result.getObject("Repl_client_priv")).thenReturn(false, false);
+        when(result.getObject("Create_user_priv")).thenReturn(false, false);
+        when(result.getObject("Create_tablespace_priv")).thenReturn(false, false);
+        when(result.getObject("Select_priv")).thenReturn(true, false);
+        when(result.getObject("Insert_priv")).thenReturn(true, false);
+        when(result.getObject("Update_priv")).thenReturn(true, false);
+        when(result.getObject("Delete_priv")).thenReturn(true, false);
+        when(result.getObject("Create_priv")).thenReturn(true, false);
+        when(result.getObject("Alter_priv")).thenReturn(true, false);
+        when(result.getObject("Drop_priv")).thenReturn(false, false);
+        when(result.getObject("Grant_priv")).thenReturn(false, false);
+        when(result.getObject("Index_priv")).thenReturn(false, false);
+        when(result.getObject("References_priv")).thenReturn(false, false);
+        when(result.getObject("Create_tmp_table_priv")).thenReturn(false, false);
+        when(result.getObject("Lock_tables_priv")).thenReturn(false, false);
+        when(result.getObject("Execute_priv")).thenReturn(false, false);
+        when(result.getObject("Create_view_priv")).thenReturn(false, false);
+        when(result.getObject("Show_view_priv")).thenReturn(false, false);
+        when(result.getObject("Create_routine_priv")).thenReturn(false, false);
+        when(result.getObject("Alter_routine_priv")).thenReturn(false, false);
+        when(result.getObject("Event_priv")).thenReturn(false, false);
+        when(result.getObject("Trigger_priv")).thenReturn(false, false);
         when(result.getString("user")).thenReturn("root", "mysql.sys");
         when(result.getString("host")).thenReturn("localhost", "localhost");
         return result;
@@ -168,25 +169,25 @@ public final class MySQLPrivilegeHandlerTest {
         ResultSet result = mock(ResultSet.class);
         when(result.next()).thenReturn(true, false);
         when(result.getString("Db")).thenReturn("sys");
-        when(result.getBoolean("Select_priv")).thenReturn(false);
-        when(result.getBoolean("Insert_priv")).thenReturn(false);
-        when(result.getBoolean("Update_priv")).thenReturn(false);
-        when(result.getBoolean("Delete_priv")).thenReturn(false);
-        when(result.getBoolean("Create_priv")).thenReturn(false);
-        when(result.getBoolean("Alter_priv")).thenReturn(false);
-        when(result.getBoolean("Drop_priv")).thenReturn(false);
-        when(result.getBoolean("Grant_priv")).thenReturn(false);
-        when(result.getBoolean("Index_priv")).thenReturn(false);
-        when(result.getBoolean("References_priv")).thenReturn(false);
-        when(result.getBoolean("Create_tmp_table_priv")).thenReturn(false);
-        when(result.getBoolean("Lock_tables_priv")).thenReturn(false);
-        when(result.getBoolean("Execute_priv")).thenReturn(false);
-        when(result.getBoolean("Create_view_priv")).thenReturn(false);
-        when(result.getBoolean("Show_view_priv")).thenReturn(false);
-        when(result.getBoolean("Create_routine_priv")).thenReturn(false);
-        when(result.getBoolean("Alter_routine_priv")).thenReturn(false);
-        when(result.getBoolean("Event_priv")).thenReturn(false);
-        when(result.getBoolean("Trigger_priv")).thenReturn(true);
+        when(result.getObject("Select_priv")).thenReturn(false);
+        when(result.getObject("Insert_priv")).thenReturn(false);
+        when(result.getObject("Update_priv")).thenReturn(false);
+        when(result.getObject("Delete_priv")).thenReturn(false);
+        when(result.getObject("Create_priv")).thenReturn(false);
+        when(result.getObject("Alter_priv")).thenReturn(false);
+        when(result.getObject("Drop_priv")).thenReturn(false);
+        when(result.getObject("Grant_priv")).thenReturn(false);
+        when(result.getObject("Index_priv")).thenReturn(false);
+        when(result.getObject("References_priv")).thenReturn(false);
+        when(result.getObject("Create_tmp_table_priv")).thenReturn(false);
+        when(result.getObject("Lock_tables_priv")).thenReturn(false);
+        when(result.getObject("Execute_priv")).thenReturn(false);
+        when(result.getObject("Create_view_priv")).thenReturn(false);
+        when(result.getObject("Show_view_priv")).thenReturn(false);
+        when(result.getObject("Create_routine_priv")).thenReturn(false);
+        when(result.getObject("Alter_routine_priv")).thenReturn(false);
+        when(result.getObject("Event_priv")).thenReturn(false);
+        when(result.getObject("Trigger_priv")).thenReturn(true);
         when(result.getString("user")).thenReturn("mysql.sys");
         when(result.getString("host")).thenReturn("localhost");
         return result;
@@ -232,8 +233,8 @@ public final class MySQLPrivilegeHandlerTest {
         assertThat(actual.get(root).getDatabasePrivileges().getGlobalPrivileges().size(), is(6));
         assertThat(actual.get(root).getDatabasePrivileges().getGlobalPrivileges(), is(expectedDatabasePrivileges));
         ShardingSphereUser sys = new ShardingSphereUser("mysql.sys", "", "localhost");
-        assertThat(actual.get(sys).getAdministrativePrivileges().getPrivileges().size(), is(0));
-        assertThat(actual.get(sys).getDatabasePrivileges().getGlobalPrivileges().size(), is(0));
+        assertTrue(actual.get(sys).getAdministrativePrivileges().getPrivileges().isEmpty());
+        assertTrue(actual.get(sys).getDatabasePrivileges().getGlobalPrivileges().isEmpty());
         assertThat(actual.get(sys).getDatabasePrivileges().getSpecificPrivileges().size(), is(1));
     }
 }

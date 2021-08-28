@@ -17,9 +17,8 @@
 
 package org.apache.shardingsphere.driver.jdbc.core.statement;
 
-import com.google.common.collect.Lists;
-import org.apache.shardingsphere.driver.jdbc.base.AbstractShardingSphereDataSourceForShardingTest;
 import org.apache.shardingsphere.driver.fixture.ResetIncrementKeyGenerateAlgorithm;
+import org.apache.shardingsphere.driver.jdbc.base.AbstractShardingSphereDataSourceForShardingTest;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -27,6 +26,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.Collection;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -48,6 +48,8 @@ public final class ShardingSpherePreparedStatementTest extends AbstractShardingS
     private static final String INSERT_WITH_GENERATE_KEY_SQL_WITH_MULTI_VALUES = "INSERT INTO t_order_item (item_id, order_id, user_id, status) VALUES (1, ?, ?, ?), (2, ?, ?, ?)";
     
     private static final String INSERT_ON_DUPLICATE_KEY_SQL = "INSERT INTO t_order_item (item_id, order_id, user_id, status) VALUES (?, ?, ?, ?), (?, ?, ?, ?) ON DUPLICATE KEY UPDATE status = ?";
+
+    private static final String INSERT_NO_SHARDING_SQL = "INSERT INTO t_sys_0 (param_key, param_value) VALUES (?, ?)";
     
     private static final String SELECT_SQL_WITHOUT_PARAMETER_MARKER = "SELECT item_id FROM t_order_item WHERE user_id = %d AND order_id= %s AND status = 'BATCH'";
     
@@ -56,12 +58,16 @@ public final class ShardingSpherePreparedStatementTest extends AbstractShardingS
     private static final String SELECT_SQL_WITH_PARAMETER_MARKER_RETURN_STATUS = "SELECT item_id, user_id, status FROM t_order_item WHERE  order_id= ? AND user_id = ?";
     
     private static final String SELECT_AUTO_SQL = "SELECT item_id, order_id, status FROM t_order_item_auto WHERE order_id >= ?";
-    
+
+    private static final String SELECT_SQL_COLUMN_WITH_PARAMETER_MARKER = "SELECT ?, order_id, status FROM t_order_item_auto";
+
     private static final String UPDATE_SQL = "UPDATE t_order SET status = ? WHERE user_id = ? AND order_id = ?";
     
     private static final String UPDATE_AUTO_SQL = "UPDATE t_order_auto SET status = ? WHERE order_id = ?";
     
     private static final String UPDATE_BATCH_SQL = "UPDATE t_order SET status=? WHERE status=?";
+    
+    private static final String UPDATE_WITH_ERROR_COLUMN = "UPDATE t_order SET error_column=?";
     
     @Test
     public void assertAddBatch() throws SQLException {
@@ -346,6 +352,19 @@ public final class ShardingSpherePreparedStatementTest extends AbstractShardingS
     }
     
     @Test
+    public void assertAddGetGeneratedKeysForNoGeneratedValues() throws SQLException {
+        try (Connection connection = getShardingSphereDataSource().getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(INSERT_NO_SHARDING_SQL, Statement.RETURN_GENERATED_KEYS)) {
+            preparedStatement.setString(1, "show");
+            preparedStatement.setString(2, "yes");
+            preparedStatement.execute();
+            ResultSet generateKeyResultSet = preparedStatement.getGeneratedKeys();
+            assertTrue(generateKeyResultSet.next());
+            assertThat(generateKeyResultSet.getInt(1), is(1));
+        }
+    }
+    
+    @Test
     public void assertAddOnDuplicateKey() throws SQLException {
         int itemId = 1;
         int userId1 = 101;
@@ -467,16 +486,24 @@ public final class ShardingSpherePreparedStatementTest extends AbstractShardingS
             assertNull(preparedStatement.getResultSet());
         }
     }
+
+    @Test
+    public void assertExecuteSelectColumnGetResultSet() throws SQLException {
+        try (PreparedStatement preparedStatement = getShardingSphereDataSource().getConnection().prepareStatement(SELECT_SQL_COLUMN_WITH_PARAMETER_MARKER)) {
+            preparedStatement.setString(1, "item_id");
+            preparedStatement.executeQuery();
+        }
+    }
     
     @Test
     public void assertExecuteSelectAutoTableGetResultSet() throws SQLException {
-        Collection<Integer> result = Lists.newArrayList(1001, 1100, 1101);
+        Collection<Integer> result = Arrays.asList(1001, 1100, 1101);
         try (PreparedStatement preparedStatement = getShardingSphereDataSource().getConnection().prepareStatement(SELECT_AUTO_SQL)) {
             preparedStatement.setInt(1, 1001);
             int count = 0;
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 while (resultSet.next()) {
-                    result.contains(resultSet.getInt(2));
+                    assertTrue(result.contains(resultSet.getInt(2)));
                     count++;
                 }
             }
@@ -529,6 +556,14 @@ public final class ShardingSpherePreparedStatementTest extends AbstractShardingS
     public void assertGetParameterMetaData() throws SQLException {
         try (PreparedStatement preparedStatement = getShardingSphereDataSource().getConnection().prepareStatement(SELECT_SQL_WITH_PARAMETER_MARKER)) {
             assertThat(preparedStatement.getParameterMetaData().getParameterCount(), is(2));
+        }
+    }
+    
+    @Test(expected = SQLException.class)
+    public void assertColumnNotFoundException() throws SQLException {
+        try (PreparedStatement preparedStatement = getShardingSphereDataSource().getConnection().prepareStatement(UPDATE_WITH_ERROR_COLUMN)) {
+            preparedStatement.setString(1, "OK");
+            preparedStatement.executeUpdate();
         }
     }
 }

@@ -34,20 +34,25 @@
             <artifactId>shardingsphere-db-discovery-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-        
         <dependency>
             <groupId>org.apache.shardingsphere</groupId>
-            <artifactId>shardingsphere-infra-route</artifactId>
+            <artifactId>shardingsphere-db-discovery-distsql-handler</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.shardingsphere</groupId>
-            <artifactId>shardingsphere-distsql-parser-statement</artifactId>
+            <artifactId>shardingsphere-db-discovery-distsql-parser</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.shardingsphere</groupId>
             <artifactId>shardingsphere-db-discovery-mgr</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.shardingsphere</groupId>
+            <artifactId>shardingsphere-infra-route</artifactId>
             <version>${project.version}</version>
         </dependency>
         

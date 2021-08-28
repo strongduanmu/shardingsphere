@@ -22,6 +22,8 @@ import org.apache.shardingsphere.infra.binder.LogicSQL;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
 import org.apache.shardingsphere.infra.context.kernel.KernelProcessor;
+import org.apache.shardingsphere.infra.context.refresher.MetadataRefreshEngine;
+import org.apache.shardingsphere.infra.database.DefaultSchema;
 import org.apache.shardingsphere.infra.executor.sql.context.ExecutionContext;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.ExecuteResult;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
@@ -30,8 +32,7 @@ import org.apache.shardingsphere.infra.executor.sql.prepare.driver.jdbc.JDBCDriv
 import org.apache.shardingsphere.infra.merge.MergeEngine;
 import org.apache.shardingsphere.infra.merge.result.MergedResult;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
-import org.apache.shardingsphere.infra.context.metadata.refresher.MetadataRefreshEngine;
-import org.apache.shardingsphere.infra.rule.type.DataNodeContainedRule;
+import org.apache.shardingsphere.infra.rule.identifier.type.DataNodeContainedRule;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.response.data.QueryResponseCell;
@@ -44,11 +45,15 @@ import org.apache.shardingsphere.proxy.backend.response.header.query.impl.QueryH
 import org.apache.shardingsphere.proxy.backend.response.header.query.impl.QueryHeaderBuilder;
 import org.apache.shardingsphere.proxy.backend.response.header.update.UpdateResponseHeader;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 /**
@@ -73,15 +78,37 @@ public final class DatabaseCommunicationEngine {
     
     private ProxyLockEngine proxyLockEngine;
     
+    private final Collection<Statement> cachedStatements = new CopyOnWriteArrayList<>();
+    
+    private final Collection<ResultSet> cachedResultSets = new CopyOnWriteArrayList<>();
+    
     public DatabaseCommunicationEngine(final String driverType, final ShardingSphereMetaData metaData, final LogicSQL logicSQL, final BackendConnection backendConnection) {
         this.driverType = driverType;
         this.metaData = metaData;
         this.logicSQL = logicSQL;
-        proxySQLExecutor = new ProxySQLExecutor(driverType, backendConnection);
+        proxySQLExecutor = new ProxySQLExecutor(driverType, backendConnection, this);
         kernelProcessor = new KernelProcessor();
-        proxyLockEngine = new ProxyLockEngine(proxySQLExecutor, new MetadataRefreshEngine(metaData, 
-                ProxyContext.getInstance().getMetaDataContexts().getOptimizeContextFactory().getSchemaMetadatas().getSchemas().get(backendConnection.getSchemaName()), 
-                ProxyContext.getInstance().getMetaDataContexts().getProps(), ProxyContext.getInstance().getLock().orElse(null)), backendConnection.getSchemaName());
+        proxyLockEngine = new ProxyLockEngine(proxySQLExecutor, new MetadataRefreshEngine(metaData,
+                ProxyContext.getInstance().getContextManager().getMetaDataContexts().getOptimizeContextFactory().getSchemaMetadatas().getSchemas().get(backendConnection.getSchemaName()),
+                ProxyContext.getInstance().getContextManager().getMetaDataContexts().getProps()), backendConnection.getSchemaName());
+    }
+    
+    /**
+     * Add statement.
+     *
+     * @param statement statement to be added
+     */
+    public void add(final Statement statement) {
+        cachedStatements.add(statement);
+    }
+    
+    /**
+     * Add result set.
+     *
+     * @param resultSet result set to be added
+     */
+    public void add(final ResultSet resultSet) {
+        cachedResultSets.add(resultSet);
     }
     
     /**
@@ -91,7 +118,7 @@ public final class DatabaseCommunicationEngine {
      * @throws SQLException SQL exception
      */
     public ResponseHeader execute() throws SQLException {
-        ExecutionContext executionContext = kernelProcessor.generateExecutionContext(logicSQL, metaData, ProxyContext.getInstance().getMetaDataContexts().getProps());
+        ExecutionContext executionContext = kernelProcessor.generateExecutionContext(logicSQL, metaData, ProxyContext.getInstance().getContextManager().getMetaDataContexts().getProps());
         if (executionContext.getExecutionUnits().isEmpty()) {
             return new UpdateResponseHeader(executionContext.getSqlStatementContext().getSqlStatement());
         }
@@ -131,12 +158,14 @@ public final class DatabaseCommunicationEngine {
     }
     
     private boolean hasSelectExpandProjections(final SQLStatementContext<?> sqlStatementContext) {
-        return sqlStatementContext instanceof SelectStatementContext && !((SelectStatementContext) sqlStatementContext).getProjectionsContext().getExpandProjections().isEmpty();
+        return sqlStatementContext instanceof SelectStatementContext && !((SelectStatementContext) sqlStatementContext).getProjectionsContext().getExpandProjections().isEmpty()
+                && !((SelectStatementContext) sqlStatementContext).isContainsSubquery();
     }
     
     private MergedResult mergeQuery(final SQLStatementContext<?> sqlStatementContext, final List<QueryResult> queryResults) throws SQLException {
-        MergeEngine mergeEngine = new MergeEngine(ProxyContext.getInstance().getMetaDataContexts().getMetaData(metaData.getName()).getResource().getDatabaseType(),
-                metaData.getSchema(), ProxyContext.getInstance().getMetaDataContexts().getProps(), metaData.getRuleMetaData().getRules());
+        MergeEngine mergeEngine = new MergeEngine(DefaultSchema.LOGIC_NAME, 
+                ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaData(metaData.getName()).getResource().getDatabaseType(),
+                metaData.getSchema(), ProxyContext.getInstance().getContextManager().getMetaDataContexts().getProps(), metaData.getRuleMetaData().getRules());
         return mergeEngine.merge(queryResults, sqlStatementContext);
     }
     
@@ -190,5 +219,48 @@ public final class DatabaseCommunicationEngine {
     
     private boolean isBinary() {
         return JDBCDriverType.PREPARED_STATEMENT.equals(driverType);
+    }
+    
+    /**
+     * Close database communication engine.
+     *
+     * @throws SQLException SQL exception
+     */
+    public void close() throws SQLException {
+        Collection<SQLException> result = new LinkedList<>();
+        result.addAll(closeResultSets());
+        result.addAll(closeStatements());
+        if (result.isEmpty()) {
+            return;
+        }
+        SQLException ex = new SQLException();
+        result.forEach(ex::setNextException);
+        throw ex;
+    }
+    
+    private Collection<SQLException> closeResultSets() {
+        Collection<SQLException> result = new LinkedList<>();
+        for (ResultSet each : cachedResultSets) {
+            try {
+                each.close();
+            } catch (final SQLException ex) {
+                result.add(ex);
+            }
+        }
+        cachedResultSets.clear();
+        return result;
+    }
+    
+    private Collection<SQLException> closeStatements() {
+        Collection<SQLException> result = new LinkedList<>();
+        for (Statement each : cachedStatements) {
+            try {
+                each.close();
+            } catch (final SQLException ex) {
+                result.add(ex);
+            }
+        }
+        cachedStatements.clear();
+        return result;
     }
 }

@@ -27,7 +27,7 @@ import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementConte
 import org.apache.shardingsphere.infra.database.DefaultSchema;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
-import org.apache.shardingsphere.infra.rule.type.DataNodeContainedRule;
+import org.apache.shardingsphere.infra.rule.identifier.type.DataNodeContainedRule;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -113,7 +113,8 @@ public final class ShardingSphereResultSetMetaData extends WrapperAdapter implem
     }
     
     private boolean hasSelectExpandProjections() {
-        return sqlStatementContext instanceof SelectStatementContext && !((SelectStatementContext) sqlStatementContext).getProjectionsContext().getExpandProjections().isEmpty();
+        return sqlStatementContext instanceof SelectStatementContext && !((SelectStatementContext) sqlStatementContext).getProjectionsContext().getExpandProjections().isEmpty()
+                && !((SelectStatementContext) sqlStatementContext).isContainsSubquery();
     }
     
     @Override

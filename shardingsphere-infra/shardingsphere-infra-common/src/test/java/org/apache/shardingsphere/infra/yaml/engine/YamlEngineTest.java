@@ -17,8 +17,8 @@
 
 package org.apache.shardingsphere.infra.yaml.engine;
 
-import org.apache.shardingsphere.infra.yaml.config.YamlRootRuleConfigurations;
-import org.apache.shardingsphere.infra.yaml.swapper.fixture.YamlRuleConfigurationFixture;
+import org.apache.shardingsphere.infra.yaml.config.pojo.YamlRootConfiguration;
+import org.apache.shardingsphere.infra.yaml.config.swapper.fixture.YamlRuleConfigurationFixture;
 import org.junit.Test;
 import org.yaml.snakeyaml.constructor.ConstructorException;
 
@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -92,6 +93,15 @@ public final class YamlEngineTest {
                 yamlContent.append(line).append("\n");
             }
         }
-        YamlEngine.unmarshal(yamlContent.toString(), YamlRootRuleConfigurations.class);
+        YamlEngine.unmarshal(yamlContent.toString(), YamlRootConfiguration.class);
+    }
+    
+    @Test
+    public void assertMarshalCollection() {
+        YamlRuleConfigurationFixture actual = new YamlRuleConfigurationFixture();
+        actual.setName("test");
+        YamlRuleConfigurationFixture actualAnother = new YamlRuleConfigurationFixture();
+        actualAnother.setName("test");
+        assertThat(YamlEngine.marshal(Arrays.asList(actual, actualAnother)), is("- !FIXTURE\n  name: test\n- !FIXTURE\n  name: test\n"));
     }
 }

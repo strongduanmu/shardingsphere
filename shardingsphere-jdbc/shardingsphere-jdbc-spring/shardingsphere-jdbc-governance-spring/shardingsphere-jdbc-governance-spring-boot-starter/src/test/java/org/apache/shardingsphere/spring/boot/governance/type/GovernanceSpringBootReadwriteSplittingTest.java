@@ -18,11 +18,11 @@
 package org.apache.shardingsphere.spring.boot.governance.type;
 
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.apache.shardingsphere.driver.governance.internal.datasource.GovernanceShardingSphereDataSource;
-import org.apache.shardingsphere.infra.context.metadata.MetaDataContexts;
-import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
-import org.apache.shardingsphere.readwritesplitting.rule.ReadwriteSplittingRule;
+import org.apache.shardingsphere.driver.jdbc.core.datasource.ShardingSphereDataSource;
+import org.apache.shardingsphere.mode.manager.ContextManager;
+import org.apache.shardingsphere.infra.database.DefaultSchema;
 import org.apache.shardingsphere.readwritesplitting.rule.ReadwriteSplittingDataSourceRule;
+import org.apache.shardingsphere.readwritesplitting.rule.ReadwriteSplittingRule;
 import org.apache.shardingsphere.spring.boot.governance.util.EmbedTestingServer;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -35,7 +35,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
-import java.util.Collection;
+import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -57,17 +57,18 @@ public class GovernanceSpringBootReadwriteSplittingTest {
     
     @Test
     public void assertDataSource() throws NoSuchFieldException, IllegalAccessException {
-        assertTrue(dataSource instanceof GovernanceShardingSphereDataSource);
-        Field field = GovernanceShardingSphereDataSource.class.getDeclaredField("metaDataContexts");
+        assertTrue(dataSource instanceof ShardingSphereDataSource);
+        Field field = ShardingSphereDataSource.class.getDeclaredField("contextManager");
         field.setAccessible(true);
-        MetaDataContexts metaDataContexts = (MetaDataContexts) field.get(dataSource);
-        for (DataSource each : metaDataContexts.getDefaultMetaData().getResource().getDataSources().values()) {
+        ContextManager contextManager = (ContextManager) field.get(dataSource);
+        for (DataSource each : contextManager.getMetaDataContexts().getMetaData(DefaultSchema.LOGIC_NAME).getResource().getDataSources().values()) {
             assertThat(((BasicDataSource) each).getMaxTotal(), is(16));
             assertThat(((BasicDataSource) each).getUsername(), is("sa"));
         }
-        Collection<ShardingSphereRule> rules = metaDataContexts.getDefaultMetaData().getRuleMetaData().getRules();
-        assertThat(rules.size(), is(1));
-        assertReadwriteSplittingRule((ReadwriteSplittingRule) rules.iterator().next());
+        Optional<ReadwriteSplittingRule> rule = contextManager.getMetaDataContexts().getMetaData(DefaultSchema.LOGIC_NAME).getRuleMetaData().getRules().stream().filter(each
+            -> each instanceof ReadwriteSplittingRule).map(each -> (ReadwriteSplittingRule) each).findFirst();
+        assertTrue(rule.isPresent());
+        assertReadwriteSplittingRule(rule.get());
     }
     
     private void assertReadwriteSplittingRule(final ReadwriteSplittingRule rule) {

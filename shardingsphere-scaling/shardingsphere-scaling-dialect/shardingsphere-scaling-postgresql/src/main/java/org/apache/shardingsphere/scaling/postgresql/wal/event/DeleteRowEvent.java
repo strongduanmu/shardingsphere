@@ -19,14 +19,16 @@ package org.apache.shardingsphere.scaling.postgresql.wal.event;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.util.List;
 
 /**
  * Delete row event.
  */
-@Setter
 @Getter
+@Setter
+@ToString(callSuper = true)
 public final class DeleteRowEvent extends AbstractRowEvent {
     
     private List<Object> primaryKeys;

@@ -117,6 +117,7 @@ import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.segment.
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.segment.UserSegment;
 
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 /**
  * DCL Statement SQL visitor for MySQL.
@@ -152,9 +153,6 @@ public final class MySQLDCLStatementSQLVisitor extends MySQLStatementSQLVisitor 
         }
         if (null != ctx.aclType()) {
             switch (ctx.aclType().getText().toLowerCase()) {
-                case "table":
-                    result.setAclType(ACLTypeEnum.TABLE);
-                    break;
                 case "function":
                     result.setAclType(ACLTypeEnum.FUNCTION);
                     break;
@@ -730,7 +728,9 @@ public final class MySQLDCLStatementSQLVisitor extends MySQLStatementSQLVisitor 
     
     @Override
     public ASTNode visitDropUser(final DropUserContext ctx) {
-        return new MySQLDropUserStatement();
+        MySQLDropUserStatement result = new MySQLDropUserStatement();
+        result.getUsers().addAll(ctx.userName().stream().map(UserNameContext::getText).collect(Collectors.toList()));
+        return result;
     }
     
     @Override

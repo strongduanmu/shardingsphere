@@ -24,9 +24,9 @@ import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmF
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.user.Grantee;
 import org.apache.shardingsphere.infra.metadata.user.ShardingSphereUser;
-import org.apache.shardingsphere.infra.rule.level.KernelRule;
-import org.apache.shardingsphere.infra.rule.scope.GlobalRule;
-import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
+import org.apache.shardingsphere.infra.rule.identifier.level.KernelRule;
+import org.apache.shardingsphere.infra.rule.identifier.scope.GlobalRule;
+import org.apache.shardingsphere.spi.ShardingSphereServiceLoader;
 
 import java.util.Collection;
 import java.util.Map;
@@ -42,7 +42,7 @@ public final class AuthorityRule implements KernelRule, GlobalRule {
     }
     
     private final AuthorityProvideAlgorithm provider;
-
+    
     private final Collection<ShardingSphereUser> users;
     
     public AuthorityRule(final AuthorityRuleConfiguration config, final Map<String, ShardingSphereMetaData> mataDataMap, final Collection<ShardingSphereUser> users) {
@@ -69,8 +69,6 @@ public final class AuthorityRule implements KernelRule, GlobalRule {
      */
     public void refresh(final Map<String, ShardingSphereMetaData> mataDataMap, final Collection<ShardingSphereUser> users) {
         provider.refresh(mataDataMap, users);
-        this.users.clear();
-        this.users.addAll(users);
     }
 
     /**
