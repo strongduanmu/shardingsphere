@@ -20,7 +20,7 @@ package org.apache.shardingsphere.infra.optimize.converter.segment.projection.im
 import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.shardingsphere.infra.optimize.converter.segment.SQLSegmentConverter;
+import org.apache.shardingsphere.infra.optimize.converter.segment.SQLSegmentSQLNodeConverter;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ExpressionProjectionSegment;
 
 import java.util.Optional;
@@ -28,12 +28,17 @@ import java.util.Optional;
 /**
  * Expression projection converter.
  */
-public final class ExpressionProjectionConverter implements SQLSegmentConverter<ExpressionProjectionSegment, SqlNode> {
+public final class ExpressionProjectionConverter implements SQLSegmentSQLNodeConverter<ExpressionProjectionSegment, SqlNode> {
     
     @Override
-    public Optional<SqlNode> convert(final ExpressionProjectionSegment segment) {
+    public Optional<SqlNode> convertSQLNode(final ExpressionProjectionSegment segment) {
         // TODO expression has not been parsed now.
         String expression = segment.getText();
         return Optional.of(SqlCharStringLiteral.createCharString(expression, SqlParserPos.ZERO));
+    }
+    
+    @Override
+    public Optional<ExpressionProjectionSegment> convertSQLSegment(final SqlNode sqlNode) {
+        return Optional.empty();
     }
 }

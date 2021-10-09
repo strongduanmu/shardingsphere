@@ -17,7 +17,10 @@
 
 package org.apache.shardingsphere.infra.optimize.converter.segment.limit;
 
+import org.apache.calcite.sql.SqlNode;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.pagination.limit.LimitSegment;
+
+import java.util.Optional;
 
 /**
  * Offset converter.

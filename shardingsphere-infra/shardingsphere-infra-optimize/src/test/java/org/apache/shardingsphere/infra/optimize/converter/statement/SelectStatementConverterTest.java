@@ -30,7 +30,7 @@ import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeRegistry;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
-import org.apache.shardingsphere.infra.optimize.converter.SQLNodeConvertEngine;
+import org.apache.shardingsphere.infra.optimize.converter.SQLStatementSQLNodeConvertEngine;
 import org.apache.shardingsphere.infra.parser.ShardingSphereSQLParserEngine;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.JoinTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
@@ -59,7 +59,7 @@ public final class SelectStatementConverterTest {
     public void assertConvertSimpleSelect() {
         String sql = "select order_id, user_id from t_order";
         SQLStatement sqlStatement = sqlStatementParserEngine.parse(sql, false);
-        SqlNode sqlNode = SQLNodeConvertEngine.convert(sqlStatement);
+        SqlNode sqlNode = SQLStatementSQLNodeConvertEngine.convertSQLNode(sqlStatement);
         assertThat(sqlNode, instanceOf(SqlSelect.class));
         SqlSelect sqlSelect = (SqlSelect) sqlNode;
         assertThat(sqlSelect.getSelectList().size(), is(2));
@@ -75,7 +75,7 @@ public final class SelectStatementConverterTest {
     public void assertConvertLimit() {
         String sql = "select order_id, user_id from t_order limit 1, 2";
         SQLStatement sqlStatement = sqlStatementParserEngine.parse(sql, false);
-        SqlNode sqlNode = SQLNodeConvertEngine.convert(sqlStatement);
+        SqlNode sqlNode = SQLStatementSQLNodeConvertEngine.convertSQLNode(sqlStatement);
         assertThat(sqlNode, instanceOf(SqlSelect.class));
         SqlSelect sqlSelect = (SqlSelect) sqlNode;
         assertThat(sqlSelect.getSelectList().size(), is(2));
@@ -91,7 +91,7 @@ public final class SelectStatementConverterTest {
     public void assertConvertLimitWithRowCountOnly() {
         String sql = "select order_id, user_id from t_order limit 2";
         SQLStatement sqlStatement = sqlStatementParserEngine.parse(sql, false);
-        SqlNode sqlNode = SQLNodeConvertEngine.convert(sqlStatement);
+        SqlNode sqlNode = SQLStatementSQLNodeConvertEngine.convertSQLNode(sqlStatement);
         assertThat(sqlNode, instanceOf(SqlSelect.class));
         SqlSelect sqlSelect = (SqlSelect) sqlNode;
         assertThat(sqlSelect.getSelectList().size(), is(2));
@@ -107,7 +107,7 @@ public final class SelectStatementConverterTest {
     public void assertConvertWhere() {
         String sql = "select order_id, user_id from t_order where order_id = 10";
         SQLStatement sqlStatement = sqlStatementParserEngine.parse(sql, false);
-        SqlNode sqlNode = SQLNodeConvertEngine.convert(sqlStatement);
+        SqlNode sqlNode = SQLStatementSQLNodeConvertEngine.convertSQLNode(sqlStatement);
         assertThat(sqlNode, instanceOf(SqlSelect.class));
         SqlSelect sqlSelect = (SqlSelect) sqlNode;
         assertThat(sqlSelect.getSelectList().size(), is(2));
@@ -121,7 +121,7 @@ public final class SelectStatementConverterTest {
     public void assertConvertWhereAndGroupBy() {
         String sql = "select order_id, user_id from t_order where order_id = 10 group by order_id";
         SQLStatement sqlStatement = sqlStatementParserEngine.parse(sql, false);
-        SqlNode sqlNode = SQLNodeConvertEngine.convert(sqlStatement);
+        SqlNode sqlNode = SQLStatementSQLNodeConvertEngine.convertSQLNode(sqlStatement);
         assertThat(sqlNode, instanceOf(SqlSelect.class));
         SqlSelect sqlSelect = (SqlSelect) sqlNode;
         assertThat(sqlSelect.getSelectList().size(), is(2));
@@ -136,7 +136,7 @@ public final class SelectStatementConverterTest {
     public void assertConvertWhereAndOrderBy() {
         String sql = "select order_id, user_id from t_order where user_id = 10 order by order_id desc";
         SQLStatement sqlStatement = sqlStatementParserEngine.parse(sql, false);
-        SqlNode sqlNode = SQLNodeConvertEngine.convert(sqlStatement);
+        SqlNode sqlNode = SQLStatementSQLNodeConvertEngine.convertSQLNode(sqlStatement);
         assertThat(sqlNode, instanceOf(SqlSelect.class));
         SqlSelect sqlSelect = (SqlSelect) sqlNode;
         assertThat(sqlSelect.getSelectList().size(), is(2));
@@ -154,7 +154,7 @@ public final class SelectStatementConverterTest {
                 + "o1.order_id desc";
         SQLStatement sqlStatement = sqlStatementParserEngine.parse(sql, false);
         assertThat(((JoinTableSegment) ((MySQLSelectStatement) sqlStatement).getFrom()).getJoinType(), is("INNER"));
-        SqlNode sqlNode = SQLNodeConvertEngine.convert(sqlStatement);
+        SqlNode sqlNode = SQLStatementSQLNodeConvertEngine.convertSQLNode(sqlStatement);
         assertThat(sqlNode, instanceOf(SqlSelect.class));
         SqlSelect sqlSelect = (SqlSelect) sqlNode;
         assertThat(sqlSelect.getFrom(), instanceOf(SqlJoin.class));
@@ -167,7 +167,7 @@ public final class SelectStatementConverterTest {
                 + "o1.order_id = o2.order_id where o1.status='FINISHED' and o2.order_item_id > 1024 and 1=1 order by "
                 + "o1.order_id desc";
         SQLStatement sqlStatement = sqlStatementParserEngine.parse(sql, false);
-        SqlNode sqlNode = SQLNodeConvertEngine.convert(sqlStatement);
+        SqlNode sqlNode = SQLStatementSQLNodeConvertEngine.convertSQLNode(sqlStatement);
         assertThat(sqlNode, instanceOf(SqlSelect.class));
         // TODO outer join is not supported by parser of ShardingSphere 
     }
