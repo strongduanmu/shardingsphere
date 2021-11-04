@@ -370,7 +370,7 @@
                             </right>
                         </binary-operation-expression>
                     </left>
-                    <operator>AND</operator>
+                    <operator>and</operator>
                     <right>
                         <binary-operation-expression start-index="44" stop-index="55">
                             <left>
