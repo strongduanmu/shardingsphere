@@ -31,6 +31,7 @@ public final class ShardingSphereParameterMetaData extends AbstractUnsupportedOp
     
     @Override
     public int getParameterCount() {
+        System.out.println(123);
         return sqlStatement.getParameterCount();
     }
 }
