@@ -17,6 +17,10 @@
 
 package org.apache.shardingsphere.infra.federation.executor.original.table;
 
+import lombok.SneakyThrows;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.rel.RelNode;
@@ -24,7 +28,6 @@ import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.util.Pair;
 import org.apache.shardingsphere.infra.binder.LogicSQL;
 import org.apache.shardingsphere.infra.binder.SQLStatementContextFactory;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
@@ -38,14 +41,14 @@ import org.apache.shardingsphere.infra.executor.sql.execute.engine.driver.jdbc.J
 import org.apache.shardingsphere.infra.executor.sql.execute.engine.driver.jdbc.JDBCExecutorCallback;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.ExecuteResult;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
-import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResultMetaData;
 import org.apache.shardingsphere.infra.executor.sql.prepare.driver.DriverExecutionPrepareEngine;
 import org.apache.shardingsphere.infra.executor.sql.process.ExecuteProcessEngine;
+import org.apache.shardingsphere.infra.federation.executor.original.row.FilterableRowEnumerator;
+import org.apache.shardingsphere.infra.federation.optimizer.context.OptimizerContext;
+import org.apache.shardingsphere.infra.federation.optimizer.metadata.FederationTableMetaData;
 import org.apache.shardingsphere.infra.merge.MergeEngine;
 import org.apache.shardingsphere.infra.merge.result.MergedResult;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
-import org.apache.shardingsphere.infra.federation.optimizer.context.OptimizerContext;
-import org.apache.shardingsphere.infra.federation.optimizer.metadata.FederationTableMetaData;
 import org.apache.shardingsphere.infra.parser.sql.SQLStatementParserEngine;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 
@@ -95,7 +98,7 @@ public final class FilterableTableScanExecutor {
      * @param scanContext filterable table scan context
      * @return query results
      */
-    public Pair<MergedResult, QueryResultMetaData> execute(final FederationTableMetaData metaData, final FilterableTableScanContext scanContext) {
+    public Enumerable<Object[]> execute(final FederationTableMetaData metaData, final FilterableTableScanContext scanContext) {
         RelBuilder relBuilder = RelFactories.LOGICAL_BUILDER.create(cluster, relOptSchema);
         RelNode relNode = relBuilder.scan(metaData.getName()).filter(scanContext.getFilters()).build();
         RelToSqlConverter relToSqlConverter = new RelToSqlConverter(MysqlSqlDialect.DEFAULT);
@@ -110,13 +113,24 @@ public final class FilterableTableScanExecutor {
             ExecuteProcessEngine.initialize(context.getLogicSQL(), executionGroupContext, props);
             List<QueryResult> result = jdbcExecutor.execute(executionGroupContext, callback).stream().map(each -> (QueryResult) each).collect(Collectors.toList());
             ExecuteProcessEngine.finish(executionGroupContext.getExecutionID());
-            QueryResultMetaData metaData1 = result.get(0).getMetaData();
-            return Pair.of(mergeQuery(result, sphereMetaData, context.getSqlStatementContext()), metaData1);
+            return createAbstractEnumerable(sphereMetaData, context, result);
         } catch (final SQLException ex) {
             throw new ShardingSphereException(ex);
         } finally {
             ExecuteProcessEngine.clean();
         }
+    }
+    
+    @SneakyThrows
+    private AbstractEnumerable<Object[]> createAbstractEnumerable(final ShardingSphereMetaData sphereMetaData, final ExecutionContext context, final List<QueryResult> result) {
+        MergedResult mergedResult = mergeQuery(result, sphereMetaData, context.getSqlStatementContext());
+        return new AbstractEnumerable<Object[]>() {
+    
+            @Override
+            public Enumerator<Object[]> enumerator() {
+                return new FilterableRowEnumerator(mergedResult, result.get(0).getMetaData());
+            }
+        };
     }
     
     private MergedResult mergeQuery(final List<QueryResult> queryResults, final ShardingSphereMetaData sphereMetaData, final SQLStatementContext<?> sqlStatementContext) throws SQLException {

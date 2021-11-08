@@ -19,20 +19,14 @@ package org.apache.shardingsphere.infra.federation.executor.original.table;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.calcite.DataContext;
-import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.ProjectableFilterableTable;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.impl.AbstractTable;
-import org.apache.calcite.util.Pair;
-import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResultMetaData;
 import org.apache.shardingsphere.infra.federation.executor.original.FederationTableStatistic;
-import org.apache.shardingsphere.infra.federation.executor.original.row.FilterableRowEnumerator;
-import org.apache.shardingsphere.infra.merge.result.MergedResult;
 import org.apache.shardingsphere.infra.federation.optimizer.metadata.FederationTableMetaData;
 
 import java.util.List;
@@ -56,14 +50,7 @@ public final class FilterableTable extends AbstractTable implements ProjectableF
     
     @Override
     public Enumerable<Object[]> scan(final DataContext root, final List<RexNode> filters, final int[] projects) {
-        Pair<MergedResult, QueryResultMetaData> pair = executor.execute(metaData, new FilterableTableScanContext(root, filters, projects));
-        return new AbstractEnumerable<Object[]>() {
-            
-            @Override
-            public Enumerator<Object[]> enumerator() {
-                return new FilterableRowEnumerator(pair.getKey(), pair.getValue());
-            }
-        };
+        return executor.execute(metaData, new FilterableTableScanContext(root, filters, projects));
     }
     
     @Override
