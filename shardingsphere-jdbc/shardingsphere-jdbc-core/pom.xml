@@ -74,7 +74,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.shardingsphere</groupId>
-            <artifactId>shardingsphere-infra-executor-federation2</artifactId>
+            <artifactId>shardingsphere-infra-federation-executor</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
