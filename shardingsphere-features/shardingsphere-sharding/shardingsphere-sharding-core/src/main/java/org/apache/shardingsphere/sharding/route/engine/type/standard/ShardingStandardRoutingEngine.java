@@ -42,6 +42,7 @@ import org.apache.shardingsphere.sharding.rule.TableRule;
 import org.apache.shardingsphere.sharding.spi.ShardingAlgorithm;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -70,6 +71,7 @@ public final class ShardingStandardRoutingEngine implements ShardingRouteEngine 
         Collection<DataNode> dataNodes = getDataNodes(shardingRule, shardingRule.getTableRule(logicTableName));
         result.getOriginalDataNodes().addAll(originalDataNodes);
         for (DataNode each : dataNodes) {
+            Map<String, String> logicAndActualTablesFromBindingTable = shardingRule.getLogicAndActualTablesFromBindingTable(each.getDataSourceName(), logicTableName, each.getTableName(), Collections.singletonList("t_account_detail"));
             result.getRouteUnits().add(
                     new RouteUnit(new RouteMapper(each.getDataSourceName(), each.getDataSourceName()), Collections.singleton(new RouteMapper(logicTableName, each.getTableName()))));
         }

@@ -24,7 +24,6 @@ import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.SQLToken;
 import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.Substitutable;
 import org.apache.shardingsphere.infra.route.context.RouteMapper;
 import org.apache.shardingsphere.infra.route.context.RouteUnit;
-import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 
@@ -44,14 +43,11 @@ public final class TableToken extends SQLToken implements Substitutable, RouteUn
     
     private final SQLStatementContext sqlStatementContext;
     
-    private final ShardingRule shardingRule;
-    
-    public TableToken(final int startIndex, final int stopIndex, final SimpleTableSegment tableSegment, final SQLStatementContext sqlStatementContext, final ShardingRule shardingRule) {
+    public TableToken(final int startIndex, final int stopIndex, final SimpleTableSegment tableSegment, final SQLStatementContext sqlStatementContext) {
         super(startIndex);
         this.stopIndex = stopIndex;
         tableName = tableSegment.getTableName().getIdentifier();
         this.sqlStatementContext = sqlStatementContext;
-        this.shardingRule = shardingRule;
     }
     
     @Override
@@ -66,7 +62,6 @@ public final class TableToken extends SQLToken implements Substitutable, RouteUn
         Map<String, String> result = new HashMap<>(tableNames.size(), 1);
         for (RouteMapper each : routeUnit.getTableMappers()) {
             result.put(each.getLogicName().toLowerCase(), each.getActualName());
-            result.putAll(shardingRule.getLogicAndActualTablesFromBindingTable(routeUnit.getDataSourceMapper().getLogicName(), each.getLogicName(), each.getActualName(), tableNames));
         }
         return result;
     }

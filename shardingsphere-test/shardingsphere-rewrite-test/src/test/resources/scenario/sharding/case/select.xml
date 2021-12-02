@@ -154,6 +154,22 @@
         <output sql="SELECT * FROM t_account_0 JOIN t_account_detail_0 ON account_id WHERE t_account_0.amount = 1000" />
         <output sql="SELECT * FROM t_account_1 JOIN t_account_detail_1 ON account_id WHERE t_account_1.amount = 1000" />
     </rewrite-assertion>
+
+    <rewrite-assertion id="select_binding_table_without_join_condition_for_parameters" db-types="MySQL">
+        <input sql="SELECT * FROM t_account JOIN t_account_detail WHERE t_account.amount = ?" parameters="1000" />
+        <output sql="SELECT * FROM t_account_0 JOIN t_account_detail_0 WHERE t_account_0.amount = ?" parameters="1000" />
+        <output sql="SELECT * FROM t_account_0 JOIN t_account_detail_1 WHERE t_account_0.amount = ?" parameters="1000" />
+        <output sql="SELECT * FROM t_account_1 JOIN t_account_detail_0 WHERE t_account_1.amount = ?" parameters="1000" />
+        <output sql="SELECT * FROM t_account_1 JOIN t_account_detail_1 WHERE t_account_1.amount = ?" parameters="1000" />
+    </rewrite-assertion>
+
+    <rewrite-assertion id="select_binding_table_without_join_condition_for_literals" db-types="MySQL">
+        <input sql="SELECT * FROM t_account JOIN t_account_detail WHERE t_account.amount = 1" />
+        <output sql="SELECT * FROM t_account_0 JOIN t_account_detail_0 WHERE t_account_0.amount = 1000" />
+        <output sql="SELECT * FROM t_account_0 JOIN t_account_detail_1 WHERE t_account_0.amount = 1000" />
+        <output sql="SELECT * FROM t_account_1 JOIN t_account_detail_0 WHERE t_account_1.amount = 1000" />
+        <output sql="SELECT * FROM t_account_1 JOIN t_account_detail_1 WHERE t_account_1.amount = 1000" />
+    </rewrite-assertion>
     
     <rewrite-assertion id="select_avg_with_single_route">
         <input sql="SELECT AVG(amount) FROM t_account WHERE account_id = ?" parameters="100" />
