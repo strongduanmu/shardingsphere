@@ -70,29 +70,28 @@ public final class TablesContext {
             return;
         }
         for (TableSegment each : tableSegments) {
-            if (!(each instanceof SimpleTableSegment)) {
-                continue;
+            if (each instanceof SimpleTableSegment) {
+                SimpleTableSegment simpleTableSegment = (SimpleTableSegment) each;
+                tables.add(simpleTableSegment);
+                tableNames.add(simpleTableSegment.getTableName().getIdentifier().getValue());
+                simpleTableSegment.getOwner().ifPresent(owner -> schemaNames.add(owner.getIdentifier().getValue()));   
             }
-            SimpleTableSegment simpleTableSegment = (SimpleTableSegment) each;
-            tables.add(simpleTableSegment);
-            tableNames.add(simpleTableSegment.getTableName().getIdentifier().getValue());
-            simpleTableSegment.getOwner().ifPresent(owner -> schemaNames.add(owner.getIdentifier().getValue()));
+            if (each instanceof SubqueryTableSegment) {
+                subqueryTables.putAll(createSubqueryTables(subqueryContexts, (SubqueryTableSegment) each));   
+            }
         }
-        for (TableSegment each : tableSegments) {
-            if (!(each instanceof SubqueryTableSegment)) {
-                continue;
+    }
+    
+    private Map<String, List<SubqueryTableContext>> createSubqueryTables(final Map<Integer, SelectStatementContext> subqueryContexts, final SubqueryTableSegment subqueryTable) {
+        SelectStatementContext subqueryContext = subqueryContexts.get(subqueryTable.getSubquery().getStartIndex());
+        Collection<SubqueryTableContext> subqueryTableContexts = new SubqueryTableContextEngine().createSubqueryTableContexts(subqueryContext, subqueryTable.getAlias().orElse(null));
+        Map<String, List<SubqueryTableContext>> result = new HashMap<>();
+        for (SubqueryTableContext subQuery : subqueryTableContexts) {
+            if (null != subQuery.getAlias()) {
+                result.computeIfAbsent(subQuery.getAlias(), unused -> new LinkedList<>()).add(subQuery);
             }
-            SubqueryTableSegment subqueryTableSegment = (SubqueryTableSegment) each;
-            SelectStatementContext subqueryContext = subqueryContexts.get(subqueryTableSegment.getSubquery().getStartIndex());
-            Collection<SubqueryTableContext> subqueryTableContexts = new SubqueryTableContextEngine().createSubqueryTableContexts(subqueryContext, each.getAlias().orElse(null));
-            Map<String, List<SubqueryTableContext>> result = new HashMap<>();
-            for (SubqueryTableContext subQuery : subqueryTableContexts) {
-                if (null != subQuery.getAlias()) {
-                    result.computeIfAbsent(subQuery.getAlias(), unused -> new LinkedList<>()).add(subQuery);
-                }
-            }
-            subqueryTables.putAll(result);
         }
+        return result;
     }
     
     /**
