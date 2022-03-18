@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.proxy.backend.text.admin.mysql.executor.information;
 
+import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
 import org.apache.shardingsphere.infra.metadata.resource.ShardingSphereResource;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
@@ -57,15 +58,15 @@ public final class SelectInformationSchemataExecutor extends DefaultDatabaseMeta
     
     private static final Set<String> SCHEMA_WITHOUT_DATA_SOURCE = new LinkedHashSet<>();
     
-    private final SelectStatement sqlStatement;
+    private final SelectStatementContext selectStatementContext;
     
     private String schemaNameAlias = SCHEMA_NAME;
     
     private boolean queryDatabase;
     
-    public SelectInformationSchemataExecutor(final SelectStatement sqlStatement, final String sql) {
+    public SelectInformationSchemataExecutor(final SelectStatementContext selectStatementContext, final String sql) {
         super(sql);
-        this.sqlStatement = sqlStatement;
+        this.selectStatementContext = selectStatementContext;
     }
     
     @Override
@@ -121,7 +122,7 @@ public final class SelectInformationSchemataExecutor extends DefaultDatabaseMeta
     
     private Map<String, String> getTheDefaultRowData() {
         Map<String, String> result;
-        Collection<ProjectionSegment> projections = sqlStatement.getProjections().getProjections();
+        Collection<ProjectionSegment> projections = selectStatementContext.getSqlStatement().getProjections().getProjections();
         if (projections.stream().anyMatch(each -> each instanceof ShorthandProjectionSegment)) {
             result = Stream.of(CATALOG_NAME, SCHEMA_NAME, DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME, SQL_PATH, DEFAULT_ENCRYPTION).collect(Collectors.toMap(each -> each, each -> ""));
         } else {

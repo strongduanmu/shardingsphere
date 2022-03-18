@@ -20,6 +20,7 @@ package org.apache.shardingsphere.proxy.backend.text.data.impl;
 import io.vertx.core.Future;
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.distsql.exception.resource.RequiredResourceMissedException;
 import org.apache.shardingsphere.proxy.backend.communication.DatabaseCommunicationEngine;
 import org.apache.shardingsphere.proxy.backend.communication.DatabaseCommunicationEngineFactory;
@@ -40,6 +41,8 @@ import java.util.Collection;
 public final class SchemaAssignedDatabaseBackendHandler implements DatabaseBackendHandler {
     
     private final DatabaseCommunicationEngineFactory databaseCommunicationEngineFactory = DatabaseCommunicationEngineFactory.getInstance();
+    
+    private final DatabaseType databaseType;
     
     private final SQLStatementContext<?> sqlStatementContext;
     
@@ -68,10 +71,11 @@ public final class SchemaAssignedDatabaseBackendHandler implements DatabaseBacke
     }
     
     private void prepareDatabaseCommunicationEngine() throws RequiredResourceMissedException {
-        if (!ProxyContext.getInstance().getMetaData(connectionSession.getSchemaName()).hasDataSource()) {
+        boolean isSystemSchema = databaseType.getSystemSchemas().contains(connectionSession.getSchemaName());
+        if (!isSystemSchema && !ProxyContext.getInstance().getMetaData(connectionSession.getSchemaName()).hasDataSource()) {
             throw new RequiredResourceMissedException(connectionSession.getSchemaName());
         }
-        if (!ProxyContext.getInstance().getMetaData(connectionSession.getSchemaName()).isComplete()) {
+        if (!isSystemSchema && !ProxyContext.getInstance().getMetaData(connectionSession.getSchemaName()).isComplete()) {
             throw new RuleNotExistedException();
         }
         databaseCommunicationEngine = databaseCommunicationEngineFactory.newTextProtocolInstance(sqlStatementContext, sql, connectionSession.getBackendConnection());

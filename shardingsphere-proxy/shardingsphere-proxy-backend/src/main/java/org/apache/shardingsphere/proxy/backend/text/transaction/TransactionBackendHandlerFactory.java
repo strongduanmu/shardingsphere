@@ -20,6 +20,7 @@ package org.apache.shardingsphere.proxy.backend.text.transaction;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.backend.text.TextProtocolBackendHandler;
 import org.apache.shardingsphere.proxy.backend.text.data.impl.BroadcastDatabaseBackendHandler;
@@ -45,12 +46,14 @@ public final class TransactionBackendHandlerFactory {
     /**
      * New instance of backend handler.
      * 
+     *
+     * @param databaseType database type
      * @param sqlStatementContext SQL statement context
      * @param sql SQL
      * @param connectionSession connection session
      * @return backend handler
      */
-    public static TextProtocolBackendHandler newInstance(final SQLStatementContext<? extends TCLStatement> sqlStatementContext, final String sql, final ConnectionSession connectionSession) {
+    public static TextProtocolBackendHandler newInstance(final DatabaseType databaseType, final SQLStatementContext<? extends TCLStatement> sqlStatementContext, final String sql, final ConnectionSession connectionSession) {
         TCLStatement tclStatement = sqlStatementContext.getSqlStatement();
         if (tclStatement instanceof BeginTransactionStatement || tclStatement instanceof StartTransactionStatement) {
             return new TransactionBackendHandler(tclStatement, TransactionOperationType.BEGIN, connectionSession);
@@ -76,7 +79,7 @@ public final class TransactionBackendHandlerFactory {
             return new TransactionSetHandler((SetTransactionStatement) tclStatement, connectionSession);
         }
         if (tclStatement instanceof XAStatement) {
-            return new TransactionXAHandler(sqlStatementContext, sql, connectionSession);
+            return new TransactionXAHandler(databaseType, sqlStatementContext, sql, connectionSession);
         }
         return new BroadcastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
     }

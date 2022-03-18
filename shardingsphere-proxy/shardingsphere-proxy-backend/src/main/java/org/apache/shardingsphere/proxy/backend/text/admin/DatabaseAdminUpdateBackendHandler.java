@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.proxy.backend.text.admin;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.proxy.backend.response.header.ResponseHeader;
 import org.apache.shardingsphere.proxy.backend.response.header.update.UpdateResponseHeader;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
@@ -35,13 +36,13 @@ public final class DatabaseAdminUpdateBackendHandler implements TextProtocolBack
     
     private final ConnectionSession connectionSession;
     
-    private final SQLStatement sqlStatement;
+    private final SQLStatementContext<?> sqlStatementContext;
     
     private final DatabaseAdminExecutor executor;
     
     @Override
     public ResponseHeader execute() throws SQLException {
-        executor.execute(connectionSession);
-        return new UpdateResponseHeader(sqlStatement);
+        executor.execute(connectionSession, sqlStatementContext);
+        return new UpdateResponseHeader(sqlStatementContext.getSqlStatement());
     }
 }

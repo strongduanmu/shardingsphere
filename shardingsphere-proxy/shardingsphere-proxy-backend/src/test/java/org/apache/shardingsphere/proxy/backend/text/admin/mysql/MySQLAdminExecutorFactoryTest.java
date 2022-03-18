@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.proxy.backend.text.admin.mysql;
 
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.proxy.backend.text.admin.executor.DatabaseAdminExecutor;
 import org.apache.shardingsphere.proxy.backend.text.admin.mysql.executor.ShowFunctionStatusExecutor;
 import org.apache.shardingsphere.proxy.backend.text.admin.mysql.executor.ShowProcedureStatusExecutor;
@@ -41,28 +42,28 @@ public final class MySQLAdminExecutorFactoryTest {
     
     @Test
     public void assertNewInstanceWithMySQLShowFunctionStatusStatement() {
-        Optional<DatabaseAdminExecutor> executorOptional = mySQLAdminExecutorFactory.newInstance(mock(MySQLShowFunctionStatusStatement.class));
+        Optional<DatabaseAdminExecutor> executorOptional = mySQLAdminExecutorFactory.newInstance(mock(SQLStatementContext.class));
         assertTrue(executorOptional.isPresent());
         assertThat(executorOptional.get(), instanceOf(ShowFunctionStatusExecutor.class));
     }
     
     @Test
     public void assertNewInstanceWithMySQLShowProcedureStatusStatement() {
-        Optional<DatabaseAdminExecutor> executorOptional = mySQLAdminExecutorFactory.newInstance(mock(MySQLShowProcedureStatusStatement.class));
+        Optional<DatabaseAdminExecutor> executorOptional = mySQLAdminExecutorFactory.newInstance(mock(SQLStatementContext.class));
         assertTrue(executorOptional.isPresent());
         assertThat(executorOptional.get(), instanceOf(ShowProcedureStatusExecutor.class));
     }
     
     @Test
     public void assertNewInstanceWithMySQLShowTablesStatement() {
-        Optional<DatabaseAdminExecutor> executorOptional = mySQLAdminExecutorFactory.newInstance(mock(MySQLShowTablesStatement.class));
+        Optional<DatabaseAdminExecutor> executorOptional = mySQLAdminExecutorFactory.newInstance(mock(SQLStatementContext.class));
         assertTrue(executorOptional.isPresent());
         assertThat(executorOptional.get(), instanceOf(ShowTablesExecutor.class));
     }
     
     @Test
     public void assertNewInstanceWithMySQLShowTableStatusStatement() {
-        Optional<DatabaseAdminExecutor> executorOptional = mySQLAdminExecutorFactory.newInstance(mock(MySQLShowTableStatusStatement.class));
+        Optional<DatabaseAdminExecutor> executorOptional = mySQLAdminExecutorFactory.newInstance(mock(SQLStatementContext.class));
         assertTrue(executorOptional.isPresent());
         assertThat(executorOptional.get(), instanceOf(ShowTablesStatusExecutor.class));
     }

@@ -20,6 +20,7 @@ package org.apache.shardingsphere.proxy.backend.text.admin.mysql.executor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.engine.ProjectionEngine;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResultMetaData;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.impl.raw.metadata.RawQueryResultColumnMetaData;
@@ -32,8 +33,10 @@ import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.backend.text.admin.executor.DatabaseAdminQueryExecutor;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ShorthandProjectionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
 
+import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -57,9 +60,9 @@ public final class NoResourceShowExecutor implements DatabaseAdminQueryExecutor 
     private Collection<Object> expressions = Collections.emptyList();
     
     @Override
-    public void execute(final ConnectionSession connectionSession) {
-        TableSegment tableSegment = sqlStatement.getFrom();
-        expressions = sqlStatement.getProjections().getProjections().stream().filter(each -> !(each instanceof ShorthandProjectionSegment))
+    public void execute(final ConnectionSession connectionSession, final SQLStatementContext<?> sqlStatementContext) throws SQLException {
+        TableSegment tableSegment = this.sqlStatement.getFrom();
+        expressions = this.sqlStatement.getProjections().getProjections().stream().filter(each -> !(each instanceof ShorthandProjectionSegment))
                 .map(each -> new ProjectionEngine(null, null).createProjection(tableSegment, each))
                 .filter(Optional::isPresent).map(each -> each.get().getAlias().isPresent() ? each.get().getAlias().get() : each.get().getExpression())
                 .collect(Collectors.toCollection(LinkedList::new));

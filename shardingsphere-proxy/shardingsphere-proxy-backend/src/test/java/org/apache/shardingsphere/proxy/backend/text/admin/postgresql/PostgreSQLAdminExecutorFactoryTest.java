@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.proxy.backend.text.admin.postgresql;
 
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.proxy.backend.text.admin.executor.DatabaseAdminExecutor;
 import org.apache.shardingsphere.proxy.backend.text.admin.postgresql.executor.PostgreSQLSetCharsetExecutor;
 import org.apache.shardingsphere.proxy.backend.text.admin.postgresql.executor.SelectDatabaseExecutor;
@@ -54,7 +55,7 @@ public final class PostgreSQLAdminExecutorFactoryTest {
         SimpleTableSegment tableSegment = mock(SimpleTableSegment.class);
         when(tableSegment.getTableName()).thenReturn(new TableNameSegment(0, 0, new IdentifierValue("pg_database")));
         when(statement.getFrom()).thenReturn(tableSegment);
-        Optional<DatabaseAdminExecutor> executorOptional = postgreSQLAdminExecutorFactory.newInstance(statement, "", Optional.empty());
+        Optional<DatabaseAdminExecutor> executorOptional = postgreSQLAdminExecutorFactory.newInstance(mock(SQLStatementContext.class), "", Optional.empty());
         assertTrue(executorOptional.isPresent());
         assertThat(executorOptional.get(), instanceOf(SelectDatabaseExecutor.class));
     }

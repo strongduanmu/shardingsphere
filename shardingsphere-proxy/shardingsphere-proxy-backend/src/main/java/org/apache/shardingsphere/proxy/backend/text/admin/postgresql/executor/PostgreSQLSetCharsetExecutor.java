@@ -19,6 +19,7 @@ package org.apache.shardingsphere.proxy.backend.text.admin.postgresql.executor;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.db.protocol.CommonConstants;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.backend.text.admin.executor.DatabaseSetCharsetExecutor;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dal.VariableAssignSegment;
@@ -40,7 +41,7 @@ public final class PostgreSQLSetCharsetExecutor implements DatabaseSetCharsetExe
     private String currentValue;
     
     @Override
-    public void execute(final ConnectionSession connectionSession) throws SQLException {
+    public void execute(final ConnectionSession connectionSession, final SQLStatementContext<?> sqlStatementContext) throws SQLException {
         VariableAssignSegment segment = setStatement.getVariableAssigns().iterator().next();
         String value = formatValue(segment.getAssignValue().trim());
         Charset charset = parseCharset(value);

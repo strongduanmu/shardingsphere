@@ -68,6 +68,11 @@ public final class OracleDatabaseType implements DatabaseType {
     }
     
     @Override
+    public Collection<String> getSystemSchemas() {
+        return Collections.emptyList();
+    }
+    
+    @Override
     public String formatTableNamePattern(final String tableNamePattern) {
         return tableNamePattern.toUpperCase();
     }

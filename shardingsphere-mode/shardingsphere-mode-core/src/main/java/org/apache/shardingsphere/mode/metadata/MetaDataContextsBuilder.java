@@ -22,29 +22,39 @@ import org.apache.shardingsphere.infra.config.RuleConfiguration;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
 import org.apache.shardingsphere.infra.config.schema.SchemaConfiguration;
+import org.apache.shardingsphere.infra.config.schema.impl.DataSourceProvidedSchemaConfiguration;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
 import org.apache.shardingsphere.infra.federation.optimizer.context.OptimizerContextFactory;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.rule.ShardingSphereRuleMetaData;
+import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
+import org.apache.shardingsphere.infra.metadata.schema.builder.spi.DialectSystemSchemaBuilder;
 import org.apache.shardingsphere.infra.metadata.schema.loader.SchemaLoader;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
 import org.apache.shardingsphere.infra.rule.builder.global.GlobalRulesBuilder;
 import org.apache.shardingsphere.infra.rule.builder.schema.SchemaRulesBuilder;
 import org.apache.shardingsphere.mode.metadata.persist.MetaDataPersistService;
+import org.apache.shardingsphere.spi.singleton.SingletonSPIRegistry;
 
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Properties;
 
 /**
  * Meta data contexts builder.
  */
 public final class MetaDataContextsBuilder {
+    
+    private static final Map<String, DialectSystemSchemaBuilder> DIALECT_SYSTEM_SCHEMA_BUILDERS 
+            = SingletonSPIRegistry.getSingletonInstancesMap(DialectSystemSchemaBuilder.class, DialectSystemSchemaBuilder::getDatabaseType);
     
     private final Map<String, SchemaConfiguration> schemaConfigMap = new LinkedHashMap<>();
     
@@ -81,6 +91,19 @@ public final class MetaDataContextsBuilder {
         schemaMap.put(schemaName, schema);
     }
     
+    /**
+     * Add system schema information.
+     *
+     * @param databaseType database type
+     */
+    public void addSystemSchemas(final DatabaseType databaseType) {
+        findDialectSystemSchemaBuilder(databaseType).ifPresent(optional -> schemaMap.putAll(optional.build()));
+    }
+    
+    private static Optional<DialectSystemSchemaBuilder> findDialectSystemSchemaBuilder(final DatabaseType databaseType) {
+        return Optional.ofNullable(DIALECT_SYSTEM_SCHEMA_BUILDERS.get(databaseType.getName()));
+    }
+    
     private Collection<ShardingSphereRule> getSchemaRules(final String schemaName, final SchemaConfiguration schemaConfig, final Properties props) {
         return SchemaRulesBuilder.buildRules(schemaName, schemaConfig, new ConfigurationProperties(props));
     }
@@ -99,10 +122,12 @@ public final class MetaDataContextsBuilder {
     }
     
     private Map<String, ShardingSphereMetaData> getMetaDataMap() throws SQLException {
-        Map<String, ShardingSphereMetaData> result = new HashMap<>(schemaConfigMap.size(), 1);
-        for (Entry<String, ? extends SchemaConfiguration> entry : schemaConfigMap.entrySet()) {
+        Map<String, ShardingSphereMetaData> result = new HashMap<>(schemaMap.size(), 1);
+        for (Entry<String, ShardingSphereSchema> entry : schemaMap.entrySet()) {
             String schemaName = entry.getKey();
-            result.put(schemaName, ShardingSphereMetaData.create(schemaName, schemaMap.get(schemaName), entry.getValue(), schemaRulesMap.get(schemaName)));
+            SchemaConfiguration schemaConfig = schemaConfigMap.getOrDefault(schemaName, new DataSourceProvidedSchemaConfiguration(Collections.emptyMap(), Collections.emptyList()));
+            Collection<ShardingSphereRule> rules = schemaRulesMap.getOrDefault(schemaName, Collections.emptyList());
+            result.put(schemaName, ShardingSphereMetaData.create(schemaName, entry.getValue(), schemaConfig, rules));
         }
         return result;
     }

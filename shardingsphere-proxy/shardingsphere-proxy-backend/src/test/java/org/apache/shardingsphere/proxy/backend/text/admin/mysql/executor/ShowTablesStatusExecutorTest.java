@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.proxy.backend.text.admin.mysql.executor;
 
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
 import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
@@ -81,7 +82,7 @@ public final class ShowTablesStatusExecutorTest {
     
     @Test
     public void assertExecute() throws SQLException {
-        showTablesExecutor.execute(mockConnectionSession());
+        showTablesExecutor.execute(mockConnectionSession(), mock(SQLStatementContext.class));
         assertThat(showTablesExecutor.getQueryResultMetaData().getColumnCount(), is(1));
         int count = 0;
         while (showTablesExecutor.getMergedResult().next()) {

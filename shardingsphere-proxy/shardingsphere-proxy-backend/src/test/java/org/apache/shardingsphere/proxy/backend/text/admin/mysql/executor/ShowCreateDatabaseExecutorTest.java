@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.proxy.backend.text.admin.mysql.executor;
 
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
 import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
@@ -29,6 +30,7 @@ import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
 import org.apache.shardingsphere.mode.metadata.persist.MetaDataPersistService;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLShowCreateDatabaseStatement;
 import org.junit.Before;
 import org.junit.Test;
@@ -76,7 +78,7 @@ public final class ShowCreateDatabaseExecutorTest {
         MySQLShowCreateDatabaseStatement statement = new MySQLShowCreateDatabaseStatement();
         statement.setSchemaName("schema_0");
         ShowCreateDatabaseExecutor showCreateDatabaseExecutor = new ShowCreateDatabaseExecutor(statement);
-        showCreateDatabaseExecutor.execute(mockConnectionSession());
+        showCreateDatabaseExecutor.execute(mockConnectionSession(), mock(SQLStatementContext.class));
         assertThat(showCreateDatabaseExecutor.getQueryResultMetaData().getColumnCount(), is(2));
         int count = 0;
         while (showCreateDatabaseExecutor.getMergedResult().next()) {

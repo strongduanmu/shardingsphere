@@ -18,31 +18,24 @@
 package org.apache.shardingsphere.infra.federation.optimizer.metadata.calcite;
 
 import lombok.Getter;
-import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.shardingsphere.infra.federation.optimizer.metadata.FederationSchemaMetaData;
 import org.apache.shardingsphere.infra.federation.optimizer.metadata.FederationTableMetaData;
-import org.apache.shardingsphere.infra.metadata.schema.model.ColumnMetaData;
-import org.apache.shardingsphere.infra.metadata.schema.model.TableMetaData;
 
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
  * Federation schema.
  */
 @Getter
-public final class FederationSchema extends AbstractSchema {
+public final class FederationSubSchema extends AbstractSchema {
     
-    private final Map<String, Schema> subSchemaMap;
+    private final Map<String, Table> tableMap;
     
-    public FederationSchema(final FederationSchemaMetaData metaData) {
-        subSchemaMap = createSubSchemaMap();
+    public FederationSubSchema(final FederationSchemaMetaData metaData) {
+        tableMap = getTableMap(metaData);
     }
     
     private Map<String, Table> getTableMap(final FederationSchemaMetaData metaData) {
@@ -50,16 +43,6 @@ public final class FederationSchema extends AbstractSchema {
         for (FederationTableMetaData each : metaData.getTables().values()) {
             result.put(each.getName(), new FederationTable(each));
         }
-        return result;
-    }
-    
-    private Map<String, Schema> createSubSchemaMap() {
-        Map<String, Schema> result = new LinkedHashMap<>();
-        Map<String, TableMetaData> metaData = new LinkedHashMap<>();
-        List<ColumnMetaData> columnMetaDataList = new ArrayList<>();
-        columnMetaDataList.add(new ColumnMetaData("name", Types.VARCHAR, false, false, false));
-        metaData.put("tables", new TableMetaData("tables", columnMetaDataList, Collections.emptyList(), Collections.emptyList()));
-        result.put("information_schema", new FederationSubSchema(new FederationSchemaMetaData("information_schema", metaData)));
         return result;
     }
 }

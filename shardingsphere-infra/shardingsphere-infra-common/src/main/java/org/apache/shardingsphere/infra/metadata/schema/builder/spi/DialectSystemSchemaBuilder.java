@@ -15,25 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.proxy.backend.text.admin.executor;
+package org.apache.shardingsphere.infra.metadata.schema.builder.spi;
 
-import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
+import org.apache.shardingsphere.infra.database.type.DatabaseTypeAwareSPI;
+import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
+import org.apache.shardingsphere.spi.singleton.SingletonSPI;
 
-import java.sql.SQLException;
+import java.util.Map;
 
 /**
- * Database admin executor.
+ * Dialect system schema builder.
  */
-public interface DatabaseAdminExecutor {
+public interface DialectSystemSchemaBuilder extends DatabaseTypeAwareSPI, SingletonSPI {
     
     /**
-     * Execute.
-     * 
-     * @param connectionSession connection session
-     * @param sqlStatementContext sql statement context
-     * @throws SQLException SQLException
+     * Build.
+     *
+     * @return shardingsphere schema map
      */
-    void execute(ConnectionSession connectionSession, final SQLStatementContext<?> sqlStatementContext) throws SQLException;
+    Map<String, ShardingSphereSchema> build();
 }

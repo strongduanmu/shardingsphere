@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.infra.database.type.dialect;
 
+import com.google.common.collect.Sets;
 import org.apache.shardingsphere.infra.database.metadata.dialect.PostgreSQLDataSourceMetaData;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.sql.parser.sql.common.constant.QuoteCharacter;
@@ -53,5 +54,10 @@ public final class PostgreSQLDatabaseType implements DatabaseType {
     @Override
     public Optional<String> getDataSourceClassName() {
         return Optional.of("org.postgresql.ds.PGSimpleDataSource");
+    }
+    
+    @Override
+    public Collection<String> getSystemSchemas() {
+        return Sets.newHashSet("postgres");
     }
 }

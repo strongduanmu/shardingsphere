@@ -21,7 +21,12 @@ import com.google.common.base.Preconditions;
 import org.apache.shardingsphere.infra.config.RuleConfiguration;
 import org.apache.shardingsphere.infra.config.mode.ModeConfiguration;
 import org.apache.shardingsphere.infra.config.schema.SchemaConfiguration;
+import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
+import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
 import org.apache.shardingsphere.infra.config.schema.impl.DataSourceProvidedSchemaConfiguration;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.database.type.DatabaseTypeRecognizer;
+import org.apache.shardingsphere.infra.database.type.DatabaseTypeRegistry;
 import org.apache.shardingsphere.infra.instance.InstanceContext;
 import org.apache.shardingsphere.infra.instance.definition.InstanceDefinition;
 import org.apache.shardingsphere.infra.instance.definition.InstanceType;
@@ -59,6 +64,8 @@ import java.util.Properties;
  * Cluster context manager builder.
  */
 public final class ClusterContextManagerBuilder implements ContextManagerBuilder {
+    
+    private static final String DEFAULT_FRONTEND_DATABASE_PROTOCOL_TYPE = "MySQL";
     
     @Override
     public ContextManager build(final ContextManagerBuilderParameter parameter) throws SQLException {
@@ -114,9 +121,16 @@ public final class ClusterContextManagerBuilder implements ContextManagerBuilder
         Collection<RuleConfiguration> globalRuleConfigs = metaDataPersistService.getGlobalRuleService().load();
         Properties props = metaDataPersistService.getPropsService().load();
         MetaDataContextsBuilder result = new MetaDataContextsBuilder(globalRuleConfigs, props);
+        DatabaseType databaseType = getDatabaseType(parameter);
         for (String each : schemaNames) {
             result.addSchema(each, createSchemaConfiguration(each, metaDataPersistService, parameter), props);
+            if (!databaseType.getSystemSchemas().contains(each)) {
+                Map<String, DataSource> dataSources = metaDataPersistService.getEffectiveDataSources(each, parameter.getSchemaConfigs());
+                Collection<RuleConfiguration> schemaRuleConfigs = metaDataPersistService.getSchemaRuleService().load(each);
+                result.addSchema(each, new DataSourceProvidedSchemaConfiguration(dataSources, schemaRuleConfigs), props);
+            }
         }
+        result.addSystemSchemas(databaseType);
         return result;
     }
     
@@ -125,6 +139,33 @@ public final class ClusterContextManagerBuilder implements ContextManagerBuilder
         Map<String, DataSource> dataSources = metaDataPersistService.getEffectiveDataSources(schemaName, parameter.getSchemaConfigs());
         Collection<RuleConfiguration> schemaRuleConfigs = metaDataPersistService.getSchemaRuleService().load(schemaName);
         return new DataSourceProvidedSchemaConfiguration(dataSources, schemaRuleConfigs);
+    }
+    
+    /**
+     * Get database type.
+     *
+     * @param parameter context manager builder parameter
+     * @return database type
+     */
+    public static DatabaseType getDatabaseType(final ContextManagerBuilderParameter parameter) {
+        Optional<DatabaseType> configuredDatabaseType = findConfiguredDatabaseType(new ConfigurationProperties(parameter.getProps()));
+        if (configuredDatabaseType.isPresent()) {
+            return configuredDatabaseType.get();
+        }
+        if (parameter.getSchemaConfigs().isEmpty()) {
+            return DatabaseTypeRegistry.getTrunkDatabaseType(DEFAULT_FRONTEND_DATABASE_PROTOCOL_TYPE);
+        }
+        Optional<? extends SchemaConfiguration> schemaConfiguration = parameter.getSchemaConfigs()
+                .values().stream().filter(each -> !each.getDataSources().isEmpty() && !each.getRuleConfigurations().isEmpty()).findFirst();
+        if (!schemaConfiguration.isPresent()) {
+            return DatabaseTypeRegistry.getTrunkDatabaseType(DEFAULT_FRONTEND_DATABASE_PROTOCOL_TYPE);
+        }
+        return DatabaseTypeRecognizer.getDatabaseType(schemaConfiguration.get().getDataSources().values());
+    }
+    
+    private static Optional<DatabaseType> findConfiguredDatabaseType(final ConfigurationProperties configProps) {
+        String configuredDatabaseType = configProps.getValue(ConfigurationPropertyKey.PROXY_FRONTEND_DATABASE_PROTOCOL_TYPE);
+        return configuredDatabaseType.isEmpty() ? Optional.empty() : Optional.of(DatabaseTypeRegistry.getTrunkDatabaseType(configuredDatabaseType));
     }
     
     private void persistConfigurations(final MetaDataPersistService metaDataPersistService, final ContextManagerBuilderParameter parameter) {

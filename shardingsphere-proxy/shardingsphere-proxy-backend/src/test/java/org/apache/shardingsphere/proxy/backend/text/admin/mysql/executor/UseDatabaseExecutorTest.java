@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.proxy.backend.text.admin.mysql.executor;
 
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.database.type.dialect.H2DatabaseType;
 import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
@@ -29,6 +30,7 @@ import org.apache.shardingsphere.mode.metadata.persist.MetaDataPersistService;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.exception.UnknownDatabaseException;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLUseStatement;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,6 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.lang.reflect.Field;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -80,7 +83,7 @@ public final class UseDatabaseExecutorTest {
     }
     
     @Test
-    public void assertExecuteUseStatementBackendHandler() {
+    public void assertExecuteUseStatementBackendHandler() throws SQLException {
         MySQLUseStatement useStatement = mock(MySQLUseStatement.class);
         when(useStatement.getSchema()).thenReturn(String.format(SCHEMA_PATTERN, 0));
         ContextManager contextManager = mock(ContextManager.class, RETURNS_DEEP_STUBS);
@@ -91,15 +94,15 @@ public final class UseDatabaseExecutorTest {
         when(contextManager.getMetaDataContexts().getMetaData(any())).thenReturn(metaData);
         ProxyContext.getInstance().init(contextManager);
         UseDatabaseExecutor useSchemaBackendHandler = new UseDatabaseExecutor(useStatement);
-        useSchemaBackendHandler.execute(connectionSession);
+        useSchemaBackendHandler.execute(connectionSession, mock(SQLStatementContext.class));
         verify(connectionSession).setCurrentSchema(anyString());
     }
     
     @Test(expected = UnknownDatabaseException.class)
-    public void assertExecuteUseStatementBackendHandlerWhenSchemaNotExist() {
+    public void assertExecuteUseStatementBackendHandlerWhenSchemaNotExist() throws SQLException {
         MySQLUseStatement useStatement = mock(MySQLUseStatement.class);
         when(useStatement.getSchema()).thenReturn(String.format(SCHEMA_PATTERN, 10));
         UseDatabaseExecutor useSchemaBackendHandler = new UseDatabaseExecutor(useStatement);
-        useSchemaBackendHandler.execute(connectionSession);
+        useSchemaBackendHandler.execute(connectionSession, mock(SQLStatementContext.class));
     }
 }

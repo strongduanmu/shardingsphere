@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.proxy.backend.text.admin.mysql.executor;
 
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
 import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
@@ -85,7 +86,7 @@ public final class ShowTablesExecutorTest {
     @Test
     public void assertShowTablesExecutorWithoutFilter() throws SQLException {
         ShowTablesExecutor showTablesExecutor = new ShowTablesExecutor(new MySQLShowTablesStatement());
-        showTablesExecutor.execute(mockConnectionSession());
+        showTablesExecutor.execute(mockConnectionSession(), mock(SQLStatementContext.class));
         assertThat(showTablesExecutor.getQueryResultMetaData().getColumnCount(), is(2));
         showTablesExecutor.getMergedResult().next();
         assertThat(showTablesExecutor.getMergedResult().getValue(1, Object.class), is("T_TEST"));
@@ -105,7 +106,7 @@ public final class ShowTablesExecutorTest {
         when(showFilterSegment.getLike()).thenReturn(Optional.of(new ShowLikeSegment(0, 10, "t_account%")));
         showTablesStatement.setFilter(showFilterSegment);
         ShowTablesExecutor showTablesExecutor = new ShowTablesExecutor(showTablesStatement);
-        showTablesExecutor.execute(mockConnectionSession());
+        showTablesExecutor.execute(mockConnectionSession(), mock(SQLStatementContext.class));
         assertThat(showTablesExecutor.getQueryResultMetaData().getColumnCount(), is(2));
         showTablesExecutor.getMergedResult().next();
         assertThat(showTablesExecutor.getMergedResult().getValue(1, Object.class), is("t_account"));
@@ -123,7 +124,7 @@ public final class ShowTablesExecutorTest {
         when(showFilterSegment.getLike()).thenReturn(Optional.of(new ShowLikeSegment(0, 10, "t_account")));
         showTablesStatement.setFilter(showFilterSegment);
         ShowTablesExecutor showTablesExecutor = new ShowTablesExecutor(showTablesStatement);
-        showTablesExecutor.execute(mockConnectionSession());
+        showTablesExecutor.execute(mockConnectionSession(), mock(SQLStatementContext.class));
         assertThat(showTablesExecutor.getQueryResultMetaData().getColumnCount(), is(2));
         showTablesExecutor.getMergedResult().next();
         assertThat(showTablesExecutor.getMergedResult().getValue(1, Object.class), is("t_account"));
@@ -137,7 +138,7 @@ public final class ShowTablesExecutorTest {
         when(showFilterSegment.getLike()).thenReturn(Optional.of(new ShowLikeSegment(0, 10, "T_TEST")));
         showTablesStatement.setFilter(showFilterSegment);
         ShowTablesExecutor showTablesExecutor = new ShowTablesExecutor(showTablesStatement);
-        showTablesExecutor.execute(mockConnectionSession());
+        showTablesExecutor.execute(mockConnectionSession(), mock(SQLStatementContext.class));
         assertThat(showTablesExecutor.getQueryResultMetaData().getColumnCount(), is(2));
         showTablesExecutor.getMergedResult().next();
         assertThat(showTablesExecutor.getMergedResult().getValue(1, Object.class), is("T_TEST"));
@@ -151,7 +152,7 @@ public final class ShowTablesExecutorTest {
         when(showFilterSegment.getLike()).thenReturn(Optional.of(new ShowLikeSegment(0, 10, "t_test")));
         showTablesStatement.setFilter(showFilterSegment);
         ShowTablesExecutor showTablesExecutor = new ShowTablesExecutor(showTablesStatement);
-        showTablesExecutor.execute(mockConnectionSession());
+        showTablesExecutor.execute(mockConnectionSession(), mock(SQLStatementContext.class));
         assertThat(showTablesExecutor.getQueryResultMetaData().getColumnCount(), is(2));
         assertFalse(showTablesExecutor.getMergedResult().next());
     }
@@ -163,7 +164,7 @@ public final class ShowTablesExecutorTest {
         when(showFilterSegment.getLike()).thenReturn(Optional.of(new ShowLikeSegment(0, 10, "T_ACCOUNT")));
         showTablesStatement.setFilter(showFilterSegment);
         ShowTablesExecutor showTablesExecutor = new ShowTablesExecutor(showTablesStatement);
-        showTablesExecutor.execute(mockConnectionSession());
+        showTablesExecutor.execute(mockConnectionSession(), mock(SQLStatementContext.class));
         assertThat(showTablesExecutor.getQueryResultMetaData().getColumnCount(), is(2));
         assertFalse(showTablesExecutor.getMergedResult().next());
     }

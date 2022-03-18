@@ -32,6 +32,7 @@ import org.apache.shardingsphere.infra.route.context.RouteUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map.Entry;
@@ -57,7 +58,8 @@ public final class ExecutionContextBuilder {
     }
     
     private static Collection<ExecutionUnit> build(final ShardingSphereMetaData metaData, final GenericSQLRewriteResult sqlRewriteResult, final SQLStatementContext<?> sqlStatementContext) {
-        String dataSourceName = metaData.getResource().getDataSourcesMetaData().getAllInstanceDataSourceNames().iterator().next();
+        Iterator<String> iterator = metaData.getResource().getDataSourcesMetaData().getAllInstanceDataSourceNames().iterator();
+        String dataSourceName = iterator.hasNext() ? iterator.next() : "ds_0";
         return Collections.singletonList(new ExecutionUnit(dataSourceName,
                 new SQLUnit(sqlRewriteResult.getSqlRewriteUnit().getSql(), sqlRewriteResult.getSqlRewriteUnit().getParameters(), getGenericTableRouteMappers(sqlStatementContext))));
     }

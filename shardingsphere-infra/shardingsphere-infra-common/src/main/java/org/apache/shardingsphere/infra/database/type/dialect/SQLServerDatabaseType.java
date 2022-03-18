@@ -24,6 +24,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.constant.QuoteCharacter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Collections;
 
 /**
  * Database type of SQLServer.
@@ -53,5 +54,10 @@ public final class SQLServerDatabaseType implements DatabaseType {
     @Override
     public Optional<String> getDataSourceClassName() {
         return Optional.of("com.microsoft.sqlserver.jdbc.SQLServerDataSource");
+    }
+    
+    @Override
+    public Collection<String> getSystemSchemas() {
+        return Collections.emptyList();
     }
 }

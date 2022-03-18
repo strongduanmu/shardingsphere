@@ -22,6 +22,7 @@ import org.apache.commons.lang3.concurrent.LazyInitializer;
 import org.apache.shardingsphere.infra.binder.LogicSQL;
 import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.database.type.dialect.PostgreSQLDatabaseType;
 import org.apache.shardingsphere.infra.executor.sql.context.ExecutionContext;
 import org.apache.shardingsphere.infra.executor.sql.execute.engine.SQLExecutorExceptionHandler;
 import org.apache.shardingsphere.infra.executor.sql.execute.engine.driver.jdbc.JDBCExecutionUnit;
@@ -62,6 +63,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -118,8 +120,11 @@ public final class JDBCDatabaseCommunicationEngine extends DatabaseCommunication
         ExecutionContext executionContext = getKernelProcessor()
                 .generateExecutionContext(getLogicSQL(), getMetaData(), ProxyContext.getInstance().getContextManager().getMetaDataContexts().getProps());
         // TODO move federation route logic to binder
-        if (executionContext.getRouteContext().isFederated()) {
-            MetaDataContexts metaDataContexts = ProxyContext.getInstance().getContextManager().getMetaDataContexts();
+        Optional<String> schemaName = getLogicSQL().getSqlStatementContext().getTablesContext().getSchemaName();
+        MetaDataContexts metaDataContexts = ProxyContext.getInstance().getContextManager().getMetaDataContexts();
+        DatabaseType databaseType = new PostgreSQLDatabaseType();
+        executionContext.getRouteContext().setFederated(true);
+        if (executionContext.getRouteContext().isFederated() || (schemaName.isPresent() && databaseType.getSystemSchemas().contains(schemaName.get()))) {
             ResultSet resultSet = doExecuteFederation(getLogicSQL(), metaDataContexts);
             return processExecuteFederation(resultSet, metaDataContexts);
         }

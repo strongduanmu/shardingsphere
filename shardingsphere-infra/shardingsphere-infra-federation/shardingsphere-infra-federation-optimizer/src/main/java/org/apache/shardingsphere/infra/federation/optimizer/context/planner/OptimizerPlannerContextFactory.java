@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.infra.federation.optimizer.context.planner;
 
+import com.sun.org.apache.bcel.internal.generic.FADD;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -30,6 +31,7 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.Schema;
+import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
@@ -41,6 +43,8 @@ import org.apache.shardingsphere.infra.federation.optimizer.metadata.FederationS
 import org.apache.shardingsphere.infra.federation.optimizer.metadata.calcite.FederationSchema;
 import org.apache.shardingsphere.infra.federation.optimizer.planner.QueryOptimizePlannerFactory;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -60,6 +64,7 @@ public final class OptimizerPlannerContextFactory {
      * @return created optimizer planner context map
      */
     public static Map<String, OptimizerPlannerContext> create(final FederationMetaData metaData) {
+        metaData.getSchemas().put("postgres", new FederationSchemaMetaData("postgres", Collections.emptyMap()));
         Map<String, OptimizerPlannerContext> result = new HashMap<>(metaData.getSchemas().size(), 1);
         for (Entry<String, FederationSchemaMetaData> entry : metaData.getSchemas().entrySet()) {
             String schemaName = entry.getKey();
@@ -100,7 +105,14 @@ public final class OptimizerPlannerContextFactory {
                                                             final Schema schema, final RelDataTypeFactory relDataTypeFactory, final CalciteConnectionConfig connectionConfig) {
         CalciteSchema rootSchema = CalciteSchema.createRootSchema(true);
         rootSchema.add(schemaName, schema);
-        return new CalciteCatalogReader(rootSchema, Collections.singletonList(schemaName), relDataTypeFactory, connectionConfig);
+        CalciteSchema subSchema = rootSchema.getSubSchema(schemaName, false);
+        for (String each : schema.getSubSchemaNames()) {
+            if (null != subSchema) {
+                subSchema.add(each, schema.getSubSchema(each));
+            }
+        }
+        CalciteCatalogReader calciteCatalogReader = new CalciteCatalogReader(rootSchema, Collections.singletonList(schemaName), relDataTypeFactory, connectionConfig);
+        return calciteCatalogReader.withSchemaPath(Arrays.asList("postgres", "information_schema"));
     }
     
     private static SqlValidator createValidator(final CalciteCatalogReader catalogReader, final RelDataTypeFactory relDataTypeFactory, final CalciteConnectionConfig connectionConfig) {

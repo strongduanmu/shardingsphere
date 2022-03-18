@@ -54,4 +54,9 @@ public final class OpenGaussDatabaseType implements DatabaseType {
     public Optional<String> getDataSourceClassName() {
         return Optional.of("org.opengauss.ds.PGSimpleDataSource");
     }
+    
+    @Override
+    public Collection<String> getSystemSchemas() {
+        return Collections.emptyList();
+    }
 }

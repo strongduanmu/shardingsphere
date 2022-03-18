@@ -17,7 +17,9 @@
 
 package org.apache.shardingsphere.proxy.backend.text.admin.mysql.executor;
 
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -35,7 +37,7 @@ public final class ShowConnectionIdExecutorTest {
     @Test
     public void assertExecute() throws SQLException {
         ShowConnectionIdExecutor executor = new ShowConnectionIdExecutor();
-        executor.execute(mockConnectionSession());
+        executor.execute(mockConnectionSession(), mock(SQLStatementContext.class));
         assertThat(executor.getQueryResultMetaData().getColumnCount(), is(1));
         while (executor.getMergedResult().next()) {
             assertThat(executor.getMergedResult().getValue(1, Object.class), is(109));

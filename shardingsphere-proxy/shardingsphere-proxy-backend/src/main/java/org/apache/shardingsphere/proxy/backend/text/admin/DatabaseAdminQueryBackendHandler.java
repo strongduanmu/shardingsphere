@@ -20,6 +20,7 @@ package org.apache.shardingsphere.proxy.backend.text.admin;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.concurrent.LazyInitializer;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResultMetaData;
 import org.apache.shardingsphere.infra.merge.result.MergedResult;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
@@ -33,6 +34,7 @@ import org.apache.shardingsphere.proxy.backend.response.header.query.impl.QueryH
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.backend.text.TextProtocolBackendHandler;
 import org.apache.shardingsphere.proxy.backend.text.admin.executor.DatabaseAdminQueryExecutor;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -48,6 +50,8 @@ public final class DatabaseAdminQueryBackendHandler implements TextProtocolBacke
     
     private final ConnectionSession connectionSession;
     
+    private final SQLStatementContext<?> sqlStatementContext;
+    
     private final DatabaseAdminQueryExecutor executor;
     
     private QueryResultMetaData queryResultMetaData;
@@ -56,7 +60,7 @@ public final class DatabaseAdminQueryBackendHandler implements TextProtocolBacke
     
     @Override
     public ResponseHeader execute() throws SQLException {
-        executor.execute(connectionSession);
+        executor.execute(connectionSession, sqlStatementContext);
         queryResultMetaData = executor.getQueryResultMetaData();
         mergedResult = executor.getMergedResult();
         return new QueryResponseHeader(createResponseHeader());

@@ -19,7 +19,6 @@ package org.apache.shardingsphere.proxy.backend.text.admin.mysql.executor;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.shardingsphere.infra.binder.SQLStatementContextFactory;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResultMetaData;
@@ -70,7 +69,7 @@ public final class UnicastResourceShowExecutor implements DatabaseAdminQueryExec
     private ResponseHeader responseHeader;
     
     @Override
-    public void execute(final ConnectionSession connectionSession) throws SQLException {
+    public void execute(final ConnectionSession connectionSession, final SQLStatementContext<?> sqlStatementContext) throws SQLException {
         String originSchema = connectionSession.getSchemaName();
         String schemaName = null == originSchema ? getFirstSchemaName() : originSchema;
         if (!ProxyContext.getInstance().getMetaData(schemaName).hasDataSource()) {
@@ -78,8 +77,8 @@ public final class UnicastResourceShowExecutor implements DatabaseAdminQueryExec
         }
         try {
             connectionSession.setCurrentSchema(schemaName);
-            SQLStatementContext<?> sqlStatementContext = SQLStatementContextFactory.newInstance(ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaDataMap(),
-                    sqlStatement, connectionSession.getDefaultSchemaName());
+//            SQLStatementContext<?> sqlStatementContext = SQLStatementContextFactory.newInstance(ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaDataMap(),
+//                    sqlStatement, connectionSession.getDefaultSchemaName());
             databaseCommunicationEngine = databaseCommunicationEngineFactory.newTextProtocolInstance(sqlStatementContext, sql, connectionSession.getBackendConnection());
             responseHeader = databaseCommunicationEngine.execute();
             mergedResult = new TransparentMergedResult(createQueryResult());

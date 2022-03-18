@@ -23,6 +23,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.constant.QuoteCharacter;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Collections;
 
 public final class DummyDatabaseType implements DatabaseType {
     
@@ -39,6 +40,11 @@ public final class DummyDatabaseType implements DatabaseType {
     @Override
     public Collection<String> getJdbcUrlPrefixes() {
         return null;
+    }
+    
+    @Override
+    public Collection<String> getSystemSchemas() {
+        return Collections.emptyList();
     }
     
     @Override

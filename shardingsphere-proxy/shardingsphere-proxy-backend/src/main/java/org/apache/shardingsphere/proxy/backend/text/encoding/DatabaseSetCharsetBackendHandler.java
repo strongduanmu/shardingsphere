@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.proxy.backend.text.encoding;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.proxy.backend.response.header.ResponseHeader;
 import org.apache.shardingsphere.proxy.backend.response.header.update.ClientEncodingResponseHeader;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
@@ -35,12 +36,14 @@ public class DatabaseSetCharsetBackendHandler implements TextProtocolBackendHand
     
     private final ConnectionSession connectionSession;
     
+    private final SQLStatementContext<?> sqlStatementContext;
+    
     private final DatabaseSetCharsetExecutor databaseSetCharsetExecutor;
     
     @Override
     public ResponseHeader execute() throws SQLException {
         try {
-            databaseSetCharsetExecutor.execute(connectionSession);
+            databaseSetCharsetExecutor.execute(connectionSession, sqlStatementContext);
         } catch (final UnsupportedCharsetException ignored) {
             return new ClientEncodingResponseHeader(null, ignored.getCharsetName());
         }

@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.proxy.backend.text.admin.mysql;
 
+import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
 import org.apache.shardingsphere.proxy.backend.text.admin.executor.DatabaseAdminQueryExecutor;
 import org.apache.shardingsphere.proxy.backend.text.admin.executor.AbstractDatabaseMetadataExecutor.DefaultDatabaseMetadataExecutor;
 import org.apache.shardingsphere.proxy.backend.text.admin.mysql.executor.information.SelectInformationSchemataExecutor;
@@ -38,17 +39,17 @@ public final class MySQLInformationSchemaExecutorFactory {
     /**
      * Create executor.
      *
-     * @param sqlStatement SQL statement
+     * @param selectStatementContext select statement context 
      * @param sql SQL being executed
      * @return executor
      */
-    public static DatabaseAdminQueryExecutor newInstance(final SelectStatement sqlStatement, final String sql) {
-        String tableName = ((SimpleTableSegment) sqlStatement.getFrom()).getTableName().getIdentifier().getValue();
+    public static DatabaseAdminQueryExecutor newInstance(final SelectStatementContext selectStatementContext, final String sql) {
+        String tableName = ((SimpleTableSegment) selectStatementContext.getSqlStatement().getFrom()).getTableName().getIdentifier().getValue();
         if (SCHEMATA_TABLE.equalsIgnoreCase(tableName)) {
-            return new SelectInformationSchemataExecutor(sqlStatement, sql);
+            return new SelectInformationSchemataExecutor(selectStatementContext, sql);
         } else if (DEFAULT_EXECUTOR_TABLES.contains(tableName.toUpperCase())) {
             return new DefaultDatabaseMetadataExecutor(sql);
         }
-        throw new UnsupportedOperationException(String.format("unsupported table : `%s`", tableName));
+        return null;
     }
 }

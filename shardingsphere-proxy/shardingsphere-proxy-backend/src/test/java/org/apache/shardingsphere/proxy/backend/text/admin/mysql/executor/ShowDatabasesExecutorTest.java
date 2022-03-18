@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.proxy.backend.text.admin.mysql.executor;
 
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
 import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
@@ -31,6 +32,7 @@ import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dal.ShowFilterSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dal.ShowLikeSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLShowDatabasesStatement;
 import org.junit.Before;
 import org.junit.Test;
@@ -82,7 +84,7 @@ public final class ShowDatabasesExecutorTest {
     
     @Test
     public void assertExecute() throws SQLException {
-        showDatabasesExecutor.execute(mockConnectionSession());
+        showDatabasesExecutor.execute(mockConnectionSession(), mock(SQLStatementContext.class));
         assertThat(showDatabasesExecutor.getQueryResultMetaData().getColumnCount(), is(1));
         int count = 0;
         while (showDatabasesExecutor.getMergedResult().next()) {
@@ -99,7 +101,7 @@ public final class ShowDatabasesExecutorTest {
         showFilterSegment.setLike(showLikeSegment);
         showDatabasesStatement.setFilter(showFilterSegment);
         showDatabasesExecutor = new ShowDatabasesExecutor(showDatabasesStatement);
-        showDatabasesExecutor.execute(mockConnectionSession());
+        showDatabasesExecutor.execute(mockConnectionSession(), mock(SQLStatementContext.class));
         assertThat(showDatabasesExecutor.getQueryResultMetaData().getColumnCount(), is(1));
         int count = 0;
         while (showDatabasesExecutor.getMergedResult().next()) {
@@ -117,7 +119,7 @@ public final class ShowDatabasesExecutorTest {
         showFilterSegment.setLike(showLikeSegment);
         showDatabasesStatement.setFilter(showFilterSegment);
         showDatabasesExecutor = new ShowDatabasesExecutor(showDatabasesStatement);
-        showDatabasesExecutor.execute(mockConnectionSession());
+        showDatabasesExecutor.execute(mockConnectionSession(), mock(SQLStatementContext.class));
         assertThat(showDatabasesExecutor.getQueryResultMetaData().getColumnCount(), is(1));
         int count = 0;
         while (showDatabasesExecutor.getMergedResult().next()) {
@@ -135,7 +137,7 @@ public final class ShowDatabasesExecutorTest {
         showFilterSegment.setLike(showLikeSegment);
         showDatabasesStatement.setFilter(showFilterSegment);
         showDatabasesExecutor = new ShowDatabasesExecutor(showDatabasesStatement);
-        showDatabasesExecutor.execute(mockConnectionSession());
+        showDatabasesExecutor.execute(mockConnectionSession(), mock(SQLStatementContext.class));
         assertThat(showDatabasesExecutor.getQueryResultMetaData().getColumnCount(), is(1));
         int count = 0;
         while (showDatabasesExecutor.getMergedResult().next()) {
@@ -153,7 +155,7 @@ public final class ShowDatabasesExecutorTest {
         showFilterSegment.setLike(showLikeSegment);
         showDatabasesStatement.setFilter(showFilterSegment);
         showDatabasesExecutor = new ShowDatabasesExecutor(showDatabasesStatement);
-        showDatabasesExecutor.execute(mockConnectionSession());
+        showDatabasesExecutor.execute(mockConnectionSession(), mock(SQLStatementContext.class));
         assertThat(showDatabasesExecutor.getQueryResultMetaData().getColumnCount(), is(1));
         int count = 0;
         while (showDatabasesExecutor.getMergedResult().next()) {

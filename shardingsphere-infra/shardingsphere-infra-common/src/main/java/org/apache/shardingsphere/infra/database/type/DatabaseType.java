@@ -52,6 +52,13 @@ public interface DatabaseType {
     Collection<String> getJdbcUrlPrefixes();
     
     /**
+     * Get system schemas.
+     *
+     * @return system schemas
+     */
+    Collection<String> getSystemSchemas();
+    
+    /**
      * Get data source meta data.
      * 
      * @param url URL of data source

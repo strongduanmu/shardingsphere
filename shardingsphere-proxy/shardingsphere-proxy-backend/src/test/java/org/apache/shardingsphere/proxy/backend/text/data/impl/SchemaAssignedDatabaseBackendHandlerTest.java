@@ -20,6 +20,7 @@ package org.apache.shardingsphere.proxy.backend.text.data.impl;
 import lombok.SneakyThrows;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.database.type.dialect.H2DatabaseType;
 import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
 import org.apache.shardingsphere.infra.federation.optimizer.context.OptimizerContext;
@@ -86,7 +87,7 @@ public final class SchemaAssignedDatabaseBackendHandlerTest {
         contextManagerField.set(ProxyContext.getInstance(), contextManager);
         when(connectionSession.getSchemaName()).thenReturn(String.format(SCHEMA_PATTERN, 0));
         mockDatabaseCommunicationEngine(new UpdateResponseHeader(mock(SQLStatement.class)));
-        schemaAssignedDatabaseBackendHandler = new SchemaAssignedDatabaseBackendHandler(mock(SQLStatementContext.class), EXECUTE_SQL, connectionSession);
+        schemaAssignedDatabaseBackendHandler = new SchemaAssignedDatabaseBackendHandler(mock(DatabaseType.class), mock(SQLStatementContext.class), EXECUTE_SQL, connectionSession);
         setBackendHandlerFactory(schemaAssignedDatabaseBackendHandler);
     }
     

@@ -20,6 +20,7 @@ package org.apache.shardingsphere.proxy.backend.text.data;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.backend.text.data.impl.BroadcastDatabaseBackendHandler;
 import org.apache.shardingsphere.proxy.backend.text.data.impl.SchemaAssignedDatabaseBackendHandler;
@@ -39,12 +40,14 @@ public final class DatabaseBackendHandlerFactory {
     /**
      * New instance of database backend handler.
      * 
+     *
+     * @param databaseType database type
      * @param sqlStatementContext SQL statement context
      * @param sql SQL
      * @param connectionSession connection session
      * @return database backend handler
      */
-    public static DatabaseBackendHandler newInstance(final SQLStatementContext<?> sqlStatementContext, final String sql, final ConnectionSession connectionSession) {
+    public static DatabaseBackendHandler newInstance(final DatabaseType databaseType, final SQLStatementContext<?> sqlStatementContext, final String sql, final ConnectionSession connectionSession) {
         SQLStatement sqlStatement = sqlStatementContext.getSqlStatement();
         if (sqlStatement instanceof SetStatement || sqlStatement instanceof DCLStatement) {
             return new BroadcastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
@@ -52,6 +55,6 @@ public final class DatabaseBackendHandlerFactory {
         if (sqlStatement instanceof DALStatement || (sqlStatement instanceof SelectStatement && null == ((SelectStatement) sqlStatement).getFrom())) {
             return new UnicastDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
         }
-        return new SchemaAssignedDatabaseBackendHandler(sqlStatementContext, sql, connectionSession);
+        return new SchemaAssignedDatabaseBackendHandler(databaseType, sqlStatementContext, sql, connectionSession);
     }
 }
