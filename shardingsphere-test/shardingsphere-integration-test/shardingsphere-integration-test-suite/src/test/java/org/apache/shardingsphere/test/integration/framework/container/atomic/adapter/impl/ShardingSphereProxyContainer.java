@@ -17,6 +17,9 @@
 
 package org.apache.shardingsphere.test.integration.framework.container.atomic.adapter.impl;
 
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -80,6 +83,12 @@ public final class ShardingSphereProxyContainer extends DockerITContainer implem
         String containerPath = "/opt/shardingsphere-proxy/conf";
         withClasspathResourceMapping("/env/common/proxy/conf/", containerPath, BindMode.READ_ONLY);
         withClasspathResourceMapping("/env/scenario/" + scenario + "/proxy/conf/" + databaseType.getName().toLowerCase(), containerPath, BindMode.READ_ONLY);
+        withEnv("JAVA_OPTS", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:3308");
+        withCreateContainerCmdModifier(cmd -> {
+            cmd.withPortBindings(
+                    new PortBinding(Ports.Binding.bindPort(3307), new ExposedPort(3307)), 
+                    new PortBinding(Ports.Binding.bindPort(3308), new ExposedPort(3308)));
+        });
     }
     
     @Override
