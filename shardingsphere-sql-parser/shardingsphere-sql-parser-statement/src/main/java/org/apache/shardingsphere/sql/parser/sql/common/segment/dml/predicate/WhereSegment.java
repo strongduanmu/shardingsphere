@@ -20,10 +20,9 @@ package org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.SQLSegment;
-
-import java.util.Collection;
-import java.util.LinkedList;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
 
 /**
  * Where segment.
@@ -31,11 +30,12 @@ import java.util.LinkedList;
 @RequiredArgsConstructor
 @Getter
 @Setter
+@ToString
 public final class WhereSegment implements SQLSegment {
     
     private final int startIndex;
     
     private final int stopIndex;
     
-    private final Collection<AndPredicate> andPredicates = new LinkedList<>();
+    private final ExpressionSegment expr;
 }

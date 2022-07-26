@@ -17,7 +17,20 @@
 
 package org.apache.shardingsphere.infra.route.fixture.rule;
 
+import org.apache.shardingsphere.infra.config.RuleConfiguration;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
 
+import static org.mockito.Mockito.mock;
+
 public final class RouteFailureRuleFixture implements ShardingSphereRule {
+    
+    @Override
+    public RuleConfiguration getConfiguration() {
+        return mock(RuleConfiguration.class);
+    }
+    
+    @Override
+    public String getType() {
+        return RouteFailureRuleFixture.class.getSimpleName();
+    }
 }

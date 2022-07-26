@@ -1,20 +1,13 @@
 +++
 title = "Committer Guide"
-weight = 3
+weight = 4
 chapter = true
 +++
 
 ## Committer Promotion
 
 The ShardingSphere community follows the [Apache Community’s process](http://community.apache.org/newcommitter.html) on accepting a new committer.
-After a contributor participate ShardingSphere community actively, (P)PMC and Committers will make decision to invite the contributor join Committers and (P)PMC.
-
-Processes are:
-
- - Start the discussion and vote in @private. Only current PMC member could nominate;
- - If the vote passes, send an offer to become a committer with @private CC’ed;
- - New committer sign ICLA and apply Apache ID and email address;
- - Update [Team](/en/team/) page.
+After a contributor participates ShardingSphere community actively, PMC and Committers will make a decision to invite the contributor to join Committers and PMC.
 
 ## Committer Responsibilities
 
@@ -25,19 +18,23 @@ Processes are:
  - Answer questions;
  - Update documentation and example;
  - Improve processes and tools;
+ - Check whether [CI Scheduled Workflow]( https://github.com/apache/shardingsphere/actions?query=event%3Aschedule ) works or not periodically;
  - Guide new contributors join community.
 
 
 ##  Committer Routine
 
-1. Committer needs to check the list of Pull Requests and issues to be processed in the community every day and assign them to the appropriate committer, namely assignee.
+1. Check the list of pull requests and issues to be processed in the community on a daily basis.
 
+ - Including label issue, reply issue, close issue;
+ - Assign issue to the appropriate committer, namely assignee;
+ 
 2. After a committer is assigned with an issue, the following work is required:
 
- - Judge whether it is a long-term issue. If it is, please mark it as pending.
- - Add issue labels, such as bug, enhancement, discussion, etc.
- - Add Milestone labels.
+ - Estimate whether it is a long-term issue. If it is, please label it as pending;
+ - Add issue labels, such as bug, enhancement, discussion, etc;
+ - Add milestone.
+ 
+3. Pull request that committer submits needs to add labels and milestone based on the type and release period.
 
-**Notice**
-
-At least one committer is expected to be in the assignee list of that issue before it is completed.
+4. When committer reviewed and approved any pull request, committer could squash and merge to master. If there is any question you concerned about this pull request, please reply directly to the related issue.

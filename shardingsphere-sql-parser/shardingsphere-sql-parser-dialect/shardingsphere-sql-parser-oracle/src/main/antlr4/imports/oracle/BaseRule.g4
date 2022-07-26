@@ -38,7 +38,7 @@ stringLiterals
     ;
 
 numberLiterals
-   : MINUS_? NUMBER_
+   : (PLUS_ | MINUS_)? (INTEGER_ | NUMBER_)
    ;
 
 dateTimeLiterals
@@ -79,7 +79,7 @@ unreservedWord
     | ROLE | VISIBLE | INVISIBLE | EXECUTE | USE | DEBUG | UNDER
     | FLASHBACK | ARCHIVE | REFRESH | QUERY | REWRITE | KEEP | SEQUENCE
     | INHERIT | TRANSLATE | SQL | MERGE | AT | BITMAP | CACHE | CHECKPOINT
-    | CONNECT | CONSTRAINTS | CYCLE | DBTIMEZONE | ENCRYPT | DECRYPT | DEFERRABLE
+    | CONSTRAINTS | CYCLE | DBTIMEZONE | ENCRYPT | DECRYPT | DEFERRABLE
     | DEFERRED | EDITION | ELEMENT | END | EXCEPTIONS | FORCE | GLOBAL
     | IDENTITY | INITIALLY | INVALIDATE | JAVA | LEVELS | LOCAL | MAXVALUE
     | MINVALUE | NOMAXVALUE | NOMINVALUE | MINING | MODEL | NATIONAL | NEW
@@ -87,16 +87,17 @@ unreservedWord
     | PROFILE | REF | REKEY | RELY | REPLACE | SOURCE | SALT
     | SCOPE | SORT | SUBSTITUTABLE | TABLESPACE | TEMPORARY | TRANSLATION | TREAT
     | NO | TYPE | UNUSED | VALUE | VARYING | VIRTUAL | ZONE
-    | ADVISOR | ADMINISTER | TUNING | MANAGE | MANAGEMENT | OBJECT | CLUSTER
-    | CONTEXT | EXEMPT | REDACTION | POLICY | DATABASE | SYSTEM | AUDIT
+    | ADVISOR | ADMINISTER | TUNING | MANAGE | MANAGEMENT | OBJECT
+    | CONTEXT | EXEMPT | REDACTION | POLICY | DATABASE | SYSTEM
     | LINK | ANALYZE | DICTIONARY | DIMENSION | INDEXTYPE | EXTERNAL | JOB
     | CLASS | PROGRAM | SCHEDULER | LIBRARY | LOGMINING | MATERIALIZED | CUBE
     | MEASURE | FOLDER | BUILD | PROCESS | OPERATOR | OUTLINE | PLUGGABLE
-    | CONTAINER | SEGMENT | RESTRICTED | COST | SYNONYM | BACKUP | UNLIMITED
-    | BECOME | CHANGE | NOTIFICATION | ACCESS | PRIVILEGE | PURGE | RESUMABLE
+    | CONTAINER | SEGMENT | RESTRICTED | COST | BACKUP | UNLIMITED
+    | BECOME | CHANGE | NOTIFICATION | PRIVILEGE | PURGE | RESUMABLE
     | SYSGUID | SYSBACKUP | SYSDBA | SYSDG | SYSKM | SYSOPER | DBA_RECYCLEBIN |SCHEMA
     | DO | DEFINER | CURRENT_USER | CASCADED | CLOSE | OPEN | NEXT | NAME | NAMES
-    | INTEGER | COLLATION | REAL | DECIMAL | TYPE | FIRST
+    | COLLATION | REAL | TYPE | FIRST | RANK | SAMPLE | SYSTIMESTAMP | INTERVAL | MINUTE | ANY 
+    | LENGTH | SINGLE_C | capacityUnit | TARGET | PUBLIC | ID
     ;
 
 schemaName
@@ -107,8 +108,80 @@ tableName
     : (owner DOT_)? name
     ;
 
+viewName
+    : (owner DOT_)? name
+    ;
+
+triggerName
+    : (owner DOT_)? name
+    ;
+
+materializedViewName
+    : (owner DOT_)? name
+    ;
+
 columnName
     : (owner DOT_)? name
+    ;
+
+objectName
+    : (owner DOT_)? name
+    ;
+
+clusterName
+    : (owner DOT_)? name
+    ;
+
+indexName
+    : (owner DOT_)? name
+    ;
+
+statisticsTypeName
+    : (owner DOT_)? name
+    ;
+
+function
+    : (owner DOT_)? name
+    ;
+
+packageName
+    : (owner DOT_)? name
+    ;
+
+typeName
+    : (owner DOT_)? name
+    ;
+
+indexTypeName
+    : (owner DOT_)? name
+    ;
+
+modelName
+    : (owner DOT_)? name
+    ;
+
+operatorName
+    : (owner DOT_)? name
+    ;
+
+dimensionName
+    : (owner DOT_)? name
+    ;
+
+directoryName
+    : (owner DOT_)? name
+    ;
+
+constraintName
+    : identifier
+    ;
+
+savepointName
+    : identifier
+    ;
+
+synonymName
+    : identifier
     ;
 
 owner
@@ -116,6 +189,143 @@ owner
     ;
 
 name
+    : identifier
+    ;
+
+tablespaceName
+    : identifier
+    ;
+
+tablespaceSetName
+    : identifier
+    ;
+
+serviceName
+    : identifier
+    ;
+
+ilmPolicyName
+    : identifier
+    ;
+
+policyName
+    : identifier
+    ;
+
+functionName
+    : identifier
+    ;
+
+dbLink
+    : identifier (DOT_ identifier)*
+    ;
+
+parameterValue
+    : literals | identifier
+    ;
+
+
+dispatcherName
+    : stringLiterals
+    ;
+
+clientId
+    : stringLiterals
+    ;
+
+opaqueFormatSpec
+    : identifier
+    ;
+
+accessDriverType
+    : identifier
+    ;
+
+varrayItem
+    : identifier
+    ;
+
+nestedItem
+    : identifier
+    ;
+
+storageTable
+    : identifier
+    ;
+
+lobSegname
+    : identifier
+    ;
+
+locationSpecifier
+    : identifier
+    ;
+
+xmlSchemaURLName
+    : identifier
+    ;
+
+elementName
+    : identifier
+    ;
+
+subpartitionName
+    : identifier
+    ;
+
+parameterName
+    : identifier
+    ;
+
+editionName
+    : identifier
+    ;
+
+outlineName
+    : identifier
+    ;
+
+containerName
+    : identifier
+    ;
+
+partitionName
+    : identifier
+    ;
+
+partitionSetName
+    : identifier
+    ;
+
+partitionKeyValue
+    : INTEGER_ | dateTimeLiterals
+    ;
+
+subpartitionKeyValue
+    : INTEGER_ | dateTimeLiterals
+    ;
+
+zonemapName
+    : identifier
+    ;
+
+flashbackArchiveName
+    : identifier
+    ;
+
+roleName
+    : identifier
+    ;
+
+username
+    : identifier
+    ;
+
+password
+    : identifier
+    ;
+
+logGroupName
     : identifier
     ;
 
@@ -127,24 +337,24 @@ tableNames
     : LP_? tableName (COMMA_ tableName)* RP_?
     ;
 
-indexName
-    : identifier
-    ;
-
 oracleId
-    : IDENTIFIER_ | (STRING_ DOT_)* STRING_
+    : identifier | (STRING_ DOT_)* STRING_
     ;
 
 collationName
     : STRING_ | IDENTIFIER_
     ;
 
+columnCollationName
+    : identifier
+    ;
+
 alias
-    : IDENTIFIER_
+    : identifier | STRING_
     ;
 
 dataTypeLength
-    : LP_ (NUMBER_ (COMMA_ NUMBER_)?)? RP_
+    : LP_ (INTEGER_ (COMMA_ INTEGER_)?)? RP_
     ;
 
 primaryKey
@@ -161,17 +371,22 @@ exprList
 
 // TODO comb expr
 expr
-    : expr logicalOperator expr
-    | notOperator_ expr
+    : expr andOperator expr
+    | expr orOperator expr
+    | notOperator expr
     | LP_ expr RP_
     | booleanPrimary
     ;
 
-logicalOperator
-    : OR | OR_ | AND | AND_
+andOperator
+    : AND | AND_
     ;
 
-notOperator_
+orOperator
+    : OR | OR_
+    ;
+
+notOperator
     : NOT | NOT_
     ;
 
@@ -190,6 +405,7 @@ comparisonOperator
 predicate
     : bitExpr NOT? IN subquery
     | bitExpr NOT? IN LP_ expr (COMMA_ expr)* RP_
+    | bitExpr NOT? IN LP_ expr (COMMA_ expr)* RP_ AND predicate
     | bitExpr NOT? BETWEEN bitExpr AND predicate
     | bitExpr NOT? LIKE simpleExpr (ESCAPE simpleExpr)?
     | bitExpr
@@ -213,13 +429,13 @@ simpleExpr
     : functionCall
     | parameterMarker
     | literals
-    | columnName
     | simpleExpr OR_ simpleExpr
     | (PLUS_ | MINUS_ | TILDE_ | NOT_ | BINARY) simpleExpr
     | ROW? LP_ expr (COMMA_ expr)* RP_
     | EXISTS? subquery
     | LBE_ identifier expr RBE_
     | caseExpression
+    | columnName
     | privateExprOfDb
     ;
 
@@ -228,15 +444,24 @@ functionCall
     ;
 
 aggregationFunction
-    : aggregationFunctionName LP_ distinct? (expr (COMMA_ expr)* | ASTERISK_)? RP_
+    : aggregationFunctionName LP_ (((DISTINCT | ALL)? expr) | ASTERISK_) RP_ (OVER LP_ analyticClause RP_)?
     ;
 
 aggregationFunctionName
-    : MAX | MIN | SUM | COUNT | AVG
+    : MAX | MIN | SUM | COUNT | AVG | GROUPING
     ;
 
-distinct
-    : DISTINCT
+analyticClause
+    : queryPartitionClause? (orderByClause windowingClause?)?
+    ;
+
+queryPartitionClause
+    : PARTITION BY (exprs | exprList)
+    ;
+
+windowingClause
+    : (ROWS | RANGE) ((BETWEEN (UNBOUNDED PRECEDING | CURRENT ROW | expr (PRECEDING | FOLLOWING)) AND (UNBOUNDED FOLLOWING | CURRENT ROW | expr (PRECEDING | FOLLOWING)))
+    | (UNBOUNDED PRECEDING | CURRENT ROW | expr PRECEDING))
     ;
 
 specialFunction
@@ -248,26 +473,26 @@ castFunction
     ;
 
 charFunction
-    : CHAR LP_ expr (COMMA_ expr)* (USING ignoredIdentifier_)? RP_
+    : CHAR LP_ expr (COMMA_ expr)* (USING ignoredIdentifier)? RP_
     ;
 
 regularFunction
-    : regularFunctionName_ LP_ (expr (COMMA_ expr)* | ASTERISK_)? RP_
+    : regularFunctionName LP_ (expr (COMMA_ expr)* | ASTERISK_)? RP_
     ;
 
-regularFunctionName_
-    : identifier | IF | LOCALTIME | LOCALTIMESTAMP | INTERVAL
+regularFunctionName
+    : identifier | IF | LOCALTIME | LOCALTIMESTAMP | INTERVAL | DECODE
     ;
 
 caseExpression
-    : CASE simpleExpr? caseWhen_+ caseElse_?
+    : CASE simpleExpr? caseWhen+ caseElse? END
     ;
 
-caseWhen_
+caseWhen
     : WHEN expr THEN expr
     ;
 
-caseElse_
+caseElse
     : ELSE expr
     ;
 
@@ -276,19 +501,15 @@ subquery
     ;
 
 orderByClause
-    : ORDER BY orderByItem (COMMA_ orderByItem)*
+    : ORDER SIBLINGS? BY orderByItem (COMMA_ orderByItem)*
     ;
 
 orderByItem
-    : (columnName | numberLiterals | expr) (ASC | DESC)?
+    : (columnName | numberLiterals | expr) (ASC | DESC)? (NULLS FIRST | NULLS LAST)?
     ;
 
 attributeName
     : oracleId
-    ;
-
-indexTypeName
-    : IDENTIFIER_
     ;
 
 simpleExprs
@@ -320,7 +541,7 @@ dataTypeName
     | BOOLEAN | PLS_INTEGER | BINARY_INTEGER | INTEGER | NUMBER | NATURAL | NATURALN | POSITIVE | POSITIVEN | SIGNTYPE
     | SIMPLE_INTEGER | BFILE | MLSLABEL | UROWID | DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE | TIMESTAMP WITH LOCAL TIME ZONE
     | INTERVAL DAY TO SECOND | INTERVAL YEAR TO MONTH | JSON | FLOAT | REAL | DOUBLE PRECISION | INT | SMALLINT
-    | DECIMAL | NUMERIC | DEC | IDENTIFIER_
+    | DECIMAL | NUMERIC | DEC | IDENTIFIER_ | XMLTYPE
     ;
 
 datetimeTypeSuffix
@@ -363,14 +584,861 @@ constructorExpr
     : NEW dataTypeName exprList
     ;
 
-ignoredIdentifier_
+ignoredIdentifier
     : IDENTIFIER_
     ;
 
-ignoredIdentifiers_
-    : ignoredIdentifier_ (COMMA_ ignoredIdentifier_)*
+ignoredIdentifiers
+    : ignoredIdentifier (COMMA_ ignoredIdentifier)*
     ;
 
 matchNone
     : 'Default does not match anything'
+    ;
+
+hashSubpartitionQuantity
+    : NUMBER
+    ;
+
+odciParameters
+    : identifier
+    ;
+
+databaseName
+    : identifier
+    ;
+
+locationName
+    : STRING_
+    ;
+
+fileName
+    : STRING_
+    ;
+
+asmFileName
+    : fullyQualifiedFileName
+    | numericFileName
+    | incompleteFileName
+    | aliasFileName
+    ;
+
+fullyQualifiedFileName
+    : PLUS_ diskgroupName SLASH_ dbName SLASH_ fileType SLASH_ fileTypeTag DOT_ fileNumber DOT_ incarnationNumber
+    ;
+
+dbName
+    : identifier
+    ;
+
+fileType
+    : CONTROLFILE
+    | DATAFILE
+    | ONLINELOG
+    | ARCHIVELOG
+    | TEMPFILE
+    | BACKUPSET
+    | PARAMETERFILE
+    | DATAGUARDCONFIG
+    | FLASHBACK
+    | CHANGETRACKING
+    | DUMPSET
+    | XTRANSPORT
+    | AUTOBACKUP
+    ;
+
+fileTypeTag
+    : currentBackup
+    | tablespaceName
+    | groupGroup POUND_
+    | threadThread POUND_ UL_ seqSequence POUND_
+    | hasspfileTimestamp
+    | serverParameterFile
+    | dbName
+    | logLog POUND_
+    | changeTrackingFile
+    | userObj POUND_ UL_ fileName POUND_
+    ;
+
+currentBackup
+    : identifier
+    ;
+
+groupGroup
+    : identifier
+    ;
+
+threadThread
+    : identifier
+    ;
+
+seqSequence
+    : identifier
+    ;
+
+hasspfileTimestamp
+    : timestampValue
+    ;
+
+serverParameterFile
+    : identifier
+    ;
+
+logLog
+    : identifier
+    ;
+
+changeTrackingFile
+    : identifier
+    ;
+
+userObj
+    : identifier
+    ;
+
+numericFileName
+    : PLUS_ diskgroupName DOT_ fileNumber DOT_ incarnationNumber
+    ;
+
+incompleteFileName
+    : PLUS_ diskgroupName (LP_ templateName RP_)?
+    ;
+
+aliasFileName
+    : PLUS_ diskgroupName (LP_ templateName RP_)? SLASH_ aliasName
+    ;
+
+fileNumber
+    : INTEGER_
+    ;
+
+incarnationNumber
+    : INTEGER_
+    ;
+
+instanceName
+    : STRING_
+    ;
+
+logminerSessionName
+    : identifier
+    ;
+
+tablespaceGroupName
+    : identifier
+    ;
+
+copyName
+    : identifier
+    ;
+
+mirrorName
+    : identifier
+    ;
+
+uriString
+    : identifier
+    ;
+
+qualifiedCredentialName
+    : identifier
+    ;
+
+pdbName
+    : identifier
+    ;
+
+diskgroupName
+    : identifier
+    ;
+
+templateName
+    : identifier
+    ;
+
+aliasName
+    : pathString
+    ;
+
+domain
+    : identifier
+    ;
+
+dateValue
+    : dateTimeLiterals | stringLiterals | numberLiterals | expr
+    ;
+
+sessionId
+    : numberLiterals
+    ;
+
+serialNumber
+    : numberLiterals
+    ;
+
+instanceId
+    : NUMBER_
+    ;
+
+sqlId
+    : identifier
+    ;
+
+logFileName
+    : stringLiterals
+    ;
+
+logFileGroupsArchivedLocationName
+    : stringLiterals
+    ;
+
+asmVersion
+    : stringLiterals
+    ;
+
+walletPassword
+    : identifier
+    ;
+
+hsmAuthString
+    : identifier
+    ;
+
+targetDbName
+    : identifier
+    ;
+
+certificateId
+    : identifier
+    ;
+
+categoryName
+    : identifier
+    ;
+
+offset
+    : numberLiterals | expr | nullValueLiterals
+    ;
+
+rowcount
+    : numberLiterals | expr | nullValueLiterals
+    ;
+
+percent
+    : numberLiterals | expr | nullValueLiterals
+    ;
+
+rollbackSegment
+    : identifier
+    ;
+
+queryName
+    : (owner DOT_)? name
+    ;
+
+cycleValue
+    : STRING_
+    ;
+
+noCycleValue
+    : STRING_
+    ;
+
+orderingColumn
+    : columnName
+    ;
+
+subavName
+    : (owner DOT_)? name
+    ;
+
+baseAvName
+    : (owner DOT_)? name
+    ;
+
+measName
+    : identifier
+    ;
+
+levelRef
+    : identifier
+    ;
+
+offsetExpr
+    : expr | numberLiterals
+    ;
+
+memberKeyExpr
+    : identifier
+    ;
+
+depthExpression
+    : identifier
+    ;
+
+unitName
+    : (owner DOT_)? name
+    ;
+
+procedureName
+    : identifier
+    ;
+
+cpuCost
+    : INTEGER_
+    ;
+
+ioCost
+    : INTEGER_
+    ;
+
+networkCost
+    : INTEGER_
+    ;
+
+defaultSelectivity
+    : INTEGER_
+    ;
+
+dataItem
+    : variableName
+    ;
+
+variableName
+    : identifier | stringLiterals
+    ;
+
+validTimeColumn
+    : columnName
+    ;
+
+attrDim
+    : identifier
+    ;
+
+hierarchyName
+    : (owner DOT_)? name
+    ;
+
+analyticViewName
+    : (owner DOT_)? name
+    ;
+
+samplePercent
+    : numberLiterals
+    ;
+
+seedValue
+    : numberLiterals
+    ;
+
+namespace
+    : identifier
+    ;
+
+restorePoint
+    : identifier
+    ;
+
+scnValue
+    : literals
+    ;
+
+timestampValue
+    : LP_? expr+ RP_?
+    ;
+
+scnTimestampExpr
+    : scnValue | timestampValue
+    ;
+
+referenceModelName
+    : identifier
+    ;
+
+mainModelName
+    : identifier
+    ;
+
+measureColumn
+    : columnName
+    ;
+
+dimensionColumn
+    : columnName
+    ;
+
+pattern
+    : stringLiterals
+    ;
+
+analyticFunctionName
+    : identifier
+    ;
+
+condition
+    : comparisonCondition
+    | floatingPointCondition
+    | condition (AND | OR) condition | NOT condition
+    | modelCondition
+    | multisetCondition
+    | patternMatchingCondition
+    | rangeCondition
+    | nullCondition
+    | xmlCondition
+    | jsonCondition
+    | LP_ condition RP_ | NOT condition | condition (AND | OR) condition
+    | existsCondition
+    | inCondition
+    | isOfTypeCondition
+    ;
+
+comparisonCondition
+    : simpleComparisonCondition | groupComparisonCondition
+    ;
+
+simpleComparisonCondition
+    : (expr (EQ_ | NEQ_ | GT_ | LT_ | GTE_ | LTE_) expr)
+    | (exprList (EQ_ | NEQ_) LP_ (expressionList | subquery) RP_)
+    ;
+
+expressionList
+    : exprs | LP_ expr? (COMMA_ expr?)* RP_
+    ;
+
+groupComparisonCondition
+    : (expr (EQ_ | NEQ_ | GT_ | LT_ | GTE_ | LTE_) (ANY | SOME | ALL) LP_ (expressionList | subquery) RP_)
+    | (exprList (EQ_ | NEQ_) (ANY | SOME | ALL) LP_ ((expressionList (SQ_ expressionList)*) | subquery) RP_)
+    ;
+
+floatingPointCondition
+    : expr IS NOT? (NAN | INFINITE)
+    ;
+
+logicalCondition
+    : (condition (AND | OR) condition) | NOT condition
+    ;
+
+modelCondition
+    : isAnyCondition | isPresentCondition
+    ;
+
+isAnyCondition
+    : (dimensionColumn IS)? ANY
+    ;
+
+isPresentCondition
+    : cellReference IS PRESENT
+    ;
+
+cellReference
+    : identifier
+    ;
+
+multisetCondition
+    : isASetCondition 
+    | isEmptyCondition 
+    | memberCondition 
+    | submultisetCondition
+    ;
+
+isASetCondition
+    : tableName IS NOT? A SET
+    ;
+
+isEmptyCondition
+    : tableName IS NOT? EMPTY
+    ;
+
+memberCondition
+    : expr NOT? MEMBER OF? tableName
+    ;
+
+submultisetCondition
+    : tableName NOT? SUBMULTISET OF? tableName
+    ;
+
+patternMatchingCondition
+    : likeCondition | regexpLikeCondition
+    ;
+
+likeCondition
+    : searchValue NOT? (LIKE | LIKEC | LIKE2 | LIKE4) pattern (ESCAPE escapeChar)?
+    ;
+
+searchValue
+    : identifier | stringLiterals
+    ;
+
+escapeChar
+    : stringLiterals
+    ;
+
+regexpLikeCondition
+    : REGEXP_LIKE LP_ searchValue COMMA_ pattern (COMMA_ matchParam)? RP_
+    ;
+
+matchParam
+    : stringLiterals
+    ;
+
+rangeCondition
+    : expr NOT? BETWEEN expr AND expr
+    ;
+
+nullCondition
+    : expr IS NOT? NULL
+    ;
+
+xmlCondition
+    : equalsPathCondition | underPathCondition
+    ;
+
+equalsPathCondition
+    : EQUALS_PATH LP_ columnName COMMA_ pathString (COMMA_ correlationInteger)? RP_
+    ;
+
+pathString
+    : stringLiterals
+    ;
+
+correlationInteger
+    : INTEGER_
+    ;
+
+underPathCondition
+    : UNDER_PATH LP_ columnName (COMMA_ levels)? COMMA_ pathString (COMMA_ correlationInteger)? RP_
+    ;
+
+level
+    : identifier
+    ;
+
+levels
+    : INTEGER_
+    ;
+
+jsonCondition
+    : isJsonCondition | jsonExistsCondition | jsonTextcontainsCondition
+    ;
+
+isJsonCondition
+    : expr IS NOT? JSON (FORMAT JSON)? (STRICT | LAX)? ((WITH | WITHOUT) UNIQUE KEYS)?
+    ;
+
+jsonEqualCondition
+    : JSON_EQUAL LP_ expr COMMA_ expr RP_
+    ;
+
+jsonExistsCondition
+    : JSON_EXISTS LP_ expr (FORMAT JSON)? COMMA_ jsonBasicPathExpr 
+    jsonPassingClause? jsonExistsOnErrorClause? jsonExistsOnEmptyClause? RP_
+    ;
+
+jsonPassingClause
+    : PASSING expr AS identifier (COMMA_ expr AS identifier)*
+    ;
+
+jsonExistsOnErrorClause
+    : (ERROR | TRUE | FALSE) ON ERROR
+    ;
+
+jsonExistsOnEmptyClause
+    : (ERROR | TRUE | FALSE) ON EMPTY
+    ;
+
+jsonTextcontainsCondition
+    : JSON_TEXTCONTAINS LP_ columnName COMMA_ jsonBasicPathExpr COMMA_ stringLiterals RP_
+    ;
+
+jsonBasicPathExpr
+    : jsonAbsolutePathExpr | jsonRelativePathExpr
+    ;
+
+jsonAbsolutePathExpr
+    : DOLLAR_ jsonNonfunctionSteps? jsonFunctionStep?
+    ;
+
+jsonNonfunctionSteps
+    : ((jsonObjectStep | jsonArrayStep | jsonDescendentStep) jsonFilterExpr?)+
+    ;
+
+jsonObjectStep
+    : DOT_ASTERISK_ | DOT_ jsonFieldName
+    ;
+
+jsonFieldName
+    : jsonString | (letter (letter | digit)*)
+    ;
+
+letter
+    : identifier
+    ;
+
+digit
+    : numberLiterals
+    ;
+
+jsonArrayStep
+    : LBT_ (ASTERISK_ | INTEGER_ (TO INTEGER_)? (COMMA_ INTEGER_ (TO INTEGER_)?)*) RBT_
+    ;
+
+jsonDescendentStep
+    : DOT_ DOT_ jsonFieldName
+    ;
+
+jsonFunctionStep
+    : DOT_ jsonItemMethod LP_ RP_
+    ;
+
+jsonItemMethod
+    : identifier
+    ;
+
+jsonFilterExpr
+    : QUESTION_ LP_ jsonCond RP_
+    ;
+
+jsonCond
+    : jsonCond OR_ jsonCond | jsonCond AND_ jsonCond | jsonNegation 
+    | LP_ jsonCond RP_ | jsonComparison | jsonExistsCond 
+    | jsonInCond | jsonLikeCond | jsonLikeRegexCond 
+    | jsonEqRegexCond | jsonHasSubstringCond | jsonStartsWithCond
+    ;
+
+jsonDisjunction
+    : jsonCond OR_ jsonCond
+    ;
+
+jsonConjunction
+    : jsonCond AND_ jsonCond
+    ;
+
+jsonNegation
+    : NOT_ LP_ jsonCond RP_
+    ;
+
+jsonExistsCond
+    : EXISTS LP_ jsonRelativePathExpr RP_
+    ;
+
+jsonHasSubstringCond
+    : jsonRelativePathExpr HAS SUBSTRING (jsonString | jsonVar)
+    ;
+
+jsonStartsWithCond
+    : jsonRelativePathExpr STARTS WITH (jsonString | jsonVar)
+    ;
+
+jsonLikeCond
+    : jsonRelativePathExpr LIKE (jsonString | jsonVar)
+    ;
+
+jsonLikeRegexCond
+    : jsonRelativePathExpr LIKE_REGEX (jsonString | jsonVar)
+    ;
+
+jsonEqRegexCond
+    : jsonRelativePathExpr EQ_REGEX (jsonString | jsonVar)
+    ;
+
+jsonInCond
+    : jsonRelativePathExpr IN valueList
+    ;
+
+valueList
+    : LP_ (jsonScalar | jsonVar) (COMMA_ (jsonScalar | jsonVar))* RP_
+    ;
+
+jsonComparison
+    : (jsonRelativePathExpr jsonComparePred (jsonVar | jsonScalar))
+    | ((jsonVar | jsonScalar) jsonComparePred jsonRelativePathExpr) 
+    | (jsonScalar jsonComparePred jsonScalar)
+    ;
+
+jsonRelativePathExpr
+    : AT_ jsonNonfunctionSteps? jsonFunctionStep?
+    ;
+
+jsonComparePred
+    : DEQ_ | NEQ_ | LT_ | LTE_ | GTE_ | GT_
+    ;
+
+jsonVar
+    : DOLLAR_ identifier
+    ;
+
+jsonScalar
+    : jsonNumber | TRUE | FALSE | NULL | jsonString
+    ;
+
+jsonNumber
+    : numberLiterals
+    ;
+
+jsonString
+    : stringLiterals | identifier
+    ;
+
+compoundCondition
+    : LP_ condition RP_ 
+    | NOT condition 
+    | condition (AND | OR) condition
+    ;
+
+existsCondition
+    : EXISTS LP_ subquery RP_
+    ;
+
+inCondition
+    : (expr NOT? IN LP_ (expressionList | subquery) RP_) 
+    | (exprList NOT? IN LP_ ((expressionList (COMMA_ expressionList)*) | subquery) RP_)
+    ;
+
+isOfTypeCondition
+    : expr IS NOT? OF TYPE? LP_ ONLY? typeName (COMMA_ ONLY? typeName)* RP_
+    ;
+
+databaseCharset
+    : AL32UTF8
+    ;
+
+nationalCharset
+    : AL16UTF16 | UTF8
+    ;
+
+filenamePattern
+    : STRING_
+    ;
+
+connectString
+    : STRING_
+    ;
+
+argument
+    : identifier
+    ;
+
+dataSource
+    : identifier
+    ;
+
+implementationType
+    : (owner DOT_)? name
+    ;
+
+implementationPackage
+    : (owner DOT_)? name
+    ;
+
+label
+    : identifier
+    ;
+
+libName
+    : identifier
+    ;
+
+externalDatatype
+    : dataType
+    ;
+    
+capacityUnit
+    : ('K' | 'M' | 'G' | 'T' | 'P' | 'E')
+    ;
+
+attributeDimensionName
+    : identifier
+    ;
+
+sequenceName
+    : identifier
+    ;
+    
+spfileName
+    : STRING_
+    ;
+
+pfileName
+    : STRING_
+    ;
+
+characterSetName
+    : identifier
+    ;
+
+quotaUnit
+    : ('M' | 'G' | 'T' | 'P' | 'E')
+    ;
+
+siteName
+    : identifier
+    ;
+
+diskName
+    : identifier
+    ;
+
+searchString
+    : STRING_
+    ;
+
+attributeValue
+    : identifier
+    ;
+
+profileName
+    : identifier
+    ;
+
+joinGroupName
+    : identifier
+    ;
+
+restorePointName
+    : identifier
+    ;
+
+libraryName
+    : identifier
+    ;
+
+matchString
+    : IDENTIFIER_ | ASTERISK_
+    ;
+
+parameterType
+    : identifier
+    ;
+
+returnType
+    : identifier
+    ;
+
+failgroupName
+    : identifier
+    ;
+
+asmVolumeName
+    : identifier
+    ;
+
+mountpathName
+    : identifier
+    ;
+
+usageName
+    : identifier
+    ;
+
+usergroupName
+    : STRING_
+    ;
+
+varrayType
+    : (owner DOT_)? name
+    ;
+
+stagingLogName
+    : identifier
     ;

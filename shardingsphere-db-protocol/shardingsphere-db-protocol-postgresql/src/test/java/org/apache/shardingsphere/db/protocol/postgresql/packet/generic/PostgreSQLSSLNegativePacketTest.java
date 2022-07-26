@@ -23,6 +23,8 @@ import org.apache.shardingsphere.db.protocol.postgresql.packet.handshake.Postgre
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -31,9 +33,8 @@ public final class PostgreSQLSSLNegativePacketTest {
     @Test
     public void assertReadWrite() {
         ByteBuf byteBuf = ByteBufTestUtils.createByteBuf(1);
-        PostgreSQLPacketPayload payload = new PostgreSQLPacketPayload(byteBuf);
+        PostgreSQLPacketPayload payload = new PostgreSQLPacketPayload(byteBuf, StandardCharsets.UTF_8);
         PostgreSQLSSLNegativePacket packet = new PostgreSQLSSLNegativePacket();
-        assertThat(packet.getMessageType(), is('\0'));
         packet.write(payload);
         assertThat(byteBuf.writerIndex(), is(1));
         assertThat(payload.readInt1(), is((int) 'N'));

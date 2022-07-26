@@ -17,7 +17,8 @@
 
 package org.apache.shardingsphere.driver.jdbc.core.statement;
 
-import org.apache.shardingsphere.driver.common.base.AbstractShardingSphereDataSourceForShardingTest;
+import org.apache.shardingsphere.driver.jdbc.base.AbstractShardingSphereDataSourceForShardingTest;
+import org.apache.shardingsphere.infra.database.DefaultDatabase;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -64,6 +65,17 @@ public final class ShardingSphereStatementTest extends AbstractShardingSphereDat
         }
     }
     
+    @Test
+    public void assertAddGetGeneratedKeysForNoGeneratedValues() throws SQLException {
+        String sql = "INSERT INTO t_product (product_name) VALUES ('%s')";
+        try (Statement statement = getShardingSphereDataSource().getConnection().createStatement()) {
+            statement.execute(String.format(sql, "cup"), Statement.RETURN_GENERATED_KEYS);
+            ResultSet generatedKeysResultSet = statement.getGeneratedKeys();
+            assertTrue(generatedKeysResultSet.next());
+            assertThat(generatedKeysResultSet.getInt(1), is(1));
+        }
+    }
+    
     @Test(expected = SQLException.class)
     public void assertQueryWithNull() throws SQLException {
         try (Statement statement = getShardingSphereDataSource().getConnection().createStatement()) {
@@ -77,7 +89,7 @@ public final class ShardingSphereStatementTest extends AbstractShardingSphereDat
             statement.executeQuery("");
         }
     }
-
+    
     @Test
     public void assertExecuteGetResultSet() throws SQLException {
         String sql = "UPDATE t_order_item SET status = '%s' WHERE user_id = %d AND order_id = %d";
@@ -86,13 +98,31 @@ public final class ShardingSphereStatementTest extends AbstractShardingSphereDat
             assertNull(statement.getResultSet());
         }
     }
-
+    
     @Test
     public void assertExecuteUpdateGetResultSet() throws SQLException {
         String sql = "UPDATE t_order_item SET status = '%s' WHERE user_id = %d AND order_id = %d";
         try (Statement statement = getShardingSphereDataSource().getConnection().createStatement()) {
             statement.executeUpdate(String.format(sql, "OK", 1, 1));
             assertNull(statement.getResultSet());
+        }
+    }
+    
+    @Test(expected = SQLException.class)
+    public void assertColumnNotFoundException() throws SQLException {
+        String sql = "UPDATE t_order_item SET error_column = '%s'";
+        try (Statement statement = getShardingSphereDataSource().getConnection().createStatement()) {
+            statement.executeUpdate(String.format(sql, "OK"));
+        }
+    }
+    
+    @Test
+    public void assertShowDatabases() throws SQLException {
+        String sql = "SHOW DATABASES";
+        try (Statement statement = getShardingSphereDataSource().getConnection().createStatement()) {
+            ResultSet resultSet = statement.executeQuery(sql);
+            assertTrue(resultSet.next());
+            assertThat(resultSet.getString(1), is(DefaultDatabase.LOGIC_NAME));
         }
     }
 }

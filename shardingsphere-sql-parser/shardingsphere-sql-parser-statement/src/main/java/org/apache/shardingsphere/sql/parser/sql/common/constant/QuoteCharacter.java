@@ -21,6 +21,8 @@ import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Arrays;
+
 /**
  * Quote character.
  */
@@ -35,6 +37,8 @@ public enum QuoteCharacter {
     QUOTE("\"", "\""),
     
     BRACKETS("[", "]"),
+    
+    PARENTHESES("(", ")"),
     
     NONE("", "");
     
@@ -52,11 +56,16 @@ public enum QuoteCharacter {
         if (Strings.isNullOrEmpty(value)) {
             return NONE;
         }
-        for (QuoteCharacter each : values()) {
-            if (NONE != each && each.startDelimiter.charAt(0) == value.charAt(0)) {
-                return each;
-            }
-        }
-        return NONE;
+        return Arrays.stream(values()).filter(each -> NONE != each && each.startDelimiter.charAt(0) == value.charAt(0)).findFirst().orElse(NONE);
+    }
+    
+    /**
+     * Wrap value with quote character.
+     * 
+     * @param value value to be wrapped
+     * @return wrapped value
+     */
+    public String wrap(final String value) {
+        return startDelimiter + value + endDelimiter;
     }
 }

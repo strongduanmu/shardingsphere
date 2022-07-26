@@ -17,35 +17,30 @@
 
 grammar TCLStatement;
 
-import Symbol, Keyword, MySQLKeyword, Literals, BaseRule;
+import BaseRule;
 
 setTransaction
-    : SET scope_? TRANSACTION transactionCharacteristic (COMMA_ transactionCharacteristic)*
+    : SET optionType? TRANSACTION transactionCharacteristics
     ;
 
 setAutoCommit
-    : SET scope_? AUTOCOMMIT EQ_ autoCommitValue
-    ;
-
-scope_
-    : (GLOBAL | PERSIST | PERSIST_ONLY | SESSION)
-    | AT_ AT_ (GLOBAL | PERSIST | PERSIST_ONLY | SESSION) DOT_
-    ;
-
-autoCommitValue
-    : NUMBER_ | ON | OFF
+    : SET (AT_? AT_)? optionType? DOT_? AUTOCOMMIT EQ_ autoCommitValue=(NUMBER_ | ON | OFF)
     ;
 
 beginTransaction
     : BEGIN | START TRANSACTION (transactionCharacteristic (COMMA_ transactionCharacteristic)*)?
     ;
 
+transactionCharacteristic
+    : WITH CONSISTENT SNAPSHOT | transactionAccessMode
+    ;
+
 commit
-    : COMMIT optionWork? optionChain? optionRelease?
+    : COMMIT WORK? optionChain? optionRelease?
     ;
 
 rollback
-    : ROLLBACK (optionWork? TO SAVEPOINT? identifier | optionWork? optionChain? optionRelease?)
+    : ROLLBACK (WORK? TO SAVEPOINT? identifier | WORK? optionChain? optionRelease?)
     ;
 
 savepoint
@@ -53,11 +48,11 @@ savepoint
     ;
 
 begin
-    : BEGIN optionWork?
+    : BEGIN WORK?
     ;
 
 lock
-    : LOCK (INSTANCE FOR BACKUP | (TABLE | TABLES) tableLock (COMMA_ tableLock)* )
+    : LOCK (INSTANCE FOR BACKUP | (TABLES tableLock (COMMA_ tableLock)*))
     ;
 
 unlock
@@ -69,28 +64,13 @@ releaseSavepoint
     ;
 
 xa
-    : (START | BEGIN) xid (JOIN | RESUME)
-    | END xid (SUSPEND (FOR MIGRATE)?)?
-    | PREPARE xid
-    | COMMIT xid (ONE PHASE)?
-    | ROLLBACK xid
-    | RECOVER (CONVERT xid)?
-    ;
-
-transactionCharacteristic
-   : ISOLATION LEVEL level_ | accessMode_ | WITH CONSISTENT SNAPSHOT
-   ;
-
-level_
-   : REPEATABLE READ | READ COMMITTED | READ UNCOMMITTED | SERIALIZABLE
-   ;
-
-accessMode_
-   : READ (WRITE | ONLY)
-   ;
-
-optionWork
-    : WORK
+    : XA ((START | BEGIN) xid (JOIN | RESUME)?
+        | END xid (SUSPEND (FOR MIGRATE)?)?
+        | PREPARE xid
+        | COMMIT xid (ONE PHASE)?
+        | ROLLBACK xid
+        | RECOVER (CONVERT XID)?
+    )
     ;
 
 optionChain
@@ -110,5 +90,6 @@ lockOption
     ;
 
 xid
-    : STRING_ (COMMA_ STRING_)* numberLiterals?
+    : gtrid=textString (COMMA_ bqual=textString (COMMA_ formatID=NUMBER_)?)?
     ;
+

@@ -17,23 +17,25 @@
 
 package org.apache.shardingsphere.driver.executor.batch;
 
-import com.google.common.base.Preconditions;
 import lombok.Getter;
-import org.apache.shardingsphere.infra.context.SchemaContexts;
-import org.apache.shardingsphere.infra.executor.kernel.InputGroup;
-import org.apache.shardingsphere.infra.executor.sql.ConnectionMode;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.eventbus.EventBusContext;
+import org.apache.shardingsphere.infra.executor.kernel.model.ExecutionGroup;
+import org.apache.shardingsphere.infra.executor.kernel.model.ExecutionGroupContext;
 import org.apache.shardingsphere.infra.executor.sql.context.ExecutionUnit;
-import org.apache.shardingsphere.infra.executor.sql.resourced.jdbc.StatementExecuteUnit;
-import org.apache.shardingsphere.infra.executor.sql.resourced.jdbc.executor.ExecutorExceptionHandler;
-import org.apache.shardingsphere.infra.executor.sql.resourced.jdbc.executor.SQLExecutor;
-import org.apache.shardingsphere.infra.executor.sql.resourced.jdbc.executor.SQLExecutorCallback;
-import org.apache.shardingsphere.infra.executor.sql.resourced.jdbc.executor.impl.DefaultSQLExecutorCallback;
-import org.apache.shardingsphere.infra.rule.DataNodeRoutedRule;
+import org.apache.shardingsphere.infra.executor.sql.execute.engine.ConnectionMode;
+import org.apache.shardingsphere.infra.executor.sql.execute.engine.SQLExecutorExceptionHandler;
+import org.apache.shardingsphere.infra.executor.sql.execute.engine.driver.jdbc.JDBCExecutionUnit;
+import org.apache.shardingsphere.infra.executor.sql.execute.engine.driver.jdbc.JDBCExecutor;
+import org.apache.shardingsphere.infra.executor.sql.execute.engine.driver.jdbc.JDBCExecutorCallback;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
-import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.rule.identifier.type.DataNodeContainedRule;
+import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -41,38 +43,43 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Prepared statement executor to process add batch.
  */
 public final class BatchPreparedStatementExecutor {
     
-    private final SchemaContexts schemaContexts;
+    private final MetaDataContexts metaDataContexts;
     
-    private final SQLExecutor sqlExecutor;
+    private final JDBCExecutor jdbcExecutor;
     
-    private final Collection<InputGroup<StatementExecuteUnit>> inputGroups;
+    private ExecutionGroupContext<JDBCExecutionUnit> executionGroupContext;
     
     @Getter
     private final Collection<BatchExecutionUnit> batchExecutionUnits;
     
     private int batchCount;
     
-    public BatchPreparedStatementExecutor(final SchemaContexts schemaContexts, final SQLExecutor sqlExecutor) {
-        this.schemaContexts = schemaContexts;
-        this.sqlExecutor = sqlExecutor;
-        inputGroups = new LinkedList<>();
+    private final String databaseName;
+    
+    private final EventBusContext eventBusContext;
+    
+    public BatchPreparedStatementExecutor(final MetaDataContexts metaDataContexts, final JDBCExecutor jdbcExecutor, final String databaseName, final EventBusContext eventBusContext) {
+        this.databaseName = databaseName;
+        this.metaDataContexts = metaDataContexts;
+        this.jdbcExecutor = jdbcExecutor;
+        this.eventBusContext = eventBusContext;
+        executionGroupContext = new ExecutionGroupContext<>(new LinkedList<>());
         batchExecutionUnits = new LinkedList<>();
     }
     
     /**
      * Initialize executor.
      *
-     * @param inputGroups input groups
+     * @param executionGroupContext execution group context
      */
-    public void init(final Collection<InputGroup<StatementExecuteUnit>> inputGroups) {
-        this.inputGroups.addAll(inputGroups);
+    public void init(final ExecutionGroupContext<JDBCExecutionUnit> executionGroupContext) {
+        this.executionGroupContext = executionGroupContext;
     }
     
     /**
@@ -88,7 +95,12 @@ public final class BatchPreparedStatementExecutor {
     }
     
     private Collection<BatchExecutionUnit> createBatchExecutionUnits(final Collection<ExecutionUnit> executionUnits) {
-        return executionUnits.stream().map(BatchExecutionUnit::new).collect(Collectors.toList());
+        List<BatchExecutionUnit> result = new ArrayList<>(executionUnits.size());
+        for (ExecutionUnit each : executionUnits) {
+            BatchExecutionUnit batchExecutionUnit = new BatchExecutionUnit(each);
+            result.add(batchExecutionUnit);
+        }
+        return result;
     }
     
     private void handleOldBatchExecutionUnits(final Collection<BatchExecutionUnit> newExecutionUnits) {
@@ -96,7 +108,11 @@ public final class BatchPreparedStatementExecutor {
     }
     
     private void reviseBatchExecutionUnits(final BatchExecutionUnit batchExecutionUnit) {
-        batchExecutionUnits.stream().filter(each -> each.equals(batchExecutionUnit)).forEach(each -> reviseBatchExecutionUnit(each, batchExecutionUnit));
+        for (BatchExecutionUnit each : batchExecutionUnits) {
+            if (each.equals(batchExecutionUnit)) {
+                reviseBatchExecutionUnit(each, batchExecutionUnit);
+            }
+        }
     }
     
     private void reviseBatchExecutionUnit(final BatchExecutionUnit oldBatchExecutionUnit, final BatchExecutionUnit newBatchExecutionUnit) {
@@ -106,7 +122,9 @@ public final class BatchPreparedStatementExecutor {
     
     private void handleNewBatchExecutionUnits(final Collection<BatchExecutionUnit> newExecutionUnits) {
         newExecutionUnits.removeAll(batchExecutionUnits);
-        newExecutionUnits.forEach(each -> each.mapAddBatchCount(batchCount));
+        for (BatchExecutionUnit each : newExecutionUnits) {
+            each.mapAddBatchCount(batchCount);
+        }
         batchExecutionUnits.addAll(newExecutionUnits);
     }
     
@@ -117,30 +135,43 @@ public final class BatchPreparedStatementExecutor {
      * @return execute results
      * @throws SQLException SQL exception
      */
-    public int[] executeBatch(final SQLStatementContext sqlStatementContext) throws SQLException {
-        boolean isExceptionThrown = ExecutorExceptionHandler.isExceptionThrown();
-        SQLExecutorCallback<int[]> callback = new DefaultSQLExecutorCallback<int[]>(schemaContexts.getDatabaseType(), isExceptionThrown) {
+    public int[] executeBatch(final SQLStatementContext<?> sqlStatementContext) throws SQLException {
+        boolean isExceptionThrown = SQLExecutorExceptionHandler.isExceptionThrown();
+        JDBCExecutorCallback<int[]> callback = new JDBCExecutorCallback<int[]>(
+                metaDataContexts.getMetaData().getDatabase(databaseName).getResource().getDatabaseType(), sqlStatementContext.getSqlStatement(), isExceptionThrown, eventBusContext) {
             
             @Override
             protected int[] executeSQL(final String sql, final Statement statement, final ConnectionMode connectionMode) throws SQLException {
                 return statement.executeBatch();
             }
+            
+            @SuppressWarnings("OptionalContainsCollection")
+            @Override
+            protected Optional<int[]> getSaneResult(final SQLStatement sqlStatement, final SQLException ex) {
+                return Optional.empty();
+            }
         };
-        List<int[]> results = sqlExecutor.execute(inputGroups, callback);
-        return isNeedAccumulate(
-                schemaContexts.getDefaultSchemaContext().getSchema().getRules().stream().filter(rule -> rule instanceof DataNodeRoutedRule).collect(Collectors.toList()), sqlStatementContext)
-                ? accumulate(results) : results.get(0);
+        List<int[]> results = jdbcExecutor.execute(executionGroupContext, callback);
+        if (results.isEmpty()) {
+            return new int[0];
+        }
+        return isNeedAccumulate(sqlStatementContext) ? accumulate(results) : results.get(0);
     }
     
-    private boolean isNeedAccumulate(final Collection<ShardingSphereRule> rules, final SQLStatementContext sqlStatementContext) {
-        return rules.stream().anyMatch(each -> ((DataNodeRoutedRule) each).isNeedAccumulate(sqlStatementContext.getTablesContext().getTableNames()));
+    private boolean isNeedAccumulate(final SQLStatementContext<?> sqlStatementContext) {
+        for (ShardingSphereRule each : metaDataContexts.getMetaData().getDatabase(databaseName).getRuleMetaData().getRules()) {
+            if (each instanceof DataNodeContainedRule && ((DataNodeContainedRule) each).isNeedAccumulate(sqlStatementContext.getTablesContext().getTableNames())) {
+                return true;
+            }
+        }
+        return false;
     }
     
     private int[] accumulate(final List<int[]> results) {
         int[] result = new int[batchCount];
         int count = 0;
-        for (InputGroup<StatementExecuteUnit> each : inputGroups) {
-            for (StatementExecuteUnit eachUnit : each.getInputs()) {
+        for (ExecutionGroup<JDBCExecutionUnit> each : executionGroupContext.getInputGroups()) {
+            for (JDBCExecutionUnit eachUnit : each.getInputs()) {
                 Map<Integer, Integer> jdbcAndActualAddBatchCallTimesMap = Collections.emptyMap();
                 for (BatchExecutionUnit eachExecutionUnit : batchExecutionUnits) {
                     if (isSameDataSourceAndSQL(eachExecutionUnit, eachUnit)) {
@@ -158,9 +189,9 @@ public final class BatchPreparedStatementExecutor {
         return result;
     }
     
-    private boolean isSameDataSourceAndSQL(final BatchExecutionUnit batchExecutionUnit, final StatementExecuteUnit statementExecuteUnit) {
-        return batchExecutionUnit.getExecutionUnit().getDataSourceName().equals(statementExecuteUnit.getExecutionUnit().getDataSourceName())
-                && batchExecutionUnit.getExecutionUnit().getSqlUnit().getSql().equals(statementExecuteUnit.getExecutionUnit().getSqlUnit().getSql());
+    private boolean isSameDataSourceAndSQL(final BatchExecutionUnit batchExecutionUnit, final JDBCExecutionUnit jdbcExecutionUnit) {
+        return batchExecutionUnit.getExecutionUnit().getDataSourceName().equals(jdbcExecutionUnit.getExecutionUnit().getDataSourceName())
+                && batchExecutionUnit.getExecutionUnit().getSqlUnit().getSql().equals(jdbcExecutionUnit.getExecutionUnit().getSqlUnit().getSql());
     }
     
     /**
@@ -170,8 +201,11 @@ public final class BatchPreparedStatementExecutor {
      */
     public List<Statement> getStatements() {
         List<Statement> result = new LinkedList<>();
-        for (InputGroup<StatementExecuteUnit> each : inputGroups) {
-            result.addAll(each.getInputs().stream().map(StatementExecuteUnit::getStorageResource).collect(Collectors.toList()));
+        for (ExecutionGroup<JDBCExecutionUnit> eachGroup : executionGroupContext.getInputGroups()) {
+            for (JDBCExecutionUnit eachUnit : eachGroup.getInputs()) {
+                Statement storageResource = eachUnit.getStorageResource();
+                result.add(storageResource);
+            }
         }
         return result;
     }
@@ -183,18 +217,31 @@ public final class BatchPreparedStatementExecutor {
      * @return parameter sets
      */
     public List<List<Object>> getParameterSet(final Statement statement) {
-        return inputGroups.stream().map(each -> findStatementExecuteUnit(statement, each)).filter(Optional::isPresent).findFirst().map(Optional::get)
-                .map(this::getParameterSets).orElse(Collections.emptyList());
+        for (ExecutionGroup<JDBCExecutionUnit> each : executionGroupContext.getInputGroups()) {
+            Optional<JDBCExecutionUnit> result = findJDBCExecutionUnit(statement, each);
+            if (result.isPresent()) {
+                return getParameterSets(result.get());
+            }
+        }
+        return Collections.emptyList();
     }
     
-    private Optional<StatementExecuteUnit> findStatementExecuteUnit(final Statement statement, final InputGroup<StatementExecuteUnit> executeGroup) {
-        return executeGroup.getInputs().stream().filter(each -> each.getStorageResource().equals(statement)).findFirst();
+    private Optional<JDBCExecutionUnit> findJDBCExecutionUnit(final Statement statement, final ExecutionGroup<JDBCExecutionUnit> executionGroup) {
+        for (JDBCExecutionUnit each : executionGroup.getInputs()) {
+            if (each.getStorageResource().equals(statement)) {
+                return Optional.of(each);
+            }
+        }
+        return Optional.empty();
     }
     
-    private List<List<Object>> getParameterSets(final StatementExecuteUnit executeUnit) {
-        Optional<BatchExecutionUnit> batchExecutionUnit = batchExecutionUnits.stream().filter(each -> isSameDataSourceAndSQL(each, executeUnit)).findFirst();
-        Preconditions.checkState(batchExecutionUnit.isPresent());
-        return batchExecutionUnit.get().getParameterSets();
+    private List<List<Object>> getParameterSets(final JDBCExecutionUnit executionUnit) {
+        for (BatchExecutionUnit each : batchExecutionUnits) {
+            if (isSameDataSourceAndSQL(each, executionUnit)) {
+                return each.getParameterSets();
+            }
+        }
+        throw new IllegalStateException();
     }
     
     /**
@@ -203,18 +250,9 @@ public final class BatchPreparedStatementExecutor {
      * @throws SQLException SQL exception
      */
     public void clear() throws SQLException {
-        closeStatements();
         getStatements().clear();
-        inputGroups.clear();
+        executionGroupContext.getInputGroups().clear();
         batchCount = 0;
         batchExecutionUnits.clear();
     }
-    
-    private void closeStatements() throws SQLException {
-        for (Statement each : getStatements()) {
-            each.close();
-        }
-    }
 }
-
-

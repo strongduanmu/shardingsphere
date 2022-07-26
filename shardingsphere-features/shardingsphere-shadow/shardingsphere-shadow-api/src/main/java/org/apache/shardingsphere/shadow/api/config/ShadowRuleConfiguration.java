@@ -17,27 +17,29 @@
 
 package org.apache.shardingsphere.shadow.api.config;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import lombok.Getter;
-import org.apache.shardingsphere.infra.config.RuleConfiguration;
+import lombok.Setter;
+import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
+import org.apache.shardingsphere.infra.config.function.DistributedRuleConfiguration;
+import org.apache.shardingsphere.infra.config.scope.DatabaseRuleConfiguration;
+import org.apache.shardingsphere.shadow.api.config.datasource.ShadowDataSourceConfiguration;
+import org.apache.shardingsphere.shadow.api.config.table.ShadowTableConfiguration;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
  * Shadow rule configuration.
  */
 @Getter
-public final class ShadowRuleConfiguration implements RuleConfiguration {
+@Setter
+public final class ShadowRuleConfiguration implements DatabaseRuleConfiguration, DistributedRuleConfiguration {
     
-    private final String column;
+    private String defaultShadowAlgorithmName;
     
-    private final Map<String, String> shadowMappings;
+    private Map<String, ShadowDataSourceConfiguration> dataSources = new LinkedHashMap<>();
     
-    public ShadowRuleConfiguration(final String column, final Map<String, String> shadowMappings) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(column), "Column is required.");
-        Preconditions.checkArgument(!shadowMappings.isEmpty(), "ShadowMappings is required.");
-        this.column = column;
-        this.shadowMappings = shadowMappings;
-    }
+    private Map<String, ShadowTableConfiguration> tables = new LinkedHashMap<>();
+    
+    private Map<String, ShardingSphereAlgorithmConfiguration> shadowAlgorithms = new LinkedHashMap<>();
 }

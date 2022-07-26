@@ -17,23 +17,31 @@
 
 package org.apache.shardingsphere.db.protocol.postgresql.packet.generic;
 
-import lombok.Getter;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.PostgreSQLPacket;
-import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQLCommandPacketType;
+import org.apache.shardingsphere.db.protocol.postgresql.packet.identifier.PostgreSQLMessagePacketType;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
 
 /**
  * Ready for query packet for PostgreSQL.
  */
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class PostgreSQLReadyForQueryPacket implements PostgreSQLPacket {
     
-    private static final char STATUS = 'I';
+    public static final PostgreSQLReadyForQueryPacket NOT_IN_TRANSACTION = new PostgreSQLReadyForQueryPacket((byte) 'I');
     
-    @Getter
-    private final char messageType = PostgreSQLCommandPacketType.READY_FOR_QUERY.getValue();
+    public static final PostgreSQLReadyForQueryPacket IN_TRANSACTION = new PostgreSQLReadyForQueryPacket((byte) 'T');
+    
+    public static final PostgreSQLReadyForQueryPacket TRANSACTION_FAILED = new PostgreSQLReadyForQueryPacket((byte) 'E');
+    
+    private static final byte[] PREFIX = new byte[]{(byte) PostgreSQLMessagePacketType.READY_FOR_QUERY.getValue(), 0, 0, 0, 5};
+    
+    private final byte status;
     
     @Override
     public void write(final PostgreSQLPacketPayload payload) {
-        payload.writeInt1(STATUS);
+        payload.getByteBuf().writeBytes(PREFIX);
+        payload.getByteBuf().writeByte(status);
     }
 }

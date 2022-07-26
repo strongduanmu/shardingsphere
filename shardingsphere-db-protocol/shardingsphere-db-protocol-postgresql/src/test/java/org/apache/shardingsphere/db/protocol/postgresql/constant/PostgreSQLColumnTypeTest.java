@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.db.protocol.postgresql.constant;
 
+import org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.extended.PostgreSQLColumnType;
 import org.junit.Test;
 
 import java.sql.Types;
@@ -30,6 +31,12 @@ public final class PostgreSQLColumnTypeTest {
     public void assertValueOfJDBCType() {
         PostgreSQLColumnType sqlColumnType = PostgreSQLColumnType.valueOfJDBCType(Types.BIGINT);
         assertThat(sqlColumnType, is(PostgreSQLColumnType.POSTGRESQL_TYPE_INT8));
+    }
+    
+    @Test
+    public void assertValueOfJDBCTypeForBooleanType() {
+        PostgreSQLColumnType sqlColumnType = PostgreSQLColumnType.valueOfJDBCType(Types.BOOLEAN);
+        assertThat(sqlColumnType, is(PostgreSQLColumnType.POSTGRESQL_TYPE_BOOL));
     }
     
     @Test(expected = IllegalArgumentException.class)

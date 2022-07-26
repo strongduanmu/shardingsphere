@@ -17,17 +17,16 @@
 
 package org.apache.shardingsphere.proxy.frontend.context;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
 /**
  * Frontend context.
  */
-@RequiredArgsConstructor
-@Getter
-public final class FrontendContext {
+public interface FrontendContext {
     
-    private final boolean occupyThreadForPerConnection;
-    
-    private final boolean flushForPerCommandPacket;
+    /**
+     * Whether Proxy should use same thread to execute tasks.
+     *
+     * @param message message
+     * @return is same thread required
+     */
+    boolean isRequiredSameThreadForConnection(Object message);
 }

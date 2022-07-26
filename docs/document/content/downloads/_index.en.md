@@ -1,7 +1,7 @@
 +++
-pre = "<b>6. </b>"
+pre = "<b>9. </b>"
 title = "Downloads"
-weight = 6
+weight = 9
 chapter = true
 extracss = true
 +++
@@ -11,17 +11,12 @@ extracss = true
 Apache ShardingSphere is released as source code tarballs with corresponding binary tarballs for convenience.
 The downloads are distributed via mirror sites and should be checked for tampering using GPG or SHA-512.
 
-##### Apache ShardingSphere - Version: 4.1.1 ( Release Date: Jun 5, 2020 )
+##### Apache ShardingSphere - Version: 5.1.2 ( Release Date: June 17th, 2022 )
 
-- Source Codes: [ [<u>SRC</u>](https://www.apache.org/dyn/closer.cgi/shardingsphere/4.1.1/apache-shardingsphere-4.1.1-src.zip) ] [ [<u>ASC</u>](https://downloads.apache.org/shardingsphere/4.1.1/apache-shardingsphere-4.1.1-src.zip.asc) ] [ [<u>SHA512</u>](https://downloads.apache.org/shardingsphere/4.1.1/apache-shardingsphere-4.1.1-src.zip.sha512) ]
-- ShardingSphere-JDBC Binary Distribution: [ [<u>TAR</u>](https://www.apache.org/dyn/closer.cgi/shardingsphere/4.1.1/apache-shardingsphere-4.1.1-sharding-jdbc-bin.tar.gz) ] [ [<u>ASC</u>](https://downloads.apache.org/shardingsphere/4.1.1/apache-shardingsphere-4.1.1-sharding-jdbc-bin.tar.gz.asc) ] [ [<u>SHA512</u>](https://downloads.apache.org/shardingsphere/4.1.1/apache-shardingsphere-4.1.1-sharding-jdbc-bin.tar.gz.sha512) ]
-- ShardingSphere-Proxy Binary Distribution: [ [<u>TAR</u>](https://www.apache.org/dyn/closer.cgi/shardingsphere/4.1.1/apache-shardingsphere-4.1.1-sharding-proxy-bin.tar.gz) ] [ [<u>ASC</u>](https://downloads.apache.org/shardingsphere/4.1.1/apache-shardingsphere-4.1.1-sharding-proxy-bin.tar.gz.asc) ] [ [<u>SHA512</u>](https://downloads.apache.org/shardingsphere/4.1.1/apache-shardingsphere-4.1.1-sharding-proxy-bin.tar.gz.sha512) ]
-- ShardingSphere-Scaling Binary Distribution: [ [<u>TAR</u>](https://www.apache.org/dyn/closer.cgi/shardingsphere/4.1.1/apache-shardingsphere-4.1.1-sharding-scaling-bin.tar.gz) ] [ [<u>ASC</u>](https://downloads.apache.org/shardingsphere/4.1.1/apache-shardingsphere-4.1.1-sharding-scaling-bin.tar.gz.asc) ] [ [<u>SHA512</u>](https://downloads.apache.org/shardingsphere/4.1.1/apache-shardingsphere-4.1.1-sharding-scaling-bin.tar.gz.sha512) ]
-
-##### ShardingSphere UI - Version: 4.1.1 ( Release Date: Jun 9, 2020 )
-
-- Source Codes: [ [<u>SRC</u>](https://www.apache.org/dyn/closer.cgi/shardingsphere/shardingsphere-ui-4.1.1/apache-shardingsphere-4.1.1-shardingsphere-ui-src.zip ) ] [ [<u>ASC</u>](https://downloads.apache.org/shardingsphere/shardingsphere-ui-4.1.1/apache-shardingsphere-4.1.1-shardingsphere-ui-src.zip.asc) ] [ [<u>SHA512</u>](https://downloads.apache.org/shardingsphere/shardingsphere-ui-4.1.1/apache-shardingsphere-4.1.1-shardingsphere-ui-src.zip.sha512) ]
-- ShardingSphere-UI Binary Distribution: [ [<u>TAR</u>](https://www.apache.org/dyn/closer.cgi/shardingsphere/shardingsphere-ui-4.1.1/apache-shardingsphere-4.1.1-shardingsphere-ui-bin.tar.gz) ] [ [<u>ASC</u>](https://downloads.apache.org/shardingsphere/shardingsphere-ui-4.1.1/apache-shardingsphere-4.1.1-shardingsphere-ui-bin.tar.gz.asc) ] [ [<u>SHA512</u>](https://downloads.apache.org/shardingsphere/shardingsphere-ui-4.1.1/apache-shardingsphere-4.1.1-shardingsphere-ui-bin.tar.gz.sha512) ]
+- Source Codes: [<u>SRC</u>](https://www.apache.org/dyn/closer.lua/shardingsphere/5.1.2/apache-shardingsphere-5.1.2-src.zip) ( [<u>ASC</u>](https://downloads.apache.org/shardingsphere/5.1.2/apache-shardingsphere-5.1.2-src.zip.asc), [<u>SHA512</u>](https://downloads.apache.org/shardingsphere/5.1.2/apache-shardingsphere-5.1.2-src.zip.sha512) )
+- ShardingSphere-JDBC Binary Distribution: [<u>TAR</u>](https://www.apache.org/dyn/closer.lua/shardingsphere/5.1.2/apache-shardingsphere-5.1.2-shardingsphere-jdbc-bin.tar.gz) ( [<u>ASC</u>](https://downloads.apache.org/shardingsphere/5.1.2/apache-shardingsphere-5.1.2-shardingsphere-jdbc-bin.tar.gz.asc), [<u>SHA512</u>](https://downloads.apache.org/shardingsphere/5.1.2/apache-shardingsphere-5.1.2-shardingsphere-jdbc-bin.tar.gz.sha512) )
+- ShardingSphere-Proxy Binary Distribution: [<u>TAR</u>](https://www.apache.org/dyn/closer.lua/shardingsphere/5.1.2/apache-shardingsphere-5.1.2-shardingsphere-proxy-bin.tar.gz) ( [<u>ASC</u>](https://downloads.apache.org/shardingsphere/5.1.2/apache-shardingsphere-5.1.2-shardingsphere-proxy-bin.tar.gz.asc), [<u>SHA512</u>](https://downloads.apache.org/shardingsphere/5.1.2/apache-shardingsphere-5.1.2-shardingsphere-proxy-bin.tar.gz.sha512) )
+- ShardingSphere-Agent Binary Distribution: [<u>TAR</u>](https://www.apache.org/dyn/closer.lua/shardingsphere/5.1.2/apache-shardingsphere-5.1.2-shardingsphere-agent-bin.tar.gz) ( [<u>ASC</u>](https://downloads.apache.org/shardingsphere/5.1.2/apache-shardingsphere-5.1.2-shardingsphere-agent-bin.tar.gz.asc), [<u>SHA512</u>](https://downloads.apache.org/shardingsphere/5.1.2/apache-shardingsphere-5.1.2-shardingsphere-agent-bin.tar.gz.sha512) )
 
 ## All Releases
 

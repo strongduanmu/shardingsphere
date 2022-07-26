@@ -22,28 +22,26 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.db.protocol.codec.PacketCodec;
+import org.apache.shardingsphere.db.protocol.netty.ChannelAttrInitializer;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
-import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.frontend.protocol.DatabaseProtocolFrontendEngineFactory;
 import org.apache.shardingsphere.proxy.frontend.spi.DatabaseProtocolFrontendEngine;
 
 /**
- * Channel initializer.
+ * Server handler initializer.
  */
 @RequiredArgsConstructor
 public final class ServerHandlerInitializer extends ChannelInitializer<SocketChannel> {
     
+    private final DatabaseType databaseType;
+    
     @Override
     protected void initChannel(final SocketChannel socketChannel) {
-        DatabaseProtocolFrontendEngine databaseProtocolFrontendEngine = DatabaseProtocolFrontendEngineFactory.newInstance(getDatabaseType());
+        DatabaseProtocolFrontendEngine databaseProtocolFrontendEngine = DatabaseProtocolFrontendEngineFactory.newInstance(databaseType);
         ChannelPipeline pipeline = socketChannel.pipeline();
+        pipeline.addLast(new ChannelAttrInitializer());
         pipeline.addLast(new PacketCodec(databaseProtocolFrontendEngine.getCodecEngine()));
-        pipeline.addLast(new FrontendChannelInboundHandler(databaseProtocolFrontendEngine));
-    }
-    
-    private DatabaseType getDatabaseType() {
-        // TODO Consider loading from configuration.
-        return ProxyContext.getInstance().getSchemaContexts().getSchemaContexts().isEmpty() ? new MySQLDatabaseType() : ProxyContext.getInstance().getSchemaContexts().getDatabaseType();
+        pipeline.addLast(new FrontendChannelLimitationInboundHandler(databaseProtocolFrontendEngine));
+        pipeline.addLast(new FrontendChannelInboundHandler(databaseProtocolFrontendEngine, socketChannel));
     }
 }

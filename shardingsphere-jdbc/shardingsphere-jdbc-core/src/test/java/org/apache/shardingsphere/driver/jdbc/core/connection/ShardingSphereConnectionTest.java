@@ -17,80 +17,57 @@
 
 package org.apache.shardingsphere.driver.jdbc.core.connection;
 
-import org.apache.shardingsphere.driver.jdbc.core.fixture.BASEShardingTransactionManagerFixture;
-import org.apache.shardingsphere.driver.jdbc.core.fixture.XAShardingTransactionManagerFixture;
-import org.apache.shardingsphere.infra.context.SchemaContext;
-import org.apache.shardingsphere.infra.context.SchemaContexts;
-import org.apache.shardingsphere.infra.context.impl.StandardSchemaContexts;
-import org.apache.shardingsphere.infra.context.runtime.RuntimeContext;
-import org.apache.shardingsphere.infra.context.schema.ShardingSphereSchema;
-import org.apache.shardingsphere.infra.database.type.DatabaseTypes;
-import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
-import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
-import org.apache.shardingsphere.transaction.ShardingTransactionManagerEngine;
-import org.apache.shardingsphere.transaction.context.TransactionContexts;
-import org.apache.shardingsphere.transaction.core.TransactionOperationType;
+import lombok.SneakyThrows;
+import org.apache.shardingsphere.driver.jdbc.context.JDBCContext;
+import org.apache.shardingsphere.infra.database.DefaultDatabase;
+import org.apache.shardingsphere.infra.executor.sql.execute.engine.ConnectionMode;
+import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
+import org.apache.shardingsphere.mode.manager.ContextManager;
+import org.apache.shardingsphere.traffic.rule.TrafficRule;
+import org.apache.shardingsphere.transaction.ConnectionTransaction;
+import org.apache.shardingsphere.transaction.ConnectionTransaction.DistributedTransactionOperationType;
+import org.apache.shardingsphere.transaction.TransactionHolder;
 import org.apache.shardingsphere.transaction.core.TransactionType;
 import org.apache.shardingsphere.transaction.core.TransactionTypeHolder;
+import org.apache.shardingsphere.transaction.rule.TransactionRule;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import javax.sql.DataSource;
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Collections;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public final class ShardingSphereConnectionTest {
     
-    private static Map<String, DataSource> dataSourceMap = new HashMap<>();
-    
     private ShardingSphereConnection connection;
     
-    private SchemaContexts schemaContexts;
-    
-    private TransactionContexts transactionContexts;
-    
-    @BeforeClass
-    public static void init() throws SQLException {
-        DataSource masterDataSource = mockDataSource();
-        DataSource slaveDataSource = mockDataSource();
-        dataSourceMap = new HashMap<>(2, 1);
-        dataSourceMap.put("test_ds_master", masterDataSource);
-        dataSourceMap.put("test_ds_slave", slaveDataSource);
-    }
-    
-    private static DataSource mockDataSource() throws SQLException {
-        DataSource result = mock(DataSource.class);
-        when(result.getConnection()).thenReturn(mock(Connection.class));
-        return result;
-    }
-    
     @Before
-    public void setUp() {
-        schemaContexts = mock(StandardSchemaContexts.class);
-        SchemaContext schemaContext = mock(SchemaContext.class);
-        ShardingSphereSchema schema = mock(ShardingSphereSchema.class);
-        RuntimeContext runtimeContext = mock(RuntimeContext.class);
-        when(schemaContexts.getDefaultSchemaContext()).thenReturn(schemaContext);
-        when(schemaContext.getSchema()).thenReturn(schema);
-        when(schemaContexts.getDatabaseType()).thenReturn(DatabaseTypes.getActualDatabaseType("H2"));
-        when(schemaContext.getRuntimeContext()).thenReturn(runtimeContext);
-        transactionContexts = mock(TransactionContexts.class);
-        when(transactionContexts.getDefaultTransactionManagerEngine()).thenReturn(new ShardingTransactionManagerEngine());
-        ShardingRuleConfiguration shardingRuleConfig = new ShardingRuleConfiguration();
-        shardingRuleConfig.getTables().add(new ShardingTableRuleConfiguration("test"));
-        connection = new ShardingSphereConnection(dataSourceMap, schemaContexts, transactionContexts, TransactionType.LOCAL);
+    public void setUp() throws SQLException {
+        TransactionTypeHolder.set(TransactionType.LOCAL);
+        connection = new ShardingSphereConnection(DefaultDatabase.LOGIC_NAME, mockContextManager(), mock(JDBCContext.class));
+    }
+    
+    private ContextManager mockContextManager() {
+        ContextManager result = mock(ContextManager.class, RETURNS_DEEP_STUBS);
+        when(result.getDataSourceMap(DefaultDatabase.LOGIC_NAME)).thenReturn(Collections.singletonMap("ds", mock(DataSource.class, RETURNS_DEEP_STUBS)));
+        ShardingSphereRuleMetaData globalRuleMetaData = mock(ShardingSphereRuleMetaData.class);
+        when(result.getMetaDataContexts().getMetaData().getGlobalRuleMetaData()).thenReturn(globalRuleMetaData);
+        when(globalRuleMetaData.getSingleRule(TransactionRule.class)).thenReturn(mock(TransactionRule.class, RETURNS_DEEP_STUBS));
+        when(globalRuleMetaData.getSingleRule(TrafficRule.class)).thenReturn(mock(TrafficRule.class));
+        return result;
     }
     
     @After
@@ -98,56 +75,149 @@ public final class ShardingSphereConnectionTest {
         try {
             connection.close();
             TransactionTypeHolder.clear();
-            XAShardingTransactionManagerFixture.getINVOCATIONS().clear();
-            BASEShardingTransactionManagerFixture.getINVOCATIONS().clear();
         } catch (final SQLException ignored) {
         }
     }
     
     @Test
-    public void assertGetConnectionFromCache() throws SQLException {
-        assertThat(connection.getConnection("test_ds_master"), is(connection.getConnection("test_ds_master")));
-    }
-    
-    @Test(expected = IllegalStateException.class)
-    public void assertGetConnectionFailure() throws SQLException {
-        connection.getConnection("not_exist");
-    }
-    
-    @Test
-    public void assertXATransactionOperation() throws SQLException {
-        connection = new ShardingSphereConnection(dataSourceMap, schemaContexts, transactionContexts, TransactionType.XA);
+    public void assertIsHoldTransaction() throws SQLException {
         connection.setAutoCommit(false);
-        assertTrue(XAShardingTransactionManagerFixture.getINVOCATIONS().contains(TransactionOperationType.BEGIN));
-        connection.commit();
-        assertTrue(XAShardingTransactionManagerFixture.getINVOCATIONS().contains(TransactionOperationType.COMMIT));
-        connection.rollback();
-        assertTrue(XAShardingTransactionManagerFixture.getINVOCATIONS().contains(TransactionOperationType.ROLLBACK));
+        assertTrue(connection.isHoldTransaction());
     }
     
     @Test
-    public void assertBASETransactionOperation() throws SQLException {
-        connection = new ShardingSphereConnection(dataSourceMap, schemaContexts, transactionContexts, TransactionType.BASE);
+    public void assertIsNotHoldTransaction() throws SQLException {
+        connection.setAutoCommit(true);
+        assertFalse(connection.isHoldTransaction());
+    }
+    
+    @Test
+    public void assertSetAutoCommitWithLocalTransaction() throws SQLException {
+        Connection physicalConnection = mock(Connection.class);
+        when(connection.getContextManager().getDataSourceMap(DefaultDatabase.LOGIC_NAME).get("ds").getConnection()).thenReturn(physicalConnection);
+        connection.getConnectionManager().getConnections("ds", 1, ConnectionMode.MEMORY_STRICTLY);
+        connection.setAutoCommit(true);
+        assertTrue(connection.getAutoCommit());
+        verify(physicalConnection).setAutoCommit(true);
+    }
+    
+    @Test
+    public void assertSetAutoCommitWithDistributedTransaction() throws SQLException {
+        ConnectionTransaction connectionTransaction = mock(ConnectionTransaction.class);
+        when(connectionTransaction.getDistributedTransactionOperationType(true)).thenReturn(DistributedTransactionOperationType.COMMIT);
+        mockConnectionManager(connectionTransaction);
+        connection.setAutoCommit(true);
+        assertTrue(connection.getAutoCommit());
+        verify(connectionTransaction).commit();
+    }
+    
+    @Test
+    public void assertCommitWithLocalTransaction() throws SQLException {
+        Connection physicalConnection = mock(Connection.class);
+        when(connection.getContextManager().getDataSourceMap(DefaultDatabase.LOGIC_NAME).get("ds").getConnection()).thenReturn(physicalConnection);
+        connection.getConnectionManager().getConnections("ds", 1, ConnectionMode.MEMORY_STRICTLY);
         connection.setAutoCommit(false);
-        assertTrue(BASEShardingTransactionManagerFixture.getINVOCATIONS().contains(TransactionOperationType.BEGIN));
+        assertFalse(connection.getAutoCommit());
+        assertTrue(TransactionHolder.isTransaction());
+        verify(physicalConnection).setAutoCommit(false);
         connection.commit();
-        assertTrue(BASEShardingTransactionManagerFixture.getINVOCATIONS().contains(TransactionOperationType.COMMIT));
-        connection.rollback();
-        assertTrue(BASEShardingTransactionManagerFixture.getINVOCATIONS().contains(TransactionOperationType.ROLLBACK));
+        assertFalse(TransactionHolder.isTransaction());
+        verify(physicalConnection).commit();
     }
     
     @Test
-    public void assertIsValid() throws SQLException {
-        Connection masterConnection = mock(Connection.class);
-        Connection upSlaveConnection = mock(Connection.class);
-        Connection downSlaveConnection = mock(Connection.class);
-        when(masterConnection.isValid(anyInt())).thenReturn(true);
-        when(upSlaveConnection.isValid(anyInt())).thenReturn(true);
-        when(downSlaveConnection.isValid(anyInt())).thenReturn(false);
-        connection.getCachedConnections().put("test_master", masterConnection);
-        connection.getCachedConnections().put("test_slave_up", upSlaveConnection);
+    public void assertCommitWithDistributedTransaction() throws SQLException {
+        ConnectionTransaction connectionTransaction = mock(ConnectionTransaction.class);
+        when(connectionTransaction.getDistributedTransactionOperationType(false)).thenReturn(DistributedTransactionOperationType.BEGIN);
+        final ConnectionManager connectionManager = mockConnectionManager(connectionTransaction);
+        connection.setAutoCommit(false);
+        assertFalse(connection.getAutoCommit());
+        assertTrue(TransactionHolder.isTransaction());
+        verify(connectionTransaction).begin();
+        connection.commit();
+        assertFalse(TransactionHolder.isTransaction());
+        verify(connectionManager).commit();
+    }
+    
+    @Test
+    public void assertRollbackWithLocalTransaction() throws SQLException {
+        Connection physicalConnection = mock(Connection.class);
+        when(connection.getContextManager().getDataSourceMap(DefaultDatabase.LOGIC_NAME).get("ds").getConnection()).thenReturn(physicalConnection);
+        connection.getConnectionManager().getConnections("ds", 1, ConnectionMode.MEMORY_STRICTLY);
+        connection.setAutoCommit(false);
+        assertFalse(connection.getAutoCommit());
+        connection.rollback();
+        verify(physicalConnection).rollback();
+    }
+    
+    @Test
+    public void assertRollbackWithDistributedTransaction() throws SQLException {
+        ConnectionTransaction connectionTransaction = mock(ConnectionTransaction.class);
+        when(connectionTransaction.getDistributedTransactionOperationType(false)).thenReturn(DistributedTransactionOperationType.BEGIN);
+        final ConnectionManager connectionManager = mockConnectionManager(connectionTransaction);
+        connection.setAutoCommit(false);
+        assertFalse(connection.getAutoCommit());
+        assertTrue(TransactionHolder.isTransaction());
+        verify(connectionTransaction).begin();
+        connection.rollback();
+        assertFalse(TransactionHolder.isTransaction());
+        verify(connectionManager).rollback();
+    }
+    
+    @SneakyThrows(ReflectiveOperationException.class)
+    private ConnectionManager mockConnectionManager(final ConnectionTransaction connectionTransaction) {
+        Field field = connection.getClass().getDeclaredField("connectionManager");
+        field.setAccessible(true);
+        ConnectionManager result = mock(ConnectionManager.class);
+        when(result.getConnectionTransaction()).thenReturn(connectionTransaction);
+        field.set(connection, result);
+        return result;
+    }
+    
+    @Test
+    public void assertIsValidWhenEmptyConnection() throws SQLException {
         assertTrue(connection.isValid(0));
-        connection.getCachedConnections().put("test_slave_down", downSlaveConnection);
+    }
+    
+    @Test
+    public void assertIsInvalid() throws SQLException {
+        connection.getConnectionManager().getConnections("ds", 1, ConnectionMode.MEMORY_STRICTLY);
         assertFalse(connection.isValid(0));
+    }
+    
+    @Test
+    public void assertSetReadOnly() throws SQLException {
+        assertFalse(connection.isReadOnly());
+        Connection physicalConnection = connection.getConnectionManager().getConnections("ds", 1, ConnectionMode.MEMORY_STRICTLY).get(0);
+        connection.setReadOnly(true);
+        assertTrue(connection.isReadOnly());
+        verify(physicalConnection).setReadOnly(true);
+    }
+    
+    @Test
+    public void assertGetTransactionIsolationWithoutCachedConnections() throws SQLException {
+        assertThat(connection.getTransactionIsolation(), is(Connection.TRANSACTION_READ_UNCOMMITTED));
+    }
+    
+    @Test
+    public void assertSetTransactionIsolation() throws SQLException {
+        Connection physicalConnection = connection.getConnectionManager().getConnections("ds", 1, ConnectionMode.MEMORY_STRICTLY).get(0);
+        connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+        verify(physicalConnection).setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+    }
+    
+    @Test
+    public void assertCreateArrayOf() throws SQLException {
+        Connection physicalConnection = mock(Connection.class);
+        when(connection.getContextManager().getDataSourceMap(DefaultDatabase.LOGIC_NAME).get("ds").getConnection()).thenReturn(physicalConnection);
+        connection.getConnectionManager().getConnections("ds", 1, ConnectionMode.MEMORY_STRICTLY);
+        assertNull(connection.createArrayOf("int", null));
+        verify(physicalConnection).createArrayOf("int", null);
+    }
+    
+    @Test
+    public void assertClose() throws SQLException {
+        connection.close();
+        assertTrue(connection.isClosed());
     }
 }

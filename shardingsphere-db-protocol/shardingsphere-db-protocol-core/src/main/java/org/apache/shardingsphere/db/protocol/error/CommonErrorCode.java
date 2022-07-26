@@ -27,11 +27,25 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public enum CommonErrorCode implements SQLErrorCode {
     
-    CIRCUIT_BREAK_MODE(10000, "C10000", "Circuit break mode is ON."),
+    CIRCUIT_BREAK_MODE(1000, "C1000", "Circuit break mode is ON."),
     
-    UNSUPPORTED_COMMAND(10001, "C10001", "Unsupported command: [%s]"),
+    SCALING_JOB_NOT_EXIST(1201, "C1201", "Scaling job %s does not exist."),
     
-    UNKNOWN_EXCEPTION(10002, "C10002", "Unknown exception: [%s]");
+    SCALING_OPERATE_FAILED(1209, "C1209", "Scaling Operate Failed: [%s]"),
+    
+    DATABASE_WRITE_LOCKED(1300, "C1300", "The database %s is read-only"),
+    
+    TABLE_LOCK_WAIT_TIMEOUT(1301, "C1301", "The table %s of schema %s lock wait timeout of %s ms exceeded"),
+    
+    TABLE_LOCKED(1302, "C1302", "The table %s of schema %s is locked"),
+    
+    TOO_MANY_CONNECTIONS_EXCEPTION(1040, "08004", "Too many connections"),
+    
+    RUNTIME_EXCEPTION(1997, "C1997", "Runtime exception: [%s]"),
+    
+    UNSUPPORTED_COMMAND(1998, "C1998", "Unsupported command: [%s]"),
+    
+    UNKNOWN_EXCEPTION(1999, "C1999", "Unknown exception: [%s]");
     
     private final int errorCode;
     

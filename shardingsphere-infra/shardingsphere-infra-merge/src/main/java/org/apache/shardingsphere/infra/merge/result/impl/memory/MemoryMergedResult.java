@@ -17,11 +17,11 @@
 
 package org.apache.shardingsphere.infra.merge.result.impl.memory;
 
-import org.apache.shardingsphere.infra.executor.sql.QueryResult;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
 import org.apache.shardingsphere.infra.merge.result.MergedResult;
+import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
-import org.apache.shardingsphere.sql.parser.binder.metadata.schema.SchemaMetaData;
-import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -47,15 +47,15 @@ public abstract class MemoryMergedResult<T extends ShardingSphereRule> implement
     
     private boolean wasNull;
     
-    protected MemoryMergedResult(final T rule, final SchemaMetaData schemaMetaData, final SQLStatementContext sqlStatementContext, final List<QueryResult> queryResults) throws SQLException {
-        List<MemoryQueryResultRow> memoryQueryResultRowList = init(rule, schemaMetaData, sqlStatementContext, queryResults);
-        memoryResultSetRows = memoryQueryResultRowList.iterator();
-        if (!memoryQueryResultRowList.isEmpty()) {
-            currentResultSetRow = memoryQueryResultRowList.get(0);
+    protected MemoryMergedResult(final T rule, final ShardingSphereSchema schema, final SQLStatementContext<?> sqlStatementContext, final List<QueryResult> queryResults) throws SQLException {
+        List<MemoryQueryResultRow> memoryQueryResultRows = init(rule, schema, sqlStatementContext, queryResults);
+        memoryResultSetRows = memoryQueryResultRows.iterator();
+        if (!memoryQueryResultRows.isEmpty()) {
+            currentResultSetRow = memoryQueryResultRows.get(0);
         }
     }
     
-    protected abstract List<MemoryQueryResultRow> init(T rule, SchemaMetaData schemaMetaData, SQLStatementContext sqlStatementContext, List<QueryResult> queryResults) throws SQLException;
+    protected abstract List<MemoryQueryResultRow> init(T rule, ShardingSphereSchema schema, SQLStatementContext<?> sqlStatementContext, List<QueryResult> queryResults) throws SQLException;
     
     @Override
     public final boolean next() {

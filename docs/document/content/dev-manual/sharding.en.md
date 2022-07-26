@@ -1,57 +1,87 @@
 +++
-pre = "<b>5.4. </b>"
+pre = "<b>6.7. </b>"
 title = "Data Sharding"
-weight = 4
+weight = 7
 chapter = true
 +++
 
 ## ShardingAlgorithm
 
-| *SPI Name*                      | *Description*                          |
-| ------------------------------- | -------------------------------------- |
-| ShardingAlgorithm               | Sharding algorithm                     |
+### Fully-qualified class name
 
-| *Implementation Class*              | *Description*                           |
-| ----------------------------------- | --------------------------------------- |
-| InlineShardingAlgorithm             | Inline sharding algorithm               |
-| ModShardingAlgorithm                | Modulo sharding algorithm               |
-| HashModShardingAlgorithm            | Hash modulo sharding algorithm          |
-| FixedIntervalShardingAlgorithm      | Fixed interval sharding algorithm       |
-| MutableIntervalShardingAlgorithm    | Mutable interval sharding algorithm     |
-| VolumeBasedRangeShardingAlgorithm   | Volume based range sharding algorithm   |
-| BoundaryBasedRangeShardingAlgorithm | Boundary based range sharding algorithm |
+[`org.apache.shardingsphere.sharding.spi.ShardingAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-api/src/main/java/org/apache/shardingsphere/sharding/spi/ShardingAlgorithm.java)
+
+### Definition
+
+Sharding Algorithm definition
+
+### Implementation classes
+
+| *Configuration Type*     | *Auto Create Tables* |       *Description*                                                     | *Fully-qualified class name* |
+| ------------------------ | -------------------- | ----------------------------------------------------------------------- | ---------------------------- |
+| MOD                      | Y                    | Modulo sharding algorithm                                               | [`org.apache.shardingsphere.sharding.algorithm.sharding.mod.ModShardingAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-core/src/main/java/org/apache/shardingsphere/sharding/algorithm/sharding/mod/ModShardingAlgorithm.java) |
+| HASH_MOD                 | Y                    | Hash modulo sharding algorithm                                          | [`org.apache.shardingsphere.sharding.algorithm.sharding.mod.HashModShardingAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-core/src/main/java/org/apache/shardingsphere/sharding/algorithm/sharding/mod/HashModShardingAlgorithm.java) |
+| BOUNDARY_RANGE           | Y                    | Boundary based range sharding algorithm                                 | [`org.apache.shardingsphere.sharding.algorithm.sharding.range.BoundaryBasedRangeShardingAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-core/src/main/java/org/apache/shardingsphere/sharding/algorithm/sharding/range/BoundaryBasedRangeShardingAlgorithm.java) |
+| VOLUME_RANGE             | Y                    | Volume based range sharding algorithm                                   | [`org.apache.shardingsphere.sharding.algorithm.sharding.range.VolumeBasedRangeShardingAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-core/src/main/java/org/apache/shardingsphere/sharding/algorithm/sharding/range/VolumeBasedRangeShardingAlgorithm.java) |
+| AUTO_INTERVAL            | Y                    | Mutable interval sharding algorithm                                     | [`org.apache.shardingsphere.sharding.algorithm.sharding.datetime.AutoIntervalShardingAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-core/src/main/java/org/apache/shardingsphere/sharding/algorithm/sharding/datetime/AutoIntervalShardingAlgorithm.java) |
+| INTERVAL                 | N                    | Fixed interval sharding algorithm                                       | [`org.apache.shardingsphere.sharding.algorithm.sharding.datetime.IntervalShardingAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-core/src/main/java/org/apache/shardingsphere/sharding/algorithm/sharding/datetime/IntervalShardingAlgorithm.java) |
+| CLASS_BASED              | N                    | Class based sharding algorithm                                          | [`org.apache.shardingsphere.sharding.algorithm.sharding.classbased.ClassBasedShardingAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-core/src/main/java/org/apache/shardingsphere/sharding/algorithm/sharding/classbased/ClassBasedShardingAlgorithm.java) |
+| INLINE                   | N                    | Inline sharding algorithm                                               | [`org.apache.shardingsphere.sharding.algorithm.sharding.inline.InlineShardingAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-core/src/main/java/org/apache/shardingsphere/sharding/algorithm/sharding/inline/InlineShardingAlgorithm.java) |
+| COMPLEX_INLINE           | N                    | Complex inline sharding algorithm                                       | [`org.apache.shardingsphere.sharding.algorithm.sharding.complex.ComplexInlineShardingAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-core/src/main/java/org/apache/shardingsphere/sharding/algorithm/sharding/complex/ComplexInlineShardingAlgorithm.java) |
+| HINT_INLINE              | N                    | Hint inline sharding algorithm                                          | [`org.apache.shardingsphere.sharding.algorithm.sharding.hint.HintInlineShardingAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-core/src/main/java/org/apache/shardingsphere/sharding/algorithm/sharding/hint/HintInlineShardingAlgorithm.java) |
+| COSID_MOD                | N                    | Modulo sharding algorithm provided by CosId                             | [`org.apache.shardingsphere.sharding.cosid.algorithm.sharding.mod.CosIdModShardingAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-plugin/shardingsphere-sharding-cosid/src/main/java/org/apache/shardingsphere/sharding/cosid/algorithm/sharding/mod/CosIdModShardingAlgorithm.java) |
+| COSID_INTERVAL           | N                    | Fixed interval sharding algorithm provided by CosId                     | [`org.apache.shardingsphere.sharding.cosid.algorithm.sharding.interval.CosIdIntervalShardingAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-plugin/shardingsphere-sharding-cosid/src/main/java/org/apache/shardingsphere/sharding/cosid/algorithm/sharding/interval/CosIdIntervalShardingAlgorithm.java) |
+| COSID_INTERVAL_SNOWFLAKE | N                    | Snowflake key-based fixed interval sharding algorithm provided by CosId | [`org.apache.shardingsphere.sharding.cosid.algorithm.sharding.interval.CosIdSnowflakeIntervalShardingAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-plugin/shardingsphere-sharding-cosid/src/main/java/org/apache/shardingsphere/sharding/cosid/algorithm/sharding/interval/CosIdSnowflakeIntervalShardingAlgorithm.java) |
 
 ## KeyGenerateAlgorithm
 
-| *SPI Name*                    | *Description*                    |
-| ----------------------------- | -------------------------------- |
-| KeyGenerateAlgorithm          | Key generate algorithm           |
+### Fully-qualified class name
 
-| *Implementation Class*        | *Description*                    |
-| ----------------------------- | -------------------------------- |
-| SnowflakeKeyGenerateAlgorithm | Snowflake key generate algorithm |
-| UUIDKeyGenerateAlgorithm      | UUID key generate algorithm      |
+[`org.apache.shardingsphere.sharding.spi.KeyGenerateAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-api/src/main/java/org/apache/shardingsphere/sharding/spi/KeyGenerateAlgorithm.java)
 
-## TimeService
+### Definition
 
-| *SPI Name*                  | *Description*                                                |
-| --------------------------- | ------------------------------------------------------------ |
-| TimeService                 | Use current time for routing                                 |
+Distributed Key Generating Algorithm definition
 
-| *Implementation Class*      | *Description*                                                |
-| --------------------------- | ------------------------------------------------------------ |
-| DefaultTimeService          | Get the current time from the application system for routing |
-| DatabaseTimeServiceDelegate | Get the current time from the database for routing           |
+### Implementation classes
 
-## DatabaseSQLEntry
+| *Configuration Type* | *Description*                                      | *Fully-qualified class name* |
+| -------------------- | -------------------------------------------------- | ---------------------------- |
+| SNOWFLAKE            | Snowflake key generate algorithm                   | [`org.apache.shardingsphere.sharding.algorithm.keygen.SnowflakeKeyGenerateAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-core/src/main/java/org/apache/shardingsphere/sharding/algorithm/keygen/SnowflakeKeyGenerateAlgorithm.java) |
+| UUID                 | UUID key generate algorithm                        | [`org.apache.shardingsphere.sharding.algorithm.keygen.UUIDKeyGenerateAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-core/src/main/java/org/apache/shardingsphere/sharding/algorithm/keygen/UUIDKeyGenerateAlgorithm.java) |
+| NANOID               | NanoId key generate algorithm                      | [`org.apache.shardingsphere.sharding.nanoid.algorithm.keygen.NanoIdKeyGenerateAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-plugin/shardingsphere-sharding-nanoid/src/main/java/org/apache/shardingsphere/sharding/nanoid/algorithm/keygen/NanoIdKeyGenerateAlgorithm.java) |
+| COSID                | CosId key generate algorithm                       | [`org.apache.shardingsphere.sharding.cosid.algorithm.keygen.CosIdKeyGenerateAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-plugin/shardingsphere-sharding-cosid/src/main/java/org/apache/shardingsphere/sharding/cosid/algorithm/keygen/CosIdKeyGenerateAlgorithm.java) |
+| COSID_SNOWFLAKE      | Snowflake key generate algorithm provided by CosId | [`org.apache.shardingsphere.sharding.cosid.algorithm.keygen.CosIdSnowflakeKeyGenerateAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-plugin/shardingsphere-sharding-cosid/src/main/java/org/apache/shardingsphere/sharding/cosid/algorithm/keygen/CosIdSnowflakeKeyGenerateAlgorithm.java) |
 
-| *SPI Name*                 | *Description*                           |
-| -------------------------- | --------------------------------------- |
-| DatabaseSQLEntry           | Database dialect for get current time   |
+## ShardingAuditAlgorithm
 
-| *Implementation Class*     | *Description*                           |
-| -------------------------- | --------------------------------------- |
-| MySQLDatabaseSQLEntry      | MySQL dialect for get current time      |
-| PostgreSQLDatabaseSQLEntry | PostgreSQL dialect for get current time |
-| OracleDatabaseSQLEntry     | Oracle dialect for get current time     |
-| SQLServerDatabaseSQLEntry  | SQLServer dialect for get current time  |
+### Fully-qualified class name
+
+[`org.apache.shardingsphere.sharding.spi.ShardingAuditAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-api/src/main/java/org/apache/shardingsphere/sharding/spi/ShardingAuditAlgorithm.java)
+
+### Definition
+
+Sharding audit algorithm definition
+
+### Implementation classes
+
+| *Configuration Type*    | *Description*                                                 | *Fully-qualified class name* |
+| ----------------------- | ------------------------------------------------------------- | ---------------------------- |
+| DML_SHARDING_CONDITIONS | Prohibit DML auditing algorithm without sharding conditions   | [`org.apache.shardingsphere.sharding.algorithm.audit.DMLShardingConditionsShardingAuditAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-features/shardingsphere-sharding/shardingsphere-sharding-core/src/main/java/org/apache/shardingsphere/sharding/algorithm/audit/DMLShardingConditionsShardingAuditAlgorithm.java) |
+
+## DatetimeService
+
+### Fully-qualified class name
+
+[`org.apache.shardingsphere.infra.datetime.DatetimeService`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-infra/shardingsphere-infra-datetime/shardingsphere-infra-datetime-spi/src/main/java/org/apache/shardingsphere/infra/datetime/DatetimeService.java)
+
+### Definition
+
+Obtain the current date for routing definition
+
+### Implementation classes
+
+| *Configuration Type*    | *Description*                                                | *Fully-qualified class name* |
+| ----------------------- | ------------------------------------------------------------ | ---------------------------- |
+| DatabaseDatetimeService | Get the current time from the database for routing           | [`org.apache.shardingsphere.agent.metrics.prometheus.service.PrometheusPluginBootService`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-infra/shardingsphere-infra-datetime/shardingsphere-infra-datetime-type/shardingsphere-database-datetime/src/main/java/org/apache/shardingsphere/datetime/database/DatabaseDatetimeService.java) |
+| SystemDatetime          | Get the current time from the application system for routing | [`org.apache.shardingsphere.datetime.system.SystemDatetimeService`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-infra/shardingsphere-infra-datetime/shardingsphere-infra-datetime-type/shardingsphere-system-datetime/src/main/java/org/apache/shardingsphere/datetime/system/SystemDatetimeService.java) |

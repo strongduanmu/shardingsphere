@@ -1,30 +1,42 @@
 +++
-pre = "<b>5.1. </b>"
+pre = "<b>6.5. </b>"
 title = "SQL Parser"
-weight = 1
+weight = 5
 chapter = true
 +++
 
-## SQLParserConfiguration
+## DatabaseTypedSQLParserFacade
 
-| *SPI Name*                    | *Description*                                        |
-| ----------------------------- | ----------------------------------------------------- |
-| SQLParserConfiguration        | Regulate for SQL parser ANTLR G4 file and AST visitor |
+### Fully-qualified class name
 
-| *Implementation Class*        | *Description*                                         |
-| ----------------------------- | ----------------------------------------------------- |
-| MySQLParserConfiguration      | Based on MySQL's SQL parser                           |
-| PostgreSQLParserConfiguration | Based on PostgreSQL's SQL parser                      |
-| SQLServerParserConfiguration  | Based on SQLServer's SQL parser                       |
-| OracleParserConfiguration     | Based on Oracle's SQL parser                          |
-| SQL92ParserConfiguration      | Based on SQL92's SQL parser                           |
+[`org.apache.shardingsphere.sql.parser.spi.DatabaseTypedSQLParserFacade`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-sql-parser/shardingsphere-sql-parser-spi/src/main/java/org/apache/shardingsphere/sql/parser/spi/DatabaseTypedSQLParserFacade.java)
 
-## ParsingHook
+### Definition
 
-| *SPI Name*             | *Description*                                     |
-| ---------------------- | ------------------------------------------------- |
-| ParsingHook            | Used to trace SQL parse process                   |
+Database typed SQL parser facade service definition
 
-| *Implementation Class* | *Description*                                     |
-| ---------------------- | ------------------------------------------------- |
-| OpenTracingParsingHook | Use OpenTrace protocol to trace SQL parse process |
+### Implementation classes
+
+| *Configuration Type* | *Description*                       | *Fully-qualified class name* |
+| -------------------- | ----------------------------------- | ---------------------------- |
+| MySQL                | SQL parser entry based on MySQL     | [`org.apache.shardingsphere.sql.parser.mysql.parser.MySQLParserFacade`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-sql-parser/shardingsphere-sql-parser-dialect/shardingsphere-sql-parser-mysql/src/main/java/org/apache/shardingsphere/sql/parser/mysql/parser/MySQLParserFacade.java) |
+| PostgreSQL           | SQL parser entry based on PostgreSQL| [`org.apache.shardingsphere.sql.parser.postgresql.parser.PostgreSQLParserFacade`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-sql-parser/shardingsphere-sql-parser-dialect/shardingsphere-sql-parser-postgresql/src/main/java/org/apache/shardingsphere/sql/parser/postgresql/parser/PostgreSQLParserFacade.java) |
+| SQLServer            | SQL parser entry based on SQLServer | [`org.apache.shardingsphere.sql.parser.sqlserver.parser.SQLServerParserFacade`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-sql-parser/shardingsphere-sql-parser-dialect/shardingsphere-sql-parser-sqlserver/src/main/java/org/apache/shardingsphere/sql/parser/sqlserver/parser/SQLServerParserFacade.java) |
+| Oracle               | SQL parser entry based on Oracle    | [`org.apache.shardingsphere.sql.parser.oracle.parser.OracleParserFacade`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-sql-parser/shardingsphere-sql-parser-dialect/shardingsphere-sql-parser-oracle/src/main/java/org/apache/shardingsphere/sql/parser/oracle/parser/OracleParserFacade.java) |
+| SQL92                | SQL parser entry based on SQL92     | [`org.apache.shardingsphere.sql.parser.sql92.parser.SQL92ParserFacade`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-sql-parser/shardingsphere-sql-parser-dialect/shardingsphere-sql-parser-sql92/src/main/java/org/apache/shardingsphere/sql/parser/sql92/parser/SQL92ParserFacade.java) |
+| openGauss            | SQL parser entry based on openGauss | [`org.apache.shardingsphere.sql.parser.opengauss.parser.OpenGaussParserFacade`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-sql-parser/shardingsphere-sql-parser-dialect/shardingsphere-sql-parser-opengauss/src/main/java/org/apache/shardingsphere/sql/parser/opengauss/parser/OpenGaussParserFacade.java) |
+
+## SQLVisitorFacade
+
+### Fully-qualified class name
+
+[`org.apache.shardingsphere.sql.parser.spi.SQLVisitorFacade`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-sql-parser/shardingsphere-sql-parser-spi/src/main/java/org/apache/shardingsphere/sql/parser/spi/SQLVisitorFacade.java)
+
+### Definition
+
+SQL visitor facade class definition
+
+### Implementation classes
+
+| *Configuration Type* | *Description*                             | *Fully-qualified class name* |
+| -------------------- | ----------------------------------------- | ---------------------------- |

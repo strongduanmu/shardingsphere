@@ -9,7 +9,7 @@ You can report a bug, submit a new feature enhancement recommendation, or commit
  - If bug reported, please provide information below:
        - Details for reproduce bug step by step. Include SQL, configuration, expected results, actual results and tracing log.
        - Sharding and Operation System version.
-       - Source code to reproduce bug on github cna copy the link here.
+       - Source code that reproduce the bug on github, can be linked here.
        - Stack trace if exception thrown.
        - Screenshot and animated gif to help bug reproduce if necessary.
        - Screenshot for CPU, Memory, Network and IO stat if performance issue.
@@ -31,4 +31,4 @@ You can report a bug, submit a new feature enhancement recommendation, or commit
  - Please follow Sharding's [Development conventions](https://shardingsphere.apache.org/community/en/contribute/code-conduct/), and complete check before pull request submit.
  - Submit a pull request to master branch when finished.
  - Mentor will do code review and discuss some details, include design, implement, performance and code style. Code will be merged until mentor accepted.
- - Finally, congratulations that you have become the official contributor for Sharding!
+ - Finally, congratulations that you have become the official contributor for Apache ShardingSphere.

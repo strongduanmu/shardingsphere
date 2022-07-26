@@ -20,9 +20,16 @@ package org.apache.shardingsphere.proxy.frontend.mysql;
 import lombok.Getter;
 import org.apache.shardingsphere.db.protocol.codec.DatabasePacketCodecEngine;
 import org.apache.shardingsphere.db.protocol.mysql.codec.MySQLPacketCodecEngine;
-import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
+import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLServerInfo;
+import org.apache.shardingsphere.db.protocol.mysql.packet.MySQLPacket;
+import org.apache.shardingsphere.proxy.frontend.mysql.command.query.binary.MySQLStatementIDGenerator;
+import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
+import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
+import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
+import org.apache.shardingsphere.proxy.frontend.authentication.AuthenticationEngine;
+import org.apache.shardingsphere.proxy.frontend.command.CommandExecuteEngine;
 import org.apache.shardingsphere.proxy.frontend.context.FrontendContext;
-import org.apache.shardingsphere.proxy.frontend.mysql.auth.MySQLAuthenticationEngine;
+import org.apache.shardingsphere.proxy.frontend.mysql.authentication.MySQLAuthenticationEngine;
 import org.apache.shardingsphere.proxy.frontend.mysql.command.MySQLCommandExecuteEngine;
 import org.apache.shardingsphere.proxy.frontend.spi.DatabaseProtocolFrontendEngine;
 
@@ -32,20 +39,35 @@ import org.apache.shardingsphere.proxy.frontend.spi.DatabaseProtocolFrontendEngi
 @Getter
 public final class MySQLFrontendEngine implements DatabaseProtocolFrontendEngine {
     
-    private final FrontendContext frontendContext = new FrontendContext(false, true);
+    private final FrontendContext frontendContext = new MySQLFrontendContext();
     
-    private final MySQLAuthenticationEngine authEngine = new MySQLAuthenticationEngine();
+    private final AuthenticationEngine authenticationEngine = new MySQLAuthenticationEngine();
     
-    private final MySQLCommandExecuteEngine commandExecuteEngine = new MySQLCommandExecuteEngine();
+    private final CommandExecuteEngine commandExecuteEngine = new MySQLCommandExecuteEngine();
     
-    private final DatabasePacketCodecEngine<?> codecEngine = new MySQLPacketCodecEngine();
+    private final DatabasePacketCodecEngine<MySQLPacket> codecEngine = new MySQLPacketCodecEngine();
     
-    @Override
-    public String getDatabaseType() {
-        return "MySQL";
+    public MySQLFrontendEngine() {
+        MySQLServerInfo.setDefaultMysqlVersion(ProxyContext.getInstance()
+                .getContextManager().getMetaDataContexts().getMetaData().getProps().<String>getValue(ConfigurationPropertyKey.PROXY_MYSQL_DEFAULT_VERSION));
     }
     
     @Override
-    public void release(final BackendConnection backendConnection) {
+    public void setDatabaseVersion(final String databaseName, final String databaseVersion) {
+        MySQLServerInfo.setServerVersion(databaseName, databaseVersion);
+    }
+    
+    @Override
+    public void release(final ConnectionSession connectionSession) {
+        MySQLStatementIDGenerator.getInstance().unregisterConnection(connectionSession.getConnectionId());
+    }
+    
+    @Override
+    public void handleException(final ConnectionSession connectionSession, final Exception exception) {
+    }
+    
+    @Override
+    public String getType() {
+        return "MySQL";
     }
 }

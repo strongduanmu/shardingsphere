@@ -20,111 +20,44 @@ package org.apache.shardingsphere.db.protocol.postgresql.packet.command;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.db.protocol.packet.CommandPacketType;
+import org.apache.shardingsphere.db.protocol.postgresql.packet.identifier.PostgreSQLIdentifierTag;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Command packet type for PostgreSQL.
+ * 
+ * @see <a href="https://www.postgresql.org/docs/13/protocol-message-formats.html">Message Formats</a>
  */
 @RequiredArgsConstructor
 @Getter
-public enum PostgreSQLCommandPacketType implements CommandPacketType {
+public enum PostgreSQLCommandPacketType implements CommandPacketType, PostgreSQLIdentifierTag {
     
-    AUTHENTICATION_OK('R'),
+    PASSWORD('p'),
     
-    AUTHENTICATION_KERBEROS_V5('R'),
+    SIMPLE_QUERY('Q'),
     
-    AUTHENTICATION_CLEARTEXT_PASSWORD('R'),
+    PARSE_COMMAND('P'),
     
-    AUTHENTICATION_MD5_PASSWORD('R'),
+    BIND_COMMAND('B'),
     
-    AUTHENTICATION_SCM_CREDENTIAL('R'),
+    DESCRIBE_COMMAND('D'),
     
-    AUTHENTICATION_GSS('R'),
+    EXECUTE_COMMAND('E'),
     
-    AUTHENTICATION_SSPI('R'),
+    SYNC_COMMAND('S'),
     
-    AUTHENTICATION_GSS_CONTINUE('R'),
+    CLOSE_COMMAND('C'),
     
-    AUTHENTICATION_SASL('R'),
-    
-    AUTHENTICATION_SASL_CONTINUE('R'),
-    
-    AUTHENTICATION_SASL_FINAL('R'),
-    
-    QUERY('Q'),
-    
-    PARSE('P'),
-    
-    BIND('B'),
-    
-    DESCRIBE('D'),
-    
-    EXECUTE('E'),
-    
-    SYNC('S'),
-    
-    PARSE_COMPLETE('1'),
-    
-    BIND_COMPLETE('2'),
-    
-    ROW_DESCRIPTION('T'),
-    
-    DATA_ROW('D'),
-    
-    COMMAND_COMPLETE('C'),
-    
-    READY_FOR_QUERY('Z'),
-    
-    CLOSE('C'),
-    
-    CLOSE_COMPLETE('3'),
-    
-    BACKEND_KEY_DATA('K'),
-    
-    COPY_DATA('d'),
-    
-    COPY_DONE('c'),
-    
-    COPY_FAIL('f'),
-    
-    COPY_IN_RESPONSE('G'),
-    
-    COPY_OUT_RESPONSE('H'),
-    
-    COPY_BOTH_RESPONSE('W'),
-    
-    EMPTY_QUERY_RESPONSE('I'),
-    
-    ERROR_RESPONSE('E'),
-    
-    FLUSH('H'),
-    
-    FUNCTION_CALL('F'),
-    
-    FUNCTION_CALL_RESPONSE('V'),
-    
-    GSS_RESPONSE('p'),
-    
-    NEGOTIATE_PROTOCOL_VERSION('v'),
-    
-    NO_DATA('n'),
-    
-    NOTICE_RESPONSE('N'),
-    
-    NOTIFICATION_RESPONSE('A'),
-    
-    PARAMETER_DESCRIPTION('t'),
-    
-    PARAMETER_STATUS('S'),
-    
-    PASSWORD_MESSAGE('p'),
-    
-    PORTAL_SUSPENDED('s'),
-
-    SASL_INITIAL_RESPONSE('p'),
-    
-    SASL_RESPONSE('p'),
+    FLUSH_COMMAND('H'),
     
     TERMINATE('X');
+    
+    private static final Set<PostgreSQLCommandPacketType> EXTENDED_PROTOCOL_PACKET_TYPE = new HashSet<>(Arrays.asList(PostgreSQLCommandPacketType.PARSE_COMMAND,
+            PostgreSQLCommandPacketType.BIND_COMMAND, PostgreSQLCommandPacketType.DESCRIBE_COMMAND, PostgreSQLCommandPacketType.EXECUTE_COMMAND, PostgreSQLCommandPacketType.SYNC_COMMAND,
+            PostgreSQLCommandPacketType.CLOSE_COMMAND, PostgreSQLCommandPacketType.FLUSH_COMMAND));
     
     private final char value;
     
@@ -141,5 +74,15 @@ public enum PostgreSQLCommandPacketType implements CommandPacketType {
             }
         }
         throw new IllegalArgumentException(String.format("Cannot find '%s' in PostgreSQL command packet type", value));
+    }
+    
+    /**
+     * Check if the packet type is extended protocol packet type.
+     *
+     * @param commandPacketType command packet type
+     * @return is extended protocol packet type
+     */
+    public static boolean isExtendedProtocolPacketType(final CommandPacketType commandPacketType) {
+        return EXTENDED_PROTOCOL_PACKET_TYPE.contains(commandPacketType);
     }
 }

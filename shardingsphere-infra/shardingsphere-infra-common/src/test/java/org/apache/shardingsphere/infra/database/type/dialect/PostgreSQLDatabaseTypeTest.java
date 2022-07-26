@@ -18,19 +18,29 @@
 package org.apache.shardingsphere.infra.database.type.dialect;
 
 import org.apache.shardingsphere.infra.database.metadata.dialect.PostgreSQLDataSourceMetaData;
+import org.apache.shardingsphere.sql.parser.sql.common.constant.QuoteCharacter;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.CommitStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.RollbackStatement;
 import org.junit.Test;
 
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public final class PostgreSQLDatabaseTypeTest {
     
     @Test
-    public void assertGetName() {
-        assertThat(new PostgreSQLDatabaseType().getName(), is("PostgreSQL"));
+    public void assertGetQuoteCharacter() {
+        assertThat(new PostgreSQLDatabaseType().getQuoteCharacter(), is(QuoteCharacter.QUOTE));
     }
     
     @Test
@@ -41,5 +51,45 @@ public final class PostgreSQLDatabaseTypeTest {
     @Test
     public void assertGetDataSourceMetaData() {
         assertThat(new PostgreSQLDatabaseType().getDataSourceMetaData("jdbc:postgresql://localhost:5432/demo_ds_0", "postgres"), instanceOf(PostgreSQLDataSourceMetaData.class));
+    }
+    
+    @Test
+    public void assertHandleRollbackOnlyForNotRollbackOnly() throws SQLException {
+        new PostgreSQLDatabaseType().handleRollbackOnly(false, mock(CommitStatement.class));
+    }
+    
+    @Test
+    public void assertHandleRollbackOnlyForRollbackOnlyAndCommitStatement() throws SQLException {
+        new PostgreSQLDatabaseType().handleRollbackOnly(true, mock(CommitStatement.class));
+    }
+    
+    @Test
+    public void assertHandleRollbackOnlyForRollbackOnlyAndRollbackStatement() throws SQLException {
+        new PostgreSQLDatabaseType().handleRollbackOnly(true, mock(RollbackStatement.class));
+    }
+    
+    @Test(expected = SQLFeatureNotSupportedException.class)
+    public void assertHandleRollbackOnlyForRollbackOnlyAndNotTCLStatement() throws SQLException {
+        new PostgreSQLDatabaseType().handleRollbackOnly(true, mock(SelectStatement.class));
+    }
+    
+    @Test
+    public void assertGetSystemDatabases() {
+        assertTrue(new PostgreSQLDatabaseType().getSystemDatabaseSchemaMap().containsKey("postgres"));
+    }
+    
+    @Test
+    public void assertGetSystemSchemas() {
+        assertThat(new PostgreSQLDatabaseType().getSystemSchemas(), is(new HashSet<>(Arrays.asList("information_schema", "pg_catalog"))));
+    }
+    
+    @Test
+    public void assertIsSchemaAvailable() {
+        assertTrue(new PostgreSQLDatabaseType().isSchemaAvailable());
+    }
+    
+    @Test
+    public void assertGetDefaultSchema() {
+        assertThat(new PostgreSQLDatabaseType().getDefaultSchema(), is("public"));
     }
 }

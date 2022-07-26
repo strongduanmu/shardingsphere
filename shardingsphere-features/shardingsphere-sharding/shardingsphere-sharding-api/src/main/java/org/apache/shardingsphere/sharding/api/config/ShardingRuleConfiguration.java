@@ -19,10 +19,13 @@ package org.apache.shardingsphere.sharding.api.config;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.shardingsphere.infra.config.RuleConfiguration;
 import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
+import org.apache.shardingsphere.infra.config.function.DistributedRuleConfiguration;
+import org.apache.shardingsphere.infra.config.rulealtered.OnRuleAlteredActionConfiguration;
+import org.apache.shardingsphere.infra.config.scope.DatabaseRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingAutoTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
+import org.apache.shardingsphere.sharding.api.config.strategy.audit.ShardingAuditStrategyConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.keygen.KeyGenerateStrategyConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.sharding.ShardingStrategyConfiguration;
 
@@ -36,7 +39,7 @@ import java.util.Map;
  */
 @Getter
 @Setter
-public final class ShardingRuleConfiguration implements RuleConfiguration {
+public final class ShardingRuleConfiguration implements DatabaseRuleConfiguration, DistributedRuleConfiguration {
     
     private Collection<ShardingTableRuleConfiguration> tables = new LinkedList<>();
     
@@ -52,7 +55,17 @@ public final class ShardingRuleConfiguration implements RuleConfiguration {
     
     private KeyGenerateStrategyConfiguration defaultKeyGenerateStrategy;
     
+    private ShardingAuditStrategyConfiguration defaultAuditStrategy;
+    
+    private String defaultShardingColumn;
+    
     private Map<String, ShardingSphereAlgorithmConfiguration> shardingAlgorithms = new LinkedHashMap<>();
     
     private Map<String, ShardingSphereAlgorithmConfiguration> keyGenerators = new LinkedHashMap<>();
+    
+    private Map<String, ShardingSphereAlgorithmConfiguration> auditors = new LinkedHashMap<>();
+    
+    private String scalingName;
+    
+    private Map<String, OnRuleAlteredActionConfiguration> scaling = new LinkedHashMap<>();
 }

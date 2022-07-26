@@ -20,11 +20,16 @@ package org.apache.shardingsphere.proxy.frontend.postgresql;
 import lombok.Getter;
 import org.apache.shardingsphere.db.protocol.codec.DatabasePacketCodecEngine;
 import org.apache.shardingsphere.db.protocol.postgresql.codec.PostgreSQLPacketCodecEngine;
-import org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.binary.BinaryStatementRegistry;
-import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
+import org.apache.shardingsphere.db.protocol.postgresql.constant.PostgreSQLServerInfo;
+import org.apache.shardingsphere.db.protocol.postgresql.packet.PostgreSQLPacket;
+import org.apache.shardingsphere.proxy.backend.exception.InTransactionException;
+import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
+import org.apache.shardingsphere.proxy.frontend.authentication.AuthenticationEngine;
+import org.apache.shardingsphere.proxy.frontend.command.CommandExecuteEngine;
 import org.apache.shardingsphere.proxy.frontend.context.FrontendContext;
-import org.apache.shardingsphere.proxy.frontend.postgresql.auth.PostgreSQLAuthenticationEngine;
+import org.apache.shardingsphere.proxy.frontend.postgresql.authentication.PostgreSQLAuthenticationEngine;
 import org.apache.shardingsphere.proxy.frontend.postgresql.command.PostgreSQLCommandExecuteEngine;
+import org.apache.shardingsphere.proxy.frontend.postgresql.command.PostgreSQLConnectionContextRegistry;
 import org.apache.shardingsphere.proxy.frontend.spi.DatabaseProtocolFrontendEngine;
 
 /**
@@ -33,21 +38,33 @@ import org.apache.shardingsphere.proxy.frontend.spi.DatabaseProtocolFrontendEngi
 @Getter
 public final class PostgreSQLFrontendEngine implements DatabaseProtocolFrontendEngine {
     
-    private final FrontendContext frontendContext = new FrontendContext(true, false);
+    private final FrontendContext frontendContext = new PostgreSQLFrontendContext();
     
-    private final PostgreSQLAuthenticationEngine authEngine = new PostgreSQLAuthenticationEngine();
+    private final AuthenticationEngine authenticationEngine = new PostgreSQLAuthenticationEngine();
     
-    private final PostgreSQLCommandExecuteEngine commandExecuteEngine = new PostgreSQLCommandExecuteEngine();
+    private final CommandExecuteEngine commandExecuteEngine = new PostgreSQLCommandExecuteEngine();
     
-    private final DatabasePacketCodecEngine<?> codecEngine = new PostgreSQLPacketCodecEngine();
+    private final DatabasePacketCodecEngine<PostgreSQLPacket> codecEngine = new PostgreSQLPacketCodecEngine();
     
     @Override
-    public String getDatabaseType() {
-        return "PostgreSQL";
+    public void setDatabaseVersion(final String databaseName, final String databaseVersion) {
+        PostgreSQLServerInfo.setServerVersion(databaseVersion);
     }
     
     @Override
-    public void release(final BackendConnection backendConnection) {
-        BinaryStatementRegistry.getInstance().unregister(backendConnection.getConnectionId());
+    public void release(final ConnectionSession connectionSession) {
+        PostgreSQLConnectionContextRegistry.getInstance().remove(connectionSession.getConnectionId());
+    }
+    
+    @Override
+    public void handleException(final ConnectionSession connectionSession, final Exception exception) {
+        if (connectionSession.getTransactionStatus().isInTransaction() && !connectionSession.getTransactionStatus().isRollbackOnly() && !(exception instanceof InTransactionException)) {
+            connectionSession.getTransactionStatus().setRollbackOnly(true);
+        }
+    }
+    
+    @Override
+    public String getType() {
+        return "PostgreSQL";
     }
 }

@@ -24,7 +24,6 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.epoll.Epoll;
-import io.netty.channel.epoll.EpollChannelOption;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -32,12 +31,21 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
+import org.apache.shardingsphere.proxy.backend.communication.vertx.VertxBackendDataSource;
 import org.apache.shardingsphere.proxy.backend.context.BackendExecutorContext;
+import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.frontend.netty.ServerHandlerInitializer;
+import org.apache.shardingsphere.proxy.frontend.protocol.FrontDatabaseProtocolTypeFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * ShardingSphere-Proxy.
  */
+@Slf4j
 public final class ShardingSphereProxy {
     
     private EventLoopGroup bossGroup;
@@ -47,54 +55,66 @@ public final class ShardingSphereProxy {
     /**
      * Start ShardingSphere-Proxy.
      *
-     * @param port port
+     * @param port      port
+     * @param addresses addresses
      */
     @SneakyThrows(InterruptedException.class)
-    public void start(final int port) {
+    public void start(final int port, final List<String> addresses) {
         try {
-            ServerBootstrap bootstrap = new ServerBootstrap();
-            bossGroup = createEventLoopGroup();
-            if (bossGroup instanceof EpollEventLoopGroup) {
-                groupsEpoll(bootstrap);
-            } else {
-                groupsNio(bootstrap);
-            }
-            ChannelFuture future = bootstrap.bind(port).sync();
-            future.channel().closeFuture().sync();
+            List<ChannelFuture> futures = startInternal(port, addresses);
+            accept(futures);
         } finally {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
-            BackendExecutorContext.getInstance().getExecutorKernel().close();
+            BackendExecutorContext.getInstance().getExecutorEngine().close();
         }
     }
     
-    private EventLoopGroup createEventLoopGroup() {
-        return Epoll.isAvailable() ? new EpollEventLoopGroup(1) : new NioEventLoopGroup(1);
+    private List<ChannelFuture> startInternal(final int port, final List<String> addresses) throws InterruptedException {
+        createEventLoopGroup();
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        initServerBootstrap(bootstrap);
+        
+        List<ChannelFuture> futures = new ArrayList<>();
+        for (String address : addresses) {
+            futures.add(bootstrap.bind(address, port).sync());
+        }
+        return futures;
     }
     
-    private void groupsEpoll(final ServerBootstrap bootstrap) {
-        workerGroup = new EpollEventLoopGroup();
-        bootstrap.group(bossGroup, workerGroup)
-                .channel(EpollServerSocketChannel.class)
-                .option(EpollChannelOption.SO_BACKLOG, 128)
-                .option(EpollChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(8 * 1024 * 1024, 16 * 1024 * 1024))
-                .option(EpollChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .childOption(EpollChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .childOption(EpollChannelOption.TCP_NODELAY, true)
-                .handler(new LoggingHandler(LogLevel.INFO))
-                .childHandler(new ServerHandlerInitializer());
+    private void accept(final List<ChannelFuture> futures) throws InterruptedException {
+        log.info("ShardingSphere-Proxy {} mode started successfully", ProxyContext.getInstance().getContextManager().getInstanceContext().getModeConfiguration().getType());
+        for (ChannelFuture future : futures) {
+            future.channel().closeFuture().sync();
+        }
     }
     
-    private void groupsNio(final ServerBootstrap bootstrap) {
-        workerGroup = new NioEventLoopGroup();
+    private void createEventLoopGroup() {
+        bossGroup = Epoll.isAvailable() ? new EpollEventLoopGroup(1) : new NioEventLoopGroup(1);
+        workerGroup = getWorkerGroup();
+    }
+    
+    private EventLoopGroup getWorkerGroup() {
+        String driverType = ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaData().getProps().getValue(ConfigurationPropertyKey.PROXY_BACKEND_DRIVER_TYPE);
+        boolean reactiveBackendEnabled = "ExperimentalVertx".equalsIgnoreCase(driverType);
+        if (reactiveBackendEnabled) {
+            return VertxBackendDataSource.getInstance().getVertx().nettyEventLoopGroup();
+        }
+        int workerThreads = ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaData().getProps().<Integer>getValue(ConfigurationPropertyKey.PROXY_FRONTEND_EXECUTOR_SIZE);
+        return Epoll.isAvailable() ? new EpollEventLoopGroup(workerThreads) : new NioEventLoopGroup(workerThreads);
+    }
+    
+    private void initServerBootstrap(final ServerBootstrap bootstrap) {
+        Integer backLog = ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaData().getProps().<Integer>getValue(ConfigurationPropertyKey.PROXY_NETTY_BACKLOG);
         bootstrap.group(bossGroup, workerGroup)
-                .channel(NioServerSocketChannel.class)
-                .option(ChannelOption.SO_BACKLOG, 128)
+                .channel(Epoll.isAvailable() ? EpollServerSocketChannel.class : NioServerSocketChannel.class)
                 .option(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(8 * 1024 * 1024, 16 * 1024 * 1024))
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                .option(ChannelOption.SO_REUSEADDR, true)
+                .option(ChannelOption.SO_BACKLOG, backLog)
                 .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .childOption(ChannelOption.TCP_NODELAY, true)
                 .handler(new LoggingHandler(LogLevel.INFO))
-                .childHandler(new ServerHandlerInitializer());
+                .childHandler(new ServerHandlerInitializer(FrontDatabaseProtocolTypeFactory.getDatabaseType()));
     }
 }

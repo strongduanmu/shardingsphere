@@ -17,12 +17,13 @@
 
 package org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.dal;
 
-import org.apache.shardingsphere.sql.parser.sql.common.statement.AbstractSQLStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dal.DALStatement;
+import lombok.ToString;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.dal.ResetParameterStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.PostgreSQLStatement;
 
 /**
  * PostgreSQL reset parameter statement.
  */
-public final class PostgreSQLResetParameterStatement extends AbstractSQLStatement implements DALStatement, PostgreSQLStatement {
+@ToString(callSuper = true)
+public final class PostgreSQLResetParameterStatement extends ResetParameterStatement implements PostgreSQLStatement {
 }

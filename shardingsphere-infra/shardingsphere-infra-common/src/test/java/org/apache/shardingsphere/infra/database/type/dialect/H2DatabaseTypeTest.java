@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.infra.database.type.dialect;
 
 import org.apache.shardingsphere.infra.database.metadata.dialect.H2DataSourceMetaData;
+import org.apache.shardingsphere.sql.parser.sql.common.constant.QuoteCharacter;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -25,12 +26,13 @@ import java.util.Collections;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public final class H2DatabaseTypeTest {
     
     @Test
-    public void assertGetName() {
-        assertThat(new H2DatabaseType().getName(), is("H2"));
+    public void assertGetQuoteCharacter() {
+        assertThat(new H2DatabaseType().getQuoteCharacter(), is(QuoteCharacter.QUOTE));
     }
     
     @Test
@@ -40,12 +42,22 @@ public final class H2DatabaseTypeTest {
     
     @Test
     public void assertGetDataSourceMetaData() {
-        assertThat(new H2DatabaseType().getDataSourceMetaData("jdbc:h2:~:master_ds_0", "sa"), instanceOf(H2DataSourceMetaData.class));
-        assertThat(new H2DatabaseType().getDataSourceMetaData("jdbc:h2:mem:master_ds_0", "sa"), instanceOf(H2DataSourceMetaData.class));
+        assertThat(new H2DatabaseType().getDataSourceMetaData("jdbc:h2:~:foo_ds", "sa"), instanceOf(H2DataSourceMetaData.class));
+        assertThat(new H2DatabaseType().getDataSourceMetaData("jdbc:h2:mem:foo_ds", "sa"), instanceOf(H2DataSourceMetaData.class));
     }
     
     @Test
     public void assertGetTrunkDatabaseType() {
-        assertThat(new H2DatabaseType().getTrunkDatabaseType().getName(), is("MySQL"));
+        assertThat(new H2DatabaseType().getTrunkDatabaseType().getType(), is("MySQL"));
+    }
+    
+    @Test
+    public void assertGetSystemDatabaseSchemaMap() {
+        assertTrue(new H2DatabaseType().getSystemDatabaseSchemaMap().isEmpty());
+    }
+    
+    @Test
+    public void assertGetSystemSchemas() {
+        assertTrue(new H2DatabaseType().getSystemSchemas().isEmpty());
     }
 }

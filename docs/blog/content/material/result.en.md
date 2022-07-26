@@ -1,10 +1,8 @@
 +++
 title = "How to merge the child resultsets"
-weight = 11
+weight = 3
 chapter = true
 +++
-
-## How to merge the child resultsets
 
 This series of articles is a hands-on introduction and analysis of SS's core modules, the cutting-edge technologies used, and valuable lessons learned by SS's core development members. This series of articles will take you into the world of SS kernel, to gain new knowledge and inspire. We hope you will pay attention to us, exchange ideas and go forward together.
 
@@ -23,11 +21,11 @@ Since the result set returned from the database is returned one by one, it is no
 Streaming merge means that each time the data is fetched from the result set, the correct individual data can be returned by fetching it one by one, which is most compatible with the way the database returns the result set natively. Traversal, sorting, and Stream Group-by Merger are all types of stream imputation.
 
 In-memory merging, on the other hand, requires that all data in the result set be traversed and stored in memory, and then after unified grouping, sorting, and aggregation calculations, it is encapsulated to return the result set of data accessed one item at a time.
+
 The decorator merge is a unified functional enhancement of all the result set merge, currently the decorator merge only paging this type of merge.
 
 
 ### Categorization
-
 
 #### Iteration Merger 
 It is the simplest form of aggregation. Simply merge multiple result sets into a one-way chain table. After iterating through the current result set in the chain table, move the chain table element back one place and continue to iterate through the next result set.
@@ -36,18 +34,13 @@ It is the simplest form of aggregation. Simply merge multiple result sets into a
 
 Due to the existence of the ORDER BY statement in SQL, each data result set is itself ordered, so only the data values that the current cursor of the data result set points to need to be sorted. This is equivalent to sorting multiple ordered arrays, and merge sorting is the most appropriate sorting algorithm for this scenario.
 
-
-
 Sharding-Sphere compares the current data values of each result set (done by implementing Java's Comparable interface) and places them in a priority queue when the sorted queries are merged. Each time the next piece of data is fetched, simply move the cursor of the result set at the top of the queue down and find your place in the priority queue again based on the new cursor. To illustrate Sharding-Sphere's sorting and merging with an example, the following diagram shows an example of sorting by score.
- 
 
 ![](https://shardingsphere.apache.org/blog/img/result1.jpg)
-
 
 The example shows 3 tables returning data result sets, each of which is already sorted according to score, but is unordered between the 3 data result sets. The data values pointed to by the current cursor for each of the 3 result sets are sorted and placed into a priority queue, with the first data value of t_score_0 being the largest, the first data value of t_score_2 the next largest, and the first data value of t_score_1 the smallest, so the priority queue is based on the t_score_0, t_score_2, and t_score_1's The following diagram shows how sorting the queue is done when the next call is made.
 
 The following diagram shows how the sorting and merging is done when the next call is made.
-
 
 ![](https://shardingsphere.apache.org/blog/img/result2.jpg)
  
@@ -71,27 +64,23 @@ To illustrate, suppose that the table structure contains the candidate's name (d
  
 In the case where the grouping item is identical to the sorting item, the data obtained is continuous, and the full amount of data required for grouping exists in the data values pointed to by the current cursor of each data result set, so streamwise merging can be used. This is shown in the figure below.
 
-
 ![](https://shardingsphere.apache.org/blog/img/result4.jpg)
  
 When performing a merge, the logic is similar to a sorted merge. The following diagram shows how stream group merging is performed when next call is made.
 
 ![](https://shardingsphere.apache.org/blog/img/result5.jpg)
 
- 
 As you can see in the diagram, when the first next call is made, the first t_score_java is ejected from the queue, along with all other result sets with the same value as "Jetty". After obtaining the scores of all students named "Jetty" and adding them up, the result set is the sum of "Jetty's" scores at the end of the first next call. At the same time, all cursors in the result set are moved down to the next different value of "Jetty" and re-sorted according to the value of the current cursor in the result set. As a result, the relevant result set containing the name "John" in the second place is at the top of the queue.
 
 Stream Group-by Merger merging differs from sorted merging in just two ways.
 
-1.	It will be a one-time multiple data result set of grouped items of the same data out of all.
-2.	It needs to be aggregated according to the type of aggregation function to calculate.
+1. It will be a one-time multiple data result set of grouped items of the same data out of all.
+2. It needs to be aggregated according to the type of aggregation function to calculate.
 
-For cases where the grouped item does not match the sorted item, since the data values associated with the grouping that needs to be obtained are not continuous, stream merging cannot be used and all the result set data needs to be loaded into memory for grouping and aggregation. For example, if the following SQL is used to obtain the total score for each candidate and sort the scores from highest to lowest.
- 
+For cases where the grouped item does not match the sorted item, since the data values associated with the grouping that needs to be obtained are not continuous, stream merging cannot be used and all the result set data needs to be loaded into memory for grouping and aggregation. For example, if the following SQL is used to obtain the total score for each candidate and sort the scores from highest to lowest. 
  
  ![](https://shardingsphere.apache.org/blog/img/result6.jpg)
- 
- 
+
 Then the data taken out of each data result set is consistent with the original data in the table structure in the upper half of the sorting example diagram for the scores, and it is not possible to perform streamwise summation.
 
 When the SQL contains only grouping statements, the order of sorting may not be the same as the grouping order depending on the implementation of different databases. However, the absence of the sorting statement means that this SQL does not care about the sorting order. Therefore, Sharding-Sphere automatically adds sorted items consistent with grouped items through SQL-optimized rewrites, allowing it to convert from a memory-consuming in-memory grouped imputation approach to a streaming grouped imputation scheme.
@@ -103,7 +92,6 @@ Sum and COUNT are aggregation functions that need to be added to the result set 
 
 It must be calculated by the SQL rewrite of SUM and COUNT, the relevant content has been covered in the SQL rewrite, not to repeat.
 
-
 #### Pagination Merger
 
 Pagination is possible for all of the merge types described above. Pagination is a decorator appended on top of other merge types, and Sharding-Sphere adds the ability to paginate the result set of data through the decorator mode. The Pagination imputation is responsible for filtering out data that does not need to be fetched.
@@ -112,11 +100,13 @@ Sharding-Sphere's Pagination capabilities are rather misleading to users, who of
 
 However, it is also important to note that a large amount of data still needs to be transferred to Sharding-Sphere's memory space due to the sorting needs. Therefore, it is not a best practice to use LIMIT for Pagination in this manner. Since LIMIT does not query data by index, Pagination by ID is a better solution if continuity of ID can be guaranteed, e.g..
 
-
 ![](https://shardingsphere.apache.org/blog/img/result7.jpg)
   
 Or by recording the ID of the last record of the last query result for the next page, for example.
  
- 
 ![](https://shardingsphere.apache.org/blog/img/result8.jpg)
 
+### Summary
+
+The whole structure of merger engine is showing below:
+![](https://shardingsphere.apache.org/blog/img/result10.png)

@@ -127,6 +127,10 @@ PROCEDURE
     : P R O C E D U R E
     ;
 
+SPECIFICATION
+    : S P E C I F I C A T I O N
+    ;
+
 VIEW
     : V I E W
     ;
@@ -347,6 +351,10 @@ BOOLEAN
     : B O O L E A N
     ;
 
+BODY
+    : B O D Y
+    ;
+    
 DOUBLE
     : D O U B L E
     ;
@@ -373,6 +381,10 @@ DATE
 
 TIME
     : T I M E
+    ;
+
+TIMEOUT
+    : T I M E O U T
     ;
 
 TIMESTAMP
@@ -549,4 +561,12 @@ NUMERIC
 
 FLOAT
     : F L O A T
+    ;
+
+TRIGGERS
+    : T R I G G E R S
+    ;
+
+GLOBAL_NAME
+    : G L O B A L UL_ N A M E
     ;

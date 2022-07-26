@@ -17,12 +17,13 @@
 
 package org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dcl;
 
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dcl.CreateRoleStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dcl.DCLStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.MySQLStatement;
 
 /**
  * MySQL create role statement.
  */
-public final class MySQLCreateRoleStatement extends CreateRoleStatement implements DCLStatement, MySQLStatement {
+@ToString(callSuper = true)
+public final class MySQLCreateRoleStatement extends CreateRoleStatement implements MySQLStatement {
 }

@@ -21,6 +21,8 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -46,6 +48,44 @@ public final class DataNodeUtil {
                 result.put(dataSourceName, new LinkedList<>());
             }
             result.get(dataSourceName).add(each);
+        }
+        return result;
+    }
+    
+    /**
+     * Build data node.
+     * 
+     * @param dataNode data node
+     * @param dataSources dataSource map
+     * @return data node collection
+     */
+    public static Collection<DataNode> buildDataNode(final DataNode dataNode, final Map<String, Collection<String>> dataSources) {
+        if (!dataSources.containsKey(dataNode.getDataSourceName())) {
+            return Collections.singletonList(dataNode);
+        }
+        Collection<DataNode> result = new LinkedList<>();
+        for (String each : dataSources.get(dataNode.getDataSourceName())) {
+            result.add(new DataNode(each, dataNode.getTableName()));
+        }
+        return result;
+    }
+    
+    /**
+     * Get format data nodes.
+     * 
+     * @param amount amount
+     * @param logicTable logic table
+     * @param dataSources data source names
+     * @return data node list
+     */
+    public static List<String> getFormatDataNodes(final int amount, final String logicTable, final Collection<String> dataSources) {
+        List<String> result = new LinkedList<>();
+        Iterator<String> iterator = dataSources.iterator();
+        for (int i = 0; i < amount; i++) {
+            if (!iterator.hasNext()) {
+                iterator = dataSources.iterator();
+            }
+            result.add(String.format("%s.%s_%s", iterator.next(), logicTable, i));
         }
         return result;
     }

@@ -17,12 +17,41 @@
 
 package org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml;
 
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.DMLStatement;
+import lombok.Setter;
+import lombok.ToString;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.SetAssignmentSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.OnDuplicateKeyColumnsSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.InsertStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.MySQLStatement;
+
+import java.util.Optional;
 
 /**
  * MySQL insert statement.
  */
-public final class MySQLInsertStatement extends InsertStatement implements DMLStatement, MySQLStatement {
+@Setter
+@ToString(callSuper = true)
+public final class MySQLInsertStatement extends InsertStatement implements MySQLStatement {
+    
+    private SetAssignmentSegment setAssignment;
+    
+    private OnDuplicateKeyColumnsSegment onDuplicateKeyColumns;
+    
+    /**
+     * Get set assignment segment.
+     *
+     * @return set assignment segment
+     */
+    public Optional<SetAssignmentSegment> getSetAssignment() {
+        return Optional.ofNullable(setAssignment);
+    }
+    
+    /**
+     * Get on duplicate key columns segment.
+     *
+     * @return on duplicate key columns segment
+     */
+    public Optional<OnDuplicateKeyColumnsSegment> getOnDuplicateKeyColumns() {
+        return Optional.ofNullable(onDuplicateKeyColumns);
+    }
 }

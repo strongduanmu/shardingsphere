@@ -22,6 +22,10 @@ import lombok.Getter;
 import org.apache.shardingsphere.infra.database.metadata.DataSourceMetaData;
 import org.apache.shardingsphere.infra.database.metadata.UnrecognizedDatabaseURLException;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,7 +37,9 @@ public final class OracleDataSourceMetaData implements DataSourceMetaData {
     
     private static final int DEFAULT_PORT = 1521;
     
-    private final String hostName;
+    private static final int THIN_MATCH_GROUP_COUNT = 5;
+    
+    private final String hostname;
     
     private final int port;
     
@@ -41,16 +47,37 @@ public final class OracleDataSourceMetaData implements DataSourceMetaData {
     
     private final String schema;
     
-    private final Pattern pattern = Pattern.compile("jdbc:oracle:(thin|oci|kprb):@(//)?([\\w\\-\\.]+):?([0-9]*)[:/]([\\w\\-]+)", Pattern.CASE_INSENSITIVE);
+    private final Pattern thinUrlPattern = Pattern.compile("jdbc:oracle:(thin|oci|kprb):@(//)?([\\w\\-\\.]+):?([0-9]*)[:/]([\\w\\-]+)", Pattern.CASE_INSENSITIVE);
+    
+    private final Pattern connectDescriptorUrlPattern = Pattern.compile("jdbc:oracle:(thin|oci|kprb):@[(\\w\\s=)]+HOST\\s*=\\s*([\\w\\-\\.]+).*PORT\\s*=\\s(\\d+).*SERVICE_NAME\\s*=\\s*(\\w+)\\)");
     
     public OracleDataSourceMetaData(final String url, final String username) {
-        Matcher matcher = pattern.matcher(url);
-        if (!matcher.find()) {
-            throw new UnrecognizedDatabaseURLException(url, pattern.pattern());
+        List<Matcher> matcherList = Arrays.asList(thinUrlPattern.matcher(url), connectDescriptorUrlPattern.matcher(url));
+        Optional<Matcher> matcherOptional = matcherList.stream().filter(Matcher::find).findAny();
+        if (!matcherOptional.isPresent()) {
+            throw new UnrecognizedDatabaseURLException(url, thinUrlPattern.pattern());
         }
-        hostName = matcher.group(3);
-        port = Strings.isNullOrEmpty(matcher.group(4)) ? DEFAULT_PORT : Integer.parseInt(matcher.group(4));
-        catalog = matcher.group(5);
+        Matcher matcher = matcherOptional.get();
+        int groupCount = matcher.groupCount();
+        if (THIN_MATCH_GROUP_COUNT == groupCount) {
+            hostname = matcher.group(3);
+            port = Strings.isNullOrEmpty(matcher.group(4)) ? DEFAULT_PORT : Integer.parseInt(matcher.group(4));
+            catalog = matcher.group(5);
+        } else {
+            hostname = matcher.group(2);
+            port = Strings.isNullOrEmpty(matcher.group(3)) ? DEFAULT_PORT : Integer.parseInt(matcher.group(3));
+            catalog = matcher.group(4);
+        }
         schema = username;
+    }
+    
+    @Override
+    public Properties getQueryProperties() {
+        return new Properties();
+    }
+    
+    @Override
+    public Properties getDefaultQueryProperties() {
+        return new Properties();
     }
 }

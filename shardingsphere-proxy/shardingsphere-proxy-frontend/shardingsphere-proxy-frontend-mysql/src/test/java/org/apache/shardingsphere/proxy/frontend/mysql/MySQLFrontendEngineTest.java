@@ -19,25 +19,34 @@ package org.apache.shardingsphere.proxy.frontend.mysql;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.Attribute;
 import lombok.SneakyThrows;
+import org.apache.shardingsphere.authority.config.AuthorityRuleConfiguration;
+import org.apache.shardingsphere.authority.rule.AuthorityRule;
+import org.apache.shardingsphere.authority.rule.builder.AuthorityRuleBuilder;
+import org.apache.shardingsphere.db.protocol.CommonConstants;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLConnectionPhase;
+import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLConstants;
 import org.apache.shardingsphere.db.protocol.mysql.packet.generic.MySQLErrPacket;
 import org.apache.shardingsphere.db.protocol.mysql.packet.generic.MySQLOKPacket;
 import org.apache.shardingsphere.db.protocol.mysql.packet.handshake.MySQLHandshakePacket;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.apache.shardingsphere.infra.auth.Authentication;
-import org.apache.shardingsphere.infra.auth.ProxyUser;
-import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.infra.context.SchemaContext;
-import org.apache.shardingsphere.infra.context.SchemaContexts;
-import org.apache.shardingsphere.infra.context.impl.StandardSchemaContexts;
-import org.apache.shardingsphere.infra.context.runtime.RuntimeContext;
-import org.apache.shardingsphere.infra.context.schema.ShardingSphereSchema;
+import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
+import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
+import org.apache.shardingsphere.infra.federation.optimizer.context.OptimizerContext;
+import org.apache.shardingsphere.infra.instance.InstanceContext;
+import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
+import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
+import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
+import org.apache.shardingsphere.infra.metadata.user.ShardingSphereUser;
+import org.apache.shardingsphere.mode.manager.ContextManager;
+import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
+import org.apache.shardingsphere.mode.metadata.persist.MetaDataPersistService;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
+import org.apache.shardingsphere.proxy.frontend.authentication.AuthenticationResult;
 import org.apache.shardingsphere.proxy.frontend.connection.ConnectionIdGenerator;
-import org.apache.shardingsphere.proxy.frontend.auth.AuthenticationResult;
-import org.apache.shardingsphere.proxy.frontend.mysql.auth.MySQLAuthenticationEngine;
+import org.apache.shardingsphere.proxy.frontend.mysql.authentication.MySQLAuthenticationEngine;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,14 +69,15 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public final class MySQLFrontendEngineTest {
+public final class MySQLFrontendEngineTest extends ProxyContextRestorer {
     
-    private static final String SCHEMA = "schema_%s";
+    private static final String SCHEMA_PATTERN = "schema_%s";
     
     private MySQLFrontendEngine mysqlFrontendEngine;
     
@@ -80,9 +90,14 @@ public final class MySQLFrontendEngineTest {
     @Mock
     private Channel channel;
     
+    @SuppressWarnings("unchecked")
     @Before
     public void setUp() {
+        ProxyContext.init(mock(ContextManager.class, RETURNS_DEEP_STUBS));
         resetConnectionIdGenerator();
+        when(context.channel()).thenReturn(channel);
+        when(channel.attr(CommonConstants.CHARSET_ATTRIBUTE_KEY)).thenReturn(mock(Attribute.class));
+        when(channel.attr(MySQLConstants.MYSQL_CHARACTER_SET_ATTRIBUTE_KEY)).thenReturn(mock(Attribute.class));
     }
     
     @SneakyThrows(ReflectiveOperationException.class)
@@ -95,17 +110,19 @@ public final class MySQLFrontendEngineTest {
     
     @Test
     public void assertHandshake() {
-        assertTrue(mysqlFrontendEngine.getAuthEngine().handshake(context) > 0);
+        assertTrue(mysqlFrontendEngine.getAuthenticationEngine().handshake(context) > 0);
         verify(context).writeAndFlush(isA(MySQLHandshakePacket.class));
     }
     
     @Test
     public void assertAuthWhenLoginSuccess() {
         setConnectionPhase(MySQLConnectionPhase.AUTH_PHASE_FAST_PATH);
-        ProxyUser proxyUser = new ProxyUser("", Collections.singleton("db1"));
-        setAuthentication(proxyUser);
+        initProxyContext(new ShardingSphereUser("root", "", ""));
+        when(payload.readInt1()).thenReturn(1);
         when(payload.readStringNul()).thenReturn("root");
-        AuthenticationResult actual = mysqlFrontendEngine.getAuthEngine().auth(context, payload);
+        when(payload.readStringNulByBytes()).thenReturn("root".getBytes());
+        when(channel.remoteAddress()).thenReturn(new InetSocketAddress("localhost", 3307));
+        AuthenticationResult actual = mysqlFrontendEngine.getAuthenticationEngine().authenticate(context, payload);
         assertThat(actual.getUsername(), is("root"));
         assertNull(actual.getDatabase());
         assertTrue(actual.isFinished());
@@ -115,67 +132,65 @@ public final class MySQLFrontendEngineTest {
     @Test
     public void assertAuthWhenLoginFailure() {
         setConnectionPhase(MySQLConnectionPhase.AUTH_PHASE_FAST_PATH);
-        ProxyUser proxyUser = new ProxyUser("error", Collections.singleton("db1"));
-        setAuthentication(proxyUser);
+        initProxyContext(new ShardingSphereUser("root", "error", ""));
+        when(payload.readInt1()).thenReturn(1);
         when(payload.readStringNul()).thenReturn("root");
         when(payload.readStringNulByBytes()).thenReturn("root".getBytes());
         when(channel.remoteAddress()).thenReturn(new InetSocketAddress("localhost", 3307));
-        when(context.channel()).thenReturn(channel);
-        AuthenticationResult actual = mysqlFrontendEngine.getAuthEngine().auth(context, payload);
+        AuthenticationResult actual = mysqlFrontendEngine.getAuthenticationEngine().authenticate(context, payload);
         assertThat(actual.getUsername(), is("root"));
         assertNull(actual.getDatabase());
         assertTrue(actual.isFinished());
         verify(context).writeAndFlush(isA(MySQLErrPacket.class));
     }
-
+    
     @Test
     public void assertErrorMsgWhenLoginFailure() throws UnknownHostException {
         setConnectionPhase(MySQLConnectionPhase.AUTH_PHASE_FAST_PATH);
-        ProxyUser proxyUser = new ProxyUser("error", Collections.singleton("db1"));
-        setAuthentication(proxyUser);
+        initProxyContext(new ShardingSphereUser("root", "error", ""));
+        when(payload.readInt1()).thenReturn(1);
         when(payload.readStringNul()).thenReturn("root");
         when(payload.readStringNulByBytes()).thenReturn("root".getBytes());
-        when(context.channel()).thenReturn(channel);
-        when(channel.remoteAddress()).thenReturn(new InetSocketAddress(InetAddress.getByAddress(new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 102}), 3307));
-        AuthenticationResult actual = mysqlFrontendEngine.getAuthEngine().auth(context, payload);
+        when(channel.remoteAddress()).thenReturn(new InetSocketAddress(InetAddress.getByAddress(new byte[]{(byte) 192, (byte) 168, (byte) 0, (byte) 102}), 3307));
+        AuthenticationResult actual = mysqlFrontendEngine.getAuthenticationEngine().authenticate(context, payload);
         assertThat(actual.getUsername(), is("root"));
         assertNull(actual.getDatabase());
         assertTrue(actual.isFinished());
         verify(context).writeAndFlush(argThat((ArgumentMatcher<MySQLErrPacket>) argument -> "Access denied for user 'root'@'192.168.0.102' (using password: YES)".equals(argument.getErrorMessage())));
     }
     
-    private void setAuthentication(final ProxyUser proxyUser) {
-        Authentication authentication = new Authentication();
-        authentication.getUsers().put("root", proxyUser);
-        initProxyContext(authentication);
-    }
-    
     @SneakyThrows(ReflectiveOperationException.class)
     private void setConnectionPhase(final MySQLConnectionPhase connectionPhase) {
         Field field = MySQLAuthenticationEngine.class.getDeclaredField("connectionPhase");
         field.setAccessible(true);
-        field.set(mysqlFrontendEngine.getAuthEngine(), connectionPhase);
+        field.set(mysqlFrontendEngine.getAuthenticationEngine(), connectionPhase);
     }
     
-    @SneakyThrows(ReflectiveOperationException.class)
-    private void initProxyContext(final Authentication authentication) {
-        Field field = ProxyContext.getInstance().getClass().getDeclaredField("schemaContexts");
-        field.setAccessible(true);
-        field.set(ProxyContext.getInstance(), getSchemaContexts(authentication));
+    private void initProxyContext(final ShardingSphereUser user) {
+        ContextManager contextManager = mock(ContextManager.class, RETURNS_DEEP_STUBS);
+        MetaDataContexts metaDataContexts = getMetaDataContexts(user);
+        when(contextManager.getMetaDataContexts()).thenReturn(metaDataContexts);
+        ProxyContext.init(contextManager);
     }
     
-    private SchemaContexts getSchemaContexts(final Authentication authentication) {
-        return new StandardSchemaContexts(getSchemaContextMap(), authentication, new ConfigurationProperties(new Properties()), new MySQLDatabaseType());
+    private MetaDataContexts getMetaDataContexts(final ShardingSphereUser user) {
+        return new MetaDataContexts(mock(MetaDataPersistService.class),
+                new ShardingSphereMetaData(getDatabases(), buildGlobalRuleMetaData(user), new ConfigurationProperties(new Properties())), mock(OptimizerContext.class));
     }
     
-    private Map<String, SchemaContext> getSchemaContextMap() {
-        Map<String, SchemaContext> result = new HashMap<>(10, 1);
+    private Map<String, ShardingSphereDatabase> getDatabases() {
+        Map<String, ShardingSphereDatabase> result = new HashMap<>(10, 1);
         for (int i = 0; i < 10; i++) {
-            String name = String.format(SCHEMA, i);
-            ShardingSphereSchema schema = mock(ShardingSphereSchema.class);
-            RuntimeContext runtimeContext = mock(RuntimeContext.class);
-            result.put(name, new SchemaContext(name, schema, runtimeContext));
+            ShardingSphereDatabase database = mock(ShardingSphereDatabase.class, RETURNS_DEEP_STUBS);
+            when(database.getResource().getDatabaseType()).thenReturn(new MySQLDatabaseType());
+            result.put(String.format(SCHEMA_PATTERN, i), database);
         }
         return result;
+    }
+    
+    private ShardingSphereRuleMetaData buildGlobalRuleMetaData(final ShardingSphereUser user) {
+        AuthorityRuleConfiguration ruleConfig = new AuthorityRuleConfiguration(Collections.singletonList(user), new ShardingSphereAlgorithmConfiguration("ALL_PERMITTED", new Properties()));
+        AuthorityRule rule = new AuthorityRuleBuilder().build(ruleConfig, Collections.emptyMap(), mock(InstanceContext.class));
+        return new ShardingSphereRuleMetaData(Collections.singletonList(rule));
     }
 }

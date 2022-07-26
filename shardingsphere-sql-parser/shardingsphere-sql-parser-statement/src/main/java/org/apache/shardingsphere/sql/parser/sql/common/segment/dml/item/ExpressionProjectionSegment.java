@@ -19,6 +19,8 @@ package org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.AliasAvailable;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.AliasSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.complex.ComplexExpressionSegment;
@@ -30,6 +32,7 @@ import java.util.Optional;
  * Expression projection segment.
  */
 @Getter
+@ToString
 public final class ExpressionProjectionSegment implements ProjectionSegment, ComplexExpressionSegment, AliasAvailable {
     
     private final int startIndex;
@@ -38,6 +41,8 @@ public final class ExpressionProjectionSegment implements ProjectionSegment, Com
     
     private final String text;
     
+    private final ExpressionSegment expr;
+    
     @Setter
     private AliasSegment alias;
     
@@ -45,6 +50,14 @@ public final class ExpressionProjectionSegment implements ProjectionSegment, Com
         this.startIndex = startIndex;
         this.stopIndex = stopIndex;
         this.text = SQLUtil.getExpressionWithoutOutsideParentheses(text);
+        this.expr = null;
+    }
+    
+    public ExpressionProjectionSegment(final int startIndex, final int stopIndex, final String text, final ExpressionSegment expr) {
+        this.startIndex = startIndex;
+        this.stopIndex = stopIndex;
+        this.text = SQLUtil.getExpressionWithoutOutsideParentheses(text);
+        this.expr = expr;
     }
     
     @Override

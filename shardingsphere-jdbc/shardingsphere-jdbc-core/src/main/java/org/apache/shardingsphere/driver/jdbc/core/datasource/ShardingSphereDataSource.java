@@ -17,115 +17,115 @@
 
 package org.apache.shardingsphere.driver.jdbc.core.datasource;
 
-import com.google.common.base.Preconditions;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.apache.shardingsphere.driver.jdbc.core.connection.ShardingSphereConnection;
-import org.apache.shardingsphere.driver.jdbc.unsupported.AbstractUnsupportedOperationDataSource;
+import org.apache.shardingsphere.driver.jdbc.adapter.AbstractDataSourceAdapter;
+import org.apache.shardingsphere.driver.jdbc.context.JDBCContext;
+import org.apache.shardingsphere.driver.state.DriverStateContext;
 import org.apache.shardingsphere.infra.config.RuleConfiguration;
-import org.apache.shardingsphere.infra.context.SchemaContexts;
-import org.apache.shardingsphere.infra.context.SchemaContextsBuilder;
-import org.apache.shardingsphere.infra.database.DefaultSchema;
-import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.infra.database.type.DatabaseTypes;
-import org.apache.shardingsphere.transaction.ShardingTransactionManagerEngine;
-import org.apache.shardingsphere.transaction.context.TransactionContexts;
-import org.apache.shardingsphere.transaction.context.impl.StandardTransactionContexts;
-import org.apache.shardingsphere.transaction.core.TransactionTypeHolder;
+import org.apache.shardingsphere.infra.config.checker.RuleConfigurationCheckerFactory;
+import org.apache.shardingsphere.infra.config.database.impl.DataSourceProvidedDatabaseConfiguration;
+import org.apache.shardingsphere.infra.config.mode.ModeConfiguration;
+import org.apache.shardingsphere.infra.config.scope.GlobalRuleConfiguration;
+import org.apache.shardingsphere.infra.instance.metadata.InstanceMetaData;
+import org.apache.shardingsphere.infra.instance.metadata.InstanceMetaDataBuilderFactory;
+import org.apache.shardingsphere.mode.manager.ContextManager;
+import org.apache.shardingsphere.mode.manager.ContextManagerBuilderFactory;
+import org.apache.shardingsphere.mode.manager.ContextManagerBuilderParameter;
 
 import javax.sql.DataSource;
-import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 /**
  * ShardingSphere data source.
  */
-@RequiredArgsConstructor
-@Getter
-public final class ShardingSphereDataSource extends AbstractUnsupportedOperationDataSource implements AutoCloseable {
+public final class ShardingSphereDataSource extends AbstractDataSourceAdapter implements AutoCloseable {
     
-    private final SchemaContexts schemaContexts;
+    private final String databaseName;
     
-    private final TransactionContexts transactionContexts;
+    private final ContextManager contextManager;
     
-    public ShardingSphereDataSource(final Map<String, DataSource> dataSourceMap, final Collection<RuleConfiguration> configurations, final Properties props) throws SQLException {
-        DatabaseType databaseType = createDatabaseType(dataSourceMap);
-        schemaContexts = new SchemaContextsBuilder(
-                databaseType, Collections.singletonMap(DefaultSchema.LOGIC_NAME, dataSourceMap), Collections.singletonMap(DefaultSchema.LOGIC_NAME, configurations), props).build();
-        transactionContexts = createTransactionContexts(databaseType, dataSourceMap);
+    private final JDBCContext jdbcContext;
+    
+    public ShardingSphereDataSource(final String databaseName, final ModeConfiguration modeConfig) throws SQLException {
+        this.databaseName = databaseName;
+        contextManager = createContextManager(databaseName, modeConfig, new HashMap<>(), new LinkedList<>(), new Properties());
+        jdbcContext = new JDBCContext(contextManager.getDataSourceMap(databaseName));
     }
     
-    private DatabaseType createDatabaseType(final Map<String, DataSource> dataSourceMap) throws SQLException {
-        DatabaseType result = null;
-        for (DataSource each : dataSourceMap.values()) {
-            DatabaseType databaseType = createDatabaseType(each);
-            Preconditions.checkState(null == result || result == databaseType, String.format("Database type inconsistent with '%s' and '%s'", result, databaseType));
-            result = databaseType;
-        }
-        return result;
+    public ShardingSphereDataSource(final String databaseName, final ModeConfiguration modeConfig, final Map<String, DataSource> dataSourceMap,
+                                    final Collection<RuleConfiguration> ruleConfigs, final Properties props) throws SQLException {
+        checkRuleConfiguration(databaseName, ruleConfigs);
+        this.databaseName = databaseName;
+        contextManager = createContextManager(databaseName, modeConfig, dataSourceMap, ruleConfigs, null == props ? new Properties() : props);
+        jdbcContext = new JDBCContext(contextManager.getDataSourceMap(databaseName));
     }
     
-    private DatabaseType createDatabaseType(final DataSource dataSource) throws SQLException {
-        if (dataSource instanceof ShardingSphereDataSource) {
-            return ((ShardingSphereDataSource) dataSource).schemaContexts.getDatabaseType();
-        }
-        try (Connection connection = dataSource.getConnection()) {
-            return DatabaseTypes.getDatabaseTypeByURL(connection.getMetaData().getURL());
-        }
+    @SuppressWarnings("unchecked")
+    private void checkRuleConfiguration(final String databaseName, final Collection<RuleConfiguration> ruleConfigs) {
+        ruleConfigs.forEach(each -> RuleConfigurationCheckerFactory.findInstance(each).ifPresent(optional -> optional.check(databaseName, each)));
     }
     
-    private TransactionContexts createTransactionContexts(final DatabaseType databaseType, final Map<String, DataSource> dataSourceMap) {
-        ShardingTransactionManagerEngine engine = new ShardingTransactionManagerEngine();
-        engine.init(databaseType, dataSourceMap);
-        return new StandardTransactionContexts(Collections.singletonMap(DefaultSchema.LOGIC_NAME, engine));
+    private ContextManager createContextManager(final String databaseName, final ModeConfiguration modeConfig, final Map<String, DataSource> dataSourceMap,
+                                                final Collection<RuleConfiguration> ruleConfigs, final Properties props) throws SQLException {
+        InstanceMetaData instanceMetaData = InstanceMetaDataBuilderFactory.create("JDBC", -1);
+        Collection<RuleConfiguration> globalRuleConfigs = ruleConfigs.stream().filter(each -> each instanceof GlobalRuleConfiguration).collect(Collectors.toList());
+        ContextManagerBuilderParameter parameter = new ContextManagerBuilderParameter(modeConfig, Collections.singletonMap(databaseName,
+                new DataSourceProvidedDatabaseConfiguration(dataSourceMap, ruleConfigs)), globalRuleConfigs, props, Collections.emptyList(), instanceMetaData);
+        return ContextManagerBuilderFactory.getInstance(modeConfig).build(parameter);
     }
     
     @Override
-    public ShardingSphereConnection getConnection() {
-        return new ShardingSphereConnection(getDataSourceMap(), schemaContexts, transactionContexts, TransactionTypeHolder.get());
+    public Connection getConnection() throws SQLException {
+        return DriverStateContext.getConnection(databaseName, contextManager, jdbcContext);
     }
     
     @Override
-    public ShardingSphereConnection getConnection(final String username, final String password) {
+    public Connection getConnection(final String username, final String password) throws SQLException {
         return getConnection();
     }
     
     /**
-     * Get data sources.
-     * 
-     * @return data sources
+     * Close data sources.
+     *
+     * @param dataSourceNames data source names to be closed
+     * @throws Exception exception
      */
-    public Map<String, DataSource> getDataSourceMap() {
-        return schemaContexts.getSchemaContexts().get(DefaultSchema.LOGIC_NAME).getSchema().getDataSources();
+    public void close(final Collection<String> dataSourceNames) throws Exception {
+        Map<String, DataSource> dataSourceMap = contextManager.getDataSourceMap(databaseName);
+        for (String each : dataSourceNames) {
+            close(dataSourceMap.get(each));
+        }
+        contextManager.close();
+    }
+    
+    private void close(final DataSource dataSource) throws Exception {
+        if (dataSource instanceof AutoCloseable) {
+            ((AutoCloseable) dataSource).close();
+        }
     }
     
     @Override
     public void close() throws Exception {
-        close(getDataSourceMap().keySet());
+        close(contextManager.getDataSourceMap(databaseName).keySet());
     }
     
-    /**
-     * Close dataSources.
-     * 
-     * @param dataSourceNames data source names
-     * @throws Exception exception
-     */
-    public void close(final Collection<String> dataSourceNames) throws Exception {
-        dataSourceNames.forEach(each -> close(getDataSourceMap().get(each)));
-        schemaContexts.close();
+    @Override
+    public int getLoginTimeout() throws SQLException {
+        Map<String, DataSource> dataSourceMap = contextManager.getDataSourceMap(databaseName);
+        return dataSourceMap.isEmpty() ? 0 : dataSourceMap.values().iterator().next().getLoginTimeout();
     }
     
-    private void close(final DataSource dataSource) {
-        try {
-            Method method = dataSource.getClass().getDeclaredMethod("close");
-            method.setAccessible(true);
-            method.invoke(dataSource);
-        } catch (final ReflectiveOperationException ignored) {
+    @Override
+    public void setLoginTimeout(final int seconds) throws SQLException {
+        for (DataSource each : contextManager.getDataSourceMap(databaseName).values()) {
+            each.setLoginTimeout(seconds);
         }
     }
 }

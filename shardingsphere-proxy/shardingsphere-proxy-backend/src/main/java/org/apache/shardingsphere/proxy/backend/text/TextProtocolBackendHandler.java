@@ -17,10 +17,12 @@
 
 package org.apache.shardingsphere.proxy.backend.text;
 
-import org.apache.shardingsphere.proxy.backend.response.BackendResponse;
-import org.apache.shardingsphere.proxy.backend.response.query.QueryData;
+import io.vertx.core.Future;
+import org.apache.shardingsphere.proxy.backend.response.data.QueryResponseRow;
+import org.apache.shardingsphere.proxy.backend.response.header.ResponseHeader;
 
 import java.sql.SQLException;
+import java.util.Collections;
 
 /**
  * Text protocol backend handler.
@@ -33,7 +35,20 @@ public interface TextProtocolBackendHandler {
      * @return backend response
      * @throws SQLException SQL exception
      */
-    BackendResponse execute() throws SQLException;
+    ResponseHeader execute() throws SQLException;
+    
+    /**
+     * Execute command and return future.
+     *
+     * @return future of response header
+     */
+    default Future<ResponseHeader> executeFuture() {
+        try {
+            return Future.succeededFuture(execute());
+        } catch (SQLException ex) {
+            return Future.failedFuture(ex);
+        }
+    }
     
     /**
      * Goto next result value.
@@ -41,13 +56,25 @@ public interface TextProtocolBackendHandler {
      * @return has more result value or not
      * @throws SQLException SQL exception
      */
-    boolean next() throws SQLException;
+    default boolean next() throws SQLException {
+        return false;
+    }
     
     /**
-     * Get query data.
+     * Get row data.
      *
-     * @return query data
+     * @return row data
      * @throws SQLException SQL exception
      */
-    QueryData getQueryData() throws SQLException;
+    default QueryResponseRow getRowData() throws SQLException {
+        return new QueryResponseRow(Collections.emptyList());
+    }
+    
+    /**
+     * Close handler.
+     *
+     * @throws SQLException SQL exception
+     */
+    default void close() throws SQLException {
+    }
 }

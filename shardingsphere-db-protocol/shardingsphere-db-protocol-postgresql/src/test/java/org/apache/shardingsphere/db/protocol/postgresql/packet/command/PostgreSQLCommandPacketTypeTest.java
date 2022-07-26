@@ -19,18 +19,23 @@ package org.apache.shardingsphere.db.protocol.postgresql.packet.command;
 
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
-public class PostgreSQLCommandPacketTypeTest {
-    
-    @Test
-    public void assertValueOf() {
-        assertThat(PostgreSQLCommandPacketType.valueOf(PostgreSQLCommandPacketType.AUTHENTICATION_OK.getValue()), is(PostgreSQLCommandPacketType.AUTHENTICATION_OK));
-    }
+public final class PostgreSQLCommandPacketTypeTest {
     
     @Test(expected = IllegalArgumentException.class)
-    public void assertGetValueWithIllegalArgument() {
+    public void assertValueOfUnknownCommandPacketType() {
         PostgreSQLCommandPacketType.valueOf(-1);
+    }
+    
+    @Test
+    public void assertValueOfExtendedProtocolCommandPacketType() {
+        assertTrue(PostgreSQLCommandPacketType.isExtendedProtocolPacketType(PostgreSQLCommandPacketType.PARSE_COMMAND));
+        assertTrue(PostgreSQLCommandPacketType.isExtendedProtocolPacketType(PostgreSQLCommandPacketType.BIND_COMMAND));
+        assertTrue(PostgreSQLCommandPacketType.isExtendedProtocolPacketType(PostgreSQLCommandPacketType.DESCRIBE_COMMAND));
+        assertTrue(PostgreSQLCommandPacketType.isExtendedProtocolPacketType(PostgreSQLCommandPacketType.EXECUTE_COMMAND));
+        assertTrue(PostgreSQLCommandPacketType.isExtendedProtocolPacketType(PostgreSQLCommandPacketType.CLOSE_COMMAND));
+        assertTrue(PostgreSQLCommandPacketType.isExtendedProtocolPacketType(PostgreSQLCommandPacketType.FLUSH_COMMAND));
+        assertTrue(PostgreSQLCommandPacketType.isExtendedProtocolPacketType(PostgreSQLCommandPacketType.SYNC_COMMAND));
     }
 }

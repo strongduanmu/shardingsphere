@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
-grammar DMLStatement;
+parser grammar DMLStatement;
 
-import Symbol, Keyword, PostgreSQLKeyword, Literals, BaseRule;
+import BaseRule;
+
+options {tokenVocab = ModeLexer;}
 
 insert
     : withClause? INSERT INTO insertTarget insertRest optOnConflict? returningClause?
@@ -25,7 +27,7 @@ insert
 
 insertTarget
     : qualifiedName | qualifiedName AS colId
-	;
+    ;
 
 insertRest
     : select
@@ -37,27 +39,27 @@ insertRest
 
 overrideKind
     : USER | SYSTEM
-	;
+    ;
 
 insertColumnList
     : insertColumnItem
-	| insertColumnList COMMA_ insertColumnItem
-	;
+    | insertColumnList COMMA_ insertColumnItem
+    ;
 
 insertColumnItem
     : colId optIndirection
-	;
+    ;
 
 optOnConflict
     : ON CONFLICT optConfExpr DO UPDATE SET setClauseList whereClause?
-	| ON CONFLICT optConfExpr DO NOTHING
-	;
+    | ON CONFLICT optConfExpr DO NOTHING
+    ;
 
 optConfExpr
     : LP_ indexParams RP_ whereClause?
-	| ON CONSTRAINT name
-	|
-	;
+    | ON CONSTRAINT name
+    |
+    ;
 
 update
     : withClause? UPDATE relationExprOptAlias SET setClauseList fromClause? whereOrCurrentClause? returningClause?
@@ -65,26 +67,26 @@ update
 
 setClauseList
     : setClause
-	| setClauseList COMMA_ setClause
-	;
+    | setClauseList COMMA_ setClause
+    ;
 
 setClause
     : setTarget EQ_ aExpr
-	| LP_ setTargetList RP_ EQ_ aExpr
-	;
+    | LP_ setTargetList RP_ EQ_ aExpr
+    ;
 
 setTarget
-    : colId optIndirection
-	;
+    : colId
+    ;
 
 setTargetList
     : setTarget
-	| setTargetList COMMA_ setTarget
-	;
+    | setTargetList COMMA_ setTarget
+    ;
 
 returningClause
     : RETURNING targetList
-	;
+    ;
 
 delete
     : withClause? DELETE FROM relationExprOptAlias usingClause? whereOrCurrentClause? returningClause?
@@ -92,13 +94,13 @@ delete
 
 relationExprOptAlias
     : relationExpr
-	| relationExpr colId
-	| relationExpr AS colId
-	;
+    | relationExpr colId
+    | relationExpr AS colId
+    ;
 
 usingClause
     : USING fromList
-	;
+    ;
 
 select
     : selectNoParens | selectWithParens
@@ -106,262 +108,259 @@ select
 
 selectWithParens
     : LP_ selectNoParens RP_ | LP_ selectWithParens RP_
-	;
+    ;
 
 selectNoParens
     : selectClauseN
     | selectClauseN sortClause
-	| selectClauseN sortClause? forLockingClause selectLimit?
-	| selectClauseN sortClause? selectLimit forLockingClause?
-	| withClause selectClauseN
-	| withClause selectClauseN sortClause
-	| withClause selectClauseN sortClause? forLockingClause selectLimit?
-	| withClause selectClauseN sortClause? selectLimit forLockingClause?
-	;
+    | selectClauseN sortClause? forLockingClause selectLimit?
+    | selectClauseN sortClause? selectLimit forLockingClause?
+    | withClause selectClauseN
+    | withClause selectClauseN sortClause
+    | withClause selectClauseN sortClause? forLockingClause selectLimit?
+    | withClause selectClauseN sortClause? selectLimit forLockingClause?
+    ;
 
 selectClauseN
     : simpleSelect
     | selectWithParens
-    | selectClauseN UNION allOrDistinct selectClauseN
-    | selectClauseN INTERSECT allOrDistinct selectClauseN
-    | selectClauseN EXCEPT allOrDistinct selectClauseN
-	;
+    | selectClauseN UNION allOrDistinct? selectClauseN
+    | selectClauseN INTERSECT allOrDistinct? selectClauseN
+    | selectClauseN EXCEPT allOrDistinct? selectClauseN
+    ;
 
 simpleSelect
     : SELECT ALL? targetList? intoClause? fromClause? whereClause? groupClause? havingClause? windowClause?
-	| SELECT distinctClause targetList intoClause? fromClause? whereClause? groupClause? havingClause? windowClause?
-	| valuesClause
-	| TABLE relationExpr
-	;
+    | SELECT distinctClause targetList intoClause? fromClause? whereClause? groupClause? havingClause? windowClause?
+    | valuesClause
+    | TABLE relationExpr
+    ;
 
 withClause
     : WITH cteList
-	| WITH RECURSIVE cteList
-	;
+    | WITH RECURSIVE cteList
+    ;
 
 intoClause
     : INTO optTempTableName
-	;
+    ;
 
 optTempTableName
     : TEMPORARY TABLE? qualifiedName
-	| TEMP TABLE? qualifiedName
-	| LOCAL TEMPORARY TABLE? qualifiedName
-	| LOCAL TEMP TABLE? qualifiedName
-	| GLOBAL TEMPORARY TABLE? qualifiedName
-	| GLOBAL TEMP TABLE? qualifiedName
-	| UNLOGGED TABLE? qualifiedName
-	| TABLE? qualifiedName
-	| qualifiedName
-	;
+    | TEMP TABLE? qualifiedName
+    | LOCAL TEMPORARY TABLE? qualifiedName
+    | LOCAL TEMP TABLE? qualifiedName
+    | GLOBAL TEMPORARY TABLE? qualifiedName
+    | GLOBAL TEMP TABLE? qualifiedName
+    | UNLOGGED TABLE? qualifiedName
+    | TABLE? qualifiedName
+    | qualifiedName
+    ;
 
 cteList
     : commonTableExpr
-	| cteList COMMA_ commonTableExpr
-	;
+    | cteList COMMA_ commonTableExpr
+    ;
 
 commonTableExpr
     :  name optNameList AS optMaterialized LP_ preparableStmt RP_
-	;
+    ;
 
 optMaterialized
     : MATERIALIZED | NOT MATERIALIZED |
-	;
+    ;
 
 optNameList
     :LP_ nameList RP_ |
-	;
+    ;
 
 preparableStmt
     : select
-	| insert
-	| update
-	| delete
-	;
+    | insert
+    | update
+    | delete
+    ;
 
 forLockingClause
     : forLockingItems | FOR READ ONLY
-	;
+    ;
 
 forLockingItems
     : forLockingItem
-	| forLockingItems forLockingItem
-	;
+    | forLockingItems forLockingItem
+    ;
 
 forLockingItem
     : forLockingStrength lockedRelsList? nowaitOrSkip?
-	;
+    ;
 
 nowaitOrSkip
     : NOWAIT
-	| 'skip' LOCKED
-	;
+    | APOSTROPHE_SKIP LOCKED
+    ;
 
 forLockingStrength
     : FOR UPDATE
-	| FOR NO KEY UPDATE
-	| FOR SHARE
-	| FOR KEY SHARE
-	;
+    | FOR NO KEY UPDATE
+    | FOR SHARE
+    | FOR KEY SHARE
+    ;
 
 lockedRelsList
     : OF qualifiedNameList
-	;
+    ;
 
 qualifiedNameList
     : qualifiedName
-	| qualifiedNameList COMMA_ qualifiedName
-	;
-
-qualifiedName
-    : colId | colId indirection
-	;
+    | qualifiedNameList COMMA_ qualifiedName
+    ;
 
 selectLimit
     : limitClause offsetClause
-	| offsetClause limitClause
-	| limitClause
-	| offsetClause
-	;
+    | offsetClause limitClause
+    | limitClause
+    | offsetClause
+    ;
 
 valuesClause
     : VALUES LP_ exprList RP_
-	| valuesClause COMMA_ LP_ exprList RP_
-	;
+    | valuesClause COMMA_ LP_ exprList RP_
+    ;
 
 limitClause
     : LIMIT selectLimitValue
-	| LIMIT selectLimitValue COMMA_ selectOffsetValue
-	| FETCH firstOrNext selectFetchFirstValue rowOrRows ONLY
-	| FETCH firstOrNext selectFetchFirstValue rowOrRows WITH TIES
-	| FETCH firstOrNext rowOrRows ONLY
-	| FETCH firstOrNext rowOrRows WITH TIES
-	;
+    | LIMIT selectLimitValue COMMA_ selectOffsetValue
+    | FETCH firstOrNext selectFetchFirstValue rowOrRows ONLY
+    | FETCH firstOrNext selectFetchFirstValue rowOrRows WITH TIES
+    | FETCH firstOrNext rowOrRows ONLY
+    | FETCH firstOrNext rowOrRows WITH TIES
+    ;
 
 offsetClause
     : OFFSET selectOffsetValue
-	| OFFSET selectFetchFirstValue rowOrRows
-	;
+    | OFFSET selectFetchFirstValue rowOrRows
+    ;
 
 selectLimitValue
     : aExpr
-	| ALL
-	;
+    | ALL
+    ;
 
 selectOffsetValue
     : aExpr
-	;
+    ;
 
 selectFetchFirstValue
     : cExpr
-	| PLUS_ NUMBER_
-	| MINUS_ NUMBER_
-	;
+    | PLUS_ NUMBER_
+    | MINUS_ NUMBER_
+    ;
 
 rowOrRows
     : ROW | ROWS
-	;
+    ;
 
 firstOrNext
     : FIRST | NEXT
-	;
+    ;
 
 targetList
     : targetEl
-	| targetList COMMA_ targetEl
-	;
+    | targetList COMMA_ targetEl
+    ;
 
 targetEl
     : colId DOT_ASTERISK_
     | aExpr AS identifier
-	| aExpr identifier
-	| aExpr
-	| ASTERISK_
-	;
+    | aExpr identifier
+    | aExpr
+    | ASTERISK_
+    | colId DOT_ASTERISK_ AS identifier
+    ;
 
 groupClause
     : GROUP BY groupByList
-	;
+    ;
 
 groupByList
     : groupByItem (COMMA_ groupByItem)*
-	;
+    ;
 
 groupByItem
     : aExpr
-	| emptyGroupingSet
-	| cubeClause
-	| rollupClause
-	| groupingSetsClause
-	;
+    | emptyGroupingSet
+    | cubeClause
+    | rollupClause
+    | groupingSetsClause
+    ;
 
 emptyGroupingSet
     : LP_ RP_
-	;
+    ;
 
 rollupClause
     : ROLLUP LP_ exprList RP_
-	;
+    ;
 
 cubeClause
     : CUBE LP_ exprList RP_
-	;
+    ;
 
 groupingSetsClause
     : GROUPING SETS LP_ groupByList RP_
-	;
+    ;
 
 windowClause
     : WINDOW windowDefinitionList
-	;
+    ;
 
 windowDefinitionList
     : windowDefinition
-	| windowDefinitionList COMMA_ windowDefinition
-	;
+    | windowDefinitionList COMMA_ windowDefinition
+    ;
 
 windowDefinition
     : colId AS windowSpecification
-	;
+    ;
 
 windowSpecification
     : LP_ existingWindowName? partitionClause? sortClause? frameClause? RP_
-	;
+    ;
 
 existingWindowName
     : colId
-	;
+    ;
 
 partitionClause
     : PARTITION BY exprList
-	;
+    ;
 
 frameClause
     : RANGE frameExtent optWindowExclusionClause
-	| ROWS frameExtent optWindowExclusionClause
-	| GROUPS frameExtent optWindowExclusionClause
-	;
+    | ROWS frameExtent optWindowExclusionClause
+    | GROUPS frameExtent optWindowExclusionClause
+    ;
 
 frameExtent
     : frameBound
-	| BETWEEN frameBound AND frameBound
-	;
+    | BETWEEN frameBound AND frameBound
+    ;
 
 frameBound
     : UNBOUNDED PRECEDING
-	| UNBOUNDED FOLLOWING
-	| CURRENT ROW
-	| aExpr PRECEDING
-	| aExpr FOLLOWING
-	;
+    | UNBOUNDED FOLLOWING
+    | CURRENT ROW
+    | aExpr PRECEDING
+    | aExpr FOLLOWING
+    ;
 
 optWindowExclusionClause
     : EXCLUDE CURRENT ROW
-	| EXCLUDE GROUP
-	| EXCLUDE TIES
-	| EXCLUDE NO OTHERS
-	|
-	;
+    | EXCLUDE GROUP
+    | EXCLUDE TIES
+    | EXCLUDE NO OTHERS
+    |
+    ;
 
 alias
     : identifier | STRING_
@@ -377,40 +376,40 @@ fromList
 
 tableReference
     : relationExpr aliasClause?
-	| relationExpr aliasClause? tablesampleClause
-	| functionTable funcAliasClause?
-	| LATERAL functionTable funcAliasClause?
-	| xmlTable aliasClause?
-	| LATERAL xmlTable aliasClause?
-	| selectWithParens aliasClause?
-	| LATERAL selectWithParens aliasClause?
-	| tableReference joinedTable
-	| tableReference LP_ joinedTable RP_ aliasClause
-	;
+    | relationExpr aliasClause? tablesampleClause
+    | functionTable funcAliasClause?
+    | LATERAL functionTable funcAliasClause?
+    | xmlTable aliasClause?
+    | LATERAL xmlTable aliasClause?
+    | selectWithParens aliasClause?
+    | LATERAL selectWithParens aliasClause?
+    | tableReference joinedTable
+    | LP_ tableReference joinedTable RP_ aliasClause?
+    ;
 
 joinedTable
     : CROSS JOIN tableReference
-	| joinType JOIN tableReference joinQual
-	| JOIN tableReference joinQual
-	| NATURAL joinType JOIN tableReference
-	| NATURAL JOIN tableReference
-	;
+    | joinType JOIN tableReference joinQual
+    | JOIN tableReference joinQual
+    | NATURAL joinType JOIN tableReference
+    | NATURAL JOIN tableReference
+    ;
 
 joinType
     : FULL joinOuter?
-	| LEFT joinOuter?
-	| RIGHT joinOuter?
-	| INNER
-	;
+    | LEFT joinOuter?
+    | RIGHT joinOuter?
+    | INNER
+    ;
 
 joinOuter
     : OUTER
-	;
+    ;
 
 joinQual
     : USING LP_ nameList RP_
-	| ON aExpr
-	;
+    | ON aExpr
+    ;
 
 
 relationExpr
@@ -426,22 +425,11 @@ whereClause
 
 whereOrCurrentClause
     : whereClause
-	| WHERE CURRENT OF cursorName
-	;
+    | WHERE CURRENT OF cursorName
+    ;
 
 havingClause
     : HAVING aExpr
-    ;
-
-call
-    : CALL funcName LP_ callClauses? RP_
-    ;
-
-callClauses
-    : (ALL | DISTINCT)? funcArgList sortClause?
-    | VARIADIC funcArgExpr sortClause
-    | funcArgList COMMA_ VARIADIC funcArgExpr sortClause
-    | ASTERISK_
     ;
 
 doStatement
@@ -456,106 +444,43 @@ dostmtOptItem
     : STRING_ | LANGUAGE nonReservedWordOrSconst
     ;
 
-lock
-    : LOCK TABLE? relationExprList (IN lockType MODE)? NOWAIT?
-    ;
-
-lockType
-    : ACCESS SHARE
-    | ROW SHARE
-    | ROW EXCLUSIVE
-    | SHARE UPDATE EXCLUSIVE
-    | SHARE
-    | SHARE ROW EXCLUSIVE
-    | EXCLUSIVE
-    | ACCESS EXCLUSIVE
-    ;
-
 checkpoint
     : CHECKPOINT
     ;
 
 copy
-    : COPY (BINARY)? qualifiedName (LP_ columnList RP_)? (FROM | TO) PROGRAM?
-      (STRING_ | STDIN | STDOUT) copyDelimiter? (WITH)? copyOptions whereClause?
-    | COPY LP_ preparableStmt RP_ TO PROGRAM? (STRING_ | STDIN | STDOUT) WITH? copyOptions
+    : copyWithTableOrQuery | copyWithTableOrQueryBinaryCsv | copyWithTableBinary
     ;
 
-copyOptions
-    : copyOptList | LP_ copyGenericOptList RP_
+copyWithTableOrQuery
+    : COPY (qualifiedName columnNames? | LP_ preparableStmt RP_) (FROM | TO) (fileName | PROGRAM STRING_ | STDIN | STDOUT) (WITH? LP_ copyOptionList RP_)? whereClause?
     ;
 
-copyGenericOptList
-    : copyGenericOptElem (COMMA_ copyGenericOptElem)*
+copyOptionList
+    : copyOption (COMMA_ copyOption)*
     ;
 
-copyGenericOptElem
-    : colLabel copyGenericOptArg
-    ;
-
-copyGenericOptArg
-    : booleanOrString
-    | numericOnly
-    | ASTERISK_
-    | LP_ copyGenericOptArgList RP_
-    ;
-
-copyGenericOptArgList
-    : copyGenericOptArgListItem (COMMA_ copyGenericOptArgListItem)*
-    ;
-
-copyGenericOptArgListItem
-    : booleanOrString
-    ;
-
-copyOptList
-    : copyOptItem*
-    ;
-
-copyOptItem
-    : BINARY
-    | FREEZE
-    | DELIMITER (AS)? STRING_
-    | NULL (AS)? STRING_
-    | CSV
-    | HEADER
-    | QUOTE (AS)? STRING_
-    | ESCAPE (AS)? STRING_
-    | FORCE QUOTE columnList
-    | FORCE QUOTE ASTERISK_
-    | FORCE NOT NULL columnList
-    | FORCE NULL columnList
+copyOption
+    : FORMAT identifier
+    | FREEZE booleanValue?
+    | DELIMITER STRING_
+    | NULL STRING_
+    | HEADER booleanValue?
+    | QUOTE STRING_
+    | ESCAPE STRING_
+    | FORCE_QUOTE (columnNames | ASTERISK_)
+    | FORCE_NOT_NULL columnNames
+    | FORCE_NULL columnNames
     | ENCODING STRING_
     ;
 
-copyDelimiter
-    : (USING)? DELIMITERS STRING_
+
+copyWithTableOrQueryBinaryCsv
+    : COPY (qualifiedName columnNames? | LP_ preparableStmt RP_) (FROM | TO) (fileName | STDIN | STDOUT) (WITH? BINARY? (DELIMITER AS? STRING_)? (NULL AS? STRING_)? (CSV HEADER? (QUOTE AS? STRING_)? (ESCAPE AS? STRING_)? (FORCE NOT NULL columnName (COMMA_ columnName)*)? (FORCE QUOTE (columnName (COMMA_ columnName)* | ASTERISK_))?)?)?
     ;
 
-deallocate
-    : DEALLOCATE PREPARE? (name | ALL)
+copyWithTableBinary
+    : COPY BINARY? qualifiedName (FROM | TO) (fileName | STDIN | STDOUT) (USING? DELIMITERS STRING_)? (WITH NULL AS STRING_)?
     ;
 
-fetch
-    : FETCH fetchArgs
-    ;
-
-fetchArgs
-    : cursorName
-    | (FROM | IN) cursorName
-    | NEXT (FROM | IN)? cursorName
-    | PRIOR (FROM | IN)? cursorName
-    | FIRST (FROM | IN)? cursorName
-    | LAST (FROM | IN)? cursorName
-    | ABSOLUTE signedIconst (FROM | IN)? cursorName
-    | RELATIVE signedIconst (FROM | IN)? cursorName
-    | signedIconst (FROM | IN)? cursorName
-    | ALL (FROM | IN)? cursorName
-    | FORWARD (FROM | IN)? cursorName
-    | FORWARD signedIconst (FROM | IN)? cursorName
-    | FORWARD ALL (FROM | IN)? cursorName
-    | BACKWARD (FROM | IN)? cursorName
-    | BACKWARD signedIconst (FROM | IN)? cursorName
-    | BACKWARD ALL (FROM | IN)? cursorName
-    ;
 

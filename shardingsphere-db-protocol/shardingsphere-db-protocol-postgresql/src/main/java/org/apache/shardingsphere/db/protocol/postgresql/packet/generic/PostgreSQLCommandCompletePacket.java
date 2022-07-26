@@ -17,35 +17,40 @@
 
 package org.apache.shardingsphere.db.protocol.postgresql.packet.generic;
 
-import lombok.Getter;
-import org.apache.shardingsphere.db.protocol.postgresql.packet.PostgreSQLPacket;
-import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQLCommandPacketType;
+import lombok.RequiredArgsConstructor;
+import org.apache.shardingsphere.db.protocol.postgresql.packet.identifier.PostgreSQLIdentifierPacket;
+import org.apache.shardingsphere.db.protocol.postgresql.packet.identifier.PostgreSQLIdentifierTag;
+import org.apache.shardingsphere.db.protocol.postgresql.packet.identifier.PostgreSQLMessagePacketType;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 
 /**
  * Command complete packet for PostgreSQL.
  */
-public final class PostgreSQLCommandCompletePacket implements PostgreSQLPacket {
+@RequiredArgsConstructor
+public final class PostgreSQLCommandCompletePacket implements PostgreSQLIdentifierPacket {
     
-    @Getter
-    private final char messageType = PostgreSQLCommandPacketType.COMMAND_COMPLETE.getValue();
+    private static final Collection<String> TAGS_WITH_COUNT = new HashSet<>(Arrays.asList("INSERT", "SELECT", "UPDATE", "DELETE", "MOVE"));
     
     private final String sqlCommand;
     
     private final long rowCount;
     
-    public PostgreSQLCommandCompletePacket() {
-        sqlCommand = "";
-        rowCount = 0;
-    }
-    
-    public PostgreSQLCommandCompletePacket(final String sqlCommand, final long rowCount) {
-        this.sqlCommand = sqlCommand;
-        this.rowCount = rowCount;
+    @Override
+    public void write(final PostgreSQLPacketPayload payload) {
+        if (!TAGS_WITH_COUNT.contains(sqlCommand)) {
+            payload.writeStringNul(sqlCommand);
+            return;
+        }
+        String delimiter = "INSERT".equals(sqlCommand) ? " 0 " : " ";
+        payload.writeStringNul(sqlCommand + delimiter + rowCount);
     }
     
     @Override
-    public void write(final PostgreSQLPacketPayload payload) {
-        payload.writeStringNul(sqlCommand + " " + rowCount);
+    public PostgreSQLIdentifierTag getIdentifier() {
+        return PostgreSQLMessagePacketType.COMMAND_COMPLETE;
     }
 }

@@ -21,10 +21,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.OwnerAvailable;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.OwnerSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.value.PredicateRightValue;
 
 import java.util.Optional;
 
@@ -35,7 +35,7 @@ import java.util.Optional;
 @Getter
 @Setter
 @ToString
-public final class ColumnSegment implements PredicateRightValue, OwnerAvailable {
+public final class ColumnSegment implements ExpressionSegment, OwnerAvailable {
     
     private final int startIndex;
     
@@ -52,13 +52,30 @@ public final class ColumnSegment implements PredicateRightValue, OwnerAvailable 
      * @return qualified name with quote characters
      */
     public String getQualifiedName() {
-        return null == owner
-            ? identifier.getValueWithQuoteCharacters()
-            : String.join(".", owner.getIdentifier().getValueWithQuoteCharacters(), identifier.getValueWithQuoteCharacters());
+        return null == owner ? identifier.getValueWithQuoteCharacters() : String.join(".", owner.getIdentifier().getValueWithQuoteCharacters(), identifier.getValueWithQuoteCharacters());
+    }
+    
+    /**
+     * Get expression.
+     * 
+     * @return expression
+     */
+    public String getExpression() {
+        return null == owner ? identifier.getValue() : String.join(".", owner.getIdentifier().getValue(), identifier.getValue());
     }
     
     @Override
     public Optional<OwnerSegment> getOwner() {
         return Optional.ofNullable(owner);
+    }
+    
+    @Override
+    public int hashCode() {
+        StringBuilder columnString = new StringBuilder();
+        if (null != owner) {
+            columnString.append(owner.getIdentifier().getValue());
+        }
+        columnString.append(identifier.getValue());
+        return columnString.toString().hashCode();
     }
 }

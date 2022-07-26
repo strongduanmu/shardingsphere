@@ -123,6 +123,10 @@ AVG
     : A V G
     ;
 
+BIT_XOR
+    : B I T UL_ X O R
+    ;
+
 AVG_ROW_LENGTH
     : A V G UL_ R O W UL_ L E N G T H
     ;
@@ -756,7 +760,7 @@ FETCH
     ;
 
 FIELDS
-    : F I E L D S
+    : F I E L D S  -> type(COLUMNS)
     ;
 
 FILE
@@ -849,10 +853,6 @@ GENERAL
 
 GENERATED
     : G E N E R A T E D
-    ;
-
-GEOMCOLLECTION
-    : G E O M C O L L E C T I O N
     ;
 
 GEOMETRY
@@ -1084,7 +1084,7 @@ IO_BEFORE_GTIDS
     ;
 
 IO_THREAD
-    : I O UL_ T H R E A D
+    : I O UL_ T H R E A D -> type(RELAY_THREAD)
     ;
 
 IPC
@@ -1267,10 +1267,6 @@ LOW_PRIORITY
     : L O W UL_ P R I O R I T Y
     ;
 
-MANAGED
-    : M A N A G E D
-    ;
-
 MASTER
     : M A S T E R
     ;
@@ -1283,7 +1279,7 @@ MASTER_BIND
     : M A S T E R UL_ B I N D
     ;
 
-MASTER_COMPRESSION_ALGORITHMS
+MASTER_COMPRESSION_ALGORITHM
     : M A S T E R UL_ C O M P R E S S I O N UL_ A L G O R I T H M S
     ;
 
@@ -1536,7 +1532,7 @@ NCHAR
     ;
 
 NDB
-    : N D B
+    : N D B -> type(NDBCLUSTER)
     ;
 
 NDBCLUSTER
@@ -1995,6 +1991,14 @@ REPLACE
     : R E P L A C E
     ;
 
+REPLICA
+    : R E P L I C A
+    ;
+
+REPLICAS
+    : R E P L I C A S
+    ;
+
 REPLICATE_DO_DB
     : R E P L I C A T E UL_ D O UL_ D B
     ;
@@ -2259,9 +2263,9 @@ SIMPLE
     : S I M P L E
     ;
 
-//SKIP
-//    : S K I P
-//    ;
+SKIP_SYMBOL
+    : S K I P
+    ;
 
 SLAVE
     : S L A V E
@@ -2284,7 +2288,7 @@ SOCKET
     ;
 
 SOME
-    : S O M E
+    : S O M E -> type(ANY)
     ;
 
 SONAME
@@ -2309,10 +2313,6 @@ SPECIFIC
 
 SQL
     : S Q L
-    ;
-
-SQL_CACHE
-    : S Q L UL_ C A C H E
     ;
 
 SQLEXCEPTION
@@ -2364,35 +2364,35 @@ SQL_THREAD
     ;
 
 SQL_TSI_DAY
-    : S Q L UL_ T S I UL_ D A Y
+    : S Q L UL_ T S I UL_ D A Y -> type(DAY)
     ;
 
 SQL_TSI_HOUR
-    : S Q L UL_ T S I UL_ H O U R
+    : S Q L UL_ T S I UL_ H O U R -> type(HOUR)
     ;
 
 SQL_TSI_MINUTE
-    : S Q L UL_ T S I UL_ M I N U T E
+    : S Q L UL_ T S I UL_ M I N U T E -> type(MINUTE)
     ;
 
 SQL_TSI_MONTH
-    : S Q L UL_ T S I UL_ M O N T H
+    : S Q L UL_ T S I UL_ M O N T H -> type(MONTH)
     ;
 
 SQL_TSI_QUARTER
-    : S Q L UL_ T S I UL_ Q U A R T E R
+    : S Q L UL_ T S I UL_ Q U A R T E R -> type(QUARTER)
     ;
 
 SQL_TSI_SECOND
-    : S Q L UL_ T S I UL_ S E C O N D
+    : S Q L UL_ T S I UL_ S E C O N D -> type(SECOND)
     ;
 
 SQL_TSI_WEEK
-    : S Q L UL_ T S I UL_ W E E K
+    : S Q L UL_ T S I UL_ W E E K -> type(WEEK)
     ;
 
 SQL_TSI_YEAR
-    : S Q L UL_ T S I UL_ Y E A R
+    : S Q L UL_ T S I UL_ Y E A R -> type(YEAR)
     ;
 
 SRID
@@ -2555,12 +2555,12 @@ TIMESTAMP
     : T I M E S T A M P
     ;
 
-TIMESTAMPADD
-    : T I M E S T A M P A D D
+TIMESTAMP_ADD
+    : T I M E S T A M P UL_ A D D
     ;
 
-TIMESTAMPDIFF
-    : T I M E S T A M P D I F F
+TIMESTAMP_DIFF
+    : T I M E S T A M P UL_ D I F F
     ;
 
 TINYBLOB

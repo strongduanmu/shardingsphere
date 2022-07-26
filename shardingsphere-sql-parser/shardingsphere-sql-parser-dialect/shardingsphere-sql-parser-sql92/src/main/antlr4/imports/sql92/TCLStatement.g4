@@ -17,10 +17,10 @@
 
 grammar TCLStatement;
 
-import Symbol, Keyword, SQL92Keyword, Literals, BaseRule;
+import BaseRule;
 
 setTransaction
-    : SET TRANSACTION ISOLATION LEVEL levelOfIsolation_
+    : SET TRANSACTION ISOLATION LEVEL levelOfIsolation
     ;
 
 commit
@@ -31,6 +31,6 @@ rollback
     : ROLLBACK
     ;
 
-levelOfIsolation_
+levelOfIsolation
     : READ UNCOMMITTED | READ COMMITTED | REPEATABLE READ| SERIALIZABLE
     ;

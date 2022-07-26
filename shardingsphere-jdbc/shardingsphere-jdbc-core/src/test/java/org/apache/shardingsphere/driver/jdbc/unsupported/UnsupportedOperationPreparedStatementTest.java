@@ -17,113 +17,89 @@
 
 package org.apache.shardingsphere.driver.jdbc.unsupported;
 
-import org.apache.shardingsphere.driver.common.base.AbstractShardingSphereDataSourceForShardingTest;
 import org.apache.shardingsphere.driver.jdbc.core.connection.ShardingSphereConnection;
-import org.junit.After;
+import org.apache.shardingsphere.driver.jdbc.core.statement.ShardingSpherePreparedStatement;
+import org.apache.shardingsphere.infra.database.DefaultDatabase;
+import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
+import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
+import org.apache.shardingsphere.parser.rule.SQLParserRule;
+import org.apache.shardingsphere.parser.rule.builder.DefaultSQLParserRuleConfigurationBuilder;
+import org.apache.shardingsphere.traffic.rule.TrafficRule;
+import org.apache.shardingsphere.traffic.rule.builder.DefaultTrafficRuleConfigurationBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.StringReader;
 import java.sql.NClob;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.ArrayList;
-import java.util.List;
 
-public final class UnsupportedOperationPreparedStatementTest extends AbstractShardingSphereDataSourceForShardingTest {
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+public final class UnsupportedOperationPreparedStatementTest {
     
-    private static final String SQL = "SELECT user_id AS usr_id FROM t_order WHERE status = 'init'";
+    private ShardingSpherePreparedStatement shardingSpherePreparedStatement;
     
-    private final List<ShardingSphereConnection> shardingSphereConnections = new ArrayList<>();
+    private final SQLParserRule sqlParserRule = new SQLParserRule(new DefaultSQLParserRuleConfigurationBuilder().build());
     
-    private final List<PreparedStatement> statements = new ArrayList<>();
+    private final TrafficRule trafficRule = new TrafficRule(new DefaultTrafficRuleConfigurationBuilder().build());
     
     @Before
-    public void init() throws SQLException {
-        ShardingSphereConnection connection = getShardingSphereDataSource().getConnection();
-        shardingSphereConnections.add(connection);
-        PreparedStatement preparedStatement = connection.prepareStatement(SQL);
-        statements.add(preparedStatement);
-    }
-    
-    @After
-    public void close() throws SQLException {
-        for (PreparedStatement each : statements) {
-            each.close();
-        }
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.close();
-        }
+    public void setUp() throws SQLException {
+        ShardingSphereConnection connection = mock(ShardingSphereConnection.class, RETURNS_DEEP_STUBS);
+        when(connection.getDatabaseName()).thenReturn(DefaultDatabase.LOGIC_NAME);
+        ShardingSphereRuleMetaData globalRuleMetaData = mock(ShardingSphereRuleMetaData.class);
+        when(connection.getContextManager().getMetaDataContexts().getMetaData().getGlobalRuleMetaData()).thenReturn(globalRuleMetaData);
+        when(connection.getContextManager().getMetaDataContexts().getMetaData().getDatabase(connection.getDatabaseName()).getResource().getDatabaseType()).thenReturn(new MySQLDatabaseType());
+        when(globalRuleMetaData.getSingleRule(SQLParserRule.class)).thenReturn(sqlParserRule);
+        when(globalRuleMetaData.getSingleRule(TrafficRule.class)).thenReturn(trafficRule);
+        shardingSpherePreparedStatement = new ShardingSpherePreparedStatement(connection, "SELECT 1");
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertGetMetaData() throws SQLException {
-        for (PreparedStatement each : statements) {
-            each.getMetaData();
-        }
+        shardingSpherePreparedStatement.getMetaData();
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertSetNString() throws SQLException {
-        for (PreparedStatement each : statements) {
-            each.setNString(1, "");
-        }
+        shardingSpherePreparedStatement.setNString(1, "");
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertSetNClob() throws SQLException {
-        for (PreparedStatement each : statements) {
-            each.setNClob(1, (NClob) null);
-        }
+        shardingSpherePreparedStatement.setNClob(1, (NClob) null);
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertSetNClobForReader() throws SQLException {
-        for (PreparedStatement each : statements) {
-            each.setNClob(1, new StringReader(""));
-        }
+        shardingSpherePreparedStatement.setNClob(1, new StringReader(""));
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertSetNClobForReaderAndLength() throws SQLException {
-        for (PreparedStatement each : statements) {
-            each.setNClob(1, new StringReader(""), 1);
-        }
+        shardingSpherePreparedStatement.setNClob(1, new StringReader(""), 1);
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertSetNCharacterStream() throws SQLException {
-        for (PreparedStatement each : statements) {
-            each.setNCharacterStream(1, new StringReader(""));
-        }
+        shardingSpherePreparedStatement.setNCharacterStream(1, new StringReader(""));
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertSetNCharacterStreamWithLength() throws SQLException {
-        for (PreparedStatement each : statements) {
-            each.setNCharacterStream(1, new StringReader(""), 1);
-        }
-    }
-    
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void assertSetArray() throws SQLException {
-        for (PreparedStatement each : statements) {
-            each.setArray(1, null);
-        }
+        shardingSpherePreparedStatement.setNCharacterStream(1, new StringReader(""), 1);
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertSetRowId() throws SQLException {
-        for (PreparedStatement each : statements) {
-            each.setRowId(1, null);
-        }
+        shardingSpherePreparedStatement.setRowId(1, null);
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertSetRef() throws SQLException {
-        for (PreparedStatement each : statements) {
-            each.setRef(1, null);
-        }
+        shardingSpherePreparedStatement.setRef(1, null);
     }
 }

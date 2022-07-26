@@ -1,31 +1,41 @@
 +++
-pre = "<b>5.10. </b>"
+pre = "<b>6.6. </b>"
 title = "Proxy"
-weight = 10
+weight = 6
 chapter = true
 +++
 
 ## DatabaseProtocolFrontendEngine
 
-| *SPI Name*                       | *Description*                                                                   |
-| -------------------------------- | ------------------------------------------------------------------------------- |
-| DatabaseProtocolFrontendEngine   | Regulate parse and adapter protocol of database access for ShardingSphere-Proxy |
+### Fully-qualified class name
 
-| *Implementation Class*   | *Description*                                                                   |
-| ------------------------ | ------------------------------------------------------------------------------- |
-| MySQLFrontendEngine      | Base on MySQL database protocol                                                 |
-| PostgreSQLFrontendEngine | Base on postgreSQL database protocol                                            |
+[`org.apache.shardingsphere.proxy.frontend.spi.DatabaseProtocolFrontendEngine`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-proxy/shardingsphere-proxy-frontend/shardingsphere-proxy-frontend-spi/src/main/java/org/apache/shardingsphere/proxy/frontend/spi/DatabaseProtocolFrontendEngine.java)
 
-## JDBCDriverURLRecognizer
+### Definition
 
-| *SPI Name*              | *Description*                              |
-| ----------------------- | ------------------------------------------ |
-| JDBCDriverURLRecognizer | Use JDBC driver to execute SQL             |
+Protocols for ShardingSphere-Proxy to parse and adapt for accessing databases.
 
-| *Implementation Class*  | *Description*                              |
-| ----------------------- | ------------------------------------------ |
-| MySQLRecognizer         |  Use MySQL JDBC driver to execute SQL      |
-| PostgreSQLRecognizer    |  Use PostgreSQL JDBC driver to execute SQL |
-| OracleRecognizer        |  Use Oracle JDBC driver to execute SQL     |
-| SQLServerRecognizer     |  Use SQLServer JDBC driver to execute SQL  |
-| H2Recognizer            |  Use H2 JDBC driver to execute SQL         |
+### Implementation classes
+
+| *Configuration Type* | *Description*                          | *Fully-qualified class name*                                                                                                                                                                                                                                                                                                       |
+| -------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MySQL                | Protocol implementation for MySQL      | [`org.apache.shardingsphere.proxy.frontend.mysql.MySQLFrontendEngine`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-proxy/shardingsphere-proxy-frontend/shardingsphere-proxy-frontend-mysql/src/main/java/org/apache/shardingsphere/proxy/frontend/mysql/MySQLFrontendEngine.java)                          |
+| PostgreSQL           | Protocol implementation for PostgreSQL | [`org.apache.shardingsphere.proxy.frontend.postgresql.PostgreSQLFrontendEngine`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-proxy/shardingsphere-proxy-frontend/shardingsphere-proxy-frontend-postgresql/src/main/java/org/apache/shardingsphere/proxy/frontend/postgresql/PostgreSQLFrontendEngine.java) |
+| openGauss            | Protocol implementation for openGauss  | [`org.apache.shardingsphere.proxy.frontend.opengauss.OpenGaussFrontendEngine`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-proxy/shardingsphere-proxy-frontend/shardingsphere-proxy-frontend-opengauss/src/main/java/org/apache/shardingsphere/proxy/frontend/opengauss/OpenGaussFrontendEngine.java)      |
+
+## AuthorityProvideAlgorithm
+
+### Fully-qualified class name
+
+[`org.apache.shardingsphere.authority.spi.AuthorityProviderAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-authority/shardingsphere-authority-api/src/main/java/org/apache/shardingsphere/authority/spi/AuthorityProviderAlgorithm.java)
+
+### Definition
+
+Loading logic for user permission.
+
+### Implementation classes
+
+| *Configuration Type* | *Description*                                    | *Fully-qualified class name*                                                                                                                                                                                                                                                                                                                                    |
+| -------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ALL_PERMITTED        | Grant all permissions by default (no forensics)  | [`org.apache.shardingsphere.authority.provider.simple.AllPermittedPrivilegesProviderAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-authority/shardingsphere-authority-core/src/main/java/org/apache/shardingsphere/authority/provider/simple/AllPermittedPrivilegesProviderAlgorithm.java)               |
+| DATABASE_PERMITTED   | Permissions configured by user-database-mappings | [`org.apache.shardingsphere.authority.provider.database.DatabasePermittedPrivilegesProviderAlgorithm`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-authority/shardingsphere-authority-core/src/main/java/org/apache/shardingsphere/authority/provider/database/DatabasePermittedPrivilegesProviderAlgorithm.java) |

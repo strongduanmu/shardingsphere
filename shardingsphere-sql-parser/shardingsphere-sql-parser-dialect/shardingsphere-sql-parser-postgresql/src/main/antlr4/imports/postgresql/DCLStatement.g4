@@ -15,83 +15,22 @@
  * limitations under the License.
  */
 
-grammar DCLStatement;
+parser grammar DCLStatement;
 
-import Symbol, Keyword, PostgreSQLKeyword, Literals, BaseRule, DDLStatement;
+import DDLStatement;
+
+options {tokenVocab = ModeLexer;}
 
 grant
-    : GRANT (privilegeClause | roleClause_)
+    : GRANT (privilegeClause | roleClause)
     ;
 
 revoke
-    : REVOKE optionForClause_? (privilegeClause | roleClause_) (CASCADE | RESTRICT)?
+    : REVOKE optionForClause? (privilegeClause | roleClause) (CASCADE | RESTRICT)?
     ;
 
-privilegeClause
-    : privileges_ ON onObjectClause (FROM | TO) granteeList (WITH GRANT OPTION)?
-    ;
-    
-roleClause_
-    : privilegeList (FROM | TO) roleList (WITH ADMIN OPTION)? (GRANTED BY roleSpec)?
-    ;
-
-optionForClause_
+optionForClause
     : (GRANT | ADMIN) OPTION FOR
-    ;
-
-privileges_
-    : privilegeType_ columnNames? (COMMA_ privilegeType_ columnNames?)*
-    ;
-
-privilegeType_
-    : SELECT
-    | INSERT
-    | UPDATE
-    | DELETE
-    | TRUNCATE
-    | REFERENCES
-    | TRIGGER
-    | CREATE
-    | CONNECT
-    | TEMPORARY
-    | TEMP
-    | EXECUTE
-    | USAGE
-    | ALL PRIVILEGES?
-    ;
-
-onObjectClause
-    : DATABASE nameList
-    | SCHEMA nameList
-    | DOMAIN anyNameList
-    | FUNCTION functionWithArgtypesList
-    | PROCEDURE functionWithArgtypesList
-    | ROUTINE functionWithArgtypesList
-    | LANGUAGE nameList
-    | LARGE OBJECT numericOnlyList
-    | TABLESPACE nameList
-    | TYPE anyNameList
-    | SEQUENCE qualifiedNameList
-    | TABLE? privilegeLevel
-    | FOREIGN DATA WRAPPER nameList
-    | FOREIGN SERVER nameList
-    | ALL TABLES IN SCHEMA nameList
-    | ALL SEQUENCES IN SCHEMA nameList
-    | ALL FUNCTIONS IN SCHEMA nameList
-    | ALL PROCEDURES IN SCHEMA nameList
-    | ALL ROUTINES IN SCHEMA nameList
-    ;
-
-privilegeLevel
-    : ASTERISK_ | ASTERISK_ DOT_ASTERISK_ | identifier DOT_ASTERISK_ | tableNames | schemaName DOT_ routineName
-    ;
-
-routineName
-    : identifier
-    ;
-
-numericOnlyList
-    : numericOnly (COMMA_ numericOnly)*
     ;
 
 createUser
@@ -120,7 +59,7 @@ alterOptRoleElem
     ;
 
 dropUser
-    : DROP USER (IF EXISTS)? roleList
+    : DROP USER ifExists? roleList
     ;
 
 alterUser
@@ -143,47 +82,21 @@ createRole
     ;
 
 dropRole
-    : DROP ROLE (IF EXISTS)? roleList
+    : DROP ROLE ifExists? roleList
     ;
 
 alterRole
     : ALTER ROLE alterUserClauses
     ;
 
-alterSchema
-    : ALTER SCHEMA name (RENAME TO name | OWNER TO roleSpec)
-    ;
-
 createGroup
     : CREATE GROUP roleSpec WITH? createOptRoleElem*
-    ;
-
-createSchema
-    : CREATE SCHEMA (IF NOT EXISTS)? createSchemaClauses
-    ;
-
-createSchemaClauses
-    : colId? AUTHORIZATION roleSpec schemaEltList
-    | colId schemaEltList
-    ;
-
-schemaEltList
-    : schemaStmt*
-    ;
-
-schemaStmt
-    : createTable | createIndex | createSequence | createTrigger | grant | createView
-    ;
-
-dropDroup
-    : DROP GROUP (IF EXISTS)? roleList
-    ;
-
-dropSchema
-    : DROP SCHEMA (IF EXISTS)? nameList dropBehavior?
     ;
 
 reassignOwned
     : REASSIGN OWNED BY roleList TO roleSpec
     ;
 
+dropDroup
+    : DROP GROUP ifExists? roleList
+    ;

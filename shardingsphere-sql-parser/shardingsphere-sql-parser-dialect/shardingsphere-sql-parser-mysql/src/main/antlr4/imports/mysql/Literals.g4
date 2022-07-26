@@ -19,35 +19,42 @@ lexer grammar Literals;
 
 import Alphabet, Symbol;
 
-INNODB_
-    : 'INNODB'
-    ;
-    
-REDO_LOG_
-    : 'REDO_LOG'
-    ;
-    
 FILESIZE_LITERAL
-    : INT_ ('K'|'M'|'G'|'T')
+    : INT_NUM_ ('K'|'M'|'G'|'T')
     ;
 
-IDENTIFIER_
-    : [A-Za-z_$0-9]*?[A-Za-z_$]+?[A-Za-z_$0-9]*
-    |  BQ_ ~'`'+ BQ_
-    | (DQ_ ( '\\'. | '""' | ~('"'| '\\') )* DQ_)
+SINGLE_QUOTED_TEXT
+    : SQ_ ('\\'. | '\'\'' | ~('\'' | '\\'))* SQ_
     ;
 
-Y_N_
-    : SQ_ ('Y' | 'N') SQ_
+DOUBLE_QUOTED_TEXT
+    : DQ_ ( '\\'. | '""' | ~('"'| '\\') )* DQ_
     ;
 
-STRING_ 
-    : (DQ_ ( '\\'. | '""' | ~('"'| '\\') )* DQ_)
-    | (SQ_ ('\\'. | '\'\'' | ~('\'' | '\\'))* SQ_)
+NCHAR_TEXT
+    : N SINGLE_QUOTED_TEXT
+    ;
+
+UNDERSCORE_CHARSET
+    : UL_ [a-z0-9]+
     ;
 
 NUMBER_
-    : INT_? DOT_? INT_ (E (PLUS_ | MINUS_)? INT_)?
+    : INT_NUM_
+    | FLOAT_NUM_
+    | DECIMAL_NUM_
+    ;
+
+INT_NUM_
+    : DIGIT+
+    ;
+
+FLOAT_NUM_
+    : INT_NUM_? DOT_? INT_NUM_ E (PLUS_ | MINUS_)? INT_NUM_
+    ;
+
+DECIMAL_NUM_
+    : INT_NUM_? DOT_ INT_NUM_
     ;
 
 HEX_DIGIT_
@@ -58,12 +65,17 @@ BIT_NUM_
     : '0b' ('0' | '1')+ | B SQ_ ('0' | '1')+ SQ_
     ;
 
+IDENTIFIER_
+    : [A-Za-z_$0-9\u0080-\uFFFF]*?[A-Za-z_$\u0080-\uFFFF]+?[A-Za-z_$0-9\u0080-\uFFFF]*
+    |  BQ_ ~'`'+ BQ_
+    ;
+
 NOT_SUPPORT_
     : 'not support'
     ;
 
-fragment INT_
-    : [0-9]+
+fragment DIGIT
+    : [0-9]
     ;
 
 fragment HEX_

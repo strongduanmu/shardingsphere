@@ -17,9 +17,17 @@
 
 package org.apache.shardingsphere.driver.jdbc.adapter;
 
-import lombok.RequiredArgsConstructor;
-import org.apache.shardingsphere.driver.jdbc.unsupported.AbstractUnsupportedOperationStatement;
+import lombok.AccessLevel;
+import lombok.Getter;
+import org.apache.shardingsphere.driver.executor.DriverExecutor;
 import org.apache.shardingsphere.driver.jdbc.adapter.executor.ForceExecuteTemplate;
+import org.apache.shardingsphere.driver.jdbc.core.connection.ShardingSphereConnection;
+import org.apache.shardingsphere.driver.jdbc.core.statement.StatementManager;
+import org.apache.shardingsphere.driver.jdbc.unsupported.AbstractUnsupportedOperationStatement;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.database.type.dialect.OpenGaussDatabaseType;
+import org.apache.shardingsphere.infra.database.type.dialect.PostgreSQLDatabaseType;
+import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
 
 import java.sql.SQLException;
 import java.sql.SQLWarning;
@@ -29,85 +37,98 @@ import java.util.Collection;
 /**
  * Adapter for {@code Statement}.
  */
-@RequiredArgsConstructor
+@Getter
 public abstract class AbstractStatementAdapter extends AbstractUnsupportedOperationStatement {
     
-    private final Class<? extends Statement> targetClass;
-    
-    private boolean closed;
+    @Getter(AccessLevel.NONE)
+    private final ForceExecuteTemplate<Statement> forceExecuteTemplate = new ForceExecuteTemplate<>();
     
     private boolean poolable;
     
     private int fetchSize;
     
-    private final ForceExecuteTemplate<Statement> forceExecuteTemplate = new ForceExecuteTemplate<>();
+    private int fetchDirection;
     
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    @Override
-    public final void close() throws SQLException {
-        closed = true;
-        try {
-            forceExecuteTemplate.execute((Collection) getRoutedStatements(), Statement::close);
-        } finally {
-            getRoutedStatements().clear();
-        }
-    }
-    
-    @Override
-    public final boolean isClosed() {
-        return closed;
-    }
-    
-    @Override
-    public final boolean isPoolable() {
-        return poolable;
-    }
+    private boolean closed;
     
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public final void setPoolable(final boolean poolable) throws SQLException {
         this.poolable = poolable;
-        recordMethodInvocation(targetClass, "setPoolable", new Class[] {boolean.class}, new Object[] {poolable});
+        getMethodInvocationRecorder().record("setPoolable", statement -> statement.setPoolable(poolable));
         forceExecuteTemplate.execute((Collection) getRoutedStatements(), statement -> statement.setPoolable(poolable));
-    }
-    
-    @Override
-    public final int getFetchSize() {
-        return fetchSize;
     }
     
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public final void setFetchSize(final int rows) throws SQLException {
         fetchSize = rows;
-        recordMethodInvocation(targetClass, "setFetchSize", new Class[] {int.class}, new Object[] {rows});
+        getMethodInvocationRecorder().record("setFetchSize", statement -> statement.setFetchSize(rows));
         forceExecuteTemplate.execute((Collection) getRoutedStatements(), statement -> statement.setFetchSize(rows));
     }
     
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public final void setEscapeProcessing(final boolean enable) throws SQLException {
-        recordMethodInvocation(targetClass, "setEscapeProcessing", new Class[] {boolean.class}, new Object[] {enable});
-        forceExecuteTemplate.execute((Collection) getRoutedStatements(), statement -> statement.setEscapeProcessing(enable));
+    public final void setFetchDirection(final int direction) throws SQLException {
+        fetchDirection = direction;
+        getMethodInvocationRecorder().record("setFetchDirection", statement -> statement.setFetchDirection(direction));
+        forceExecuteTemplate.execute((Collection) getRoutedStatements(), statement -> statement.setFetchDirection(direction));
+    }
+    
+    @Override
+    public final int getMaxFieldSize() throws SQLException {
+        return getRoutedStatements().isEmpty() ? 0 : getRoutedStatements().iterator().next().getMaxFieldSize();
     }
     
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public final void cancel() throws SQLException {
-        forceExecuteTemplate.execute((Collection) getRoutedStatements(), Statement::cancel);
+    public final void setMaxFieldSize(final int max) throws SQLException {
+        getMethodInvocationRecorder().record("setMaxFieldSize", statement -> statement.setMaxFieldSize(max));
+        forceExecuteTemplate.execute((Collection) getRoutedStatements(), statement -> statement.setMaxFieldSize(max));
+    }
+    
+    // TODO Confirm MaxRows for multiple databases is need special handle. eg: 10 statements maybe MaxRows / 10
+    @Override
+    public final int getMaxRows() throws SQLException {
+        return getRoutedStatements().isEmpty() ? -1 : getRoutedStatements().iterator().next().getMaxRows();
+    }
+    
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Override
+    public final void setMaxRows(final int max) throws SQLException {
+        getMethodInvocationRecorder().record("setMaxRows", statement -> statement.setMaxRows(max));
+        forceExecuteTemplate.execute((Collection) getRoutedStatements(), statement -> statement.setMaxRows(max));
+    }
+    
+    @Override
+    public final int getQueryTimeout() throws SQLException {
+        return getRoutedStatements().isEmpty() ? 0 : getRoutedStatements().iterator().next().getQueryTimeout();
+    }
+    
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Override
+    public final void setQueryTimeout(final int seconds) throws SQLException {
+        getMethodInvocationRecorder().record("setQueryTimeout", statement -> statement.setQueryTimeout(seconds));
+        forceExecuteTemplate.execute((Collection) getRoutedStatements(), statement -> statement.setQueryTimeout(seconds));
+    }
+    
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Override
+    public final void setEscapeProcessing(final boolean enable) throws SQLException {
+        getMethodInvocationRecorder().record("setEscapeProcessing", statement -> statement.setEscapeProcessing(enable));
+        forceExecuteTemplate.execute((Collection) getRoutedStatements(), statement -> statement.setEscapeProcessing(enable));
     }
     
     @Override
     public final int getUpdateCount() throws SQLException {
         if (isAccumulate()) {
             return accumulate();
-        } else {
-            Collection<? extends Statement> statements = getRoutedStatements();
-            if (statements.isEmpty()) {
-                return -1;
-            }
-            return getRoutedStatements().iterator().next().getUpdateCount();
         }
+        Collection<? extends Statement> statements = getRoutedStatements();
+        if (statements.isEmpty()) {
+            return -1;
+        }
+        return getRoutedStatements().iterator().next().getUpdateCount();
     }
     
     private int accumulate() throws SQLException {
@@ -127,15 +148,6 @@ public abstract class AbstractStatementAdapter extends AbstractUnsupportedOperat
     }
     
     @Override
-    public final SQLWarning getWarnings() {
-        return null;
-    }
-    
-    @Override
-    public final void clearWarnings() {
-    }
-    
-    @Override
     public final boolean getMoreResults() throws SQLException {
         boolean result = false;
         for (Statement each : getRoutedStatements()) {
@@ -150,43 +162,51 @@ public abstract class AbstractStatementAdapter extends AbstractUnsupportedOperat
     }
     
     @Override
-    public final int getMaxFieldSize() throws SQLException {
-        return getRoutedStatements().isEmpty() ? 0 : getRoutedStatements().iterator().next().getMaxFieldSize();
+    public final SQLWarning getWarnings() {
+        return null;
+    }
+    
+    @Override
+    public final void clearWarnings() {
     }
     
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public final void setMaxFieldSize(final int max) throws SQLException {
-        recordMethodInvocation(targetClass, "setMaxFieldSize", new Class[] {int.class}, new Object[] {max});
-        forceExecuteTemplate.execute((Collection) getRoutedStatements(), statement -> statement.setMaxFieldSize(max));
-    }
-    
-    // TODO Confirm MaxRows for multiple databases is need special handle. eg: 10 statements maybe MaxRows / 10
-    @Override
-    public final int getMaxRows() throws SQLException {
-        return getRoutedStatements().isEmpty() ? -1 : getRoutedStatements().iterator().next().getMaxRows();
+    public final void cancel() throws SQLException {
+        forceExecuteTemplate.execute((Collection) getRoutedStatements(), Statement::cancel);
     }
     
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public final void setMaxRows(final int max) throws SQLException {
-        recordMethodInvocation(targetClass, "setMaxRows", new Class[] {int.class}, new Object[] {max});
-        forceExecuteTemplate.execute((Collection) getRoutedStatements(), statement -> statement.setMaxRows(max));
+    public final void close() throws SQLException {
+        closed = true;
+        try {
+            forceExecuteTemplate.execute((Collection) getRoutedStatements(), Statement::close);
+            if (null != getExecutor()) {
+                getExecutor().close();
+            }
+            if (null != getStatementManager()) {
+                getStatementManager().close();
+            }
+        } finally {
+            getRoutedStatements().clear();
+        }
     }
     
-    @Override
-    public final int getQueryTimeout() throws SQLException {
-        return getRoutedStatements().isEmpty() ? 0 : getRoutedStatements().iterator().next().getQueryTimeout();
-    }
-    
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    @Override
-    public final void setQueryTimeout(final int seconds) throws SQLException {
-        recordMethodInvocation(targetClass, "setQueryTimeout", new Class[] {int.class}, new Object[] {seconds});
-        forceExecuteTemplate.execute((Collection) getRoutedStatements(), statement -> statement.setQueryTimeout(seconds));
+    protected final void handleExceptionInTransaction(final ShardingSphereConnection connection, final MetaDataContexts metaDataContexts) {
+        if (connection.getConnectionManager().getConnectionTransaction().isInTransaction()) {
+            DatabaseType databaseType = metaDataContexts.getMetaData().getDatabase(connection.getDatabaseName()).getResource().getDatabaseType();
+            if (databaseType instanceof PostgreSQLDatabaseType || databaseType instanceof OpenGaussDatabaseType) {
+                connection.getConnectionManager().getConnectionTransaction().setRollbackOnly(true);
+            }
+        }
     }
     
     protected abstract boolean isAccumulate();
     
     protected abstract Collection<? extends Statement> getRoutedStatements();
+    
+    protected abstract DriverExecutor getExecutor();
+    
+    protected abstract StatementManager getStatementManager();
 }

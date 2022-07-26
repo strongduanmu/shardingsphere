@@ -18,19 +18,22 @@
 package org.apache.shardingsphere.infra.database.type.dialect;
 
 import org.apache.shardingsphere.infra.database.metadata.dialect.MySQLDataSourceMetaData;
+import org.apache.shardingsphere.sql.parser.sql.common.constant.QuoteCharacter;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.HashSet;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public final class MySQLDatabaseTypeTest {
     
     @Test
-    public void assertGetName() {
-        assertThat(new MySQLDatabaseType().getName(), is("MySQL"));
+    public void assertGetQuoteCharacter() {
+        assertThat(new MySQLDatabaseType().getQuoteCharacter(), is(QuoteCharacter.BACK_QUOTE));
     }
     
     @Test
@@ -40,6 +43,19 @@ public final class MySQLDatabaseTypeTest {
     
     @Test
     public void assertGetDataSourceMetaData() {
-        assertThat(new MySQLDatabaseType().getDataSourceMetaData("jdbc:mysql://127.0.0.1/ds", "root"), instanceOf(MySQLDataSourceMetaData.class));
+        assertThat(new MySQLDatabaseType().getDataSourceMetaData("jdbc:mysql://127.0.0.1/foo_ds", "root"), instanceOf(MySQLDataSourceMetaData.class));
+    }
+    
+    @Test
+    public void assertGetSystemDatabases() {
+        assertTrue(new MySQLDatabaseType().getSystemDatabaseSchemaMap().containsKey("information_schema"));
+        assertTrue(new MySQLDatabaseType().getSystemDatabaseSchemaMap().containsKey("performance_schema"));
+        assertTrue(new MySQLDatabaseType().getSystemDatabaseSchemaMap().containsKey("mysql"));
+        assertTrue(new MySQLDatabaseType().getSystemDatabaseSchemaMap().containsKey("sys"));
+    }
+    
+    @Test
+    public void assertGetSystemSchemas() {
+        assertThat(new MySQLDatabaseType().getSystemSchemas(), is(new HashSet<>(Arrays.asList("information_schema", "performance_schema", "mysql", "sys"))));
     }
 }

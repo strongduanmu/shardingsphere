@@ -18,32 +18,34 @@
 package org.apache.shardingsphere.db.protocol.postgresql.packet.command.admin;
 
 import io.netty.buffer.ByteBuf;
-import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQLCommandPacketType;
+import org.apache.shardingsphere.db.protocol.postgresql.packet.identifier.PostgreSQLMessagePacketType;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.nio.charset.StandardCharsets;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 @RunWith(MockitoJUnitRunner.class)
-public class PostgreSQLUnsupportedCommandPacketTest {
+public final class PostgreSQLUnsupportedCommandPacketTest {
     
     @Mock
     private ByteBuf byteBuf;
     
     @Test
     public void assertWrite() {
-        PostgreSQLUnsupportedCommandPacket rowPacket = new PostgreSQLUnsupportedCommandPacket(PostgreSQLCommandPacketType.AUTHENTICATION_OK.getValue());
-        rowPacket.write(new PostgreSQLPacketPayload(byteBuf));
+        PostgreSQLUnsupportedCommandPacket rowPacket = new PostgreSQLUnsupportedCommandPacket(PostgreSQLMessagePacketType.AUTHENTICATION_REQUEST);
+        rowPacket.write(new PostgreSQLPacketPayload(byteBuf, StandardCharsets.UTF_8));
         assertThat(byteBuf.writerIndex(), is(0));
     }
     
     @Test
     public void assertGetMessageType() {
-        PostgreSQLUnsupportedCommandPacket rowPacket = new PostgreSQLUnsupportedCommandPacket(PostgreSQLCommandPacketType.AUTHENTICATION_OK.getValue());
-        assertThat(rowPacket.getMessageType(), is(PostgreSQLCommandPacketType.AUTHENTICATION_OK.getValue()));
+        PostgreSQLUnsupportedCommandPacket rowPacket = new PostgreSQLUnsupportedCommandPacket(PostgreSQLMessagePacketType.AUTHENTICATION_REQUEST);
+        assertThat(rowPacket.getIdentifier(), is(PostgreSQLMessagePacketType.AUTHENTICATION_REQUEST));
     }
 }

@@ -17,7 +17,6 @@
 
 package org.apache.shardingsphere.db.protocol.postgresql.packet.handshake;
 
-import lombok.Getter;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.PostgreSQLPacket;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
 
@@ -27,18 +26,48 @@ import java.util.Map;
 /**
  * Startup packet for PostgreSQL.
  */
-@Getter
 public final class PostgreSQLComStartupPacket implements PostgreSQLPacket {
     
-    private final char messageType = '\0';
+    private static final String DATABASE_NAME_KEY = "database";
     
-    private final Map<String, String> parametersMap = new HashMap<>(16, 1);
+    private static final String USER_NAME_KEY = "user";
+    
+    private static final String CLIENT_ENCODING_KEY = "client_encoding";
+    
+    private final Map<String, String> parametersMap = new HashMap<>();
     
     public PostgreSQLComStartupPacket(final PostgreSQLPacketPayload payload) {
         payload.skipReserved(8);
         while (payload.bytesBeforeZero() > 0) {
             parametersMap.put(payload.readStringNul(), payload.readStringNul());
         }
+    }
+    
+    /**
+     * Get database.
+     * 
+     * @return database
+     */
+    public String getDatabase() {
+        return parametersMap.get(DATABASE_NAME_KEY);
+    }
+    
+    /**
+     * Get user.
+     * 
+     * @return user
+     */
+    public String getUser() {
+        return parametersMap.get(USER_NAME_KEY);
+    }
+    
+    /**
+     * Get client encoding.
+     * 
+     * @return client encoding
+     */
+    public String getClientEncoding() {
+        return parametersMap.getOrDefault(CLIENT_ENCODING_KEY, "UTF8");
     }
     
     @Override

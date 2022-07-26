@@ -20,6 +20,7 @@ package org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.constraint;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.AlterDefinitionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.CreateDefinitionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.index.IndexSegment;
@@ -36,6 +37,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Getter
 @Setter
+@ToString
 public final class ConstraintDefinitionSegment implements CreateDefinitionSegment, AlterDefinitionSegment {
     
     private final int startIndex;
@@ -46,13 +48,33 @@ public final class ConstraintDefinitionSegment implements CreateDefinitionSegmen
     
     private final Collection<ColumnSegment> indexColumns = new LinkedList<>();
     
+    private ConstraintSegment constraintName;
+    
     private IndexSegment indexName;
     
     private SimpleTableSegment referencedTable;
     
     /**
+     * Get constraint name.
+     *
+     * @return constraint name.
+     */
+    public Optional<ConstraintSegment> getConstraintName() {
+        return Optional.ofNullable(constraintName);
+    }
+    
+    /**
+     * Get index name.
+     *
+     * @return index name
+     */
+    public Optional<IndexSegment> getIndexName() {
+        return Optional.ofNullable(indexName);
+    }
+    
+    /**
      * Get referenced table.
-     * 
+     *
      * @return referenced table
      */
     public Optional<SimpleTableSegment> getReferencedTable() {

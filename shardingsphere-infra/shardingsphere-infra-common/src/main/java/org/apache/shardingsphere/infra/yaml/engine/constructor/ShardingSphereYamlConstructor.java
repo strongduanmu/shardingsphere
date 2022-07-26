@@ -17,9 +17,7 @@
 
 package org.apache.shardingsphere.infra.yaml.engine.constructor;
 
-import lombok.SneakyThrows;
-import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
-import org.apache.shardingsphere.infra.yaml.swapper.YamlRuleConfigurationSwapperEngine;
+import org.apache.shardingsphere.infra.yaml.config.swapper.YamlRuleConfigurationSwapperEngine;
 import org.yaml.snakeyaml.TypeDescription;
 import org.yaml.snakeyaml.constructor.Construct;
 import org.yaml.snakeyaml.constructor.Constructor;
@@ -31,23 +29,29 @@ import java.util.Map;
 /**
  * ShardingSphere YAML constructor.
  */
-public final class ShardingSphereYamlConstructor extends Constructor {
+public class ShardingSphereYamlConstructor extends Constructor {
     
-    static {
-        ShardingSphereServiceLoader.register(ShardingSphereYamlConstruct.class);
-    }
+    private final Map<Class<?>, Construct> typeConstructs = new HashMap<>();
     
-    private final Map<Class, Construct> typeConstructs = new HashMap<>();
+    private final Class<?> rootClass;
     
-    @SneakyThrows
     public ShardingSphereYamlConstructor(final Class<?> rootClass) {
         super(rootClass);
-        ShardingSphereServiceLoader.newServiceInstances(ShardingSphereYamlConstruct.class).forEach(each -> typeConstructs.put(each.getType(), each));
+        ShardingSphereYamlConstructFactory.getInstances().forEach(each -> typeConstructs.put(each.getType(), each));
         YamlRuleConfigurationSwapperEngine.getYamlShortcuts().forEach((key, value) -> addTypeDescription(new TypeDescription(value, key)));
+        this.rootClass = rootClass;
     }
     
     @Override
-    protected Construct getConstructor(final Node node) {
+    protected final Construct getConstructor(final Node node) {
         return typeConstructs.getOrDefault(node.getType(), super.getConstructor(node));
+    }
+    
+    @Override
+    protected Class<?> getClassForName(final String className) throws ClassNotFoundException {
+        if (className.equals(rootClass.getName())) {
+            return super.getClassForName(className);
+        }
+        throw new IllegalArgumentException(String.format("Class is not accepted: %s", className));
     }
 }

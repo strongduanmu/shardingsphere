@@ -15,17 +15,19 @@
  * limitations under the License.
  */
 
-grammar DALStatement;
+parser grammar DALStatement;
 
-import Symbol, Keyword, PostgreSQLKeyword, Literals, BaseRule, DMLStatement, DDLStatement;
+import DDLStatement;
+
+options {tokenVocab = ModeLexer;}
 
 show
     : SHOW (varName | TIME ZONE | TRANSACTION ISOLATION LEVEL | SESSION AUTHORIZATION | ALL)
     ;
 
 set
-    : SET runtimeScope_?
-    (timeZoneClause_
+    : SET runtimeScope?
+    (timeZoneClause
     | configurationParameterClause
     | varName FROM CURRENT
     | TIME ZONE zoneValue
@@ -38,20 +40,20 @@ set
     | XML OPTION documentOrContent)
     ;
 
-runtimeScope_
+runtimeScope
     : SESSION | LOCAL
     ;
 
-timeZoneClause_
+timeZoneClause
     : TIME ZONE (numberLiterals | LOCAL | DEFAULT)
     ;
 
 configurationParameterClause
-    : identifier (TO | EQ_) (identifier | STRING_ | DEFAULT)
+    : varName (TO | EQ_) (varList | DEFAULT)
     ;
 
 resetParameter
-    : RESET (ALL | identifier)
+    : RESET (ALL | identifier) EOF
     ;
 
 explain
@@ -63,7 +65,7 @@ explain
     ;
 
 explainableStmt
-    : select | insert | update | delete | declare | execute | createMaterializedView | refreshMatViewStmt
+    : select | insert | update | delete | declare | executeStmt | createMaterializedView | refreshMatViewStmt
     ;
 
 explainOptionList
@@ -86,19 +88,7 @@ analyzeKeyword
     : ANALYZE | ANALYSE
     ;
 
-setConstraints
-    : SET CONSTRAINTS constraintsSetList constraintsSetMode
-    ;
-
-constraintsSetMode
-    : DEFERRED | IMMEDIATE
-    ;
-
-constraintsSetList
-    : ALL | qualifiedNameList
-    ;
-
-analyze
+analyzeTable
     : analyzeKeyword (VERBOSE? | LP_ vacAnalyzeOptionList RP_) vacuumRelationList?
     ;
 
@@ -138,4 +128,3 @@ valuesClause
 vacuum
     : VACUUM ((FULL? FREEZE? VERBOSE? ANALYZE?) | (LP_ vacAnalyzeOptionList RP_)) vacuumRelationList?
     ;
-

@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.infra.database.type.dialect;
 
 import org.apache.shardingsphere.infra.database.metadata.dialect.SQL92DataSourceMetaData;
+import org.apache.shardingsphere.sql.parser.sql.common.constant.QuoteCharacter;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -25,12 +26,13 @@ import java.util.Collections;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public final class SQL92DatabaseTypeTest {
     
     @Test
-    public void assertGetName() {
-        assertThat(new SQL92DatabaseType().getName(), is("SQL92"));
+    public void assertGetQuoteCharacter() {
+        assertThat(new SQL92DatabaseType().getQuoteCharacter(), is(QuoteCharacter.QUOTE));
     }
     
     @Test
@@ -40,11 +42,16 @@ public final class SQL92DatabaseTypeTest {
     
     @Test
     public void assertGetDataSourceMetaData() {
-        assertThat(new SQL92DatabaseType().getDataSourceMetaData("jdbc:h2:mem:master_ds_0", "sa"), instanceOf(SQL92DataSourceMetaData.class));
-        assertThat(new SQL92DatabaseType().getDataSourceMetaData("jdbc:mariadb://localhost:3306/demo_ds_0", "sa"), instanceOf(SQL92DataSourceMetaData.class));
-        assertThat(new SQL92DatabaseType().getDataSourceMetaData("jdbc:mysql://127.0.0.1/demo_ds_0", "root"), instanceOf(SQL92DataSourceMetaData.class));
-        assertThat(new SQL92DatabaseType().getDataSourceMetaData("jdbc:postgresql://localhost:5432/demo_ds_0", "postgres"), instanceOf(SQL92DataSourceMetaData.class));
-        assertThat(new SQL92DatabaseType().getDataSourceMetaData("jdbc:oracle:oci:@127.0.0.1/demo_ds_0", "scott"), instanceOf(SQL92DataSourceMetaData.class));
-        assertThat(new SQL92DatabaseType().getDataSourceMetaData("jdbc:microsoft:sqlserver://127.0.0.1;DatabaseName=ds_0", "sa"), instanceOf(SQL92DataSourceMetaData.class));
+        assertThat(new SQL92DatabaseType().getDataSourceMetaData("jdbc:xxx", "root"), instanceOf(SQL92DataSourceMetaData.class));
+    }
+    
+    @Test
+    public void assertGetSystemDatabases() {
+        assertTrue(new SQL92DatabaseType().getSystemDatabaseSchemaMap().isEmpty());
+    }
+    
+    @Test
+    public void assertGetSystemSchemas() {
+        assertTrue(new SQL92DatabaseType().getSystemSchemas().isEmpty());
     }
 }

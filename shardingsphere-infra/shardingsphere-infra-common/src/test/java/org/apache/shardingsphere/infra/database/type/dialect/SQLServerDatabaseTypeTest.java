@@ -18,29 +18,41 @@
 package org.apache.shardingsphere.infra.database.type.dialect;
 
 import org.apache.shardingsphere.infra.database.metadata.dialect.SQLServerDataSourceMetaData;
+import org.apache.shardingsphere.sql.parser.sql.common.constant.QuoteCharacter;
 import org.junit.Test;
 
-import java.util.Collections;
+import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public final class SQLServerDatabaseTypeTest {
     
     @Test
-    public void assertGetName() {
-        assertThat(new SQLServerDatabaseType().getName(), is("SQLServer"));
+    public void assertGetQuoteCharacter() {
+        assertThat(new SQLServerDatabaseType().getQuoteCharacter(), is(QuoteCharacter.BRACKETS));
     }
     
     @Test
     public void assertGetJdbcUrlPrefixes() {
-        assertThat(new SQLServerDatabaseType().getJdbcUrlPrefixes(), is(Collections.singletonList("jdbc:microsoft:sqlserver:")));
+        assertThat(new SQLServerDatabaseType().getJdbcUrlPrefixes(), is(Arrays.asList("jdbc:microsoft:sqlserver:", "jdbc:sqlserver:")));
     }
     
     @Test
     public void assertGetDataSourceMetaData() {
         assertThat(new SQLServerDatabaseType().getDataSourceMetaData("jdbc:sqlserver://127.0.0.1;DatabaseName=ds_0", "root"), instanceOf(SQLServerDataSourceMetaData.class));
         assertThat(new SQLServerDatabaseType().getDataSourceMetaData("jdbc:microsoft:sqlserver://127.0.0.1;DatabaseName=ds_0", "sa"), instanceOf(SQLServerDataSourceMetaData.class));
+    }
+    
+    @Test
+    public void assertGetSystemDatabases() {
+        assertTrue(new SQLServerDatabaseType().getSystemDatabaseSchemaMap().isEmpty());
+    }
+    
+    @Test
+    public void assertGetSystemSchemas() {
+        assertTrue(new SQLServerDatabaseType().getSystemSchemas().isEmpty());
     }
 }

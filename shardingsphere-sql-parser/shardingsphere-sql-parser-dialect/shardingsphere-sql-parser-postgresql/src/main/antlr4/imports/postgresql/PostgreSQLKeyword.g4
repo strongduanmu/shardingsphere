@@ -142,6 +142,10 @@ COLLATE
 COMMENTS
     : C O M M E N T S
     ;
+    
+COMPRESSION
+    : C O M P R E S S I O N
+    ;
 
 CONCURRENTLY
     : C O N C U R R E N T L Y
@@ -587,10 +591,6 @@ TSQUERY
     : T S Q U E R Y
     ;
 
-UUID
-    : U U I D
-    ;
-
 XML
     : X M L
     ;
@@ -652,36 +652,36 @@ OVERLAY
     ;
 
 XMLCONCAT
-	: X M L C O N C A T
-	;
+    : X M L C O N C A T
+    ;
 
 XMLELEMENT
-	: X M L E L E M E N T
-	;
+    : X M L E L E M E N T
+    ;
 
 XMLEXISTS
-	: X M L E X I S T S
-	;
+    : X M L E X I S T S
+    ;
 
 XMLFOREST
-	: X M L F O R E S T
-	;
+    : X M L F O R E S T
+    ;
 
 XMLPARSE
-	: X M L P A R S E
-	;
+    : X M L P A R S E
+    ;
 
 XMLPI
-	: X M L P I
-	;
+    : X M L P I
+    ;
 
 XMLROOT
-	: X M L R O O T
-	;
+    : X M L R O O T
+    ;
 
 XMLSERIALIZE
-	: X M L S E R I A L I Z E
-	;
+    : X M L S E R I A L I Z E
+    ;
 
 TREAT
     : T R E A T
@@ -1387,4 +1387,20 @@ OUT
 
 INOUT
     : I N O U T
+    ;
+
+FORMAT
+    : F O R M A T
+    ;
+
+FORCE_QUOTE
+    : F O R C E UL_ Q U O T E
+    ;
+
+FORCE_NOT_NULL
+    : F O R C E UL_ N O T UL_ N U L L
+    ;
+
+FORCE_NULL
+    : F O R C E UL_ N U L L
     ;

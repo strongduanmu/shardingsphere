@@ -17,10 +17,20 @@
 
 package org.apache.shardingsphere.sql.parser.sql.common.statement.dal;
 
+import lombok.Getter;
+import lombok.ToString;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.AbstractSQLStatement;
+
+import java.util.Collection;
+import java.util.LinkedList;
 
 /**
  * Analyze table statement.
  */
-public abstract class AnalyzeTableStatement extends AbstractSQLStatement {
+@Getter
+@ToString(callSuper = true)
+public abstract class AnalyzeTableStatement extends AbstractSQLStatement implements DALStatement {
+    
+    private final Collection<SimpleTableSegment> tables = new LinkedList<>();
 }

@@ -18,21 +18,22 @@
 package org.apache.shardingsphere.db.protocol.postgresql.packet.handshake;
 
 import lombok.Getter;
-import org.apache.shardingsphere.db.protocol.postgresql.packet.PostgreSQLPacket;
-import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQLCommandPacketType;
+import org.apache.shardingsphere.db.protocol.postgresql.packet.identifier.PostgreSQLIdentifierPacket;
+import org.apache.shardingsphere.db.protocol.postgresql.packet.identifier.PostgreSQLIdentifierTag;
+import org.apache.shardingsphere.db.protocol.postgresql.packet.identifier.PostgreSQLMessagePacketType;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
 
 /**
  * PasswordMessage (frontend) packet for PostgreSQL.
  */
-public final class PostgreSQLPasswordMessagePacket implements PostgreSQLPacket {
+@Getter
+public final class PostgreSQLPasswordMessagePacket implements PostgreSQLIdentifierPacket {
     
-    @Getter
-    private final String md5Digest;
+    private final String digest;
     
     public PostgreSQLPasswordMessagePacket(final PostgreSQLPacketPayload payload) {
         payload.readInt4();
-        md5Digest = payload.readStringNul();
+        digest = payload.readStringNul();
     }
     
     @Override
@@ -40,7 +41,7 @@ public final class PostgreSQLPasswordMessagePacket implements PostgreSQLPacket {
     }
     
     @Override
-    public char getMessageType() {
-        return PostgreSQLCommandPacketType.PASSWORD_MESSAGE.getValue();
+    public PostgreSQLIdentifierTag getIdentifier() {
+        return PostgreSQLMessagePacketType.PASSWORD_MESSAGE;
     }
 }

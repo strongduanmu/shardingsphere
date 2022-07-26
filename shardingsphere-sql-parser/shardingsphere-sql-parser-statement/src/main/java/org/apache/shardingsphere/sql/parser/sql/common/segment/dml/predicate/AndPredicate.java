@@ -18,7 +18,9 @@
 package org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate;
 
 import lombok.Getter;
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.SQLSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -27,11 +29,12 @@ import java.util.LinkedList;
  * And predicate.
  */
 @Getter
+@ToString
 public final class AndPredicate implements SQLSegment {
     
     private final int startIndex = 0;
     
     private final int stopIndex = 0;
     
-    private final Collection<PredicateSegment> predicates = new LinkedList<>();
+    private final Collection<ExpressionSegment> predicates = new LinkedList<>();
 }

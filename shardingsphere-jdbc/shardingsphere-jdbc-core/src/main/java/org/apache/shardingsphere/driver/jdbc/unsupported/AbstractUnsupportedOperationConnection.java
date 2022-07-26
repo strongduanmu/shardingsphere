@@ -19,7 +19,6 @@ package org.apache.shardingsphere.driver.jdbc.unsupported;
 
 import org.apache.shardingsphere.driver.jdbc.adapter.WrapperAdapter;
 
-import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
 import java.sql.Clob;
@@ -28,7 +27,6 @@ import java.sql.NClob;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLXML;
-import java.sql.Savepoint;
 import java.sql.Struct;
 import java.util.Map;
 import java.util.Properties;
@@ -60,46 +58,8 @@ public abstract class AbstractUnsupportedOperationConnection extends WrapperAdap
     }
     
     @Override
-    public final Savepoint setSavepoint() throws SQLException {
-        throw new SQLFeatureNotSupportedException("setSavepoint");
-    }
-    
-    @Override
-    public final Savepoint setSavepoint(final String name) throws SQLException {
-        throw new SQLFeatureNotSupportedException("setSavepoint name");
-    }
-    
-    @Override
-    public final void releaseSavepoint(final Savepoint savepoint) throws SQLException {
-        throw new SQLFeatureNotSupportedException("releaseSavepoint");
-    }
-    
-    @Override
-    public final void rollback(final Savepoint savepoint) throws SQLException {
-        throw new SQLFeatureNotSupportedException("rollback savepoint");
-    }
-    
-    @Override
     public final void abort(final Executor executor) throws SQLException {
         throw new SQLFeatureNotSupportedException("abort");
-    }
-    
-    @Override
-    public final String getCatalog() {
-        return null;
-    }
-    
-    @Override
-    public final void setCatalog(final String catalog) {
-    }
-    
-    @Override
-    public final String getSchema() {
-        return null;
-    }
-    
-    @Override
-    public final void setSchema(final String schema) {
     }
     
     @Override
@@ -143,15 +103,10 @@ public abstract class AbstractUnsupportedOperationConnection extends WrapperAdap
     }
     
     @Override
-    public final Array createArrayOf(final String typeName, final Object[] elements) throws SQLException {
-        throw new SQLFeatureNotSupportedException("createArrayOf");
-    }
-    
-    @Override
     public final Struct createStruct(final String typeName, final Object[] attributes) throws SQLException {
         throw new SQLFeatureNotSupportedException("createStruct");
     }
-
+    
     @Override
     public final Properties getClientInfo() throws SQLException {
         throw new SQLFeatureNotSupportedException("getClientInfo");

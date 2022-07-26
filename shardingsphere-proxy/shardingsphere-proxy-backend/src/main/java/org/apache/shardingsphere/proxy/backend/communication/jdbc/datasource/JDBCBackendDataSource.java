@@ -18,11 +18,13 @@
 package org.apache.shardingsphere.proxy.backend.communication.jdbc.datasource;
 
 import com.google.common.base.Preconditions;
-import org.apache.shardingsphere.infra.executor.sql.ConnectionMode;
+import org.apache.shardingsphere.infra.datasource.registry.GlobalDataSourceRegistry;
+import org.apache.shardingsphere.infra.executor.sql.execute.engine.ConnectionMode;
 import org.apache.shardingsphere.proxy.backend.communication.BackendDataSource;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.transaction.core.TransactionType;
-import org.apache.shardingsphere.transaction.spi.ShardingTransactionManager;
+import org.apache.shardingsphere.transaction.rule.TransactionRule;
+import org.apache.shardingsphere.transaction.spi.ShardingSphereTransactionManager;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -37,35 +39,24 @@ import java.util.List;
 public final class JDBCBackendDataSource implements BackendDataSource {
     
     /**
-     * Get connection.
-     *
-     * @param schemaName scheme name
-     * @param dataSourceName data source name
-     * @return connection
-     * @throws SQLException SQL exception
-     */
-    public Connection getConnection(final String schemaName, final String dataSourceName) throws SQLException {
-        return getConnections(schemaName, dataSourceName, 1, ConnectionMode.MEMORY_STRICTLY).get(0);
-    }
-    
-    /**
      * Get connections.
      *
-     * @param schemaName scheme name
+     * @param databaseName database name
      * @param dataSourceName data source name
      * @param connectionSize size of connections to get
      * @param connectionMode connection mode
      * @return connections
      * @throws SQLException SQL exception
      */
-    public List<Connection> getConnections(final String schemaName, final String dataSourceName, final int connectionSize, final ConnectionMode connectionMode) throws SQLException {
-        return getConnections(schemaName, dataSourceName, connectionSize, connectionMode, TransactionType.LOCAL);
+    public List<Connection> getConnections(final String databaseName, final String dataSourceName, final int connectionSize, final ConnectionMode connectionMode) throws SQLException {
+        return getConnections(databaseName, dataSourceName, connectionSize, connectionMode,
+                ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaData().getGlobalRuleMetaData().getSingleRule(TransactionRule.class).getDefaultType());
     }
     
     /**
      * Get connections.
      *
-     * @param schemaName scheme name
+     * @param databaseName database name
      * @param dataSourceName data source name
      * @param connectionSize size of connections to be get
      * @param connectionMode connection mode
@@ -74,43 +65,56 @@ public final class JDBCBackendDataSource implements BackendDataSource {
      * @throws SQLException SQL exception
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    public List<Connection> getConnections(final String schemaName, final String dataSourceName,
+    public List<Connection> getConnections(final String databaseName, final String dataSourceName,
                                            final int connectionSize, final ConnectionMode connectionMode, final TransactionType transactionType) throws SQLException {
-        DataSource dataSource = ProxyContext.getInstance().getSchemaContexts().getSchemaContexts().get(schemaName).getSchema().getDataSources().get(dataSourceName);
+        DataSource dataSource = ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaData().getDatabase(databaseName).getResource().getDataSources().get(dataSourceName);
+        if (dataSourceName.contains(".")) {
+            String dataSourceStr = dataSourceName.split("\\.")[0];
+            if (GlobalDataSourceRegistry.getInstance().getCachedDataSourceDataSources().containsKey(dataSourceStr)) {
+                dataSource = GlobalDataSourceRegistry.getInstance().getCachedDataSourceDataSources().get(dataSourceStr);
+            }
+        }
         Preconditions.checkNotNull(dataSource, "Can not get connection from datasource %s.", dataSourceName);
         if (1 == connectionSize) {
-            return Collections.singletonList(createConnection(schemaName, dataSourceName, dataSource, transactionType));
+            return Collections.singletonList(createConnection(databaseName, dataSourceName, dataSource, transactionType));
         }
         if (ConnectionMode.CONNECTION_STRICTLY == connectionMode) {
-            return createConnections(schemaName, dataSourceName, dataSource, connectionSize, transactionType);
+            return createConnections(databaseName, dataSourceName, dataSource, connectionSize, transactionType);
         }
         synchronized (dataSource) {
-            return createConnections(schemaName, dataSourceName, dataSource, connectionSize, transactionType);
+            return createConnections(databaseName, dataSourceName, dataSource, connectionSize, transactionType);
         }
     }
     
-    private List<Connection> createConnections(final String schemaName, final String dataSourceName,
+    private List<Connection> createConnections(final String databaseName, final String dataSourceName,
                                                final DataSource dataSource, final int connectionSize, final TransactionType transactionType) throws SQLException {
         List<Connection> result = new ArrayList<>(connectionSize);
         for (int i = 0; i < connectionSize; i++) {
             try {
-                result.add(createConnection(schemaName, dataSourceName, dataSource, transactionType));
+                result.add(createConnection(databaseName, dataSourceName, dataSource, transactionType));
             } catch (final SQLException ex) {
                 for (Connection each : result) {
                     each.close();
                 }
-                throw new SQLException(String.format("Could't get %d connections one time, partition succeed connection(%d) have released!", connectionSize, result.size()), ex);
+                throw new SQLException(String.format("Could not get %d connections at once. The %d obtained connections have been released. "
+                        + "Please consider increasing the `maxPoolSize` of the data sources or decreasing the `max-connections-size-per-query` in props.", connectionSize, result.size()), ex);
             }
         }
         return result;
     }
     
-    private Connection createConnection(final String schemaName, final String dataSourceName, final DataSource dataSource, final TransactionType transactionType) throws SQLException {
-        ShardingTransactionManager shardingTransactionManager = ProxyContext.getInstance().getTransactionContexts().getEngines().get(schemaName).getTransactionManager(transactionType);
-        return isInShardingTransaction(shardingTransactionManager) ? shardingTransactionManager.getConnection(dataSourceName) : dataSource.getConnection();
+    private Connection createConnection(final String databaseName, final String dataSourceName, final DataSource dataSource, final TransactionType transactionType) throws SQLException {
+        TransactionRule transactionRule = ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaData().getGlobalRuleMetaData().getSingleRule(TransactionRule.class);
+        ShardingSphereTransactionManager transactionManager = transactionRule.getResource().getTransactionManager(transactionType);
+        Connection result = isInTransaction(transactionManager) ? transactionManager.getConnection(dataSourceName) : dataSource.getConnection();
+        if (dataSourceName.contains(".")) {
+            String catalog = dataSourceName.split("\\.")[1];
+            result.setCatalog(catalog);
+        }
+        return result;
     }
     
-    private boolean isInShardingTransaction(final ShardingTransactionManager shardingTransactionManager) {
-        return null != shardingTransactionManager && shardingTransactionManager.isInTransaction();
+    private boolean isInTransaction(final ShardingSphereTransactionManager transactionManager) {
+        return null != transactionManager && transactionManager.isInTransaction();
     }
 }

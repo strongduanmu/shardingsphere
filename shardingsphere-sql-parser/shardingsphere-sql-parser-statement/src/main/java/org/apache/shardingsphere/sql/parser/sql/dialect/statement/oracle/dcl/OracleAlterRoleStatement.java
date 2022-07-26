@@ -17,12 +17,13 @@
 
 package org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.dcl;
 
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dcl.AlterRoleStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dcl.DCLStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.OracleStatement;
 
 /**
  * Oracle alter role statement.
  */
-public final class OracleAlterRoleStatement extends AlterRoleStatement implements DCLStatement, OracleStatement {
+@ToString(callSuper = true)
+public final class OracleAlterRoleStatement extends AlterRoleStatement implements OracleStatement {
 }

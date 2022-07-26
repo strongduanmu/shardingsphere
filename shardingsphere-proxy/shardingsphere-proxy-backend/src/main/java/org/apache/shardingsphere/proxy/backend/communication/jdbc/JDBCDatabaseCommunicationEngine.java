@@ -17,169 +17,206 @@
 
 package org.apache.shardingsphere.proxy.backend.communication.jdbc;
 
-import lombok.RequiredArgsConstructor;
-import org.apache.shardingsphere.governance.core.event.persist.MetaDataPersistEvent;
-import org.apache.shardingsphere.governance.core.eventbus.ShardingSphereEventBus;
-import org.apache.shardingsphere.infra.config.properties.ConfigurationPropertyKey;
-import org.apache.shardingsphere.infra.context.SchemaContext;
-import org.apache.shardingsphere.infra.executor.sql.QueryResult;
+import lombok.SneakyThrows;
+import org.apache.shardingsphere.infra.binder.LogicSQL;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
+import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.database.type.DatabaseTypeEngine;
 import org.apache.shardingsphere.infra.executor.sql.context.ExecutionContext;
-import org.apache.shardingsphere.infra.executor.sql.log.SQLLogger;
-import org.apache.shardingsphere.infra.executor.sql.raw.execute.result.query.QueryHeader;
-import org.apache.shardingsphere.infra.merge.MergeEngine;
-import org.apache.shardingsphere.infra.merge.result.MergedResult;
-import org.apache.shardingsphere.infra.metadata.refresh.MetaDataRefreshStrategy;
-import org.apache.shardingsphere.infra.metadata.refresh.MetaDataRefreshStrategyFactory;
-import org.apache.shardingsphere.infra.metadata.schema.RuleSchemaMetaDataLoader;
-import org.apache.shardingsphere.infra.rule.DataNodeRoutedRule;
+import org.apache.shardingsphere.infra.executor.sql.execute.engine.SQLExecutorExceptionHandler;
+import org.apache.shardingsphere.infra.executor.sql.execute.engine.driver.jdbc.JDBCExecutionUnit;
+import org.apache.shardingsphere.infra.executor.sql.execute.engine.driver.jdbc.JDBCExecutor;
+import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
+import org.apache.shardingsphere.infra.executor.sql.execute.result.query.impl.driver.jdbc.metadata.JDBCQueryResultMetaData;
+import org.apache.shardingsphere.infra.executor.sql.execute.result.query.impl.driver.jdbc.type.stream.JDBCStreamQueryResult;
+import org.apache.shardingsphere.infra.executor.sql.prepare.driver.DriverExecutionPrepareEngine;
+import org.apache.shardingsphere.infra.executor.sql.prepare.driver.jdbc.StatementOption;
+import org.apache.shardingsphere.infra.federation.executor.FederationContext;
+import org.apache.shardingsphere.infra.federation.executor.FederationExecutor;
+import org.apache.shardingsphere.infra.federation.executor.FederationExecutorFactory;
+import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
+import org.apache.shardingsphere.infra.metadata.database.schema.util.SystemSchemaUtil;
+import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
 import org.apache.shardingsphere.proxy.backend.communication.DatabaseCommunicationEngine;
-import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.BackendConnection;
-import org.apache.shardingsphere.proxy.backend.communication.jdbc.execute.SQLExecuteEngine;
+import org.apache.shardingsphere.proxy.backend.communication.ProxySQLExecutor;
+import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.JDBCBackendConnection;
+import org.apache.shardingsphere.proxy.backend.communication.jdbc.executor.callback.ProxyJDBCExecutorCallback;
+import org.apache.shardingsphere.proxy.backend.communication.jdbc.executor.callback.ProxyJDBCExecutorCallbackFactory;
+import org.apache.shardingsphere.proxy.backend.communication.jdbc.statement.JDBCBackendStatement;
+import org.apache.shardingsphere.proxy.backend.context.BackendExecutorContext;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
-import org.apache.shardingsphere.proxy.backend.exception.TableModifyInTransactionException;
-import org.apache.shardingsphere.proxy.backend.response.BackendResponse;
-import org.apache.shardingsphere.proxy.backend.response.query.QueryData;
-import org.apache.shardingsphere.proxy.backend.response.query.QueryResponse;
-import org.apache.shardingsphere.proxy.backend.response.update.UpdateResponse;
-import org.apache.shardingsphere.sql.parser.binder.metadata.table.TableMetaData;
-import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.sql.parser.binder.type.TableAvailable;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DDLStatement;
-import org.apache.shardingsphere.transaction.core.TransactionType;
+import org.apache.shardingsphere.proxy.backend.response.header.ResponseHeader;
+import org.apache.shardingsphere.proxy.backend.response.header.query.QueryHeaderBuilderEngine;
+import org.apache.shardingsphere.proxy.backend.response.header.query.QueryResponseHeader;
+import org.apache.shardingsphere.proxy.backend.response.header.update.UpdateResponseHeader;
+import org.apache.shardingsphere.sharding.merge.common.IteratorStreamMergedResult;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLInsertStatement;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Database access engine for JDBC.
+ * JDBC database communication engine.
  */
-@RequiredArgsConstructor
-public final class JDBCDatabaseCommunicationEngine implements DatabaseCommunicationEngine {
+public final class JDBCDatabaseCommunicationEngine extends DatabaseCommunicationEngine<ResponseHeader> {
     
-    private final String sql;
+    private final ProxySQLExecutor proxySQLExecutor;
     
-    private final BackendConnection connection;
+    private final Collection<Statement> cachedStatements = new CopyOnWriteArrayList<>();
     
-    private final SQLExecuteEngine executeEngine;
+    private final Collection<ResultSet> cachedResultSets = new CopyOnWriteArrayList<>();
     
-    private final SchemaContext schema;
+    private final FederationExecutor federationExecutor;
     
-    private BackendResponse response;
+    private final JDBCBackendConnection backendConnection;
     
-    private MergedResult mergedResult;
-    
-    public JDBCDatabaseCommunicationEngine(final String sql, final BackendConnection backendConnection, final SQLExecuteEngine sqlExecuteEngine) {
-        this.sql = sql;
-        connection = backendConnection;
-        executeEngine = sqlExecuteEngine;
-        schema = ProxyContext.getInstance().getSchema(backendConnection.getSchemaName());
+    public JDBCDatabaseCommunicationEngine(final String driverType, final ShardingSphereDatabase database, final LogicSQL logicSQL, final JDBCBackendConnection backendConnection) {
+        super(driverType, database, logicSQL, backendConnection);
+        proxySQLExecutor = new ProxySQLExecutor(driverType, backendConnection, this);
+        this.backendConnection = backendConnection;
+        MetaDataContexts metaDataContexts = ProxyContext.getInstance().getContextManager().getMetaDataContexts();
+        String databaseName = backendConnection.getConnectionSession().getDatabaseName();
+        DatabaseType databaseType = logicSQL.getSqlStatementContext().getDatabaseType();
+        String schemaName = logicSQL.getSqlStatementContext().getTablesContext().getSchemaName().orElseGet(() -> DatabaseTypeEngine.getDefaultSchemaName(databaseType, databaseName));
+        federationExecutor = FederationExecutorFactory.newInstance(databaseName, schemaName, metaDataContexts.getOptimizerContext(), metaDataContexts.getMetaData().getGlobalRuleMetaData(),
+                metaDataContexts.getMetaData().getProps(), new JDBCExecutor(BackendExecutorContext.getInstance().getExecutorEngine(), backendConnection.isSerialExecute()),
+                ProxyContext.getInstance().getContextManager().getInstanceContext().getEventBusContext());
     }
     
-    @Override
-    public BackendResponse execute() throws SQLException {
-        ExecutionContext executionContext = executeEngine.generateExecutionContext(sql);
-        logSQL(executionContext);
-        return doExecute(executionContext);
+    /**
+     * Add statement.
+     *
+     * @param statement statement to be added
+     */
+    public void add(final Statement statement) {
+        cachedStatements.add(statement);
     }
     
-    private void logSQL(final ExecutionContext executionContext) {
-        if (ProxyContext.getInstance().getSchemaContexts().getProps().<Boolean>getValue(ConfigurationPropertyKey.SQL_SHOW)) {
-            SQLLogger.logSQL(sql, ProxyContext.getInstance().getSchemaContexts().getProps().<Boolean>getValue(ConfigurationPropertyKey.SQL_SIMPLE), executionContext);
+    /**
+     * Add result set.
+     *
+     * @param resultSet result set to be added
+     */
+    public void add(final ResultSet resultSet) {
+        cachedResultSets.add(resultSet);
+    }
+    
+    /**
+     * Execute to database.
+     *
+     * @return backend response
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SneakyThrows(SQLException.class)
+    public ResponseHeader execute() {
+        LogicSQL logicSQL = getLogicSQL();
+        MetaDataContexts metaDataContexts = ProxyContext.getInstance().getContextManager().getMetaDataContexts();
+        ExecutionContext executionContext = getKernelProcessor().generateExecutionContext(
+                logicSQL, getDatabase(), metaDataContexts.getMetaData().getGlobalRuleMetaData(), metaDataContexts.getMetaData().getProps());
+        // TODO move federation route logic to binder
+        SQLStatementContext<?> sqlStatementContext = logicSQL.getSqlStatementContext();
+        ShardingSphereDatabase database = metaDataContexts.getMetaData().getDatabase(backendConnection.getConnectionSession().getDatabaseName());
+        if (executionContext.getRouteContext().isFederated() || (sqlStatementContext instanceof SelectStatementContext
+                && SystemSchemaUtil.containsSystemSchema(sqlStatementContext.getDatabaseType(), sqlStatementContext.getTablesContext().getSchemaNames(), database))) {
+            ResultSet resultSet = doExecuteFederation(logicSQL, metaDataContexts);
+            return processExecuteFederation(resultSet, metaDataContexts);
         }
-    }
-    
-    private BackendResponse doExecute(final ExecutionContext executionContext) throws SQLException {
         if (executionContext.getExecutionUnits().isEmpty()) {
-            return new UpdateResponse();
+            return new UpdateResponseHeader(executionContext.getSqlStatementContext().getSqlStatement());
         }
-        SQLStatementContext<?> sqlStatementContext = executionContext.getSqlStatementContext();
-        if (isExecuteDDLInXATransaction(sqlStatementContext.getSqlStatement())) {
-            throw new TableModifyInTransactionException(getTableName(sqlStatementContext));
-        }
-        response = executeEngine.execute(executionContext);
-        refreshTableMetaData(executionContext.getSqlStatementContext());
-        return merge(executionContext.getSqlStatementContext());
+        proxySQLExecutor.checkExecutePrerequisites(executionContext);
+        checkLockedDatabase(executionContext);
+        List result = proxySQLExecutor.execute(executionContext);
+        refreshMetaData(executionContext);
+        Object executeResultSample = result.iterator().next();
+        return executeResultSample instanceof QueryResult
+                ? processExecuteQuery(executionContext, result, (QueryResult) executeResultSample)
+                : processExecuteUpdate(executionContext, result);
     }
     
-    private boolean isExecuteDDLInXATransaction(final SQLStatement sqlStatement) {
-        return TransactionType.XA == connection.getTransactionType() && sqlStatement instanceof DDLStatement && connection.getStatusHandler().isInTransaction();
+    private ResultSet doExecuteFederation(final LogicSQL logicSQL, final MetaDataContexts metaDataContexts) throws SQLException {
+        boolean isReturnGeneratedKeys = logicSQL.getSqlStatementContext().getSqlStatement() instanceof MySQLInsertStatement;
+        ShardingSphereDatabase database = metaDataContexts.getMetaData().getDatabase(backendConnection.getConnectionSession().getDatabaseName());
+        DatabaseType protocolType = database.getProtocolType();
+        DatabaseType databaseType = database.getResource().getDatabaseType();
+        ProxyJDBCExecutorCallback callback = ProxyJDBCExecutorCallbackFactory.newInstance(getDriverType(), protocolType, databaseType,
+                logicSQL.getSqlStatementContext().getSqlStatement(), this, isReturnGeneratedKeys, SQLExecutorExceptionHandler.isExceptionThrown(), true);
+        backendConnection.setFederationExecutor(federationExecutor);
+        DriverExecutionPrepareEngine<JDBCExecutionUnit, Connection> prepareEngine = createDriverExecutionPrepareEngine(isReturnGeneratedKeys, metaDataContexts);
+        FederationContext context = new FederationContext(false, logicSQL, metaDataContexts.getMetaData().getDatabases());
+        return federationExecutor.executeQuery(prepareEngine, callback, context);
     }
     
-    private String getTableName(final SQLStatementContext<?> sqlStatementContext) {
-        if (sqlStatementContext instanceof TableAvailable && !((TableAvailable) sqlStatementContext).getAllTables().isEmpty()) {
-            return ((TableAvailable) sqlStatementContext).getAllTables().iterator().next().getTableName().getIdentifier().getValue();
+    private DriverExecutionPrepareEngine<JDBCExecutionUnit, Connection> createDriverExecutionPrepareEngine(final boolean isReturnGeneratedKeys, final MetaDataContexts metaData) {
+        int maxConnectionsSizePerQuery = metaData.getMetaData().getProps().<Integer>getValue(ConfigurationPropertyKey.MAX_CONNECTIONS_SIZE_PER_QUERY);
+        JDBCBackendStatement statementManager = (JDBCBackendStatement) backendConnection.getConnectionSession().getStatementManager();
+        return new DriverExecutionPrepareEngine<>(getDriverType(), maxConnectionsSizePerQuery, backendConnection, statementManager,
+                new StatementOption(isReturnGeneratedKeys), metaData.getMetaData().getDatabase(backendConnection.getConnectionSession().getDatabaseName()).getRuleMetaData().getRules());
+    }
+    
+    private ResponseHeader processExecuteFederation(final ResultSet resultSet, final MetaDataContexts metaDataContexts) throws SQLException {
+        int columnCount = resultSet.getMetaData().getColumnCount();
+        setQueryHeaders(new ArrayList<>(columnCount));
+        ShardingSphereDatabase database = metaDataContexts.getMetaData().getDatabase(backendConnection.getConnectionSession().getDatabaseName());
+        QueryHeaderBuilderEngine queryHeaderBuilderEngine = new QueryHeaderBuilderEngine(null == database ? null : database.getProtocolType());
+        for (int columnIndex = 1; columnIndex <= columnCount; columnIndex++) {
+            getQueryHeaders().add(queryHeaderBuilderEngine.build(new JDBCQueryResultMetaData(resultSet.getMetaData()), database, columnIndex));
         }
-        return "unknown_table";
+        setMergedResult(new IteratorStreamMergedResult(Collections.singletonList(new JDBCStreamQueryResult(resultSet))));
+        return new QueryResponseHeader(getQueryHeaders());
     }
     
-    @SuppressWarnings("unchecked")
-    private void refreshTableMetaData(final SQLStatementContext<?> sqlStatementContext) throws SQLException {
-        if (null == sqlStatementContext) {
+    /**
+     * Close database communication engine.
+     *
+     * @throws SQLException SQL exception
+     */
+    public void close() throws SQLException {
+        Collection<SQLException> result = new LinkedList<>();
+        result.addAll(closeResultSets());
+        result.addAll(closeStatements());
+        if (result.isEmpty()) {
             return;
         }
-        Optional<MetaDataRefreshStrategy> refreshStrategy = MetaDataRefreshStrategyFactory.newInstance(sqlStatementContext);
-        if (refreshStrategy.isPresent()) {
-            refreshStrategy.get().refreshMetaData(schema.getSchema().getMetaData(), ProxyContext.getInstance().getSchemaContexts().getDatabaseType(),
-                    schema.getSchema().getDataSources(), sqlStatementContext, this::loadTableMetaData);
-            ShardingSphereEventBus.getInstance().post(new MetaDataPersistEvent(schema.getName(), schema.getSchema().getMetaData().getRuleSchemaMetaData()));
+        SQLException ex = new SQLException();
+        result.forEach(ex::setNextException);
+        throw ex;
+    }
+    
+    private Collection<SQLException> closeResultSets() {
+        Collection<SQLException> result = new LinkedList<>();
+        for (ResultSet each : cachedResultSets) {
+            try {
+                each.close();
+            } catch (final SQLException ex) {
+                result.add(ex);
+            }
         }
+        cachedResultSets.clear();
+        return result;
     }
     
-    private Optional<TableMetaData> loadTableMetaData(final String tableName) throws SQLException {
-        RuleSchemaMetaDataLoader loader = new RuleSchemaMetaDataLoader(schema.getSchema().getRules());
-        return loader.load(ProxyContext.getInstance().getSchemaContexts().getDatabaseType(),
-                schema.getSchema().getDataSources(), tableName, ProxyContext.getInstance().getSchemaContexts().getProps());
-    }
-    
-    private BackendResponse merge(final SQLStatementContext<?> sqlStatementContext) throws SQLException {
-        if (response instanceof UpdateResponse) {
-            mergeUpdateCount(sqlStatementContext);
-            return response;
+    private Collection<SQLException> closeStatements() {
+        Collection<SQLException> result = new LinkedList<>();
+        for (Statement each : cachedStatements) {
+            try {
+                each.cancel();
+                each.close();
+            } catch (final SQLException ex) {
+                result.add(ex);
+            }
         }
-        mergedResult = mergeQuery(sqlStatementContext, ((QueryResponse) response).getQueryResults());
-        return response;
-    }
-    
-    private void mergeUpdateCount(final SQLStatementContext<?> sqlStatementContext) {
-        if (isNeedAccumulate(sqlStatementContext)) {
-            ((UpdateResponse) response).mergeUpdateCount();
-        }
-    }
-    
-    private boolean isNeedAccumulate(final SQLStatementContext<?> sqlStatementContext) {
-        Optional<DataNodeRoutedRule> dataNodeRoutedRule = schema.getSchema().getRules().stream().filter(each -> each instanceof DataNodeRoutedRule).findFirst().map(rule -> (DataNodeRoutedRule) rule);
-        return dataNodeRoutedRule.isPresent() && dataNodeRoutedRule.get().isNeedAccumulate(sqlStatementContext.getTablesContext().getTableNames());
-    }
-    
-    private MergedResult mergeQuery(final SQLStatementContext<?> sqlStatementContext, final List<QueryResult> queryResults) throws SQLException {
-        MergeEngine mergeEngine = new MergeEngine(ProxyContext.getInstance().getSchemaContexts().getDatabaseType(),
-                schema.getSchema().getMetaData().getRuleSchemaMetaData().getConfiguredSchemaMetaData(), ProxyContext.getInstance().getSchemaContexts().getProps(), schema.getSchema().getRules());
-        return mergeEngine.merge(queryResults, sqlStatementContext);
-    }
-    
-    @Override
-    public boolean next() throws SQLException {
-        return null != mergedResult && mergedResult.next();
-    }
-    
-    @Override
-    public QueryData getQueryData() throws SQLException {
-        List<QueryHeader> queryHeaders = ((QueryResponse) response).getQueryHeaders();
-        List<Object> row = new ArrayList<>(queryHeaders.size());
-        for (int columnIndex = 1; columnIndex <= queryHeaders.size(); columnIndex++) {
-            row.add(mergedResult.getValue(columnIndex, Object.class));
-        }
-        return new QueryData(getColumnTypes(queryHeaders), row);
-    }
-    
-    private List<Integer> getColumnTypes(final List<QueryHeader> queryHeaders) {
-        List<Integer> result = new ArrayList<>(queryHeaders.size());
-        for (QueryHeader each : queryHeaders) {
-            result.add(each.getColumnType());
-        }
+        cachedStatements.clear();
         return result;
     }
 }

@@ -19,16 +19,17 @@ package org.apache.shardingsphere.proxy;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.apache.shardingsphere.governance.core.facade.GovernanceFacade;
-import org.apache.shardingsphere.proxy.arg.BootstrapArguments;
-import org.apache.shardingsphere.proxy.config.ProxyConfigurationLoader;
-import org.apache.shardingsphere.proxy.config.YamlProxyConfiguration;
-import org.apache.shardingsphere.proxy.init.BootstrapInitializer;
-import org.apache.shardingsphere.proxy.init.impl.GovernanceBootstrapInitializer;
-import org.apache.shardingsphere.proxy.init.impl.StandardBootstrapInitializer;
+import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
+import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
+import org.apache.shardingsphere.proxy.arguments.BootstrapArguments;
+import org.apache.shardingsphere.proxy.backend.config.ProxyConfigurationLoader;
+import org.apache.shardingsphere.proxy.backend.config.YamlProxyConfiguration;
+import org.apache.shardingsphere.proxy.frontend.ShardingSphereProxy;
+import org.apache.shardingsphere.proxy.initializer.BootstrapInitializer;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * ShardingSphere-Proxy Bootstrap.
@@ -45,12 +46,10 @@ public final class Bootstrap {
      */
     public static void main(final String[] args) throws IOException, SQLException {
         BootstrapArguments bootstrapArgs = new BootstrapArguments(args);
-        int port = bootstrapArgs.getPort();
         YamlProxyConfiguration yamlConfig = ProxyConfigurationLoader.load(bootstrapArgs.getConfigurationPath());
-        createBootstrapInitializer(yamlConfig).init(yamlConfig, port);
-    }
-    
-    private static BootstrapInitializer createBootstrapInitializer(final YamlProxyConfiguration yamlConfig) {
-        return null == yamlConfig.getServerConfiguration().getGovernance() ? new StandardBootstrapInitializer() : new GovernanceBootstrapInitializer(new GovernanceFacade());
+        int port = bootstrapArgs.getPort().orElseGet(() -> new ConfigurationProperties(yamlConfig.getServerConfiguration().getProps()).getValue(ConfigurationPropertyKey.PROXY_DEFAULT_PORT));
+        List<String> addresses = bootstrapArgs.getAddresses();
+        new BootstrapInitializer().init(yamlConfig, port);
+        new ShardingSphereProxy().start(port, addresses);
     }
 }

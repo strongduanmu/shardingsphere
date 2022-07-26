@@ -17,12 +17,29 @@
 
 package org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.dml;
 
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.DMLStatement;
+import lombok.Setter;
+import lombok.ToString;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.WithSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.InsertStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.PostgreSQLStatement;
+
+import java.util.Optional;
 
 /**
  * PostgreSQL insert statement.
  */
-public final class PostgreSQLInsertStatement extends InsertStatement implements DMLStatement, PostgreSQLStatement {
+@Setter
+@ToString(callSuper = true)
+public final class PostgreSQLInsertStatement extends InsertStatement implements PostgreSQLStatement {
+    
+    private WithSegment withSegment;
+    
+    /**
+     * Get with segment.
+     *
+     * @return with segment.
+     */
+    public Optional<WithSegment> getWithSegment() {
+        return Optional.ofNullable(withSegment);
+    }
 }

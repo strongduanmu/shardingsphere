@@ -1,54 +1,78 @@
 +++
-pre = "<b>5.7. </b>"
+pre = "<b>6.10. </b>"
 title = "分布式事务"
-weight = 7
+weight = 10
 chapter = true
 +++
 
-## ShardingTransactionManager
+## ShardingSphereTransactionManager
 
-| *SPI 名称*                         | *详细说明*                 |
-| --------------------------------- | -------------------------- |
-| ShardingTransactionManager        | 分布式事务管理器             |
+### 全限定类名
 
-| *已知实现类*                       | *详细说明*                  |
-| --------------------------------- | -------------------------- |
-| XAShardingTransactionManager      | 基于 XA 的分布式事务管理器    |
-| SeataATShardingTransactionManager | 基于 Seata 的分布式事务管理器 |
+[`org.apache.shardingsphere.transaction.spi.ShardingSphereTransactionManager`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-transaction/shardingsphere-transaction-core/src/main/java/org/apache/shardingsphere/transaction/spi/ShardingSphereTransactionManager.java)
 
-## XATransactionManager
+### 定义
 
-| *SPI 名称*                   | *详细说明*                         |
-| ---------------------------- | --------------------------------- |
-| XATransactionManager         | XA分布式事务管理器                  |
+分布式事务管理器
 
-| *已知实现类*                  | *详细说明*                         |
-| ---------------------------- | --------------------------------- |
-| AtomikosTransactionManager   | 基于 Atomikos 的 XA 分布式事务管理器 |
-| NarayanaXATransactionManager | 基于 Narayana 的 XA 分布式事务管理器 |
-| BitronixXATransactionManager | 基于 Bitronix 的 XA 分布式事务管理器 |
+### 已知实现
+
+| *配置标识* | *详细说明*                 | *全限定类名* |
+| -------- | ------------------------- | ---------- |
+| XA       | 基于 XA 的分布式事务管理器    |[`org.apache.shardingsphere.transaction.xa.XAShardingSphereTransactionManager`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-transaction/shardingsphere-transaction-type/shardingsphere-transaction-xa/shardingsphere-transaction-xa-core/src/main/java/org/apache/shardingsphere/transaction/xa/XAShardingSphereTransactionManager.java) |
+| BASE     | 基于 Seata 的分布式事务管理器 |[`org.apache.shardingsphere.transaction.base.seata.at.SeataATShardingSphereTransactionManager`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-transaction/shardingsphere-transaction-type/shardingsphere-transaction-base/shardingsphere-transaction-base-seata-at/src/main/java/org/apache/shardingsphere/transaction/base/seata/at/SeataATShardingSphereTransactionManager.java) |
+
+## XATransactionManagerProvider
+
+### 全限定类名
+
+[`org.apache.shardingsphere.transaction.xa.spi.XATransactionManagerProvider`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-transaction/shardingsphere-transaction-type/shardingsphere-transaction-xa/shardingsphere-transaction-xa-spi/src/main/java/org/apache/shardingsphere/transaction/xa/spi/XATransactionManagerProvider.java)
+
+### 定义
+
+XA 分布式事务管理器
+
+### 已知实现
+
+| *配置标识* | *详细说明*                     | *全限定类名* |
+| --------- | -------------------------------- | ---------- |
+| Atomikos  | 基于 Atomikos 的 XA 分布式事务管理器 |[`org.apache.shardingsphere.transaction.xa.atomikos.manager.AtomikosTransactionManagerProvider`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-transaction/shardingsphere-transaction-type/shardingsphere-transaction-xa/shardingsphere-transaction-xa-provider/shardingsphere-transaction-xa-atomikos/src/main/java/org/apache/shardingsphere/transaction/xa/atomikos/manager/AtomikosTransactionManagerProvider.java)｜
+| Narayana  | 基于 Narayana 的 XA 分布式事务管理器 |[`org.apache.shardingsphere.transaction.xa.narayana.manager.NarayanaXATransactionManagerProvider`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-transaction/shardingsphere-transaction-type/shardingsphere-transaction-xa/shardingsphere-transaction-xa-provider/shardingsphere-transaction-xa-narayana/src/main/java/org/apache/shardingsphere/transaction/xa/narayana/manager/NarayanaXATransactionManagerProvider.java)｜
+| Bitronix  | 基于 Bitronix 的 XA 分布式事务管理器 |[`org.apache.shardingsphere.transaction.xa.bitronix.manager.BitronixXATransactionManagerProvider`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-transaction/shardingsphere-transaction-type/shardingsphere-transaction-xa/shardingsphere-transaction-xa-provider/shardingsphere-transaction-xa-bitronix/src/main/java/org/apache/shardingsphere/transaction/xa/bitronix/manager/BitronixXATransactionManagerProvider.java)｜
 
 ## XADataSourceDefinition
 
-| *SPI 名称*                        | *详细说明*                                                |
-| -------------------------------- | --------------------------------------------------------- |
-| XADataSourceDefinition           | 非 XA 数据源自动转化为 XA 数据源                             |
+### 全限定类名
 
-| *已知实现类*                      | *详细说明*                                                 |
-| -------------------------------- | --------------------------------------------------------- |
-| MySQLXADataSourceDefinition      | 非 XA 的 MySQL 数据源自动转化为 XA 的 MySQL 数据源           |
-| MariaDBXADataSourceDefinition    | 非 XA 的 MariaDB 数据源自动转化为 XA 的 MariaDB 数据源       |
-| PostgreSQLXADataSourceDefinition | 非 XA 的 PostgreSQL 数据源自动转化为 XA 的 PostgreSQL 数据源 |
-| OracleXADataSourceDefinition     | 非 XA 的 Oracle 数据源自动转化为 XA 的 Oracle 数据源         |
-| SQLServerXADataSourceDefinition  | 非 XA 的 SQLServer 数据源自动转化为 XA 的 SQLServer 数据源   |
-| H2XADataSourceDefinition         | 非 XA 的 H2 数据源自动转化为 XA 的 H2 数据源                 |
+[`org.apache.shardingsphere.transaction.xa.jta.datasource.properties.XADataSourceDefinition`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-transaction/shardingsphere-transaction-type/shardingsphere-transaction-xa/shardingsphere-transaction-xa-core/src/main/java/org/apache/shardingsphere/transaction/xa/jta/datasource/properties/XADataSourceDefinition.java)
+
+### 定义
+
+用于非 XA 数据源转化为 XA 数据源
+
+### 已知实现 
+
+| *配置标识*  | *详细说明*                                                | *全限定类名* |
+| ---------- | ------------------------------------------------------- | ----------- |
+| MySQL      | 非 XA 的 MySQL 数据源自动转化为 XA 的 MySQL 数据源           |[`org.apache.shardingsphere.transaction.xa.jta.datasource.properties.dialect.MySQLXADataSourceDefinition`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-transaction/shardingsphere-transaction-type/shardingsphere-transaction-xa/shardingsphere-transaction-xa-core/src/main/java/org/apache/shardingsphere/transaction/xa/jta/datasource/properties/dialect/MySQLXADataSourceDefinition.java)｜
+| MariaDB    | 非 XA 的 MariaDB 数据源自动转化为 XA 的 MariaDB 数据源       |[`org.apache.shardingsphere.transaction.xa.jta.datasource.properties.dialect.MariaDBXADataSourceDefinition`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-transaction/shardingsphere-transaction-type/shardingsphere-transaction-xa/shardingsphere-transaction-xa-core/src/main/java/org/apache/shardingsphere/transaction/xa/jta/datasource/properties/dialect/MariaDBXADataSourceDefinition.java)｜
+| PostgreSQL | 非 XA 的 PostgreSQL 数据源自动转化为 XA 的 PostgreSQL 数据源 |[`org.apache.shardingsphere.transaction.xa.jta.datasource.properties.dialect.PostgreSQLXADataSourceDefinition`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-transaction/shardingsphere-transaction-type/shardingsphere-transaction-xa/shardingsphere-transaction-xa-core/src/main/java/org/apache/shardingsphere/transaction/xa/jta/datasource/properties/dialect/PostgreSQLXADataSourceDefinition.java)｜
+| Oracle     | 非 XA 的 Oracle 数据源自动转化为 XA 的 Oracle 数据源         |[`org.apache.shardingsphere.transaction.xa.jta.datasource.properties.dialect.OracleXADataSourceDefinition`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-transaction/shardingsphere-transaction-type/shardingsphere-transaction-xa/shardingsphere-transaction-xa-core/src/main/java/org/apache/shardingsphere/transaction/xa/jta/datasource/properties/dialect/OracleXADataSourceDefinition.java)｜
+| SQLServer  | 非 XA 的 SQLServer 数据源自动转化为 XA 的 SQLServer 数据源   |[`org.apache.shardingsphere.transaction.xa.jta.datasource.properties.dialect.SQLServerXADataSourceDefinition`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-transaction/shardingsphere-transaction-type/shardingsphere-transaction-xa/shardingsphere-transaction-xa-core/src/main/java/org/apache/shardingsphere/transaction/xa/jta/datasource/properties/dialect/SQLServerXADataSourceDefinition.java)｜
+| H2         | 非 XA 的 H2 数据源自动转化为 XA 的 H2 数据源                 |[`org.apache.shardingsphere.transaction.xa.jta.datasource.properties.dialect.H2XADataSourceDefinition`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-transaction/shardingsphere-transaction-type/shardingsphere-transaction-xa/shardingsphere-transaction-xa-core/src/main/java/org/apache/shardingsphere/transaction/xa/jta/datasource/properties/dialect/H2XADataSourceDefinition.java)｜
 
 ## DataSourcePropertyProvider
 
-| *SPI 名称*                  | *详细说明*                       |
-| -------------------------- | ------------------------------- |
-| DataSourcePropertyProvider | 用于获取数据源连接池的标准属性      |
+### 全限定类名
 
-| *已知实现类*                | *详细说明*                       |
-| -------------------------- | ------------------------------- |
-| HikariCPPropertyProvider   | 用于获取 HikariCP 连接池的标准属性 |
+[`org.apache.shardingsphere.transaction.xa.jta.datasource.swapper.DataSourcePropertyProvider`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-transaction/shardingsphere-transaction-type/shardingsphere-transaction-xa/shardingsphere-transaction-xa-core/src/main/java/org/apache/shardingsphere/transaction/xa/jta/datasource/swapper/DataSourcePropertyProvider.java)
+
+### 定义
+
+用于获取数据源连接池的标准属性
+
+### 已知实现
+
+| *配置标识*                          | *详细说明*                       | *全限定类名* |
+| ---------------------------------- | ------------------------------ | ---------- |
+| com.zaxxer.hikari.HikariDataSource | 用于获取 HikariCP 连接池的标准属性 |[`org.apache.shardingsphere.transaction.xa.jta.datasource.swapper.impl.HikariCPPropertyProvider`](https://github.com/apache/shardingsphere/blob/master/shardingsphere-kernel/shardingsphere-transaction/shardingsphere-transaction-type/shardingsphere-transaction-xa/shardingsphere-transaction-xa-core/src/main/java/org/apache/shardingsphere/transaction/xa/jta/datasource/swapper/impl/HikariCPPropertyProvider.java)｜

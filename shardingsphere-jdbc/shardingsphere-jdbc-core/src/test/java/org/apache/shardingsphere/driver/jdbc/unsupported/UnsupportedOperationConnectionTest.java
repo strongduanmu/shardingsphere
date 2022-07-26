@@ -17,222 +17,130 @@
 
 package org.apache.shardingsphere.driver.jdbc.unsupported;
 
-import org.apache.shardingsphere.driver.common.base.AbstractShardingSphereDataSourceForShardingTest;
+import org.apache.shardingsphere.driver.jdbc.context.JDBCContext;
 import org.apache.shardingsphere.driver.jdbc.core.connection.ShardingSphereConnection;
+import org.apache.shardingsphere.infra.database.DefaultDatabase;
+import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
+import org.apache.shardingsphere.mode.manager.ContextManager;
+import org.apache.shardingsphere.traffic.rule.TrafficRule;
+import org.apache.shardingsphere.transaction.core.TransactionTypeHolder;
+import org.apache.shardingsphere.transaction.rule.TransactionRule;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
 
-import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-public final class UnsupportedOperationConnectionTest extends AbstractShardingSphereDataSourceForShardingTest {
+public final class UnsupportedOperationConnectionTest {
     
-    private final List<ShardingSphereConnection> shardingSphereConnections = new ArrayList<>();
+    private final ShardingSphereConnection shardingSphereConnection;
     
-    @Before
-    public void init() {
-        shardingSphereConnections.add(getShardingSphereDataSource().getConnection());
-    }
-    
-    @After
-    public void close() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.close();
-        }
+    public UnsupportedOperationConnectionTest() {
+        ContextManager contextManager = mock(ContextManager.class, RETURNS_DEEP_STUBS);
+        ShardingSphereRuleMetaData globalRuleMetaData = mock(ShardingSphereRuleMetaData.class);
+        when(contextManager.getMetaDataContexts().getMetaData().getGlobalRuleMetaData()).thenReturn(globalRuleMetaData);
+        when(globalRuleMetaData.getSingleRule(TransactionRule.class)).thenReturn(mock(TransactionRule.class, RETURNS_DEEP_STUBS));
+        when(globalRuleMetaData.getSingleRule(TrafficRule.class)).thenReturn(mock(TrafficRule.class));
+        shardingSphereConnection = new ShardingSphereConnection(DefaultDatabase.LOGIC_NAME, contextManager, mock(JDBCContext.class));
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertPrepareCall() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.prepareCall("");
-        }
+        shardingSphereConnection.prepareCall("");
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertPrepareCallWithResultSetTypeAndResultSetConcurrency() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.prepareCall("", 0, 0);
-        }
+        shardingSphereConnection.prepareCall("", 0, 0);
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertPrepareCallWithResultSetTypeAndResultSetConcurrencyAndResultSetHoldability() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.prepareCall("", 0, 0, 0);
-        }
+        shardingSphereConnection.prepareCall("", 0, 0, 0);
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertNativeSQL() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.nativeSQL("");
-        }
-    }
-    
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void assertSetSavepoint() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.setSavepoint();
-        }
-    }
-    
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void assertSetSavepointWithName() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.setSavepoint("");
-        }
-    }
-    
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void assertReleaseSavepoint() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.releaseSavepoint(null);
-        }
-    }
-    
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void assertRollback() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.rollback(null);
-        }
+        shardingSphereConnection.nativeSQL("");
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertAbort() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.abort(null);
-        }
-    }
-    
-    @Test
-    public void assertGetCatalog() {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            assertNull(each.getCatalog());
-        }
-    }
-    
-    @Test
-    public void assertSetCatalog() {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.setCatalog("");
-        }
-    }
-    
-    @Test
-    public void assertGetSchema() {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            assertNull(each.getSchema());
-        }
-    }
-    
-    @Test
-    public void assertSetSchema() {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.setSchema("");
-        }
+        shardingSphereConnection.abort(null);
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertGetTypeMap() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.getTypeMap();
-        }
+        shardingSphereConnection.getTypeMap();
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertSetTypeMap() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.setTypeMap(null);
-        }
+        shardingSphereConnection.setTypeMap(null);
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertGetNetworkTimeout() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.getNetworkTimeout();
-        }
+        shardingSphereConnection.getNetworkTimeout();
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertSetNetworkTimeout() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.setNetworkTimeout(null, 0);
-        }
+        shardingSphereConnection.setNetworkTimeout(null, 0);
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertCreateClob() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.createClob();
-        }
+        shardingSphereConnection.createClob();
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertCreateBlob() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.createBlob();
-        }
+        shardingSphereConnection.createBlob();
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertCreateNClob() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.createNClob();
-        }
+        shardingSphereConnection.createNClob();
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertCreateSQLXML() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.createSQLXML();
-        }
-    }
-    
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void assertCreateArrayOf() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.createArrayOf("", null);
-        }
+        shardingSphereConnection.createSQLXML();
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertCreateStruct() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.createStruct("", null);
-        }
+        shardingSphereConnection.createStruct("", null);
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertGetClientInfo() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.getClientInfo();
-        }
+        shardingSphereConnection.getClientInfo();
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertGetClientInfoWithName() throws SQLException {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.getClientInfo("");
-        }
+        shardingSphereConnection.getClientInfo("");
     }
     
     @Test(expected = UnsupportedOperationException.class)
     public void assertSetClientInfo() {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.setClientInfo("", "");
-        }
+        shardingSphereConnection.setClientInfo("", "");
     }
     
     @Test(expected = UnsupportedOperationException.class)
     public void assertSetClientInfoWithProperties() {
-        for (ShardingSphereConnection each : shardingSphereConnections) {
-            each.setClientInfo(new Properties());
-        }
+        shardingSphereConnection.setClientInfo(new Properties());
+    }
+    
+    @After
+    public void tearDown() {
+        TransactionTypeHolder.clear();
     }
 }

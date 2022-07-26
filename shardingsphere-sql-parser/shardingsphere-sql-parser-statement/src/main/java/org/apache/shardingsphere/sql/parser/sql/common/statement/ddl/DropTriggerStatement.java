@@ -17,10 +17,12 @@
 
 package org.apache.shardingsphere.sql.parser.sql.common.statement.ddl;
 
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.AbstractSQLStatement;
 
 /**
  * Drop trigger statement.
  */
-public final class DropTriggerStatement extends AbstractSQLStatement implements DDLStatement {
+@ToString(callSuper = true)
+public abstract class DropTriggerStatement extends AbstractSQLStatement implements DDLStatement {
 }

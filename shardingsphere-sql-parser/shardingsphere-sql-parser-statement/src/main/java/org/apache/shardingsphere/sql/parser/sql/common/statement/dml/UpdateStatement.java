@@ -19,15 +19,12 @@ package org.apache.shardingsphere.sql.parser.sql.common.statement.dml;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.SetAssignmentSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.OrderBySegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.pagination.limit.LimitSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.AbstractSQLStatement;
 
-import java.util.Collection;
-import java.util.LinkedList;
 import java.util.Optional;
 
 /**
@@ -35,17 +32,14 @@ import java.util.Optional;
  */
 @Getter
 @Setter
-public final class UpdateStatement extends AbstractSQLStatement implements DMLStatement {
+@ToString(callSuper = true)
+public abstract class UpdateStatement extends AbstractSQLStatement implements DMLStatement {
     
-    private final Collection<SimpleTableSegment> tables = new LinkedList<>();
+    private TableSegment tableSegment;
     
     private SetAssignmentSegment setAssignment;
     
     private WhereSegment where;
-
-    private OrderBySegment orderBy;
-
-    private LimitSegment limit;
     
     /**
      * Get where.
@@ -54,23 +48,5 @@ public final class UpdateStatement extends AbstractSQLStatement implements DMLSt
      */
     public Optional<WhereSegment> getWhere() {
         return Optional.ofNullable(where);
-    }
-    
-    /**
-     * Get order by segment.
-     *
-     * @return order by segment
-     */
-    public Optional<OrderBySegment> getOrderBy() {
-        return Optional.ofNullable(orderBy);
-    }
-
-    /**
-     * Get order by segment.
-     *
-     * @return order by segment
-     */
-    public Optional<LimitSegment> getLimit() {
-        return Optional.ofNullable(limit);
     }
 }

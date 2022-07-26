@@ -15,12 +15,15 @@
  * limitations under the License.
  */
 
-grammar BaseRule;
+parser grammar BaseRule;
 
-import Keyword, PostgreSQLKeyword, Symbol, Literals;
+options {
+    tokenVocab = ModeLexer;
+}
 
 parameterMarker
-    : QUESTION_ literalsType_?
+    : QUESTION_ literalsType?
+    | DOLLAR_ numberLiterals
     ;
 
 reservedKeyword
@@ -104,22 +107,18 @@ reservedKeyword
     ;
 
 numberLiterals
-   : MINUS_? NUMBER_ literalsType_?
+   : MINUS_? NUMBER_ literalsType?
    ;
 
-literalsType_
+literalsType
     : TYPE_CAST_ IDENTIFIER_
     ;
 
 identifier
-    : unicodeEscapes_? IDENTIFIER_ uescape_? |  unreservedWord 
+    : UNICODE_ESCAPE? IDENTIFIER_ uescape? |  unreservedWord 
     ;
 
-unicodeEscapes_
-    : ('U' | 'u') AMPERSAND_
-    ;
-
-uescape_
+uescape
     : UESCAPE STRING_
     ;
     
@@ -208,6 +207,7 @@ unreservedWord
     | EXECUTE
     | EXPLAIN
     | EXPRESSION
+    | EXTENDED
     | EXTENSION
     | EXTERNAL
     | FAMILY
@@ -245,6 +245,7 @@ unreservedWord
     | INSERT
     | INSTEAD
     | INVOKER
+    | INTERVAL
     | ISOLATION
     | KEY
     | LABEL
@@ -260,6 +261,7 @@ unreservedWord
     | LOCK
     | LOCKED
     | LOGGED
+    | MAIN
     | MAPPING
     | MATCH
     | MATERIALIZED
@@ -270,8 +272,10 @@ unreservedWord
     | MODE
     | MONTH
     | MOVE
+    | MOD
     | NAME
     | NAMES
+    | NATIONAL
     | NEW
     | NEXT
     | NFC
@@ -304,6 +308,8 @@ unreservedWord
     | PARTITION
     | PASSING
     | PASSWORD
+    | PATH
+    | PLAIN
     | PLANS
     | POLICY
     | PRECEDING
@@ -394,6 +400,8 @@ unreservedWord
     | TRUSTED
     | TYPE
     | TYPES
+    | TIME
+    | TIMESTAMP
     | UESCAPE
     | UNBOUNDED
     | UNCOMMITTED
@@ -423,6 +431,9 @@ unreservedWord
     | YEAR
     | YES
     | ZONE
+    | JSON
+    | PARAM
+    | TABLE
     ;
 
 typeFuncNameKeyword
@@ -452,7 +463,7 @@ typeFuncNameKeyword
     ;
 
 schemaName
-    : identifier
+    : (owner DOT_)? identifier
     ;
 
 tableName
@@ -487,6 +498,10 @@ indexName
     : identifier
     ;
 
+constraintName
+    : identifier
+    ;
+
 alias
     : identifier
     ;
@@ -495,14 +510,34 @@ primaryKey
     : PRIMARY? KEY
     ;
 
-logicalOperator
-    : OR | OR_ | AND | AND_
+andOperator
+    : AND | AND_
+    ;
+
+orOperator
+    : OR | OR_
     ;
 
 comparisonOperator
     : EQ_ | GTE_ | GT_ | LTE_ | LT_ | NEQ_
     ;
 
+patternMatchingOperator
+    : LIKE
+    | TILDE_TILDE_
+    | NOT LIKE
+    | NOT_TILDE_TILDE_
+    | ILIKE
+    | ILIKE_
+    | NOT ILIKE
+    | NOT_ILIKE_
+    | SIMILAR TO
+    | NOT SIMILAR TO
+    | TILDE_
+    | NOT_ TILDE_
+    | TILDE_ ASTERISK_
+    | NOT_ TILDE_ ASTERISK_
+    ;
 
 cursorName
     : name
@@ -521,23 +556,15 @@ aExpr
     | aExpr SLASH_ aExpr
     | aExpr MOD_ aExpr
     | aExpr CARET_ aExpr
-    | aExpr comparisonOperator aExpr
+    | aExpr AMPERSAND_ aExpr
+    | aExpr VERTICAL_BAR_ aExpr
     | aExpr qualOp aExpr
     | qualOp aExpr
     | aExpr qualOp
+    | aExpr comparisonOperator aExpr
     | NOT aExpr
-    | aExpr LIKE aExpr
-    | aExpr LIKE aExpr ESCAPE aExpr
-    | aExpr NOT LIKE aExpr
-    | aExpr NOT LIKE aExpr ESCAPE aExpr
-    | aExpr ILIKE aExpr
-    | aExpr ILIKE aExpr ESCAPE aExpr
-    | aExpr NOT ILIKE aExpr
-    | aExpr NOT ILIKE aExpr ESCAPE aExpr
-    | aExpr SIMILAR TO aExpr
-    | aExpr SIMILAR TO aExpr ESCAPE aExpr
-    | aExpr NOT SIMILAR TO aExpr
-    | aExpr NOT SIMILAR TO aExpr ESCAPE aExpr
+    | aExpr patternMatchingOperator aExpr
+    | aExpr patternMatchingOperator aExpr ESCAPE aExpr
     | aExpr IS NULL
     | aExpr ISNULL
     | aExpr IS NOT NULL
@@ -568,7 +595,8 @@ aExpr
     | aExpr IS unicodeNormalForm NORMALIZED
     | aExpr IS NOT NORMALIZED
     | aExpr IS NOT unicodeNormalForm NORMALIZED
-    | aExpr logicalOperator aExpr
+    | aExpr andOperator aExpr
+    | aExpr orOperator aExpr
     | DEFAULT
     ;
 
@@ -656,9 +684,7 @@ columnref
     ;
 
 qualOp
-    : mathOperator
-    | TILDE_TILDE_
-    | NOT_TILDE_TILDE_
+    : jsonOperator
     | OPERATOR LP_ anyOperator RP_
     ;
 
@@ -667,8 +693,8 @@ subqueryOp
     | OPERATOR LP_ anyOperator RP_
     | LIKE
     | NOT LIKE
-    | ILIKE
-    | NOT ILIKE
+    | TILDE_
+    | NOT_ TILDE_
     ;
 
 allOp
@@ -676,7 +702,50 @@ allOp
     ;
 
 op
-    : (AND_ | OR_ | NOT_ | TILDE_ | VERTICAL_BAR_ | AMPERSAND_ | SIGNED_LEFT_SHIFT_ | SIGNED_RIGHT_SHIFT_ | CARET_ | MOD_ | COLON_ | PLUS_ | MINUS_ | ASTERISK_ |   SLASH_ | BACKSLASH_ |   DOT_ | DOT_ASTERISK_ |  SAFE_EQ_ |   DEQ_ | EQ_ | CQ_ | NEQ_ | GT_ | GTE_ | LT_ | LTE_ | POUND_ | LP_ | RP_ | LBE_ | RBE_ | LBT_ | RBT_ | COMMA_ | DQ_ | SQ_ | BQ_ | QUESTION_ |   AT_ | SEMI_ | TILDE_TILDE_ |  NOT_TILDE_TILDE_ | TYPE_CAST_ )+
+    : (AND_
+    | OR_
+    | NOT_
+    | TILDE_
+    | VERTICAL_BAR_
+    | AMPERSAND_
+    | SIGNED_LEFT_SHIFT_
+    | SIGNED_RIGHT_SHIFT_
+    | CARET_
+    | MOD_
+    | COLON_
+    | PLUS_
+    | MINUS_
+    | ASTERISK_
+    | SLASH_
+    | BACKSLASH_
+    | DOT_
+    | DOT_ASTERISK_
+    | SAFE_EQ_
+    | DEQ_
+    | EQ_
+    | CQ_
+    | NEQ_
+    | GT_
+    | GTE_
+    | LT_
+    | LTE_
+    | POUND_
+    | LP_
+    | RP_
+    | LBE_
+    | RBE_
+    | LBT_
+    | RBT_
+    | COMMA_
+    | DQ_
+    | SQ_
+    | BQ_
+    | QUESTION_
+    | AT_
+    | SEMI_
+    | TILDE_TILDE_
+    | NOT_TILDE_TILDE_
+    | TYPE_CAST_ )+
     ;
 
 mathOperator
@@ -692,6 +761,23 @@ mathOperator
     | LTE_
     | GTE_
     | NEQ_
+    ;
+
+jsonOperator
+    : JSON_EXTRACT_ # jsonExtract
+    | JSON_EXTRACT_TEXT_ # jsonExtractText
+    | JSON_PATH_EXTRACT_ # jsonPathExtract
+    | JSON_PATH_EXTRACT_TEXT_ # jsonPathExtractText
+    | JSONB_CONTAIN_RIGHT_ # jsonbContainRight
+    | JSONB_CONTAIN_LEFT_ # jsonbContainLeft
+    | QUESTION_ # jsonbContainTopKey
+    | QUESTION_ VERTICAL_BAR_ # jsonbContainAnyTopKey
+    | JSONB_CONTAIN_ALL_TOP_KEY_ # jsonbContainAllTopKey
+    | OR_ # jsonbConcat
+    | MINUS_ # jsonbDelete
+    | JSONB_PATH_DELETE_ # jsonbPathDelete
+    | JSONB_PATH_CONTAIN_ANY_VALUE_ # jsonbPathContainAnyValue
+    | JSONB_PATH_PREDICATE_CHECK_ # jsonbPathPredicateCheck
     ;
 
 qualAllOp
@@ -744,7 +830,7 @@ explicitRow
 
 implicitRow
     : LP_ exprList COMMA_ aExpr RP_
-	;
+    ;
 
 subType
     : ANY | SOME | ALL
@@ -795,6 +881,7 @@ funcName
 aexprConst
     : NUMBER_
     | STRING_
+    | BEGIN_DOLLAR_STRING_CONSTANT DOLLAR_TEXT* END_DOLLAR_STRING_CONSTANT
     | funcName STRING_
     | funcName LP_ funcArgList sortClause? RP_ STRING_
     | TRUE
@@ -807,6 +894,10 @@ qualifiedName
     ;
 
 colId
+    : identifier
+    ;
+
+channelName
     : identifier
     ;
 
@@ -933,14 +1024,14 @@ typeName
     ;
 
 simpleTypeName
-	: genericType
-	| numeric
-	| bit
-	| character
-	| constDatetime
-	| constInterval optInterval
-	| constInterval LP_ NUMBER_ RP_
-	;
+    : genericType
+    | numeric
+    | bit
+    | character
+    | constDatetime
+    | constInterval optInterval
+    | constInterval LP_ NUMBER_ RP_
+    ;
 
 exprList
     : aExpr
@@ -971,7 +1062,7 @@ typeModifiers
 
 numeric
     : INT | INTEGER | SMALLINT | BIGINT| REAL | FLOAT optFloat | DOUBLE PRECISION | DECIMAL typeModifiers? | DEC typeModifiers? | NUMERIC typeModifiers? | BOOLEAN | FLOAT8 | FLOAT4 | INT2 | INT4 | INT8
-	;
+    ;
 
 constDatetime
     : TIMESTAMP LP_ NUMBER_ RP_ timezone?
@@ -1005,7 +1096,7 @@ characterClause
     | NATIONAL CHARACTER VARYING?
     | NATIONAL CHAR VARYING?
     | NCHAR VARYING?
-	;
+    ;
 
 optFloat
     : LP_ NUMBER_ RP_ |
@@ -1173,7 +1264,7 @@ tableFuncElement
     ;
 
 collateClause
-    : COLLATE anyName
+    : COLLATE EQ_? anyName
     ;
 
 anyName
@@ -1283,14 +1374,14 @@ reloptions
 
 reloptionList
     : reloptionElem (COMMA_ reloptionElem)*
-	;
+    ;
 
 reloptionElem
     : alias EQ_ defArg
     | alias
     | alias DOT_ alias EQ_ defArg
     | alias DOT_ alias
-	;
+    ;
 
 defArg
     : funcType
@@ -1299,6 +1390,7 @@ defArg
     | NUMBER_
     | STRING_
     | NONE
+    | funcName (LP_ funcArgsList RP_ | LP_ RP_)
     ;
 
 funcType
@@ -1308,17 +1400,17 @@ funcType
     ;
 
 selectWithParens
-    : 'Default does not match anything'
+    : DEFAULT_DOES_NOT_MATCH_ANYTHING
     ;
 
 dataType
-    : dataTypeName dataTypeLength? characterSet_? collateClause_? | dataTypeName LP_ STRING_ (COMMA_ STRING_)* RP_ characterSet_? collateClause_?
+    : dataTypeName dataTypeLength? characterSet? collateClause? | dataTypeName LP_ STRING_ (COMMA_ STRING_)* RP_ characterSet? collateClause?
     ;
 
 dataTypeName
     : INT | INT2 | INT4 | INT8 | SMALLINT | INTEGER | BIGINT | DECIMAL | NUMERIC | REAL | FLOAT | FLOAT4 | FLOAT8 | DOUBLE PRECISION | SMALLSERIAL | SERIAL | BIGSERIAL
     | MONEY | VARCHAR | CHARACTER | CHAR | TEXT | NAME | BYTEA | TIMESTAMP | DATE | TIME | INTERVAL | BOOLEAN | ENUM | POINT
-    | LINE | LSEG | BOX | PATH | POLYGON | CIRCLE | CIDR | INET | MACADDR | MACADDR8 | BIT | VARBIT | TSVECTOR | TSQUERY | UUID | XML
+    | LINE | LSEG | BOX | PATH | POLYGON | CIRCLE | CIDR | INET | MACADDR | MACADDR8 | BIT | VARBIT | TSVECTOR | TSQUERY | XML
     | JSON | INT4RANGE | INT8RANGE | NUMRANGE | TSRANGE | TSTZRANGE | DATERANGE | ARRAY | identifier | constDatetime | typeName
     ;
 
@@ -1326,20 +1418,16 @@ dataTypeLength
     : LP_ NUMBER_ (COMMA_ NUMBER_)? RP_
     ;
 
-characterSet_
-    : (CHARACTER | CHAR) SET EQ_? ignoredIdentifier_
+characterSet
+    : (CHARACTER | CHAR) SET EQ_? ignoredIdentifier
     ;
 
-collateClause_
-    : COLLATE EQ_? (STRING_ | ignoredIdentifier_)
-    ;
-
-ignoredIdentifier_
+ignoredIdentifier
     : identifier (DOT_ identifier)?
     ;
 
-ignoredIdentifiers_
-    : ignoredIdentifier_ (COMMA_ ignoredIdentifier_)*
+ignoredIdentifiers
+    : ignoredIdentifier (COMMA_ ignoredIdentifier)*
     ;
 
 signedIconst
@@ -1425,6 +1513,8 @@ roleSpec
     | nonReservedWord
     | CURRENT_USER
     | SESSION_USER
+    | CURRENT_ROLE
+    | PUBLIC
     ;
 
 varName
@@ -1508,14 +1598,11 @@ seqOptList
 seqOptElem
     : AS simpleTypeName
     | CACHE numericOnly
-    | CYCLE
-    | NO CYCLE
+    | NO? CYCLE
     | INCREMENT BY? numericOnly
-    | MAXVALUE numericOnly
-    | MINVALUE numericOnly
-    | NO MAXVALUE
-    | NO MINVALUE
-    | OWNED BY anyName
+    | (MAXVALUE | MINVALUE) numericOnly
+    | NO (MAXVALUE | MINVALUE)
+    | OWNED BY (anyName | NONE)
     | SEQUENCE NAME anyName
     | START WITH? numericOnly
     | RESTART
@@ -1622,10 +1709,7 @@ replicaIdentity
     ;
 
 operArgtypes
-    : LP_ typeName RP_
-    | LP_ typeName COMMA_ typeName RP_
-    | LP_ NONE COMMA_ typeName RP_
-    | LP_ typeName COMMA_ NONE RP_
+    : LP_ (typeName | NONE) COMMA_ typeName RP_
     ;
 
 funcArg
@@ -1728,10 +1812,8 @@ relationExprList
     ;
 
 relationExpr
-    : qualifiedName
-    | qualifiedName ASTERISK_
-    | ONLY qualifiedName
-    | ONLY LP_ qualifiedName RP_
+    : qualifiedName (ASTERISK_)?
+    | ONLY LP_? qualifiedName RP_?
     ;
 
 commonFuncOptItem
@@ -1760,7 +1842,7 @@ functionSetResetClause
     ;
 
 rowSecurityCmd
-    : ALL | SELECT | INSERT	| UPDATE | DELETE
+    : ALL | SELECT | INSERT    | UPDATE | DELETE
     ;
 
 event
@@ -1771,3 +1853,14 @@ typeNameList
     : typeName (COMMA_ typeName)*
     ;
 
+ifNotExists
+    : IF NOT EXISTS
+    ;
+
+ifExists
+    : IF EXISTS
+    ;
+
+booleanValue
+    : TRUE | ON | FALSE | OFF | NUMBER_
+    ;

@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.example.algorithm;
 
 import com.google.common.collect.Range;
+import lombok.Getter;
 import org.apache.shardingsphere.sharding.api.sharding.standard.PreciseShardingValue;
 import org.apache.shardingsphere.sharding.api.sharding.standard.RangeShardingValue;
 import org.apache.shardingsphere.sharding.api.sharding.standard.StandardShardingAlgorithm;
@@ -27,12 +28,14 @@ import java.util.LinkedHashSet;
 import java.util.Properties;
 import java.util.Set;
 
+@Getter
 public final class StandardModuloShardingDatabaseAlgorithm implements StandardShardingAlgorithm<Integer> {
     
-    private Properties props = new Properties();
+    private Properties props;
     
     @Override
-    public void init() {
+    public void init(final Properties props) {
+        this.props = props;
     }
     
     @Override
@@ -42,7 +45,7 @@ public final class StandardModuloShardingDatabaseAlgorithm implements StandardSh
                 return each;
             }
         }
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("");
     }
     
     @Override
@@ -63,19 +66,9 @@ public final class StandardModuloShardingDatabaseAlgorithm implements StandardSh
         } else if (Range.closed(1, 10).encloses(shardingValueRange.getValueRange())) {
             result.addAll(databaseNames);
         } else {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("");
         }
         return result;
-    }
-    
-    @Override
-    public Properties getProps() {
-        return props;
-    }
-    
-    @Override
-    public void setProps(final Properties props) {
-        this.props = props;
     }
     
     @Override

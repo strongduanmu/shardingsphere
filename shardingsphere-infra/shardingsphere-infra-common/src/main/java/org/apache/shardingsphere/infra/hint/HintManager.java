@@ -18,7 +18,7 @@
 package org.apache.shardingsphere.infra.hint;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -34,18 +34,18 @@ public final class HintManager implements AutoCloseable {
     
     private static final ThreadLocal<HintManager> HINT_MANAGER_HOLDER = new ThreadLocal<>();
     
-    private final Multimap<String, Comparable<?>> databaseShardingValues = HashMultimap.create();
+    private final Multimap<String, Comparable<?>> databaseShardingValues = ArrayListMultimap.create();
     
-    private final Multimap<String, Comparable<?>> tableShardingValues = HashMultimap.create();
+    private final Multimap<String, Comparable<?>> tableShardingValues = ArrayListMultimap.create();
     
     private boolean databaseShardingOnly;
     
-    private boolean masterRouteOnly;
+    private boolean writeRouteOnly;
     
     /**
      * Get a new instance for {@code HintManager}.
      *
-     * @return  {@code HintManager} instance
+     * @return {@code HintManager} instance
      */
     public static HintManager getInstance() {
         Preconditions.checkState(null == HINT_MANAGER_HOLDER.get(), "Hint has previous value, please clear first.");
@@ -139,26 +139,51 @@ public final class HintManager implements AutoCloseable {
     }
     
     /**
-     * Set database operation force route to master database only.
+     * Set database operation force route to write database only.
      */
-    public void setMasterRouteOnly() {
-        masterRouteOnly = true;
+    public void setWriteRouteOnly() {
+        writeRouteOnly = true;
     }
     
     /**
-     * Judge whether route to master database only or not.
+     * Set database routing to be automatic.
+     */
+    public void setReadwriteSplittingAuto() {
+        writeRouteOnly = false;
+    }
+    
+    /**
+     * Judge whether route to write database only or not.
      *
-     * @return route to master database only or not
+     * @return route to write database only or not
      */
-    public static boolean isMasterRouteOnly() {
-        return null != HINT_MANAGER_HOLDER.get() && HINT_MANAGER_HOLDER.get().masterRouteOnly;
+    public static boolean isWriteRouteOnly() {
+        return null != HINT_MANAGER_HOLDER.get() && HINT_MANAGER_HOLDER.get().writeRouteOnly;
     }
     
     /**
-     * Clear threadlocal for hint manager.
+     * Clear thread local for hint manager.
      */
     public static void clear() {
         HINT_MANAGER_HOLDER.remove();
+    }
+    
+    /**
+     * Clear sharding values.
+     */
+    public void clearShardingValues() {
+        databaseShardingValues.clear();
+        tableShardingValues.clear();
+        databaseShardingOnly = false;
+    }
+    
+    /**
+     * Judge whether hint manager instantiated or not.
+     *
+     * @return whether hint manager instantiated or not
+     */
+    public static boolean isInstantiated() {
+        return null != HINT_MANAGER_HOLDER.get();
     }
     
     @Override

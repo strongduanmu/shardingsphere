@@ -17,12 +17,13 @@
 
 package org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dcl;
 
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dcl.DropUserStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dcl.DCLStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.MySQLStatement;
 
 /**
  * MySQL drop user statement.
  */
-public final class MySQLDropUserStatement extends DropUserStatement implements DCLStatement, MySQLStatement {
+@ToString(callSuper = true)
+public final class MySQLDropUserStatement extends DropUserStatement implements MySQLStatement {
 }

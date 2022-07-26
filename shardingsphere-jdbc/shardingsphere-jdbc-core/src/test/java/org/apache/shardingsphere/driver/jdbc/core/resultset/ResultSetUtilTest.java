@@ -20,39 +20,61 @@ package org.apache.shardingsphere.driver.jdbc.core.resultset;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.common.primitives.Shorts;
+import lombok.SneakyThrows;
 import org.apache.shardingsphere.infra.exception.ShardingSphereException;
 import org.junit.Test;
 
 import java.math.BigDecimal;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Month;
 import java.util.Date;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public final class ResultSetUtilTest {
+    
     @Test
-    public void assertConvertValue() {
+    public void assertConvertValue() throws SQLException {
         Object object = new Object();
         assertThat(ResultSetUtil.convertValue(object, String.class), is(object.toString()));
-        assertThat(ResultSetUtil.convertValue("1", int.class), is("1"));
-    }
-
-    @Test
-    public void assertConvertLocalDateTime() {
-        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-        LocalDateTime dateTime = (LocalDateTime) ResultSetUtil.convertValue(timestamp, LocalDateTime.class);
-        assertNotNull(dateTime);
-        assertThat(dateTime.toString(), is(timestamp.toLocalDateTime().toString()));
     }
     
     @Test
-    public void assertConvertNumberValueSuccess() {
+    public void assertConvertLocalDateTimeValue() throws SQLException {
+        LocalDateTime localDateTime = LocalDateTime.of(2021, Month.DECEMBER, 23, 19, 30);
+        assertThat(ResultSetUtil.convertValue(localDateTime, Timestamp.class), is(Timestamp.valueOf(localDateTime)));
+    }
+    
+    @Test
+    public void assertConvertTimestampValue() throws SQLException {
+        LocalDateTime localDateTime = LocalDateTime.of(2021, Month.DECEMBER, 23, 19, 30);
+        Timestamp timestamp = Timestamp.valueOf(localDateTime);
+        assertThat(ResultSetUtil.convertValue(timestamp, LocalDateTime.class), is(localDateTime));
+        assertThat(ResultSetUtil.convertValue(timestamp, LocalDate.class), is(LocalDate.of(2021, Month.DECEMBER, 23)));
+        assertThat(ResultSetUtil.convertValue(timestamp, LocalTime.class), is(LocalTime.of(19, 30)));
+    }
+    
+    @Test
+    public void assertConvertBooleanValue() throws SQLException {
+        assertFalse((boolean) ResultSetUtil.convertValue("-2", boolean.class));
+        assertTrue((boolean) ResultSetUtil.convertValue("1", boolean.class));
+    }
+    
+    @Test
+    public void assertConvertNumberValueSuccess() throws SQLException {
         assertThat(ResultSetUtil.convertValue("1", String.class), is("1"));
-        assertThat(ResultSetUtil.convertValue(1, boolean.class), is(true));
+        assertTrue((boolean) ResultSetUtil.convertValue(1, boolean.class));
         assertThat(ResultSetUtil.convertValue((byte) 1, byte.class), is((byte) 1));
         assertThat(ResultSetUtil.convertValue((short) 1, short.class), is((short) 1));
         assertThat(ResultSetUtil.convertValue(new BigDecimal("1"), int.class), is(1));
@@ -64,16 +86,21 @@ public final class ResultSetUtilTest {
         assertThat(ResultSetUtil.convertValue(new Date(0L), Date.class), is(new Date(0L)));
         assertThat(ResultSetUtil.convertValue((short) 1, Object.class), is(Short.valueOf("1")));
         assertThat(ResultSetUtil.convertValue((short) 1, String.class), is("1"));
+        assertThat(ResultSetUtil.convertValue(1, Byte.class), is(Byte.valueOf("1")));
+        assertThat(ResultSetUtil.convertValue(1, Short.class), is(Short.valueOf("1")));
+        assertThat(ResultSetUtil.convertValue(1, Long.class), is(Long.valueOf("1")));
+        assertThat(ResultSetUtil.convertValue(1, Double.class), is(Double.valueOf("1")));
+        assertThat(ResultSetUtil.convertValue(1, Float.class), is(Float.valueOf("1")));
     }
     
     @Test(expected = ShardingSphereException.class)
-    public void assertConvertNumberValueError() {
+    public void assertConvertNumberValueError() throws SQLException {
         ResultSetUtil.convertValue(1, Date.class);
     }
     
     @Test
-    public void assertConvertNullValue() {
-        assertThat(ResultSetUtil.convertValue(null, boolean.class), is(false));
+    public void assertConvertNullValue() throws SQLException {
+        assertFalse((boolean) ResultSetUtil.convertValue(null, boolean.class));
         assertThat(ResultSetUtil.convertValue(null, byte.class), is((byte) 0));
         assertThat(ResultSetUtil.convertValue(null, short.class), is((short) 0));
         assertThat(ResultSetUtil.convertValue(null, int.class), is(0));
@@ -86,8 +113,13 @@ public final class ResultSetUtilTest {
         assertThat(ResultSetUtil.convertValue(null, Date.class), is((Object) null));
     }
     
+    @Test(expected = SQLException.class)
+    public void assertConvertNullType() throws SQLException {
+        ResultSetUtil.convertValue(null, null);
+    }
+    
     @Test
-    public void assertConvertDateValueSuccess() {
+    public void assertConvertDateValueSuccess() throws SQLException {
         Date now = new Date();
         assertThat(ResultSetUtil.convertValue(now, Date.class), is(now));
         assertThat(ResultSetUtil.convertValue(now, java.sql.Date.class), is(now));
@@ -97,10 +129,10 @@ public final class ResultSetUtilTest {
     }
     
     @Test
-    public void assertConvertByteArrayValueSuccess() {
+    public void assertConvertByteArrayValueSuccess() throws SQLException {
         byte[] bytesValue = {};
         assertThat(ResultSetUtil.convertValue(bytesValue, byte.class), is(bytesValue));
-        assertThat(ResultSetUtil.convertValue(new byte[] {1}, byte.class), is((byte) 1));
+        assertThat(ResultSetUtil.convertValue(new byte[]{1}, byte.class), is((byte) 1));
         assertThat(ResultSetUtil.convertValue(Shorts.toByteArray((short) 1), short.class), is((short) 1));
         assertThat(ResultSetUtil.convertValue(Ints.toByteArray(1), int.class), is(1));
         assertThat(ResultSetUtil.convertValue(Longs.toByteArray(1L), long.class), is(1L));
@@ -109,8 +141,45 @@ public final class ResultSetUtilTest {
         assertThat(ResultSetUtil.convertValue(Longs.toByteArray(1L), BigDecimal.class), is(new BigDecimal("1")));
     }
     
+    @SneakyThrows(MalformedURLException.class)
+    @Test
+    public void assertConvertURLValue() throws SQLException {
+        String urlString = "http://apache.org";
+        URL url = (URL) ResultSetUtil.convertValue(urlString, URL.class);
+        assertThat(url, is(new URL(urlString)));
+    }
+    
     @Test(expected = ShardingSphereException.class)
-    public void assertConvertDateValueError() {
+    public void assertConvertURLValueError() throws SQLException {
+        String urlString = "no-exist:apache.org";
+        ResultSetUtil.convertValue(urlString, URL.class);
+    }
+    
+    @Test
+    public void assertConvertBigDecimalValue() {
+        BigDecimal bigDecimal = (BigDecimal) ResultSetUtil.convertBigDecimalValue("12", false, 0);
+        assertThat(bigDecimal, is(BigDecimal.valueOf(12)));
+    }
+    
+    @Test
+    public void assertConvertBigDecimalValueNull() {
+        BigDecimal bigDecimal = (BigDecimal) ResultSetUtil.convertBigDecimalValue(null, false, 0);
+        assertNull(bigDecimal);
+    }
+    
+    @Test
+    public void assertConvertBigDecimalValueWithScale() {
+        BigDecimal bigDecimal = (BigDecimal) ResultSetUtil.convertBigDecimalValue("12.243", true, 2);
+        assertThat(bigDecimal, is(BigDecimal.valueOf(12.24)));
+    }
+    
+    @Test(expected = ShardingSphereException.class)
+    public void assertConvertBigDecimalValueError() {
+        ResultSetUtil.convertBigDecimalValue(new Date(), true, 2);
+    }
+    
+    @Test(expected = ShardingSphereException.class)
+    public void assertConvertDateValueError() throws SQLException {
         ResultSetUtil.convertValue(new Date(), int.class);
     }
 }

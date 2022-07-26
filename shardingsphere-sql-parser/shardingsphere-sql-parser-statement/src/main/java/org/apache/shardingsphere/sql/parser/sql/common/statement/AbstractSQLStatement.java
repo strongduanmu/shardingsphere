@@ -19,13 +19,24 @@ package org.apache.shardingsphere.sql.parser.sql.common.statement;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.CommentSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.ParameterMarkerSegment;
+
+import java.util.Collection;
+import java.util.LinkedList;
 
 /**
  * SQL statement abstract class.
  */
 @Getter
-@Setter
+@ToString
 public abstract class AbstractSQLStatement implements SQLStatement {
     
+    @Setter
     private int parameterCount;
+    
+    private final Collection<ParameterMarkerSegment> parameterMarkerSegments = new LinkedList<>();
+    
+    private final Collection<CommentSegment> commentSegments = new LinkedList<>();
 }

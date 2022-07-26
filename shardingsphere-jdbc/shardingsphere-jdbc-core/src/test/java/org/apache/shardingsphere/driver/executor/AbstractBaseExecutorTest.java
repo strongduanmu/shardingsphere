@@ -19,101 +19,98 @@ package org.apache.shardingsphere.driver.executor;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import org.apache.shardingsphere.driver.jdbc.context.JDBCContext;
 import org.apache.shardingsphere.driver.jdbc.core.connection.ShardingSphereConnection;
-import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
-import org.apache.shardingsphere.infra.config.properties.ConfigurationPropertyKey;
-import org.apache.shardingsphere.infra.context.SchemaContext;
-import org.apache.shardingsphere.infra.context.SchemaContexts;
-import org.apache.shardingsphere.infra.context.impl.StandardSchemaContexts;
-import org.apache.shardingsphere.infra.context.runtime.RuntimeContext;
-import org.apache.shardingsphere.infra.context.schema.ShardingSphereSchema;
-import org.apache.shardingsphere.infra.database.type.DatabaseTypes;
-import org.apache.shardingsphere.infra.executor.kernel.ExecutorKernel;
-import org.apache.shardingsphere.infra.executor.sql.resourced.jdbc.executor.ExecutorExceptionHandler;
+import org.apache.shardingsphere.infra.database.DefaultDatabase;
+import org.apache.shardingsphere.infra.database.type.DatabaseTypeFactory;
+import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
+import org.apache.shardingsphere.infra.executor.sql.execute.engine.SQLExecutorExceptionHandler;
+import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
+import org.apache.shardingsphere.mode.manager.ContextManager;
+import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
-import org.apache.shardingsphere.sql.parser.binder.segment.table.TablesContext;
-import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.transaction.ShardingTransactionManagerEngine;
-import org.apache.shardingsphere.transaction.context.TransactionContexts;
+import org.apache.shardingsphere.traffic.rule.TrafficRule;
+import org.apache.shardingsphere.traffic.rule.builder.DefaultTrafficRuleConfigurationBuilder;
+import org.apache.shardingsphere.transaction.ShardingSphereTransactionManagerEngine;
 import org.apache.shardingsphere.transaction.core.TransactionType;
+import org.apache.shardingsphere.transaction.core.TransactionTypeHolder;
+import org.apache.shardingsphere.transaction.rule.TransactionRule;
 import org.junit.After;
 import org.junit.Before;
-import org.mockito.MockitoAnnotations;
+import org.junit.runner.RunWith;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 @Getter(AccessLevel.PROTECTED)
 public abstract class AbstractBaseExecutorTest {
     
-    private ExecutorKernel executorKernel;
+    private ExecutorEngine executorEngine;
     
     private ShardingSphereConnection connection;
     
     @Before
     public void setUp() throws SQLException {
-        MockitoAnnotations.initMocks(this);
-        ExecutorExceptionHandler.setExceptionThrown(false);
-        executorKernel = new ExecutorKernel(Runtime.getRuntime().availableProcessors());
-        setConnection();
+        SQLExecutorExceptionHandler.setExceptionThrown(true);
+        executorEngine = ExecutorEngine.createExecutorEngineWithCPU();
+        TransactionTypeHolder.set(TransactionType.LOCAL);
+        connection = new ShardingSphereConnection(DefaultDatabase.LOGIC_NAME, mockContextManager(), mock(JDBCContext.class));
     }
     
-    private void setConnection() throws SQLException {
-        SchemaContexts schemaContexts = mock(StandardSchemaContexts.class);
-        SchemaContext schemaContext = mock(SchemaContext.class);
-        RuntimeContext runtimeContext = mock(RuntimeContext.class);
-        ShardingSphereSchema schema = mock(ShardingSphereSchema.class);
-        when(schemaContexts.getDefaultSchemaContext()).thenReturn(schemaContext);
-        when(schemaContext.getRuntimeContext()).thenReturn(runtimeContext);
-        when(runtimeContext.getExecutorKernel()).thenReturn(executorKernel);
-        when(schemaContexts.getProps()).thenReturn(getProperties());
-        when(schemaContext.getSchema()).thenReturn(schema);
-        when(schemaContexts.getDatabaseType()).thenReturn(DatabaseTypes.getActualDatabaseType("H2"));
-        ShardingRule shardingRule = getShardingRule();
-        when(schema.getRules()).thenReturn(Collections.singletonList(shardingRule));
-        TransactionContexts transactionContexts = mock(TransactionContexts.class);
-        when(transactionContexts.getDefaultTransactionManagerEngine()).thenReturn(new ShardingTransactionManagerEngine());
-        DataSource dataSource = mock(DataSource.class);
-        when(dataSource.getConnection()).thenReturn(mock(Connection.class));
-        Map<String, DataSource> dataSourceSourceMap = new LinkedHashMap<>(2, 1);
-        dataSourceSourceMap.put("ds_0", dataSource);
-        dataSourceSourceMap.put("ds_1", dataSource);
-        connection = new ShardingSphereConnection(dataSourceSourceMap, schemaContexts, transactionContexts, TransactionType.LOCAL);
+    private ContextManager mockContextManager() {
+        ContextManager result = mock(ContextManager.class, RETURNS_DEEP_STUBS);
+        MetaDataContexts metaDataContexts = mockMetaDataContexts();
+        when(result.getMetaDataContexts()).thenReturn(metaDataContexts);
+        when(result.getDataSourceMap(DefaultDatabase.LOGIC_NAME)).thenReturn(mockDataSourceMap());
+        return result;
     }
     
-    private ShardingRule getShardingRule() {
+    private Map<String, DataSource> mockDataSourceMap() {
+        Map<String, DataSource> result = new LinkedHashMap<>(2, 1);
+        DataSource dataSource = mock(DataSource.class, RETURNS_DEEP_STUBS);
+        result.put("ds_0", dataSource);
+        result.put("ds_1", dataSource);
+        return result;
+    }
+    
+    private MetaDataContexts mockMetaDataContexts() {
+        MetaDataContexts result = mock(MetaDataContexts.class, RETURNS_DEEP_STUBS);
+        ShardingSphereRuleMetaData globalRuleMetaData = mock(ShardingSphereRuleMetaData.class);
+        when(result.getMetaData().getGlobalRuleMetaData()).thenReturn(globalRuleMetaData);
+        TransactionRule transactionRule = mockTransactionRule();
+        when(globalRuleMetaData.getSingleRule(TransactionRule.class)).thenReturn(transactionRule);
+        when(globalRuleMetaData.getSingleRule(TrafficRule.class)).thenReturn(new TrafficRule(new DefaultTrafficRuleConfigurationBuilder().build()));
+        when(result.getMetaData().getDatabase(DefaultDatabase.LOGIC_NAME).getResource().getDatabaseType()).thenReturn(DatabaseTypeFactory.getInstance("H2"));
+        ShardingRule shardingRule = mockShardingRule();
+        when(result.getMetaData().getDatabase(DefaultDatabase.LOGIC_NAME).getRuleMetaData().getRules()).thenReturn(Collections.singleton(shardingRule));
+        return result;
+    }
+    
+    private TransactionRule mockTransactionRule() {
+        TransactionRule result = mock(TransactionRule.class);
+        when(result.getResource()).thenReturn(new ShardingSphereTransactionManagerEngine());
+        return result;
+    }
+    
+    private ShardingRule mockShardingRule() {
         ShardingRule result = mock(ShardingRule.class);
-        when(result.findTableRuleByActualTable("table_x")).thenReturn(Optional.empty());
         when(result.isNeedAccumulate(any())).thenReturn(true);
         return result;
     }
     
-    protected final SQLStatementContext<?> getSQLStatementContext() {
-        SQLStatementContext<?> result = mock(SQLStatementContext.class);
-        TablesContext tablesContext = mock(TablesContext.class);
-        when(tablesContext.getTableNames()).thenReturn(Collections.singleton("table_x"));
-        when(result.getTablesContext()).thenReturn(tablesContext);
-        return result;
-    }
-    
-    private ConfigurationProperties getProperties() {
-        Properties props = new Properties();
-        props.setProperty(ConfigurationPropertyKey.MAX_CONNECTIONS_SIZE_PER_QUERY.getKey(), ConfigurationPropertyKey.MAX_CONNECTIONS_SIZE_PER_QUERY.getDefaultValue());
-        return new ConfigurationProperties(props);
-    }
-    
     @After
     public void tearDown() {
-        executorKernel.close();
+        executorEngine.close();
+        TransactionTypeHolder.clear();
     }
 }

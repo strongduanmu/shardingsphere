@@ -25,6 +25,10 @@ import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.infra.exception.ShardingSphereException;
 
 import java.math.BigDecimal;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -41,26 +45,30 @@ public final class ResultSetUtil {
     
     /**
      * Convert value via expected class type.
-     * 
+     *
      * @param value original value
      * @param convertType expected class type
      * @return converted value
+     * @throws SQLException SQL exception
      */
-    public static Object convertValue(final Object value, final Class<?> convertType) {
+    public static Object convertValue(final Object value, final Class<?> convertType) throws SQLException {
+        if (null == convertType) {
+            throw new SQLException("Type cannot be null");
+        }
         if (null == value) {
             return convertNullValue(convertType);
-        } 
+        }
         if (value.getClass() == convertType) {
             return value;
         }
-        if (LocalDateTime.class.equals(convertType)) {
-            return convertLocalDateTimeValue(value);
+        if (value instanceof LocalDateTime) {
+            return convertLocalDateTimeValue(value, convertType);
         }
-        if (LocalDate.class.equals(convertType)) {
-            return convertLocalDateValue(value);
+        if (value instanceof Timestamp) {
+            return convertTimestampValue(value, convertType);
         }
-        if (LocalTime.class.equals(convertType)) {
-            return convertLocalTimeValue(value);
+        if (URL.class.equals(convertType)) {
+            return convertURL(value);
         }
         if (value instanceof Number) {
             return convertNumberValue(value, convertType);
@@ -71,28 +79,79 @@ public final class ResultSetUtil {
         if (value instanceof byte[]) {
             return convertByteArrayValue(value, convertType);
         }
+        if (boolean.class.equals(convertType)) {
+            return convertBooleanValue(value);
+        }
         if (String.class.equals(convertType)) {
             return value.toString();
-        } else {
-            return value;
+        }
+        throw new SQLFeatureNotSupportedException("getObject with type");
+    }
+    
+    private static Object convertURL(final Object value) {
+        String val = value.toString();
+        try {
+            return new URL(val);
+        } catch (final MalformedURLException ex) {
+            throw new ShardingSphereException("Unsupported data type: URL for value %s", val);
         }
     }
-
-    private static Object convertLocalDateTimeValue(final Object value) {
-        Timestamp timestamp = (Timestamp) value;
-        return timestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+    
+    /**
+     * Convert object to BigDecimal.
+     *
+     * @param value current db object
+     * @param needScale need scale
+     * @param scale scale size
+     * @return big decimal
+     */
+    public static Object convertBigDecimalValue(final Object value, final boolean needScale, final int scale) {
+        if (null == value) {
+            return convertNullValue(BigDecimal.class);
+        }
+        if (BigDecimal.class == value.getClass()) {
+            return adjustBigDecimalResult((BigDecimal) value, needScale, scale);
+        }
+        if (value instanceof Number || value instanceof String) {
+            BigDecimal bigDecimal = new BigDecimal(value.toString());
+            return adjustBigDecimalResult(bigDecimal, needScale, scale);
+        }
+        throw new ShardingSphereException("Unsupported data type: BigDecimal for value %s", value);
     }
-
-    private static Object convertLocalDateValue(final Object value) {
-        Timestamp timestamp = (Timestamp) value;
-        return timestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    
+    private static BigDecimal adjustBigDecimalResult(final BigDecimal value, final boolean needScale, final int scale) {
+        if (needScale) {
+            try {
+                return value.setScale(scale);
+            } catch (final ArithmeticException ex) {
+                return value.setScale(scale, BigDecimal.ROUND_HALF_UP);
+            }
+        }
+        return value;
     }
-
-    private static Object convertLocalTimeValue(final Object value) {
-        Timestamp timestamp = (Timestamp) value;
-        return timestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalTime();
+    
+    private static Object convertLocalDateTimeValue(final Object value, final Class<?> convertType) {
+        LocalDateTime localDateTime = (LocalDateTime) value;
+        if (Timestamp.class.equals(convertType)) {
+            return Timestamp.valueOf(localDateTime);
+        }
+        return value;
     }
-
+    
+    private static Object convertTimestampValue(final Object value, final Class<?> convertType) {
+        Timestamp timestamp = (Timestamp) value;
+        if (LocalDateTime.class.equals(convertType)) {
+            return timestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        }
+        if (LocalDate.class.equals(convertType)) {
+            return timestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        }
+        if (LocalTime.class.equals(convertType)) {
+            return timestamp.toInstant().atZone(ZoneId.systemDefault()).toLocalTime();
+        }
+        return value;
+    }
+    
     private static Object convertNullValue(final Class<?> convertType) {
         switch (convertType.getName()) {
             case "boolean":
@@ -118,7 +177,7 @@ public final class ResultSetUtil {
         Number number = (Number) value;
         switch (convertType.getName()) {
             case "boolean":
-                return 0 != number.longValue();
+                return longToBoolean(number.longValue());
             case "byte":
                 return number.byteValue();
             case "short":
@@ -133,12 +192,24 @@ public final class ResultSetUtil {
                 return number.floatValue();
             case "java.math.BigDecimal":
                 return new BigDecimal(number.toString());
+            case "java.lang.Byte":
+                return Byte.valueOf(number.byteValue());
+            case "java.lang.Short":
+                return Short.valueOf(number.shortValue());
+            case "java.lang.Integer":
+                return Integer.valueOf(number.intValue());
+            case "java.lang.Long":
+                return Long.valueOf(number.longValue());
+            case "java.lang.Double":
+                return Double.valueOf(number.doubleValue());
+            case "java.lang.Float":
+                return Float.valueOf(number.floatValue());
             case "java.lang.Object":
                 return value;
             case "java.lang.String":
                 return value.toString();
             default:
-                throw new ShardingSphereException("Unsupported data type: %s", convertType);
+                throw new ShardingSphereException("Unsupported data type: %s for value %s", convertType, value);
         }
     }
     
@@ -154,7 +225,7 @@ public final class ResultSetUtil {
             case "java.lang.String":
                 return date.toString();
             default:
-                throw new ShardingSphereException("Unsupported Date type: %s", convertType);
+                throw new ShardingSphereException("Unsupported date type: %s for value %s", convertType, value);
         }
     }
     
@@ -173,4 +244,22 @@ public final class ResultSetUtil {
                 return value;
         }
     }
+    
+    private static Object convertBooleanValue(final Object value) {
+        if (value instanceof Boolean) {
+            return value;
+        }
+        String stringVal = value.toString();
+        if (stringVal.length() > 0) {
+            int firstChar = Character.toLowerCase(stringVal.charAt(0));
+            return 't' == firstChar || 'y' == firstChar || '1' == firstChar || "-1".equals(stringVal);
+        } else {
+            return false;
+        }
+    }
+    
+    private static Boolean longToBoolean(final long longVal) {
+        return -1 == longVal || longVal > 0;
+    }
+    
 }

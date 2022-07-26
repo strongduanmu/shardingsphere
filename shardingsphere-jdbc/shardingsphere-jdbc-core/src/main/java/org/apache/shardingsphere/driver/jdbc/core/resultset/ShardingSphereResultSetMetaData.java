@@ -19,18 +19,20 @@ package org.apache.shardingsphere.driver.jdbc.core.resultset;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.driver.jdbc.adapter.WrapperAdapter;
-import org.apache.shardingsphere.driver.jdbc.core.constant.SQLExceptionConstant;
-import org.apache.shardingsphere.sql.parser.binder.segment.select.projection.Projection;
-import org.apache.shardingsphere.sql.parser.binder.segment.select.projection.impl.ColumnProjection;
-import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.sql.parser.binder.statement.dml.SelectStatementContext;
-import org.apache.shardingsphere.infra.database.DefaultSchema;
+import org.apache.shardingsphere.driver.jdbc.exception.SQLExceptionErrorCode;
+import org.apache.shardingsphere.infra.binder.segment.select.projection.DerivedColumn;
+import org.apache.shardingsphere.infra.binder.segment.select.projection.Projection;
+import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.AggregationDistinctProjection;
+import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.ColumnProjection;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
+import org.apache.shardingsphere.infra.database.DefaultDatabase;
+import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
-import org.apache.shardingsphere.infra.rule.DataNodeRoutedRule;
+import org.apache.shardingsphere.infra.rule.identifier.type.DataNodeContainedRule;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,18 +44,17 @@ public final class ShardingSphereResultSetMetaData extends WrapperAdapter implem
     
     private final ResultSetMetaData resultSetMetaData;
     
-    private final Collection<ShardingSphereRule> rules;
+    private final ShardingSphereDatabase database;
     
-    private final SQLStatementContext sqlStatementContext;
+    private final SQLStatementContext<?> sqlStatementContext;
     
     @Override
     public int getColumnCount() throws SQLException {
         if (sqlStatementContext instanceof SelectStatementContext) {
-            List<Projection> expandProjections = ((SelectStatementContext) sqlStatementContext).getProjectionsContext().getExpandProjections();
-            if (expandProjections.isEmpty()) {
-                return resultSetMetaData.getColumnCount();
+            if (hasSelectExpandProjections()) {
+                return ((SelectStatementContext) sqlStatementContext).getProjectionsContext().getExpandProjections().size();
             }
-            return expandProjections.size();
+            return resultSetMetaData.getColumnCount();
         }
         return resultSetMetaData.getColumnCount();
     }
@@ -95,32 +96,46 @@ public final class ShardingSphereResultSetMetaData extends WrapperAdapter implem
     
     @Override
     public String getColumnLabel(final int column) throws SQLException {
+        if (hasSelectExpandProjections()) {
+            checkColumnIndex(column);
+            Projection projection = ((SelectStatementContext) sqlStatementContext).getProjectionsContext().getExpandProjections().get(column - 1);
+            if (projection instanceof AggregationDistinctProjection) {
+                return DerivedColumn.isDerivedColumnName(projection.getColumnLabel()) ? projection.getExpression() : projection.getColumnLabel();
+            }
+        }
         return resultSetMetaData.getColumnLabel(column);
     }
     
     @Override
     public String getColumnName(final int column) throws SQLException {
-        if (isHasSelectExpandProjections()) {
-            List<Projection> actualProjections = ((SelectStatementContext) sqlStatementContext).getProjectionsContext().getExpandProjections();
-            if (column > actualProjections.size()) {
-                throw new SQLException(SQLExceptionConstant.COLUMN_INDEX_OUT_OF_RANGE, SQLExceptionConstant.OUT_OF_INDEX_SQL_STATE, 0);
-            }
+        if (hasSelectExpandProjections()) {
+            checkColumnIndex(column);
             Projection projection = ((SelectStatementContext) sqlStatementContext).getProjectionsContext().getExpandProjections().get(column - 1);
             if (projection instanceof ColumnProjection) {
                 return ((ColumnProjection) projection).getName();
+            }
+            if (projection instanceof AggregationDistinctProjection) {
+                return DerivedColumn.isDerivedColumnName(projection.getColumnLabel()) ? projection.getExpression() : projection.getColumnLabel();
             }
         }
         return resultSetMetaData.getColumnName(column);
     }
     
-    private boolean isHasSelectExpandProjections() {
-        return sqlStatementContext instanceof SelectStatementContext
-                && !((SelectStatementContext) sqlStatementContext).getProjectionsContext().getExpandProjections().isEmpty();
+    private boolean hasSelectExpandProjections() {
+        return sqlStatementContext instanceof SelectStatementContext && !((SelectStatementContext) sqlStatementContext).getProjectionsContext().getExpandProjections().isEmpty();
+    }
+    
+    private void checkColumnIndex(final int column) throws SQLException {
+        List<Projection> actualProjections = ((SelectStatementContext) sqlStatementContext).getProjectionsContext().getExpandProjections();
+        if (column > actualProjections.size()) {
+            SQLExceptionErrorCode errorCode = SQLExceptionErrorCode.COLUMN_INDEX_OUT_OF_RANGE;
+            throw new SQLException(errorCode.getErrorMessage(), errorCode.getSqlState(), errorCode.getErrorCode());
+        }
     }
     
     @Override
     public String getSchemaName(final int column) {
-        return DefaultSchema.LOGIC_NAME;
+        return DefaultDatabase.LOGIC_NAME;
     }
     
     @Override
@@ -136,13 +151,13 @@ public final class ShardingSphereResultSetMetaData extends WrapperAdapter implem
     @Override
     public String getTableName(final int column) throws SQLException {
         String actualTableName = resultSetMetaData.getTableName(column);
-        Optional<ShardingSphereRule> rule = rules.stream().filter(each -> each instanceof DataNodeRoutedRule).findFirst();
-        return rule.isPresent() ? ((DataNodeRoutedRule) rule.get()).findLogicTableByActualTable(actualTableName).orElse(actualTableName) : actualTableName;
+        Optional<ShardingSphereRule> rule = database.getRuleMetaData().getRules().stream().filter(each -> each instanceof DataNodeContainedRule).findFirst();
+        return rule.isPresent() ? ((DataNodeContainedRule) rule.get()).findLogicTableByActualTable(actualTableName).orElse(actualTableName) : actualTableName;
     }
     
     @Override
     public String getCatalogName(final int column) {
-        return DefaultSchema.LOGIC_NAME;
+        return DefaultDatabase.LOGIC_NAME;
     }
     
     @Override

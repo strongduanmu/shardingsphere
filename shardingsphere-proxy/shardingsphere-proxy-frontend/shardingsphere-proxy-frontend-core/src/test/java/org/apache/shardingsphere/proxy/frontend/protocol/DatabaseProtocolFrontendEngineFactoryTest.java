@@ -17,10 +17,8 @@
 
 package org.apache.shardingsphere.proxy.frontend.protocol;
 
-import org.apache.shardingsphere.infra.database.type.DatabaseTypes;
 import org.apache.shardingsphere.proxy.frontend.fixture.DatabaseProtocolFrontendEngineFixture;
-import org.apache.shardingsphere.proxy.frontend.fixture.FixtureDatabaseType;
-import org.apache.shardingsphere.proxy.frontend.spi.DatabaseProtocolFrontendEngine;
+import org.apache.shardingsphere.test.fixture.database.type.MockedDatabaseType;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -28,14 +26,8 @@ import static org.junit.Assert.assertThat;
 
 public final class DatabaseProtocolFrontendEngineFactoryTest {
     
-    @Test(expected = UnsupportedOperationException.class)
-    public void assertNewInstanceWhenUnsupported() {
-        DatabaseProtocolFrontendEngineFactory.newInstance(DatabaseTypes.getActualDatabaseType("Oracle"));
-    }
-    
     @Test
-    public void assertNewInstanceWithFixture() {
-        DatabaseProtocolFrontendEngine databaseProtocolFrontendEngine = DatabaseProtocolFrontendEngineFactory.newInstance(new FixtureDatabaseType());
-        assertThat(databaseProtocolFrontendEngine, instanceOf(DatabaseProtocolFrontendEngineFixture.class));
+    public void assertNewInstance() {
+        assertThat(DatabaseProtocolFrontendEngineFactory.newInstance(new MockedDatabaseType()), instanceOf(DatabaseProtocolFrontendEngineFixture.class));
     }
 }

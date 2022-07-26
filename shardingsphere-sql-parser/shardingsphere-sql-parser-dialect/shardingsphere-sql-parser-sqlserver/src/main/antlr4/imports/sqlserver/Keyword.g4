@@ -127,6 +127,10 @@ PROCEDURE
     : P R O C E D U R E
     ;
 
+PROC
+    : P R O C
+    ;
+
 VIEW
     : V I E W
     ;
@@ -430,7 +434,7 @@ MAX
 MIN
     : M I N
     ;
-    
+
 SUM
     : S U M
     ;
@@ -579,3 +583,112 @@ PERCENT
 TIES
     : T I E S
     ;
+
+EXCEPT
+    : E X C E P T
+    ;
+
+INTERSECT
+    : I N T E R S E C T
+    ;
+
+USE
+    : U S E
+    ;
+
+MERGE
+    : M E R G E
+    ;
+
+LOOP
+    : L O O P
+    ;
+
+EXPAND
+    : E X P A N D
+    ;
+
+VIEWS
+    : V I E W S
+    ;
+
+FAST
+    : F A S T
+    ;
+
+FORCE
+    : F O R C E
+    ;
+
+KEEP
+    : K E E P
+    ;
+
+PLAN
+    : P L A N
+    ;
+
+OPTIMIZE
+    : O P T I M I Z E
+    ;
+
+SIMPLE
+    : S I M P L E
+    ;
+
+FORCED
+    : F O R C E D
+    ;
+
+HINT
+    : H I N T
+    ;
+
+READ_ONLY
+    : R E A D UL_ O N L Y
+    ;
+
+DATABASE
+    : D A T A B A S E
+    ;
+
+DECLARE
+    : D E C L A R E
+    ;
+
+CURSOR
+    : C U R S O R
+    ;
+
+OF
+    : O F
+    ;
+
+RETURNS
+    : R E T U R N S
+    ;
+
+DATEPART
+    : D A T E P A R T
+    ;
+
+RETURN
+    : R E T U R N
+    ;
+
+READONLY
+    : R E A D O N L Y
+    ;
+
+AT
+    : A T
+    ;
+
+PASSWORD
+    : P A S S W O R D
+    ;
+
+WITHOUT
+    : W I T H O U T
+    ;
+

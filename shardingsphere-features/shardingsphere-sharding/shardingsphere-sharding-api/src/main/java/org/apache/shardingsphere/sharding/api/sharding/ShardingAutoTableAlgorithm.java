@@ -19,10 +19,9 @@ package org.apache.shardingsphere.sharding.api.sharding;
 
 /**
  * Sharding auto table algorithm.
- *
  */
 public interface ShardingAutoTableAlgorithm {
-
+    
     /**
      * Get auto tables amount.
      *

@@ -22,22 +22,24 @@ import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class PostgreSQLCommandPacketTypeLoaderTest {
+public final class PostgreSQLCommandPacketTypeLoaderTest {
     
     @Test
     public void assertGetCommandPacketType() {
-        PostgreSQLPacketPayload payload = mock(PostgreSQLPacketPayload.class);
-        when(payload.readInt1()).thenReturn((int) PostgreSQLCommandPacketType.AUTHENTICATION_OK.getValue());
-        assertThat(PostgreSQLCommandPacketTypeLoader.getCommandPacketType(payload), is(PostgreSQLCommandPacketType.AUTHENTICATION_OK));
+        PostgreSQLPacketPayload payload = mock(PostgreSQLPacketPayload.class, RETURNS_DEEP_STUBS);
+        when(payload.getByteBuf().getByte(anyInt())).thenReturn((byte) 'Q');
+        assertThat(PostgreSQLCommandPacketTypeLoader.getCommandPacketType(payload), is(PostgreSQLCommandPacketType.SIMPLE_QUERY));
     }
     
     @Test(expected = IllegalArgumentException.class)
     public void assertGetCommandPacketTypeError() {
-        PostgreSQLPacketPayload payload = mock(PostgreSQLPacketPayload.class);
-        when(payload.readInt1()).thenReturn(0x21);
+        PostgreSQLPacketPayload payload = mock(PostgreSQLPacketPayload.class, RETURNS_DEEP_STUBS);
+        when(payload.getByteBuf().getByte(anyInt())).thenReturn((byte) 'a');
         PostgreSQLCommandPacketTypeLoader.getCommandPacketType(payload);
     }
 }

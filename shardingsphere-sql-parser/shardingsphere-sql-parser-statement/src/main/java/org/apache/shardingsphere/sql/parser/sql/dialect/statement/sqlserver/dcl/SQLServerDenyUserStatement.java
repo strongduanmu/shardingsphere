@@ -19,17 +19,25 @@ package org.apache.shardingsphere.sql.parser.sql.dialect.statement.sqlserver.dcl
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.AbstractSQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dcl.DCLStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.sqlserver.SQLServerStatement;
+
+import java.util.Collection;
+import java.util.LinkedList;
 
 /**
  * SQLServer deny user statement.
  */
 @Getter
 @Setter
+@ToString(callSuper = true)
 public final class SQLServerDenyUserStatement extends AbstractSQLStatement implements DCLStatement, SQLServerStatement {
     
     private SimpleTableSegment table;
+    
+    private final Collection<ColumnSegment> columns = new LinkedList<>();
 }

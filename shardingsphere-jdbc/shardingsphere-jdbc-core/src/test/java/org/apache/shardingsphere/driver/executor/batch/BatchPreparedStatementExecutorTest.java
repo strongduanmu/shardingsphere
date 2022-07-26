@@ -18,15 +18,18 @@
 package org.apache.shardingsphere.driver.executor.batch;
 
 import lombok.SneakyThrows;
-import org.apache.shardingsphere.infra.executor.sql.resourced.jdbc.executor.SQLExecutor;
+import org.apache.shardingsphere.infra.database.DefaultDatabase;
+import org.apache.shardingsphere.infra.eventbus.EventBusContext;
+import org.apache.shardingsphere.infra.executor.kernel.model.ExecutionGroupContext;
+import org.apache.shardingsphere.infra.executor.sql.execute.engine.driver.jdbc.JDBCExecutor;
 import org.apache.shardingsphere.driver.executor.AbstractBaseExecutorTest;
-import org.apache.shardingsphere.sql.parser.binder.segment.table.TablesContext;
-import org.apache.shardingsphere.sql.parser.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.infra.executor.sql.resourced.jdbc.StatementExecuteUnit;
-import org.apache.shardingsphere.infra.executor.sql.ConnectionMode;
+import org.apache.shardingsphere.infra.binder.segment.table.TablesContext;
+import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.executor.sql.execute.engine.driver.jdbc.JDBCExecutionUnit;
+import org.apache.shardingsphere.infra.executor.sql.execute.engine.ConnectionMode;
 import org.apache.shardingsphere.infra.executor.sql.context.ExecutionUnit;
 import org.apache.shardingsphere.infra.executor.sql.context.SQLUnit;
-import org.apache.shardingsphere.infra.executor.kernel.InputGroup;
+import org.apache.shardingsphere.infra.executor.kernel.model.ExecutionGroup;
 import org.junit.Test;
 import org.mockito.Mock;
 
@@ -60,93 +63,93 @@ public final class BatchPreparedStatementExecutorTest extends AbstractBaseExecut
     @Override
     public void setUp() throws SQLException {
         super.setUp();
-        actual = spy(new BatchPreparedStatementExecutor(getConnection().getSchemaContexts(), new SQLExecutor(getExecutorKernel(), false)));
+        actual = spy(new BatchPreparedStatementExecutor(getConnection().getContextManager().getMetaDataContexts(), new JDBCExecutor(getExecutorEngine(), false), DefaultDatabase.LOGIC_NAME,
+                new EventBusContext()));
         when(sqlStatementContext.getTablesContext()).thenReturn(mock(TablesContext.class));
     }
     
     @Test
     public void assertNoPreparedStatement() throws SQLException {
         PreparedStatement preparedStatement = getPreparedStatement();
-        when(preparedStatement.executeBatch()).thenReturn(new int[] {0, 0});
-        setExecuteGroups(Collections.singletonList(preparedStatement));
-        assertThat(actual.executeBatch(sqlStatementContext), is(new int[] {0, 0}));
+        when(preparedStatement.executeBatch()).thenReturn(new int[]{0, 0});
+        setExecutionGroups(Collections.singletonList(preparedStatement));
+        assertThat(actual.executeBatch(sqlStatementContext), is(new int[]{0, 0}));
     }
     
     @Test
     public void assertExecuteBatchForSinglePreparedStatementSuccess() throws SQLException {
         PreparedStatement preparedStatement = getPreparedStatement();
-        when(preparedStatement.executeBatch()).thenReturn(new int[] {10, 20});
-        setExecuteGroups(Collections.singletonList(preparedStatement));
-        assertThat(actual.executeBatch(sqlStatementContext), is(new int[] {10, 20}));
+        when(preparedStatement.executeBatch()).thenReturn(new int[]{10, 20});
+        setExecutionGroups(Collections.singletonList(preparedStatement));
+        assertThat(actual.executeBatch(sqlStatementContext), is(new int[]{10, 20}));
         verify(preparedStatement).executeBatch();
     }
     
     private PreparedStatement getPreparedStatement() throws SQLException {
-        PreparedStatement statement = mock(PreparedStatement.class);
+        PreparedStatement result = mock(PreparedStatement.class);
         Connection connection = mock(Connection.class);
         DatabaseMetaData databaseMetaData = mock(DatabaseMetaData.class);
-        when(databaseMetaData.getURL()).thenReturn("jdbc:h2:mem:ds_master;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;MODE=MYSQL");
+        when(databaseMetaData.getURL()).thenReturn("jdbc:h2:mem:primary_ds;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;MODE=MYSQL");
         when(connection.getMetaData()).thenReturn(databaseMetaData);
-        when(statement.getConnection()).thenReturn(connection);
-        return statement;
+        when(result.getConnection()).thenReturn(connection);
+        return result;
     }
     
     @Test
     public void assertExecuteBatchForMultiplePreparedStatementsSuccess() throws SQLException {
         PreparedStatement preparedStatement1 = getPreparedStatement();
         PreparedStatement preparedStatement2 = getPreparedStatement();
-        when(preparedStatement1.executeBatch()).thenReturn(new int[] {10, 20});
-        when(preparedStatement2.executeBatch()).thenReturn(new int[] {20, 40});
-        setExecuteGroups(Arrays.asList(preparedStatement1, preparedStatement2));
-        assertThat(actual.executeBatch(sqlStatementContext), is(new int[] {30, 60}));
+        when(preparedStatement1.executeBatch()).thenReturn(new int[]{10, 20});
+        when(preparedStatement2.executeBatch()).thenReturn(new int[]{20, 40});
+        setExecutionGroups(Arrays.asList(preparedStatement1, preparedStatement2));
+        assertThat(actual.executeBatch(sqlStatementContext), is(new int[]{30, 60}));
         verify(preparedStatement1).executeBatch();
         verify(preparedStatement2).executeBatch();
     }
     
-    @Test
+    @Test(expected = SQLException.class)
     public void assertExecuteBatchForSinglePreparedStatementFailure() throws SQLException {
         PreparedStatement preparedStatement = getPreparedStatement();
-        SQLException exp = new SQLException("");
-        when(preparedStatement.executeBatch()).thenThrow(exp);
-        setExecuteGroups(Collections.singletonList(preparedStatement));
-        assertThat(actual.executeBatch(sqlStatementContext), is(new int[] {0, 0}));
+        SQLException ex = new SQLException("");
+        when(preparedStatement.executeBatch()).thenThrow(ex);
+        setExecutionGroups(Collections.singletonList(preparedStatement));
+        actual.executeBatch(sqlStatementContext);
         verify(preparedStatement).executeBatch();
     }
     
-    @Test
+    @Test(expected = SQLException.class)
     public void assertExecuteBatchForMultiplePreparedStatementsFailure() throws SQLException {
         PreparedStatement preparedStatement1 = getPreparedStatement();
         PreparedStatement preparedStatement2 = getPreparedStatement();
-        SQLException exp = new SQLException("");
-        when(preparedStatement1.executeBatch()).thenThrow(exp);
-        when(preparedStatement2.executeBatch()).thenThrow(exp);
-        setExecuteGroups(Arrays.asList(preparedStatement1, preparedStatement2));
-        assertThat(actual.executeBatch(sqlStatementContext), is(new int[] {0, 0}));
+        SQLException ex = new SQLException("");
+        when(preparedStatement1.executeBatch()).thenThrow(ex);
+        setExecutionGroups(Arrays.asList(preparedStatement1, preparedStatement2));
+        actual.executeBatch(sqlStatementContext);
         verify(preparedStatement1).executeBatch();
         verify(preparedStatement2).executeBatch();
     }
     
-    private void setExecuteGroups(final List<PreparedStatement> preparedStatements) {
-        Collection<InputGroup<StatementExecuteUnit>> executeGroups = new LinkedList<>();
-        List<StatementExecuteUnit> preparedStatementExecuteUnits = new LinkedList<>();
-        executeGroups.add(new InputGroup<>(preparedStatementExecuteUnits));
+    private void setExecutionGroups(final List<PreparedStatement> preparedStatements) {
+        Collection<ExecutionGroup<JDBCExecutionUnit>> executionGroups = new LinkedList<>();
+        List<JDBCExecutionUnit> executionUnits = new LinkedList<>();
+        executionGroups.add(new ExecutionGroup<>(executionUnits));
         Collection<BatchExecutionUnit> batchExecutionUnits = new LinkedList<>();
         for (PreparedStatement each : preparedStatements) {
             BatchExecutionUnit batchExecutionUnit = new BatchExecutionUnit(new ExecutionUnit("ds_0", new SQLUnit(SQL, Collections.singletonList(1))));
             batchExecutionUnit.mapAddBatchCount(0);
             batchExecutionUnit.mapAddBatchCount(1);
             batchExecutionUnits.add(batchExecutionUnit);
-            preparedStatementExecuteUnits.add(new StatementExecuteUnit(new ExecutionUnit("ds_0", new SQLUnit(SQL, Collections.singletonList(1))),
+            executionUnits.add(new JDBCExecutionUnit(new ExecutionUnit("ds_0", new SQLUnit(SQL, Collections.singletonList(1))),
                     ConnectionMode.MEMORY_STRICTLY, each));
         }
-        setFields(executeGroups, batchExecutionUnits);
+        setFields(executionGroups, batchExecutionUnits);
     }
     
     @SneakyThrows(ReflectiveOperationException.class)
-    private void setFields(final Collection<InputGroup<StatementExecuteUnit>> inputGroups, final Collection<BatchExecutionUnit> batchExecutionUnits) {
-        Field field = BatchPreparedStatementExecutor.class.getDeclaredField("inputGroups");
+    private void setFields(final Collection<ExecutionGroup<JDBCExecutionUnit>> executionGroups, final Collection<BatchExecutionUnit> batchExecutionUnits) {
+        Field field = BatchPreparedStatementExecutor.class.getDeclaredField("executionGroupContext");
         field.setAccessible(true);
-        field.set(actual, inputGroups);
+        field.set(actual, new ExecutionGroupContext<>(executionGroups));
         field = BatchPreparedStatementExecutor.class.getDeclaredField("batchExecutionUnits");
         field.setAccessible(true);
         field.set(actual, batchExecutionUnits);

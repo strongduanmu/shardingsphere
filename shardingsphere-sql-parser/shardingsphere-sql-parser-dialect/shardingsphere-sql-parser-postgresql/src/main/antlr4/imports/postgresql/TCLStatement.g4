@@ -15,9 +15,13 @@
  * limitations under the License.
  */
 
-grammar TCLStatement;
+parser grammar TCLStatement;
 
-import Symbol, Keyword, PostgreSQLKeyword, Literals, BaseRule;
+import DMLStatement;
+
+options {
+    tokenVocab = ModeLexer;
+}
 
 setTransaction
     : SET (SESSION CHARACTERISTICS AS)? TRANSACTION transactionModeList
@@ -25,21 +29,76 @@ setTransaction
     ;
 
 beginTransaction
-    : BEGIN | START TRANSACTION
+    : BEGIN (WORK | TRANSACTION)? transactionModeList?
     ;
 
 commit
-    : COMMIT
-    ;
-
-rollback
-    : ROLLBACK
+    : COMMIT (WORK | TRANSACTION)? (AND (NO)? CHAIN)?
     ;
 
 savepoint
-    : SAVEPOINT
+    : SAVEPOINT colId
     ;
 
 abort
     : ABORT (WORK | TRANSACTION)? (AND (NO)? CHAIN)?
+    ;
+
+startTransaction
+    : START TRANSACTION transactionModeList?
+    ;
+
+end
+    : END (WORK | TRANSACTION)? (AND (NO)? CHAIN)?
+    ;
+
+rollback
+    : ROLLBACK (WORK | TRANSACTION)? (AND (NO)? CHAIN)?
+    ;
+
+releaseSavepoint
+    : RELEASE SAVEPOINT? colId
+    ;
+
+rollbackToSavepoint
+    : ROLLBACK (WORK | TRANSACTION)? TO SAVEPOINT? colId
+    ;
+
+commitPrepared
+    : COMMIT PREPARED STRING_
+    ;
+
+rollbackPrepared
+    : ROLLBACK PREPARED STRING_
+    ;
+
+setConstraints
+    : SET CONSTRAINTS constraintsSetList constraintsSetMode
+    ;
+
+constraintsSetMode
+    : DEFERRED | IMMEDIATE
+    ;
+
+constraintsSetList
+    : ALL | qualifiedNameList
+    ;
+
+lock
+    : LOCK TABLE? relationExprList (IN lockType MODE)? NOWAIT?
+    ;
+
+lockType
+    : ACCESS SHARE
+    | ROW SHARE
+    | ROW EXCLUSIVE
+    | SHARE UPDATE EXCLUSIVE
+    | SHARE
+    | SHARE ROW EXCLUSIVE
+    | EXCLUSIVE
+    | ACCESS EXCLUSIVE
+    ;
+
+prepareTransaction
+    : PREPARE TRANSACTION STRING_
     ;

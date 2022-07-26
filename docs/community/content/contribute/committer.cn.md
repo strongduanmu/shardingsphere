@@ -1,42 +1,39 @@
 +++
 title = "提交者指南"
-weight = 3
+weight = 4
 chapter = true
 +++
 
 ## 提交者提名
 
-ShardingSphere社区遵循[Apache Community’s process](http://community.apache.org/newcommitter.html) 来接收新的提交者。
-当您积极参地与ShardingSphere社区之后，项目管理委员会和项目官方提交者会根据您的表现发起吸纳您成为官方提交者和项目管理委员会成员的流程。
-
-流程如下：
-
- - 在 @private 邮件列表讨论并投票，由现有的PMC成员发起；
- - 如果投票通过，对候选人发布邀请并抄送@private 邮件列表；
- - 新提交者成员签署ICLA，申请Apache ID和邮箱；
- - 更新[提交者名单](/cn/team/)。
+ShardingSphere 社区遵循 [Apache Community’s process](http://community.apache.org/newcommitter.html) 来接收新的提交者。
+当您积极地参与 ShardingSphere 社区之后，项目管理委员会和项目官方提交者会根据您的表现发起吸纳您成为官方提交者和项目管理委员会成员的流程。
 
 ## 提交者责任
 
  - 开发新功能；
  - 代码重构；
- - 及时和可靠的评审Pull Request；
+ - 及时和可靠的评审 Pull Request；
  - 思考和接纳新特性请求；
  - 解答问题；
  - 维护文档和代码示例；
  - 改进流程和工具；
+ - 定期检查 [CI Scheduled Workflow]( https://github.com/apache/shardingsphere/actions?query=event%3Aschedule ) 是否正常运行；
  - 引导新的参与者融入社区。
 
 ## 日常工作
 
-1. committer需要每天查看社区待处理的Pull Request和issue列表，指定给合适的committer，即assignee。
+1. Committer 需要每天查看社区待处理的 Pull Request 和 Issue 列表，负责问题的处理：
 
-2. assignee在被分配issue后，需要进行如下判断：
+ - 包括标记 issue，回复 issue，关闭 issue 等；
+ - 将 issue 分配至熟悉该模块的贡献者；
 
- - 判断是否是长期issue，如是，则标记为pending。
- - 判断issue类型，如：bug，enhancement，discussion等。
- - 判断Milestone，并标记。
+2. Assignee 在被分配 issue 后，需要进行如下判断：
 
-**注意**
+ - 判断是否是长期 issue，如是，则标记为 pending；
+ - 判断 issue 类型，如：bug，enhancement，discussion 等；
+ - 标记 Milestone。
 
-无论是否是社区issue，都必须有assignee，直到issue完成。
+3. Committer 提交的 PR，需要根据 PR 类型和当前发布的周期标注 Label 和 Milestone。
+
+4. Committer review PR 时，可以进行 squash and merge to master 的操作，如果有问题可以加上 change request 或者 @ 相关人员协助处理。

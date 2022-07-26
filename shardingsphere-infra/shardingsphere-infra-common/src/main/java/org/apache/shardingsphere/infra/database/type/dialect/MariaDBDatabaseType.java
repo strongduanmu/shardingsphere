@@ -20,24 +20,26 @@ package org.apache.shardingsphere.infra.database.type.dialect;
 import org.apache.shardingsphere.infra.database.metadata.dialect.MariaDBDataSourceMetaData;
 import org.apache.shardingsphere.infra.database.type.BranchDatabaseType;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.infra.database.type.DatabaseTypes;
+import org.apache.shardingsphere.infra.database.type.DatabaseTypeFactory;
+import org.apache.shardingsphere.sql.parser.sql.common.constant.QuoteCharacter;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 /**
- * Database type of Mariadb.
+ * Database type of MariaDB.
  */
 public final class MariaDBDatabaseType implements BranchDatabaseType {
     
     @Override
-    public String getName() {
-        return "MariaDB";
+    public QuoteCharacter getQuoteCharacter() {
+        return QuoteCharacter.BACK_QUOTE;
     }
     
     @Override
     public Collection<String> getJdbcUrlPrefixes() {
-        return Collections.singleton(String.format("jdbc:%s:", getName().toLowerCase()));
+        return Collections.singleton(String.format("jdbc:%s:", getType().toLowerCase()));
     }
     
     @Override
@@ -47,6 +49,21 @@ public final class MariaDBDatabaseType implements BranchDatabaseType {
     
     @Override
     public DatabaseType getTrunkDatabaseType() {
-        return DatabaseTypes.getActualDatabaseType("MySQL");
+        return DatabaseTypeFactory.getInstance("MySQL");
+    }
+    
+    @Override
+    public Map<String, Collection<String>> getSystemDatabaseSchemaMap() {
+        return Collections.emptyMap();
+    }
+    
+    @Override
+    public Collection<String> getSystemSchemas() {
+        return Collections.emptyList();
+    }
+    
+    @Override
+    public String getType() {
+        return "MariaDB";
     }
 }

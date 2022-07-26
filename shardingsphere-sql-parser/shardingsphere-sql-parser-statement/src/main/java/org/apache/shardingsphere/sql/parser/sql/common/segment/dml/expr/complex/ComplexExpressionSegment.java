@@ -26,7 +26,7 @@ public interface ComplexExpressionSegment extends ExpressionSegment {
     
     /**
      * Get text.
-     * 
+     *
      * @return text
      */
     String getText();

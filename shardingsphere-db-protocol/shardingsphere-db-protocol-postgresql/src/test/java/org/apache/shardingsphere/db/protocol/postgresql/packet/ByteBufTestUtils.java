@@ -20,14 +20,17 @@ package org.apache.shardingsphere.db.protocol.postgresql.packet;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.buffer.UnpooledHeapByteBuf;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ByteBufTestUtils {
     
     /**
      * Creates a new buffer with a newly allocated byte array, fixed capacity.
      *
      * @param capacity the fixed capacity of the underlying byte array
-     * @return ByteBuf
+     * @return byte buffer
      */
     public static ByteBuf createByteBuf(final int capacity) {
         return createByteBuf(capacity, capacity);
@@ -37,8 +40,8 @@ public final class ByteBufTestUtils {
      * Creates a new buffer with a newly allocated byte array.
      *
      * @param initialCapacity the initial capacity of the underlying byte array
-     * @param maxCapacity     the max capacity of the underlying byte array
-     * @return ByteBuf
+     * @param maxCapacity the max capacity of the underlying byte array
+     * @return byte buffer
      */
     public static ByteBuf createByteBuf(final int initialCapacity, final int maxCapacity) {
         UnpooledByteBufAllocator byteBufAllocator = UnpooledByteBufAllocator.DEFAULT;

@@ -17,12 +17,13 @@
 
 package org.apache.shardingsphere.sql.parser.sql.dialect.statement.sqlserver.dcl;
 
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dcl.CreateRoleStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dcl.DCLStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.sqlserver.SQLServerStatement;
 
 /**
  * SQLServer create role statement.
  */
-public final class SQLServerCreateRoleStatement extends CreateRoleStatement implements DCLStatement, SQLServerStatement {
+@ToString(callSuper = true)
+public final class SQLServerCreateRoleStatement extends CreateRoleStatement implements SQLServerStatement {
 }

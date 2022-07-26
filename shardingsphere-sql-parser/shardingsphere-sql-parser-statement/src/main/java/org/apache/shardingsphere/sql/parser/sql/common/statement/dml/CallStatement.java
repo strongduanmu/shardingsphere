@@ -17,10 +17,12 @@
 
 package org.apache.shardingsphere.sql.parser.sql.common.statement.dml;
 
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.AbstractSQLStatement;
 
 /**
  * Call statement.
  */
-public final class CallStatement extends AbstractSQLStatement implements DMLStatement {
+@ToString(callSuper = true)
+public abstract class CallStatement extends AbstractSQLStatement implements DMLStatement {
 }

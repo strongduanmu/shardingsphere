@@ -19,10 +19,12 @@ package org.apache.shardingsphere.db.protocol.postgresql.packet.generic;
 
 import io.netty.buffer.ByteBuf;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.ByteBufTestUtils;
-import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQLCommandPacketType;
+import org.apache.shardingsphere.db.protocol.postgresql.packet.identifier.PostgreSQLMessagePacketType;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.handshake.PostgreSQLParameterStatusPacket;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
 import org.junit.Test;
+
+import java.nio.charset.StandardCharsets;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -35,9 +37,9 @@ public final class PostgreSQLParameterStatusPacketTest {
         String value = "value1";
         int expectedLength = key.length() + 1 + value.length() + 1;
         ByteBuf byteBuf = ByteBufTestUtils.createByteBuf(expectedLength);
-        PostgreSQLPacketPayload payload = new PostgreSQLPacketPayload(byteBuf);
+        PostgreSQLPacketPayload payload = new PostgreSQLPacketPayload(byteBuf, StandardCharsets.UTF_8);
         PostgreSQLParameterStatusPacket packet = new PostgreSQLParameterStatusPacket(key, value);
-        assertThat(packet.getMessageType(), is(PostgreSQLCommandPacketType.PARAMETER_STATUS.getValue()));
+        assertThat(packet.getIdentifier(), is(PostgreSQLMessagePacketType.PARAMETER_STATUS));
         packet.write(payload);
         assertThat(byteBuf.writerIndex(), is(expectedLength));
         assertThat(payload.readStringNul(), is(key));

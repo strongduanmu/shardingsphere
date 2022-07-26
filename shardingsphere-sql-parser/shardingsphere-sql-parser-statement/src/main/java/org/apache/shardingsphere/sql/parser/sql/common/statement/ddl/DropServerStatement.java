@@ -17,10 +17,12 @@
 
 package org.apache.shardingsphere.sql.parser.sql.common.statement.ddl;
 
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.AbstractSQLStatement;
 
 /**
  * Drop server statement.
  */
-public final class DropServerStatement extends AbstractSQLStatement implements DDLStatement {
+@ToString(callSuper = true)
+public abstract class DropServerStatement extends AbstractSQLStatement implements DDLStatement {
 }

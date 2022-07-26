@@ -15,10 +15,28 @@
  * limitations under the License.
  */
 
-grammar StoreProcedure;
+parser grammar StoreProcedure;
 
-import Keyword;
+import BaseRule;
+
+options {tokenVocab = ModeLexer;}
 
 call
-    : CALL 
+    : CALL identifier LP_ callArguments? RP_
+    ;
+
+callArguments
+    : callArgument (COMMA_ callArgument)*
+    ;
+
+callArgument
+    : positionalNotation | namedNotation
+    ;
+
+positionalNotation
+    : aExpr
+    ;
+
+namedNotation
+    : identifier EQ_ GT_ aExpr
     ;

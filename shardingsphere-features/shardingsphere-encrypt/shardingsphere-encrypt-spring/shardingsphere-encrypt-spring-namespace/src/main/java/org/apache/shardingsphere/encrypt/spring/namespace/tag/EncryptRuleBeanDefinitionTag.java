@@ -41,4 +41,8 @@ public final class EncryptRuleBeanDefinitionTag {
     public static final String PLAIN_COLUMN_ATTRIBUTE = "plain-column";
     
     public static final String ENCRYPT_ALGORITHM_REF_ATTRIBUTE = "encrypt-algorithm-ref";
+    
+    public static final String ASSISTED_QUERY_ENCRYPT_ALGORITHM_REF_ATTRIBUTE = "assisted-query-encrypt-algorithm-ref";
+    
+    public static final String QUERY_WITH_CIPHER_COLUMN = "query-with-cipher-column";
 }

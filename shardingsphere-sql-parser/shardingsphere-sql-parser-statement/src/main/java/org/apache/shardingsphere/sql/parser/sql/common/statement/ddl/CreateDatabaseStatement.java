@@ -18,15 +18,19 @@
 package org.apache.shardingsphere.sql.parser.sql.common.statement.ddl;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.AbstractSQLStatement;
 
 /**
  * Create database statement.
  */
-@RequiredArgsConstructor
 @Getter
-public final class CreateDatabaseStatement extends AbstractSQLStatement implements DDLStatement {
+@Setter
+@ToString(callSuper = true)
+public abstract class CreateDatabaseStatement extends AbstractSQLStatement implements DDLStatement {
     
-    private final String databaseName;
+    private String databaseName;
+    
+    private boolean ifNotExists;
 }

@@ -26,22 +26,22 @@ public final class CommonErrorCodeTest {
     
     @Test
     public void assertCircuitBreakMode() {
-        assertThat(CommonErrorCode.CIRCUIT_BREAK_MODE.getErrorCode(), is(10000));
-        assertThat(CommonErrorCode.CIRCUIT_BREAK_MODE.getSqlState(), is("C10000"));
+        assertThat(CommonErrorCode.CIRCUIT_BREAK_MODE.getErrorCode(), is(1000));
+        assertThat(CommonErrorCode.CIRCUIT_BREAK_MODE.getSqlState(), is("C1000"));
         assertThat(CommonErrorCode.CIRCUIT_BREAK_MODE.getErrorMessage(), is("Circuit break mode is ON."));
     }
     
     @Test
     public void assertUnsupportedCommand() {
-        assertThat(CommonErrorCode.UNSUPPORTED_COMMAND.getErrorCode(), is(10001));
-        assertThat(CommonErrorCode.UNSUPPORTED_COMMAND.getSqlState(), is("C10001"));
+        assertThat(CommonErrorCode.UNSUPPORTED_COMMAND.getErrorCode(), is(1998));
+        assertThat(CommonErrorCode.UNSUPPORTED_COMMAND.getSqlState(), is("C1998"));
         assertThat(CommonErrorCode.UNSUPPORTED_COMMAND.getErrorMessage(), is("Unsupported command: [%s]"));
     }
     
     @Test
     public void assertUnknownException() {
-        assertThat(CommonErrorCode.UNKNOWN_EXCEPTION.getErrorCode(), is(10002));
-        assertThat(CommonErrorCode.UNKNOWN_EXCEPTION.getSqlState(), is("C10002"));
+        assertThat(CommonErrorCode.UNKNOWN_EXCEPTION.getErrorCode(), is(1999));
+        assertThat(CommonErrorCode.UNKNOWN_EXCEPTION.getSqlState(), is("C1999"));
         assertThat(CommonErrorCode.UNKNOWN_EXCEPTION.getErrorMessage(), is("Unknown exception: [%s]"));
     }
 }

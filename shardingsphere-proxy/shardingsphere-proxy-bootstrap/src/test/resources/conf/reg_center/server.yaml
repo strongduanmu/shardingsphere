@@ -15,22 +15,23 @@
 # limitations under the License.
 #
 
-governance:
-  name: governance_ds
-  registryCenter:
-    type: REG_FIXTURE
-    serverLists: localhost:2181
+mode:
+  type: Cluster
+  repository:
+    type: GOV_FIXTURE
     props:
+      namespace: governance_ds
+      server-lists: localhost:2181
       retryIntervalMilliseconds: 500
       timeToLiveSeconds: 60
       maxRetries: 3
       operationTimeoutMilliseconds: 500
-  additionalConfigCenter:
-    type: CONFIG_FIXTURE
-    serverLists: localhost:3181
-    props:
-      retryIntervalMilliseconds: 10
-      timeToLiveSeconds: 10
-      maxRetries: 10
-      operationTimeoutMilliseconds: 10
   overwrite: false
+  
+rules:
+  - !AUTHORITY
+    users:
+      - root@:root
+      - sharding@:sharding
+    provider:
+      type: ALL_PERMITTED

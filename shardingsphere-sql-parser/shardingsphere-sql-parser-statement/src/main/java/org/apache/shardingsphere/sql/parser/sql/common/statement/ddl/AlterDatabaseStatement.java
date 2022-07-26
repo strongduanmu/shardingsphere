@@ -17,10 +17,16 @@
 
 package org.apache.shardingsphere.sql.parser.sql.common.statement.ddl;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.AbstractSQLStatement;
 
 /**
- * Alter database statement.
+ * Alter Database statement.
  */
-public final class AlterDatabaseStatement extends AbstractSQLStatement implements DDLStatement {
+@Getter
+@Setter
+@ToString(callSuper = true)
+public abstract class AlterDatabaseStatement extends AbstractSQLStatement implements DDLStatement {
 }

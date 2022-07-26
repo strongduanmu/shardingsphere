@@ -17,11 +17,10 @@
 
 package org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.column;
 
-import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLColumnType;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLBinaryColumnType;
 
 /**
  * Column definition.
@@ -29,11 +28,11 @@ import lombok.Setter;
  * @see <a href="https://dev.mysql.com/doc/internals/en/table-map-event.html">TABLE_MAP_EVENT</a>
  */
 @RequiredArgsConstructor
-@Setter
 @Getter
+@Setter
 public final class MySQLBinlogColumnDef {
     
-    private final MySQLColumnType columnType;
+    private final MySQLBinaryColumnType columnType;
     
     private int columnMeta;
 }

@@ -18,7 +18,7 @@
 package org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.column.value.time;
 
 import io.netty.buffer.ByteBuf;
-import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLColumnType;
+import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLBinaryColumnType;
 import org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.column.MySQLBinlogColumnDef;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
 import org.junit.Before;
@@ -46,7 +46,7 @@ public final class MySQLTimestamp2BinlogProtocolValueTest {
     
     @Before
     public void setUp() {
-        columnDef = new MySQLBinlogColumnDef(MySQLColumnType.MYSQL_TYPE_TIMESTAMP2);
+        columnDef = new MySQLBinlogColumnDef(MySQLBinaryColumnType.MYSQL_TYPE_TIMESTAMP2);
         when(payload.getByteBuf()).thenReturn(byteBuf);
     }
     
@@ -66,7 +66,7 @@ public final class MySQLTimestamp2BinlogProtocolValueTest {
         when(payload.readInt1()).thenReturn(currentMilliseconds);
         when(byteBuf.readInt()).thenReturn(currentSeconds);
         assertThat(new MySQLTimestamp2BinlogProtocolValue().read(columnDef, payload),
-                   is(MySQLTimeValueUtil.getSimpleDateFormat().format(new Timestamp(currentSeconds * 1000L)) + "." + currentMilliseconds));
+                is(MySQLTimeValueUtil.getSimpleDateFormat().format(new Timestamp(currentSeconds * 1000L)) + "." + currentMilliseconds));
     }
     
     @Test

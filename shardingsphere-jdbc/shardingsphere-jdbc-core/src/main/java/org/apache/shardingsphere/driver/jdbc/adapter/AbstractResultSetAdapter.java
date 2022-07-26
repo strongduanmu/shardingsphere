@@ -19,21 +19,20 @@ package org.apache.shardingsphere.driver.jdbc.adapter;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
-import org.apache.shardingsphere.driver.jdbc.core.statement.ShardingSpherePreparedStatement;
-import org.apache.shardingsphere.driver.jdbc.core.statement.ShardingSphereStatement;
-import org.apache.shardingsphere.driver.jdbc.unsupported.AbstractUnsupportedOperationResultSet;
 import org.apache.shardingsphere.driver.jdbc.adapter.executor.ForceExecuteTemplate;
 import org.apache.shardingsphere.driver.jdbc.core.connection.ShardingSphereConnection;
 import org.apache.shardingsphere.driver.jdbc.core.resultset.ShardingSphereResultSetMetaData;
-import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
+import org.apache.shardingsphere.driver.jdbc.core.statement.ShardingSpherePreparedStatement;
+import org.apache.shardingsphere.driver.jdbc.core.statement.ShardingSphereStatement;
+import org.apache.shardingsphere.driver.jdbc.unsupported.AbstractUnsupportedOperationResultSet;
 import org.apache.shardingsphere.infra.executor.sql.context.ExecutionContext;
+import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -63,13 +62,14 @@ public abstract class AbstractResultSetAdapter extends AbstractUnsupportedOperat
     
     @Override
     public final ResultSetMetaData getMetaData() throws SQLException {
-        return new ShardingSphereResultSetMetaData(resultSets.get(0).getMetaData(), getRules(), executionContext.getSqlStatementContext());
+        return new ShardingSphereResultSetMetaData(resultSets.get(0).getMetaData(), getDatabase(), executionContext.getSqlStatementContext());
     }
     
-    private Collection<ShardingSphereRule> getRules() {
+    private ShardingSphereDatabase getDatabase() {
         ShardingSphereConnection connection = statement instanceof ShardingSpherePreparedStatement
-                ? ((ShardingSpherePreparedStatement) statement).getConnection() : ((ShardingSphereStatement) statement).getConnection();
-        return connection.getSchemaContexts().getDefaultSchemaContext().getSchema().getRules();
+                ? ((ShardingSpherePreparedStatement) statement).getConnection()
+                : ((ShardingSphereStatement) statement).getConnection();
+        return connection.getContextManager().getMetaDataContexts().getMetaData().getDatabase(connection.getDatabaseName());
     }
     
     @Override

@@ -17,10 +17,20 @@
 
 package org.apache.shardingsphere.sql.parser.sql.common.statement.ddl;
 
+import lombok.Getter;
+import lombok.ToString;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.AbstractSQLStatement;
+
+import java.util.Collection;
+import java.util.LinkedList;
 
 /**
  * Drop view statement.
  */
-public final class DropViewStatement extends AbstractSQLStatement implements DDLStatement {
+@Getter
+@ToString(callSuper = true)
+public abstract class DropViewStatement extends AbstractSQLStatement implements DDLStatement {
+    
+    private final Collection<SimpleTableSegment> views = new LinkedList<>();
 }

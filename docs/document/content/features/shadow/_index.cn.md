@@ -1,23 +1,55 @@
 +++
-pre = "<b>3.7. </b>"
-title = "影子库压测"
-weight = 7
-chapter = true
+pre = "<b>4.10. </b>"
+title = "影子库"
+weight = 10
 +++
 
-## 背景
+## 定义
+Apache ShardingSphere 全链路在线压测场景下，在数据库层面对于压测数据治理的解决方案。
 
-在基于微服务的分布式应用架构下，由于整体服务都是通过一系列的微服务调用、中间件调用来完成业务需求，所以对于单个服务的压测已经不能代表真实场景。
-而在线下环境中，如果重新搭建一整套与生产环境类似的压测环境，成本太高，并且往往无法模拟线上环境的体量以及复杂度。
-这种场景下，业内通常选择全链路压测的方式，即在生产环境进行压测，这样所获得的测试结果能够较为准确地反应系统真实容量水平和性能。
+## 相关概念
 
-## 挑战
+### 生产库
+生产环境使用的数据库。
 
-全链路压测是一项复杂而庞大的工作，需要各个中间件、微服务之间相应的调整与配合，以应对不同流量以及压测标识的透传，通常应该有一整套压测平台与测试计划。
-其中，在数据库层面，为了保证生产数据的可靠性与完整性，做好数据隔离，需要将压测的数据请求打入影子库，以防压测数据写入生产数据库而对真实数据造成污染。
-这就要求业务应用在执行 SQL 前，能够根据透传的压测标识，做好数据分类，将相应的 SQL 路由到与之对应的数据源。
+### 影子库
+压测数据隔离的影子数据库，与生产数据库应当使用相同的配置。
 
-## 目标
+### 影子算法
+影子算法和业务实现紧密相关，目前提供 2 种类型影子算法。
 
-Apache ShardingSphere 关注于全链路压测场景下，数据库层面的解决方案。
-基于内核的 SQL 解析能力，以及可插拔平台架构，实现压测数据与生产数据的隔离，帮助应用自动路由，支持全链路压测，是 Apache ShardingSphere 影子数据库模块的主要设计目标。
+- 基于列的影子算法
+  通过识别 SQL 中的数据，匹配路由至影子库的场景。
+  适用于由压测数据名单驱动的压测场景。
+  
+- 基于 Hint 的影子算法
+  通过识别 SQL 中的注释，匹配路由至影子库的场景。
+  适用于由上游系统透传标识驱动的压测场景。
+  
+## 使用限制
+
+### 基于 Hint 的影子算法
+* 无。
+
+### 基于列的影子算法
+* 不支持 DDL；
+* 不支持范围、分组和子查询，如：BETWEEN、GROUP BY ... HAVING 等。
+  SQL 支持列表：
+  - INSERT
+  
+  |  *SQL*  |  *是否支持*  |
+  | ------- | ------------ |
+  | INSERT INTO table (column,...) VALUES (value,...)   |  支持  |
+  | INSERT INTO table (column,...) VALUES (value,...),(value,...),...   |  支持   |
+  | INSERT INTO table (column,...) SELECT column1 from table1 where column1 = value1 |  不支持  |
+  
+  - SELECT/UPDATE/DELETE
+  
+  |  *条件类型*  |  *SQL*   |  *是否支持*  |
+  | ------------ | -------- | ----------- |
+  | =  | SELECT/UPDATE/DELETE ... WHERE column = value   | 支持 |
+  | LIKE/NOT LIKE | SELECT/UPDATE/DELETE ... WHERE column LIKE/NOT LIKE value  | 支持  |                        
+  | IN/NOT IN | SELECT/UPDATE/DELETE ... WHERE column IN/NOT IN (value1,value2,...)  | 支持 |
+  | BETWEEN | SELECT/UPDATE/DELETE ... WHERE column BETWEEN value1 AND value2  | 不支持  |
+  | GROUP BY ... HAVING... | SELECT/UPDATE/DELETE ... WHERE ... GROUP BY column HAVING column > value  | 不支持     |
+  | 子查询  | SELECT/UPDATE/DELETE ... WHERE column = (SELECT column FROM table WHERE column = value) | 不支持  |

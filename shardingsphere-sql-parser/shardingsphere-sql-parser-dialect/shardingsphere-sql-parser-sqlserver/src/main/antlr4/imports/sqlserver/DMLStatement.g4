@@ -17,26 +17,26 @@
 
 grammar DMLStatement;
 
-import Symbol, Keyword, SQLServerKeyword, Literals, BaseRule;
+import BaseRule;
 
 insert
-    : withClause_? INSERT top? INTO? tableName (AS? alias)? (insertDefaultValue | insertValuesClause | insertSelectClause)
+    : withClause? INSERT top? INTO? tableName (AS? alias)? (insertDefaultValue | insertValuesClause | insertSelectClause)
     ;
-    
+
 insertDefaultValue
-    : columnNames? outputClause_? DEFAULT VALUES
+    : columnNames? outputClause? DEFAULT VALUES
     ;
 
 insertValuesClause
-    : columnNames? outputClause_? VALUES assignmentValues (COMMA_ assignmentValues)*
+    : columnNames? outputClause? VALUES assignmentValues (COMMA_ assignmentValues)*
     ;
 
 insertSelectClause
-    : columnNames? outputClause_? select
+    : columnNames? outputClause? select
     ;
 
 update
-    : UPDATE tableReferences setAssignmentsClause whereClause?
+    : withClause? UPDATE top? tableReferences setAssignmentsClause whereClause? (OPTION queryHint)?
     ;
 
 assignment
@@ -44,7 +44,7 @@ assignment
     ;
 
 setAssignmentsClause
-    : SET assignment (COMMA_ assignment)*
+    : SET assignment (COMMA_ assignment)* fromClause?
     ;
 
 assignmentValues
@@ -57,7 +57,7 @@ assignmentValue
     ;
 
 delete
-    : DELETE (singleTableClause | multipleTablesClause) whereClause?
+    : withClause? DELETE top? (singleTableClause | multipleTablesClause) outputClause? whereClause? (OPTION queryHint)?
     ;
 
 singleTableClause
@@ -72,16 +72,16 @@ multipleTableNames
     : tableName DOT_ASTERISK_? (COMMA_ tableName DOT_ASTERISK_?)*
     ;
 
-select 
-    : unionClause
+select
+    : aggregationClause
     ;
 
-unionClause
-    : selectClause (UNION (ALL | DISTINCT)? selectClause)*
+aggregationClause
+    : selectClause ((UNION (ALL)? | EXCEPT | INTERSECT) selectClause)*
     ;
 
 selectClause
-    : SELECT duplicateSpecification? projections fromClause? whereClause? groupByClause? havingClause? orderByClause?
+    : selectWithClause? SELECT duplicateSpecification? projections fromClause? whereClause? groupByClause? havingClause? orderByClause? forClause?
     ;
 
 duplicateSpecification
@@ -102,10 +102,6 @@ top
 
 topNum
     : numberLiterals | parameterMarker
-    ;
-
-alias
-    : identifier | STRING_
     ;
 
 unqualifiedShorthand
@@ -154,33 +150,127 @@ havingClause
     ;
 
 subquery
-    : LP_ unionClause RP_
+    : LP_ aggregationClause RP_
     ;
 
-withClause_
-    : WITH cteClause_ (COMMA_ cteClause_)*
+withClause
+    : WITH cteClauseSet
     ;
 
-cteClause_
+cteClauseSet
+    : cteClause (COMMA_ cteClause)*
+    ;
+
+cteClause
     : identifier columnNames? AS subquery
     ;
 
-outputClause_
-    : OUTPUT (outputWithColumns_ | outputWithAaterisk_) (INTO outputTableName_ columnNames?)?
+outputClause
+    : OUTPUT (outputWithColumns | outputWithAaterisk) (INTO outputTableName columnNames?)?
     ;
 
-outputWithColumns_
-    : outputWithColumn_ (COMMA_ outputWithColumn_)*
+outputWithColumns
+    : outputWithColumn (COMMA_ outputWithColumn)*
     ;
 
-outputWithColumn_
+outputWithColumn
     : (INSERTED | DELETED) DOT_ name (AS? alias)?
     ;
 
-outputWithAaterisk_
+outputWithAaterisk
     : (INSERTED | DELETED) DOT_ASTERISK_
     ;
 
-outputTableName_
-    : (AT_? name) | tableName
+outputTableName
+    : (AT_ name) | tableName
+    ;
+
+queryHint
+    : (HASH | ORDER) GROUP
+    | (CONCAT | HASH | MERGE) UNION
+    | (LOOP | MERGE | HASH) JOIN
+    | EXPAND VIEWS
+    | FAST INT_NUM_
+    | FORCE ORDER
+    | (FORCE | DISABLE) EXTERNALPUSHDOWN
+    | (FORCE | DISABLE) SCALEOUTEXECUTION
+    | IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX
+    | KEEP PLAN
+    | KEEPFIXED PLAN
+    | MAX_GRANT_PERCENT EQ_ DECIMAL_NUM_
+    | MIN_GRANT_PERCENT EQ_ DECIMAL_NUM_
+    | MAXDOP INT_NUM_
+    | MAXRECURSION INT_NUM_
+    | NO_PERFORMANCE_SPOOL
+    | OPTIMIZE FOR LP_ AT_ name (UNKNOWN | EQ_ identifier)* RP_
+    | OPTIMIZE FOR UNKNOWN
+    | PARAMETERIZATION (SIMPLE | FORCED)
+    | QUERYTRACEON INT_NUM_
+    | RECOMPILE
+    | ROBUST PLAN
+    | USE HINT LP_ useHitName* RP_
+    | USE PLAN NCHAR_TEXT
+    ;
+
+useHitName
+    : SQ_ ASSUME_JOIN_PREDICATE_DEPENDS_ON_FILTERS SQ_
+    | SQ_ ASSUME_MIN_SELECTIVITY_FOR_FILTER_ESTIMATES SQ_
+    | SQ_ DISABLE_BATCH_MODE_ADAPTIVE_JOINS SQ_
+    | SQ_ DISABLE_BATCH_MODE_MEMORY_GRANT_FEEDBACK SQ_
+    | SQ_ DISABLE_DEFERRED_COMPILATION_TV SQ_
+    | SQ_ DISABLE_INTERLEAVED_EXECUTION_TVF SQ_
+    | SQ_ DISABLE_OPTIMIZED_NESTED_LOOP SQ_
+    | SQ_ DISABLE_OPTIMIZER_ROWGOAL SQ_
+    | SQ_ DISABLE_PARAMETER_SNIFFING SQ_
+    | SQ_ DISABLE_ROW_MODE_MEMORY_GRANT_FEEDBACK SQ_
+    | SQ_ DISABLE_TSQL_SCALAR_UDF_INLINING SQ_
+    | SQ_ DISALLOW_BATCH_MODE SQ_
+    | SQ_ ENABLE_HIST_AMENDMENT_FOR_ASC_KEYS SQ_
+    | SQ_ ENABLE_QUERY_OPTIMIZER_HOTFIXES SQ_
+    | SQ_ FORCE_DEFAULT_CARDINALITY_ESTIMATION SQ_
+    | SQ_ FORCE_LEGACY_CARDINALITY_ESTIMATION SQ_
+    | SQ_ QUERY_OPTIMIZER_COMPATIBILITY_LEVEL_n SQ_
+    | SQ_ QUERY_PLAN_PROFILE SQ_
+    ;
+
+forClause
+    : FOR (BROWSE | forXmlClause | forJsonClause)
+    ;
+
+forXmlClause
+    : XML ((RAW (LP_ stringLiterals RP_)? | AUTO) (commonDirectivesForXml (COMMA_ (XMLDATA | XMLSCHEMA (LP_ stringLiterals RP_)?))? (COMMA_ ELEMENTS (XSINIL | ABSENT)?)?)?
+    | EXPLICIT (commonDirectivesForXml (COMMA_ XMLDATA)?)?
+    | PATH (LP_ stringLiterals RP_)? (commonDirectivesForXml (COMMA_ ELEMENTS (XSINIL | ABSENT)?)?)?)
+    ;
+
+commonDirectivesForXml
+    : (COMMA_ BINARY BASE64)? (COMMA_ TYPE)? (COMMA_ ROOT (LP_ stringLiterals RP_)?)?
+    ;
+
+forJsonClause
+    : JSON ((AUTO | PATH) ((COMMA_ ROOT (LP_ stringLiterals RP_)?)? (COMMA_ INCLUDE_NULL_VALUES)? (COMMA_ WITHOUT_ARRAY_WRAPPER)?)?)
+    ;
+
+selectWithClause
+    : WITH (xmlNamespacesClause COMMA_?)? cteClauseSet?
+    ;
+
+xmlNamespacesClause
+    : XMLNAMESPACES LP_ xmlNamespaceDeclarationItem (COMMA_ xmlNamespaceDeclarationItem)* RP_
+    ;
+
+xmlNamespaceDeclarationItem
+    : xmlNamespaceUri AS xmlNamespacePrefix | xmlDefaultNamespaceDeclarationItem
+    ;
+
+xmlNamespaceUri
+    : stringLiterals
+    ;
+
+xmlNamespacePrefix
+    : identifier
+    ;
+
+xmlDefaultNamespaceDeclarationItem
+    : DEFAULT xmlNamespaceUri
     ;

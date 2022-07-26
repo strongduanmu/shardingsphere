@@ -59,9 +59,10 @@ public class EncryptRuleSpringBootConfiguration {
      * @return encrypt rule configuration
      */
     @Bean
-    public RuleConfiguration encryptRuleConfiguration(final ObjectProvider<Map<String, EncryptAlgorithm>> encryptors) {
+    public RuleConfiguration encryptRuleConfiguration(final ObjectProvider<Map<String, EncryptAlgorithm<?, ?>>> encryptors) {
         AlgorithmProvidedEncryptRuleConfiguration result = swapper.swapToObject(yamlConfig.getEncrypt());
         result.setEncryptors(Optional.ofNullable(encryptors.getIfAvailable()).orElse(Collections.emptyMap()));
+        result.setQueryWithCipherColumn(yamlConfig.getEncrypt().isQueryWithCipherColumn());
         return result;
     }
     
@@ -76,4 +77,3 @@ public class EncryptRuleSpringBootConfiguration {
         return new EncryptAlgorithmProvidedBeanRegistry(environment);
     }
 }
-
