@@ -74,6 +74,8 @@ public enum SQLVisitorRule {
     
     ALTER_MATERIALIZED_VIEW_LOG("AlterMaterializedViewLog", SQLStatementType.DDL),
     
+    ALTER_PLUGGABLE_DATABASE("AlterPluggableDatabase", SQLStatementType.DDL),
+    
     ALTER_OPERATOR("AlterOperator", SQLStatementType.DDL),
     
     DROP_TABLE("DropTable", SQLStatementType.DDL),
@@ -91,6 +93,8 @@ public enum SQLVisitorRule {
     CREATE_PUBLICATION("CreatePublication", SQLStatementType.DDL),
     
     ALTER_PUBLICATION("AlterPublication", SQLStatementType.DDL),
+    
+    ALTER_SUBSCRIPTION("AlterSubscription", SQLStatementType.DDL),
     
     ALTER_PROCEDURE("AlterProcedure", SQLStatementType.DDL),
     
@@ -167,6 +171,8 @@ public enum SQLVisitorRule {
     CREATE_DIRECTORY("CreateDirectory", SQLStatementType.DDL),
     
     ALTER_SERVER("AlterServer", SQLStatementType.DDL),
+    
+    ALTER_STATISTICS("AlterStatistics", SQLStatementType.DDL),
     
     ALTER_SESSION("AlterSession", SQLStatementType.DDL),
     
@@ -506,6 +512,8 @@ public enum SQLVisitorRule {
     
     CREATE_TEXT_SEARCH("CreateTextSearch", SQLStatementType.DDL),
     
+    ALTER_TEXT_SEARCH_CONFIGURATION("AlterTextSearchConfiguration", SQLStatementType.DDL),
+    
     ALTER_TEXT_SEARCH_DICTIONARY("AlterTextSearchDictionary", SQLStatementType.DDL),
     
     ALTER_TEXT_SEARCH_TEMPLATE("AlterTextSearchTemplate", SQLStatementType.DDL),
@@ -596,6 +604,8 @@ public enum SQLVisitorRule {
     
     ALTER_INDEX_TYPE("AlterIndexType", SQLStatementType.DDL),
     
+    ALTER_LOCKDOWN_PROFILE("AlterLockdownProfile", SQLStatementType.DDL),
+    
     CURSOR("Cursor", SQLStatementType.DDL),
     
     CLOSE("Close", SQLStatementType.DDL),
@@ -620,7 +630,17 @@ public enum SQLVisitorRule {
     
     CREATE_EVENT_TRIGGER("CreateEventTrigger", SQLStatementType.DDL),
     
-    CREATE_FOREIGN_DATA_WRAPPER("CreateForeignDataWrapper", SQLStatementType.DDL);
+    CREATE_FOREIGN_DATA_WRAPPER("CreateForeignDataWrapper", SQLStatementType.DDL),
+    
+    CREATE_FOREIGN_TABLE("CreateForeignTable", SQLStatementType.DDL),
+    
+    CREATE_GROUP("CreateGroup", SQLStatementType.DCL),
+    
+    CREATE_MATERIALIZED_VIEW("CreateMaterializedView", SQLStatementType.DDL),
+    
+    CREATE_OPERATOR("CreateOperator", SQLStatementType.DDL),
+    
+    CREATE_POLICY("CreatePolicy", SQLStatementType.DDL);
     
     private final String name;
     

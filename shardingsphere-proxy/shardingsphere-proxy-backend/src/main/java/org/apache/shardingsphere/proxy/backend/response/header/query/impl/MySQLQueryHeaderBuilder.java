@@ -44,7 +44,7 @@ public final class MySQLQueryHeaderBuilder implements QueryHeaderBuilder {
             tableName = getLogicTableName(database, actualTableName);
             ShardingSphereSchema schema = database.getSchema(schemaName);
             primaryKey = null != schema
-                    && Optional.ofNullable(schema.get(tableName)).map(optional -> optional.getColumns().get(columnName.toLowerCase())).map(ShardingSphereColumn::isPrimaryKey).orElse(false);
+                    && Optional.ofNullable(schema.getTable(tableName)).map(optional -> optional.getColumns().get(columnName.toLowerCase())).map(ShardingSphereColumn::isPrimaryKey).orElse(false);
         } else {
             tableName = actualTableName;
             primaryKey = false;
@@ -66,7 +66,7 @@ public final class MySQLQueryHeaderBuilder implements QueryHeaderBuilder {
                 return logicTable.get();
             }
         }
-        return "";
+        return actualTableName;
     }
     
     @Override

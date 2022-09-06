@@ -19,8 +19,8 @@ package org.apache.shardingsphere.test.integration.engine.ddl;
 
 import com.google.common.base.Splitter;
 import org.apache.shardingsphere.infra.datanode.DataNode;
-import org.apache.shardingsphere.sharding.route.engine.exception.NoSuchTableException;
-import org.apache.shardingsphere.infra.expr.InlineExpressionParser;
+import org.apache.shardingsphere.dialect.exception.syntax.table.NoSuchTableException;
+import org.apache.shardingsphere.infra.util.expr.InlineExpressionParser;
 import org.apache.shardingsphere.test.integration.cases.dataset.metadata.DataSetColumn;
 import org.apache.shardingsphere.test.integration.cases.dataset.metadata.DataSetIndex;
 import org.apache.shardingsphere.test.integration.cases.dataset.metadata.DataSetMetaData;
@@ -57,22 +57,11 @@ public abstract class BaseDDLIT extends SingleITCase {
         assertNotNull("Expected affected table is required", getAssertion().getInitialSQL());
         assertNotNull("Init SQL is required", getAssertion().getInitialSQL().getAffectedTable());
         try (Connection connection = getTargetDataSource().getConnection()) {
-            executeInitSQLs(connection);
+            synchronizedExecuteInitSQLs(connection);
         }
     }
     
-    @After
-    public final void tearDown() {
-        try (Connection connection = getTargetDataSource().getConnection()) {
-            String dropSql = String.format("DROP TABLE %s", getAssertion().getInitialSQL().getAffectedTable());
-            try (PreparedStatement preparedStatement = connection.prepareStatement(dropSql)) {
-                preparedStatement.executeUpdate();
-            }
-        } catch (final SQLException | NoSuchTableException ignored) {
-        }
-    }
-    
-    private void executeInitSQLs(final Connection connection) throws SQLException {
+    private synchronized void synchronizedExecuteInitSQLs(final Connection connection) throws SQLException {
         if (null == getAssertion().getInitialSQL().getSql()) {
             return;
         }
@@ -80,6 +69,20 @@ public abstract class BaseDDLIT extends SingleITCase {
             try (PreparedStatement preparedStatement = connection.prepareStatement(each)) {
                 preparedStatement.executeUpdate();
             }
+        }
+    }
+    
+    @After
+    public final void tearDown() {
+        try (Connection connection = getTargetDataSource().getConnection()) {
+            synchronizedExecuteDropSQLs(connection, String.format("DROP TABLE %s", getAssertion().getInitialSQL().getAffectedTable()));
+        } catch (final SQLException | NoSuchTableException ignored) {
+        }
+    }
+    
+    private synchronized void synchronizedExecuteDropSQLs(final Connection connection, final String sql) throws SQLException {
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.executeUpdate();
         }
     }
     
@@ -128,7 +131,8 @@ public abstract class BaseDDLIT extends SingleITCase {
             while (resultSet.next()) {
                 DataSetColumn each = new DataSetColumn();
                 each.setName(resultSet.getString("COLUMN_NAME"));
-                each.setType(resultSet.getString("TYPE_NAME").toLowerCase());
+                String typeName = resultSet.getString("TYPE_NAME");
+                each.setType("CHARACTER VARYING".equals(typeName) ? "VARCHAR".toLowerCase() : typeName.toLowerCase());
                 result.add(each);
             }
             return result;

@@ -17,8 +17,9 @@
 
 package org.apache.shardingsphere.infra.route.engine.impl;
 
-import org.apache.shardingsphere.infra.binder.LogicSQL;
+import org.apache.shardingsphere.infra.binder.QueryContext;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
+import org.apache.shardingsphere.infra.context.ConnectionContext;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.route.SQLRouter;
 import org.apache.shardingsphere.infra.route.SQLRouterFactory;
@@ -50,13 +51,13 @@ public final class PartialSQLRouteExecutor implements SQLRouteExecutor {
     
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public RouteContext route(final LogicSQL logicSQL, final ShardingSphereDatabase database) {
+    public RouteContext route(final ConnectionContext connectionContext, final QueryContext queryContext, final ShardingSphereDatabase database) {
         RouteContext result = new RouteContext();
         for (Entry<ShardingSphereRule, SQLRouter> entry : routers.entrySet()) {
             if (result.getRouteUnits().isEmpty()) {
-                result = entry.getValue().createRouteContext(logicSQL, database, entry.getKey(), props);
+                result = entry.getValue().createRouteContext(queryContext, database, entry.getKey(), props, connectionContext);
             } else {
-                entry.getValue().decorateRouteContext(result, logicSQL, database, entry.getKey(), props);
+                entry.getValue().decorateRouteContext(result, queryContext, database, entry.getKey(), props, connectionContext);
             }
         }
         if (result.getRouteUnits().isEmpty() && 1 == database.getResource().getDataSources().size()) {
@@ -65,5 +66,4 @@ public final class PartialSQLRouteExecutor implements SQLRouteExecutor {
         }
         return result;
     }
-    
 }

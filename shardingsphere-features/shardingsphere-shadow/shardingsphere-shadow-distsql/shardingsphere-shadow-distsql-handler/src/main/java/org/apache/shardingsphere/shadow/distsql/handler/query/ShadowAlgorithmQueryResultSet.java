@@ -17,10 +17,10 @@
 
 package org.apache.shardingsphere.shadow.distsql.handler.query;
 
-import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
-import org.apache.shardingsphere.infra.distsql.query.DistSQLResultSet;
+import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
+import org.apache.shardingsphere.infra.distsql.query.DatabaseDistSQLResultSet;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.infra.properties.PropertiesConverter;
+import org.apache.shardingsphere.infra.util.props.PropertiesConverter;
 import org.apache.shardingsphere.shadow.api.config.ShadowRuleConfiguration;
 import org.apache.shardingsphere.shadow.distsql.parser.statement.ShowShadowAlgorithmsStatement;
 import org.apache.shardingsphere.shadow.rule.ShadowRule;
@@ -38,9 +38,9 @@ import java.util.Properties;
 /**
  * Query result set for show shadow algorithm.
  */
-public final class ShadowAlgorithmQueryResultSet implements DistSQLResultSet {
+public final class ShadowAlgorithmQueryResultSet implements DatabaseDistSQLResultSet {
     
-    private Iterator<Entry<String, ShardingSphereAlgorithmConfiguration>> data = Collections.emptyIterator();
+    private Iterator<Entry<String, AlgorithmConfiguration>> data = Collections.emptyIterator();
     
     private String defaultAlgorithm;
     
@@ -69,7 +69,7 @@ public final class ShadowAlgorithmQueryResultSet implements DistSQLResultSet {
         return buildTableRowData(data.next());
     }
     
-    private Collection<Object> buildTableRowData(final Entry<String, ShardingSphereAlgorithmConfiguration> data) {
+    private Collection<Object> buildTableRowData(final Entry<String, AlgorithmConfiguration> data) {
         return Arrays.asList(data.getKey(), data.getValue().getType(), convertToString(data.getValue().getProps()), Boolean.valueOf(data.getKey().equals(defaultAlgorithm)).toString());
     }
     

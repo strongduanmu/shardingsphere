@@ -71,6 +71,8 @@ import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.InsertV
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.IntervalExpressionContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.JoinSpecificationContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.JoinedTableContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.JsonFunctionContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.JsonFunctionNameContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.LimitClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.LimitOffsetContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.LimitRowCountContext;
@@ -79,6 +81,7 @@ import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.LockCla
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.LockClauseListContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.MatchExpressionContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.MultipleTablesClauseContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.NaturalJoinTypeContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.NullValueLiteralsContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.NumberLiteralsContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.OnDuplicateKeyClauseContext;
@@ -147,6 +150,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.Se
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.InsertColumnsSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.OnDuplicateKeyColumnsSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.combine.CombineSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.BetweenExpression;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.BinaryOperationExpression;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.CollateExpression;
@@ -183,7 +187,6 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.pagination.li
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.HavingSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.LockSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.combine.CombineSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.AliasSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.DataTypeLengthSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.DataTypeSegment;
@@ -759,7 +762,10 @@ public abstract class MySQLStatementSQLVisitor extends MySQLStatementBaseVisitor
         if (null != ctx.regularFunction()) {
             return visit(ctx.regularFunction());
         }
-        throw new IllegalStateException("FunctionCallContext must have aggregationFunction, regularFunction or specialFunction.");
+        if (null != ctx.jsonFunction()) {
+            return visit(ctx.jsonFunction());
+        }
+        throw new IllegalStateException("FunctionCallContext must have aggregationFunction, regularFunction, specialFunction or jsonFunction.");
     }
     
     @Override
@@ -768,6 +774,20 @@ public abstract class MySQLStatementSQLVisitor extends MySQLStatementBaseVisitor
         return AggregationType.isAggregationType(aggregationType)
                 ? createAggregationSegment(ctx, aggregationType)
                 : new ExpressionProjectionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), getOriginalText(ctx));
+    }
+    
+    @Override
+    public final ASTNode visitJsonFunction(final JsonFunctionContext ctx) {
+        JsonFunctionNameContext functionNameContext = ctx.jsonFunctionName();
+        String functionName;
+        if (null != functionNameContext) {
+            functionName = functionNameContext.getText();
+        } else if (null != ctx.JSON_SEPARATOR()) {
+            functionName = ctx.JSON_SEPARATOR().getText();
+        } else {
+            functionName = ctx.JSON_UNQUOTED_SEPARATOR().getText();
+        }
+        return new FunctionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), functionName, getOriginalText(ctx));
     }
     
     private ASTNode createAggregationSegment(final AggregationFunctionContext ctx, final String aggregationType) {
@@ -1210,7 +1230,7 @@ public abstract class MySQLStatementSQLVisitor extends MySQLStatementBaseVisitor
     public ASTNode visitUpdate(final UpdateContext ctx) {
         MySQLUpdateStatement result = new MySQLUpdateStatement();
         TableSegment tableSegment = (TableSegment) visit(ctx.tableReferences());
-        result.setTableSegment(tableSegment);
+        result.setTable(tableSegment);
         result.setSetAssignment((SetAssignmentSegment) visit(ctx.setAssignmentsClause()));
         if (null != ctx.whereClause()) {
             result.setWhere((WhereSegment) visit(ctx.whereClause()));
@@ -1276,9 +1296,9 @@ public abstract class MySQLStatementSQLVisitor extends MySQLStatementBaseVisitor
     public ASTNode visitDelete(final DeleteContext ctx) {
         MySQLDeleteStatement result = new MySQLDeleteStatement();
         if (null != ctx.multipleTablesClause()) {
-            result.setTableSegment((TableSegment) visit(ctx.multipleTablesClause()));
+            result.setTable((TableSegment) visit(ctx.multipleTablesClause()));
         } else {
-            result.setTableSegment((TableSegment) visit(ctx.singleTableClause()));
+            result.setTable((TableSegment) visit(ctx.singleTableClause()));
         }
         if (null != ctx.whereClause()) {
             result.setWhere((WhereSegment) visit(ctx.whereClause()));
@@ -1501,6 +1521,7 @@ public abstract class MySQLStatementSQLVisitor extends MySQLStatementBaseVisitor
         result.setStartIndex(tableSegment.getStartIndex());
         result.setStopIndex(ctx.stop.getStopIndex());
         result.setLeft(tableSegment);
+        result.setJoinType(JoinType.COMMA.name());
         result.setRight((TableSegment) visit(ctx));
         return result;
     }
@@ -1558,39 +1579,41 @@ public abstract class MySQLStatementSQLVisitor extends MySQLStatementBaseVisitor
         result.setJoinType(getJoinType(ctx));
         TableSegment right = null != ctx.tableFactor() ? (TableSegment) visit(ctx.tableFactor()) : (TableSegment) visit(ctx.tableReference());
         result.setRight(right);
-        if (null != ctx.joinSpecification()) {
-            result = visitJoinSpecification(ctx.joinSpecification(), result);
-        }
-        return result;
+        return null != ctx.joinSpecification() ? visitJoinSpecification(ctx.joinSpecification(), result) : result;
     }
     
     private String getJoinType(final JoinedTableContext ctx) {
-        String joinType = null;
         if (null != ctx.innerJoinType()) {
-            joinType = ctx.innerJoinType().JOIN() != null ? JoinType.MYSQL_INNER_JOIN.getJoinType() : JoinType.MYSQL_STRAIGHT_JOIN.getJoinType();
-        } else if (null != ctx.outerJoinType()) {
-            joinType = ctx.outerJoinType().LEFT() != null ? JoinType.MYSQL_LEFT_JOIN.getJoinType() : JoinType.MYSQL_RIGHT_JOIN.getJoinType();
-        } else if (null != ctx.naturalJoinType()) {
-            if (null != ctx.naturalJoinType().LEFT()) {
-                joinType = JoinType.MYSQL_NATURAL_LEFT_JOIN.getJoinType();
-            } else if (null != ctx.naturalJoinType().RIGHT()) {
-                joinType = JoinType.MYSQL_NATURAL_RIGHT_JOIN.getJoinType();
-            } else {
-                joinType = JoinType.MYSQL_NATURAL_INNER_JOIN.getJoinType();
-            }
+            return JoinType.INNER.name();
         }
-        return joinType;
+        if (null != ctx.outerJoinType()) {
+            return ctx.outerJoinType().LEFT() != null ? JoinType.LEFT.name() : JoinType.RIGHT.name();
+        }
+        if (null != ctx.naturalJoinType()) {
+            return getNaturalJoinType(ctx.naturalJoinType());
+        }
+        return JoinType.COMMA.name();
     }
     
-    private JoinTableSegment visitJoinSpecification(final JoinSpecificationContext ctx, final JoinTableSegment joinTableSource) {
+    private static String getNaturalJoinType(final NaturalJoinTypeContext ctx) {
+        if (null != ctx.LEFT()) {
+            return JoinType.LEFT.name();
+        } else if (null != ctx.RIGHT()) {
+            return JoinType.RIGHT.name();
+        } else {
+            return JoinType.INNER.name();
+        }
+    }
+    
+    private JoinTableSegment visitJoinSpecification(final JoinSpecificationContext ctx, final JoinTableSegment result) {
         if (null != ctx.expr()) {
             ExpressionSegment condition = (ExpressionSegment) visit(ctx.expr());
-            joinTableSource.setCondition(condition);
+            result.setCondition(condition);
         }
         if (null != ctx.USING()) {
-            joinTableSource.setUsing(ctx.columnNames().columnName().stream().map(each -> (ColumnSegment) visit(each)).collect(Collectors.toList()));
+            result.setUsing(ctx.columnNames().columnName().stream().map(each -> (ColumnSegment) visit(each)).collect(Collectors.toList()));
         }
-        return joinTableSource;
+        return result;
     }
     
     @Override

@@ -169,5 +169,16 @@ execute
     | securityLabelStmt
     | createEventTrigger
     | createForeignDataWrapper
+    | createForeignTable
+    | alterStatistics
+    | createGroup
+    | alterSubscription
+    | createMaterializedView
+    | createOperator
+    | alterTextSearchConfiguration
+    | createPolicy
+    | alterType
+    | alterTrigger
+    | createPublication
     ) SEMI_? EOF
     ;

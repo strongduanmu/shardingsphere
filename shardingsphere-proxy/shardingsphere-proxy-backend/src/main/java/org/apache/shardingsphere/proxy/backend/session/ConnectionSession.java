@@ -21,14 +21,13 @@ import io.netty.util.AttributeMap;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.shardingsphere.infra.binder.statement.ddl.CursorStatementContext;
+import org.apache.shardingsphere.infra.binder.QueryContext;
 import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
+import org.apache.shardingsphere.infra.context.ConnectionContext;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.infra.exception.ShardingSphereException;
 import org.apache.shardingsphere.infra.executor.sql.prepare.driver.ExecutorStatementManager;
 import org.apache.shardingsphere.infra.metadata.user.Grantee;
 import org.apache.shardingsphere.proxy.backend.communication.BackendConnection;
-import org.apache.shardingsphere.proxy.backend.communication.SQLStatementDatabaseHolder;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.JDBCBackendConnection;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.statement.JDBCBackendStatement;
 import org.apache.shardingsphere.proxy.backend.communication.vertx.VertxBackendConnection;
@@ -37,9 +36,6 @@ import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.session.transaction.TransactionStatus;
 import org.apache.shardingsphere.sql.parser.sql.common.constant.TransactionIsolationLevel;
 import org.apache.shardingsphere.transaction.core.TransactionType;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Connection session.
@@ -73,9 +69,13 @@ public final class ConnectionSession {
     
     private final ExecutorStatementManager statementManager;
     
-    private final Map<String, CursorStatementContext> cursorDefinitions = new ConcurrentHashMap<>();
-    
     private final PreparedStatementRegistry preparedStatementRegistry = new PreparedStatementRegistry();
+    
+    private final ConnectionContext connectionContext;
+    
+    private final RequiredSessionVariableRecorder requiredSessionVariableRecorder = new RequiredSessionVariableRecorder();
+    
+    private QueryContext queryContext;
     
     public ConnectionSession(final DatabaseType databaseType, final TransactionType initialTransactionType, final AttributeMap attributeMap) {
         this.databaseType = databaseType;
@@ -83,6 +83,7 @@ public final class ConnectionSession {
         this.attributeMap = attributeMap;
         backendConnection = determineBackendConnection();
         statementManager = determineStatementManager();
+        connectionContext = new ConnectionContext();
     }
     
     private BackendConnection determineBackendConnection() {
@@ -104,12 +105,6 @@ public final class ConnectionSession {
         if (null != databaseName && databaseName.equals(this.databaseName)) {
             return;
         }
-        if (transactionStatus.isInTransaction()) {
-            throw new ShardingSphereException("Failed to switch database, please terminate current transaction.");
-        }
-        if (statementManager instanceof JDBCBackendStatement) {
-            ((JDBCBackendStatement) statementManager).setDatabaseName(databaseName);
-        }
         this.databaseName = databaseName;
     }
     
@@ -119,7 +114,7 @@ public final class ConnectionSession {
      * @return database name
      */
     public String getDatabaseName() {
-        return null == SQLStatementDatabaseHolder.get() ? databaseName : SQLStatementDatabaseHolder.get();
+        return null == queryContext ? databaseName : queryContext.findSqlStatementDatabaseName().orElse(databaseName);
     }
     
     /**
@@ -129,5 +124,12 @@ public final class ConnectionSession {
      */
     public String getDefaultDatabaseName() {
         return databaseName;
+    }
+    
+    /**
+     * Clear query context.
+     */
+    public void clearQueryContext() {
+        queryContext = null;
     }
 }

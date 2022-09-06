@@ -26,29 +26,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Standalone mutex lock of ShardingSphere.
+ * Standalone lock of ShardingSphere.
  */
 public final class ShardingSphereStandaloneLock implements ShardingSphereLock {
-    
-    private static final long DEFAULT_TRY_LOCK_TIMEOUT_MILLISECONDS = 3 * 60 * 1000;
     
     private final Map<String, ReentrantLock> locks = new ConcurrentHashMap<>();
     
     @Override
-    public boolean tryLock(final String lockName) {
-        return tryLock(lockName, DEFAULT_TRY_LOCK_TIMEOUT_MILLISECONDS);
-    }
-    
-    @Override
-    public boolean tryLock(final String lockName, final long timeoutMillis) {
-        return innerTryLock(lockName, timeoutMillis);
-    }
-    
-    private synchronized boolean innerTryLock(final String lockName, final long timeoutMillis) {
+    public synchronized boolean tryLock(final String lockName, final long timeoutMillis) {
         Preconditions.checkNotNull(lockName, "Try lock args lockName name can not be null.");
         ReentrantLock lock = locks.get(lockName);
         if (null == lock) {
-            lock = new StandaloneMutexLock();
+            lock = new StandaloneExclusiveLock();
             locks.put(lockName, lock);
         }
         return innerTryLock(lock, timeoutMillis);
@@ -63,21 +52,8 @@ public final class ShardingSphereStandaloneLock implements ShardingSphereLock {
     }
     
     @Override
-    public void releaseLock(final String lockName) {
-        Preconditions.checkNotNull(lockName, "Release lock args lockName name can not be null.");
+    public void unlock(final String lockName) {
+        Preconditions.checkNotNull(lockName, "Un-lock args lockName name can not be null.");
         locks.get(lockName).unlock();
-    }
-    
-    @Override
-    public boolean isLocked(final String lockName) {
-        Preconditions.checkNotNull(lockName, "Is locked args lockName name can not be null.");
-        if (locks.isEmpty()) {
-            return false;
-        }
-        ReentrantLock lock = locks.get(lockName);
-        if (null == lock) {
-            return false;
-        }
-        return lock.isLocked();
     }
 }

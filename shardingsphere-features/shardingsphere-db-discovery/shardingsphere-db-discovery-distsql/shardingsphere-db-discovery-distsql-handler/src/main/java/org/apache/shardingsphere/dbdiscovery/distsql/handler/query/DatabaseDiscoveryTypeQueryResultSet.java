@@ -20,8 +20,8 @@ package org.apache.shardingsphere.dbdiscovery.distsql.handler.query;
 import org.apache.shardingsphere.dbdiscovery.api.config.DatabaseDiscoveryRuleConfiguration;
 import org.apache.shardingsphere.dbdiscovery.distsql.parser.statement.ShowDatabaseDiscoveryTypesStatement;
 import org.apache.shardingsphere.dbdiscovery.rule.DatabaseDiscoveryRule;
-import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
-import org.apache.shardingsphere.infra.distsql.query.DistSQLResultSet;
+import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
+import org.apache.shardingsphere.infra.distsql.query.DatabaseDistSQLResultSet;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 
@@ -34,9 +34,9 @@ import java.util.Map.Entry;
 /**
  * Query result set for show database discovery type.
  */
-public final class DatabaseDiscoveryTypeQueryResultSet implements DistSQLResultSet {
+public final class DatabaseDiscoveryTypeQueryResultSet implements DatabaseDistSQLResultSet {
     
-    private Iterator<Entry<String, ShardingSphereAlgorithmConfiguration>> data = Collections.emptyIterator();
+    private Iterator<Entry<String, AlgorithmConfiguration>> data = Collections.emptyIterator();
     
     @Override
     public void init(final ShardingSphereDatabase database, final SQLStatement sqlStatement) {
@@ -56,7 +56,7 @@ public final class DatabaseDiscoveryTypeQueryResultSet implements DistSQLResultS
     
     @Override
     public Collection<Object> getRowData() {
-        Entry<String, ShardingSphereAlgorithmConfiguration> entry = data.next();
+        Entry<String, AlgorithmConfiguration> entry = data.next();
         return Arrays.asList(entry.getKey(), entry.getValue().getType(), entry.getValue().getProps());
     }
     

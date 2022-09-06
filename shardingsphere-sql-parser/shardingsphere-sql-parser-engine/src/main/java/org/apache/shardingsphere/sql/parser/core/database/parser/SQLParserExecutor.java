@@ -45,7 +45,7 @@ public final class SQLParserExecutor {
     public ParseASTNode parse(final String sql) {
         ParseASTNode result = twoPhaseParse(sql);
         if (result.getRootNode() instanceof ErrorNode) {
-            throw new SQLParsingException("Unsupported SQL of `%s`", sql);
+            throw new SQLParsingException(sql);
         }
         return result;
     }
@@ -59,10 +59,12 @@ public final class SQLParserExecutor {
         } catch (final ParseCancellationException ex) {
             ((Parser) sqlParser).reset();
             ((Parser) sqlParser).getInterpreter().setPredictionMode(PredictionMode.LL);
+            ((Parser) sqlParser).removeErrorListeners();
+            ((Parser) sqlParser).addErrorListener(SQLParserErrorListener.getInstance());
             try {
                 return (ParseASTNode) sqlParser.parse();
             } catch (final ParseCancellationException e) {
-                throw new SQLParsingException("You have an error in your SQL syntax");
+                throw new SQLParsingException(sql + ", " + e.getMessage());
             }
         }
     }

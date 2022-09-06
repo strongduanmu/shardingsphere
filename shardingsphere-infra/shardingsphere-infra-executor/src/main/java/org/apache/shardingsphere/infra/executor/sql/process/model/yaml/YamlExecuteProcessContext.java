@@ -17,13 +17,15 @@
 
 package org.apache.shardingsphere.infra.executor.sql.process.model.yaml;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.shardingsphere.infra.executor.sql.process.model.ExecuteProcessContext;
+import org.apache.shardingsphere.infra.executor.sql.process.model.ExecuteProcessUnit;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * Execute process context for YAML.
@@ -54,7 +56,10 @@ public final class YamlExecuteProcessContext {
         username = executeProcessContext.getUsername();
         hostname = executeProcessContext.getHostname();
         sql = executeProcessContext.getSql();
-        unitStatuses = executeProcessContext.getUnitStatuses().stream().map(YamlExecuteProcessUnit::new).collect(Collectors.toList());
+        unitStatuses = new ArrayList<>(executeProcessContext.getProcessUnits().size());
+        for (ExecuteProcessUnit each : executeProcessContext.getProcessUnits().values()) {
+            unitStatuses.add(new YamlExecuteProcessUnit(each));
+        }
         startTimeMillis = executeProcessContext.getStartTimeMillis();
     }
 }

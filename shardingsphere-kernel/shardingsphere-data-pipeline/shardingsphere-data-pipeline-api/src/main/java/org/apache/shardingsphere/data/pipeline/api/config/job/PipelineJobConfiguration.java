@@ -30,9 +30,16 @@ public interface PipelineJobConfiguration {
     String getJobId();
     
     /**
-     * Get database name.
+     * Get job sharding count.
      *
-     * @return database name
+     * @return job sharding count
      */
-    String getDatabaseName();
+    int getJobShardingCount();
+    
+    /**
+     * Get source database type.
+     *
+     * @return source database type
+     */
+    String getSourceDatabaseType();
 }

@@ -17,11 +17,8 @@
 
 package org.apache.shardingsphere.mode.repository.cluster;
 
-import org.apache.shardingsphere.infra.instance.InstanceContext;
 import org.apache.shardingsphere.mode.persist.PersistRepository;
 import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEventListener;
-
-import java.util.concurrent.locks.Lock;
 
 /**
  * Cluster persist repository.
@@ -44,13 +41,21 @@ public interface ClusterPersistRepository extends PersistRepository {
     void persistEphemeral(String key, String value);
     
     /**
-     * Get sequential id.
-     * 
+     * Persist exclusive ephemeral data.
+     *
      * @param key key of data
-     * @param value value of data
-     * @return sequential id
+     * @param value is persisted or not
      */
-    String getSequentialId(String key, String value);
+    void persistExclusiveEphemeral(String key, String value);
+    
+    /**
+     * Persist lock.
+     *
+     * @param lockKey lock key
+     * @param timeoutMillis timeout millis
+     * @return is locked or not
+     */
+    boolean persistLock(String lockKey, long timeoutMillis);
     
     /**
      * Watch key or path of governance server.
@@ -59,27 +64,4 @@ public interface ClusterPersistRepository extends PersistRepository {
      * @param listener data changed event listener
      */
     void watch(String key, DataChangedEventListener listener);
-    
-    /**
-     * Watch session connection.
-     *
-     * @param instanceContext instance context
-     */
-    void watchSessionConnection(InstanceContext instanceContext);
-    
-    /**
-     * Get internal mutex lock.
-     *
-     * @param lockName lock name
-     * @return internal mutex lock
-     */
-    Lock getInternalMutexLock(String lockName);
-    
-    /**
-     * Get internal reentrant mutex lock.
-     *
-     * @param lockName lock name
-     * @return internal reentrant mutex lock
-     */
-    Lock getInternalReentrantMutexLock(String lockName);
 }

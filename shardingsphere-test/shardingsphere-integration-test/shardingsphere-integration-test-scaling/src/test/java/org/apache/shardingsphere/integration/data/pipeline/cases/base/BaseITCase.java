@@ -21,53 +21,42 @@ import com.zaxxer.hikari.HikariDataSource;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.shardingsphere.data.pipeline.api.job.JobStatus;
 import org.apache.shardingsphere.data.pipeline.core.util.ThreadUtil;
-import org.apache.shardingsphere.infra.database.metadata.url.JdbcUrlAppender;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
-import org.apache.shardingsphere.integration.data.pipeline.cases.command.CommonSQLCommand;
+import org.apache.shardingsphere.integration.data.pipeline.cases.command.ExtraSQLCommand;
 import org.apache.shardingsphere.integration.data.pipeline.env.IntegrationTestEnvironment;
-import org.apache.shardingsphere.integration.data.pipeline.env.enums.ScalingITEnvTypeEnum;
+import org.apache.shardingsphere.integration.data.pipeline.env.enums.ITEnvTypeEnum;
 import org.apache.shardingsphere.integration.data.pipeline.framework.container.compose.BaseComposedContainer;
 import org.apache.shardingsphere.integration.data.pipeline.framework.container.compose.DockerComposedContainer;
 import org.apache.shardingsphere.integration.data.pipeline.framework.container.compose.NativeComposedContainer;
-import org.apache.shardingsphere.integration.data.pipeline.framework.helper.ScalingCaseHelper;
 import org.apache.shardingsphere.integration.data.pipeline.framework.param.ScalingParameterized;
 import org.apache.shardingsphere.integration.data.pipeline.framework.watcher.ScalingWatcher;
-import org.apache.shardingsphere.integration.data.pipeline.util.DatabaseTypeUtil;
+import org.apache.shardingsphere.test.integration.env.container.atomic.constants.ProxyContainerConstants;
 import org.apache.shardingsphere.test.integration.env.container.atomic.storage.DockerStorageContainer;
+import org.apache.shardingsphere.test.integration.env.container.atomic.util.DatabaseTypeUtil;
 import org.apache.shardingsphere.test.integration.env.runtime.DataSourceEnvironment;
 import org.junit.Rule;
 import org.opengauss.util.PSQLException;
-import org.springframework.dao.DataAccessException;
-import org.springframework.jdbc.BadSqlGrammarException;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.sql.DataSource;
 import javax.xml.bind.JAXB;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 @Slf4j
@@ -76,7 +65,9 @@ public abstract class BaseITCase {
     
     protected static final IntegrationTestEnvironment ENV = IntegrationTestEnvironment.getInstance();
     
-    protected static final JdbcUrlAppender JDBC_URL_APPENDER = new JdbcUrlAppender();
+    protected static final String SCHEMA_NAME = "test";
+    
+    protected static final String PROXY_DATABASE = "sharding_db";
     
     protected static final String DS_0 = "scaling_it_0";
     
@@ -90,13 +81,15 @@ public abstract class BaseITCase {
     
     protected static final Executor SCALING_EXECUTOR = Executors.newFixedThreadPool(5);
     
+    protected static final int TABLE_INIT_ROW_COUNT = 3000;
+    
     @Rule
     @Getter(AccessLevel.NONE)
     public ScalingWatcher scalingWatcher;
     
     private final BaseComposedContainer composedContainer;
     
-    private final CommonSQLCommand commonSQLCommand;
+    private final ExtraSQLCommand extraSQLCommand;
     
     private final DatabaseType databaseType;
     
@@ -104,37 +97,39 @@ public abstract class BaseITCase {
     
     private final String password;
     
-    private JdbcTemplate jdbcTemplate;
+    private DataSource sourceDataSource;
+    
+    private DataSource proxyDataSource;
     
     @Setter
     private Thread increaseTaskThread;
     
     public BaseITCase(final ScalingParameterized parameterized) {
         databaseType = parameterized.getDatabaseType();
-        if (ENV.getItEnvType() == ScalingITEnvTypeEnum.DOCKER) {
+        if (ENV.getItEnvType() == ITEnvTypeEnum.DOCKER) {
             composedContainer = new DockerComposedContainer(parameterized.getDatabaseType(), parameterized.getDockerImageName());
         } else {
             composedContainer = new NativeComposedContainer(parameterized.getDatabaseType());
         }
         composedContainer.start();
-        if (ENV.getItEnvType() == ScalingITEnvTypeEnum.DOCKER) {
+        if (ENV.getItEnvType() == ITEnvTypeEnum.DOCKER) {
             DockerStorageContainer storageContainer = ((DockerComposedContainer) composedContainer).getStorageContainer();
             username = storageContainer.getUsername();
-            password = storageContainer.getUnifiedPassword();
+            password = storageContainer.getPassword();
         } else {
             username = ENV.getActualDataSourceUsername(databaseType);
             password = ENV.getActualDataSourcePassword(databaseType);
         }
         createProxyDatabase(parameterized.getDatabaseType());
-        if (ENV.getItEnvType() == ScalingITEnvTypeEnum.NATIVE) {
+        if (ENV.getItEnvType() == ITEnvTypeEnum.NATIVE) {
             cleanUpDataSource();
         }
-        commonSQLCommand = JAXB.unmarshal(Objects.requireNonNull(BaseITCase.class.getClassLoader().getResource("env/common/command.xml")), CommonSQLCommand.class);
-        scalingWatcher = new ScalingWatcher(composedContainer, jdbcTemplate);
+        extraSQLCommand = JAXB.unmarshal(Objects.requireNonNull(BaseITCase.class.getClassLoader().getResource(parameterized.getScenario())), ExtraSQLCommand.class);
+        scalingWatcher = new ScalingWatcher(composedContainer);
     }
     
     private void cleanUpDataSource() {
-        for (String each : Arrays.asList(DS_0, DS_1, DS_2, DS_3, DS_4)) {
+        for (String each : Arrays.asList(DS_0, DS_2, DS_3, DS_4)) {
             composedContainer.cleanUpDatabase(each);
         }
     }
@@ -145,141 +140,80 @@ public abstract class BaseITCase {
             defaultDatabaseName = "postgres";
         }
         String jdbcUrl = composedContainer.getProxyJdbcUrl(defaultDatabaseName);
-        if (DatabaseTypeUtil.isPostgreSQL(databaseType) || DatabaseTypeUtil.isOpenGauss(databaseType)) {
-            jdbcUrl = JDBC_URL_APPENDER.appendQueryProperties(jdbcUrl, ScalingCaseHelper.getPostgreSQLQueryProperties());
-        }
-        try (Connection connection = DriverManager.getConnection(jdbcUrl, "root", "Root@123")) {
-            if (ENV.getItEnvType() == ScalingITEnvTypeEnum.NATIVE) {
+        try (Connection connection = DriverManager.getConnection(jdbcUrl, ProxyContainerConstants.USERNAME, ProxyContainerConstants.PASSWORD)) {
+            if (ENV.getItEnvType() == ITEnvTypeEnum.NATIVE) {
                 try {
-                    executeWithLog(connection, "DROP DATABASE sharding_db");
+                    connectionExecuteWithLog(connection, String.format("DROP DATABASE %s", PROXY_DATABASE));
                 } catch (final SQLException ex) {
-                    log.warn("Drop sharding_db failed, maybe it's not exist. error msg={}", ex.getMessage());
+                    log.warn("Drop proxy database failed, maybe it's not exist. error msg={}", ex.getMessage());
                 }
             }
-            executeWithLog(connection, "CREATE DATABASE sharding_db");
+            connectionExecuteWithLog(connection, String.format("CREATE DATABASE %s", PROXY_DATABASE));
         } catch (final SQLException ex) {
             throw new IllegalStateException(ex);
         }
-        jdbcTemplate = new JdbcTemplate(getProxyDataSource("sharding_db"));
+        sourceDataSource = getDataSource(getActualJdbcUrlTemplate(DS_0, false), username, password);
+        proxyDataSource = getDataSource(composedContainer.getProxyJdbcUrl(PROXY_DATABASE), ProxyContainerConstants.USERNAME, ProxyContainerConstants.PASSWORD);
     }
     
-    protected DataSource getProxyDataSource(final String databaseName) {
+    private DataSource getDataSource(final String jdbcUrl, final String username, final String password) {
         HikariDataSource result = new HikariDataSource();
         result.setDriverClassName(DataSourceEnvironment.getDriverClassName(getDatabaseType()));
-        result.setJdbcUrl(composedContainer.getProxyJdbcUrl(databaseName));
-        result.setUsername("root");
-        result.setPassword("Root@123");
+        result.setJdbcUrl(jdbcUrl);
+        result.setUsername(username);
+        result.setPassword(password);
         result.setMaximumPoolSize(2);
         result.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
         return result;
     }
     
-    protected boolean waitShardingAlgorithmEffect(final int maxWaitTimes) {
-        long startTime = System.currentTimeMillis();
-        int waitTimes = 0;
-        do {
-            List<Map<String, Object>> result = queryForListWithLog("SHOW SHARDING ALGORITHMS");
-            if (result.size() >= 3) {
-                log.info("waitShardingAlgorithmEffect time consume: {}", System.currentTimeMillis() - startTime);
-                return true;
-            }
-            ThreadUtil.sleep(2, TimeUnit.SECONDS);
-            waitTimes++;
-        } while (waitTimes <= maxWaitTimes);
-        return false;
+    protected void addResource(final String distSQL) throws SQLException {
+        proxyExecuteWithLog(distSQL, 2);
     }
     
-    @SneakyThrows
-    protected void addSourceResource() {
-        // TODO if mysql can append database firstly, they can be combined
-        if (databaseType instanceof MySQLDatabaseType) {
-            try (Connection connection = DriverManager.getConnection(getComposedContainer().getProxyJdbcUrl(""), "root", "Root@123")) {
-                connection.createStatement().execute("USE sharding_db");
-                addSourceResource0(connection);
-            }
-        } else {
-            Properties queryProps = ScalingCaseHelper.getPostgreSQLQueryProperties();
-            try (Connection connection = DriverManager.getConnection(JDBC_URL_APPENDER.appendQueryProperties(getComposedContainer().getProxyJdbcUrl("sharding_db"), queryProps), "root", "Root@123")) {
-                addSourceResource0(connection);
-            }
-        }
-        List<Map<String, Object>> resources = queryForListWithLog("SHOW DATABASE RESOURCES FROM sharding_db");
-        assertThat(resources.size(), is(2));
-    }
-    
-    private void addSourceResource0(final Connection connection) throws SQLException {
-        String addSourceResource = commonSQLCommand.getSourceAddResourceTemplate().replace("${user}", username)
-                .replace("${password}", password)
-                .replace("${ds0}", getActualJdbcUrlTemplate(DS_0))
-                .replace("${ds1}", getActualJdbcUrlTemplate(DS_1));
-        executeWithLog(connection, addSourceResource);
-    }
-    
-    @SneakyThrows
-    protected void addTargetResource() {
-        String addTargetResource = commonSQLCommand.getTargetAddResourceTemplate().replace("${user}", username)
-                .replace("${password}", password)
-                .replace("${ds2}", getActualJdbcUrlTemplate(DS_2))
-                .replace("${ds3}", getActualJdbcUrlTemplate(DS_3))
-                .replace("${ds4}", getActualJdbcUrlTemplate(DS_4));
-        executeWithLog(addTargetResource);
-        List<Map<String, Object>> resources = queryForListWithLog("SHOW DATABASE RESOURCES from sharding_db");
-        assertThat(resources.size(), is(5));
-        assertBeforeApplyScalingMetadataCorrectly();
-    }
-    
-    private String getActualJdbcUrlTemplate(final String databaseName) {
-        if (ScalingITEnvTypeEnum.DOCKER == ENV.getItEnvType()) {
+    protected String getActualJdbcUrlTemplate(final String databaseName, final boolean isInContainer) {
+        if (ITEnvTypeEnum.DOCKER == ENV.getItEnvType()) {
             DockerStorageContainer storageContainer = ((DockerComposedContainer) composedContainer).getStorageContainer();
-            return DataSourceEnvironment.getURL(getDatabaseType(), getDatabaseType().getType().toLowerCase() + ".host", storageContainer.getPort(), databaseName);
+            if (isInContainer) {
+                return DataSourceEnvironment.getURL(getDatabaseType(), getDatabaseType().getType().toLowerCase() + ".host", storageContainer.getExposedPort(), databaseName);
+            } else {
+                return DataSourceEnvironment.getURL(getDatabaseType(), storageContainer.getHost(), storageContainer.getFirstMappedPort(), databaseName);
+            }
         }
         return DataSourceEnvironment.getURL(getDatabaseType(), "127.0.0.1", ENV.getActualDataSourceDefaultPort(databaseType), databaseName);
     }
     
-    protected void initShardingAlgorithm() {
-        executeWithLog(getCommonSQLCommand().getCreateDatabaseShardingAlgorithm());
-        executeWithLog(getCommonSQLCommand().getCreateOrderShardingAlgorithm());
-        executeWithLog(getCommonSQLCommand().getCreateOrderItemShardingAlgorithm());
+    protected void createSourceOrderTable() throws SQLException {
+        sourceExecuteWithLog(extraSQLCommand.getCreateTableOrder());
     }
     
-    protected void createOrderTableRule() {
-        executeWithLog(commonSQLCommand.getCreateOrderTableRule());
-    }
-    
-    protected void createOrderItemTableRule() {
-        executeWithLog(commonSQLCommand.getCreateOrderItemTableRule());
-    }
-    
-    protected void bindingShardingRule() {
-        executeWithLog("CREATE SHARDING BINDING TABLE RULES (t_order,t_order_item)");
-    }
-    
-    protected void createScalingRule() {
-        if (ENV.getItEnvType() == ScalingITEnvTypeEnum.NATIVE) {
-            try {
-                List<Map<String, Object>> scalingList = jdbcTemplate.queryForList("SHOW SCALING LIST");
-                for (Map<String, Object> each : scalingList) {
-                    String id = each.get("id").toString();
-                    executeWithLog(String.format("DROP SCALING %s", id), 0);
-                }
-            } catch (final DataAccessException ex) {
-                log.error("Failed to show scaling list. {}", ex.getMessage());
-            }
+    protected void createSourceTableIndexList(final String schema) throws SQLException {
+        if (DatabaseTypeUtil.isPostgreSQL(getDatabaseType())) {
+            sourceExecuteWithLog(String.format("CREATE INDEX IF NOT EXISTS idx_user_id ON %s.t_order_copy ( user_id )", schema));
+        } else if (DatabaseTypeUtil.isOpenGauss(getDatabaseType())) {
+            sourceExecuteWithLog(String.format("CREATE INDEX idx_user_id ON %s.t_order_copy ( user_id )", schema));
         }
-        executeWithLog("CREATE SHARDING SCALING RULE scaling_manual (INPUT(SHARDING_SIZE=1000), DATA_CONSISTENCY_CHECKER(TYPE(NAME=DATA_MATCH)))");
     }
     
-    protected void createSchema(final String schemaName) {
+    protected void createSourceCommentOnList(final String schema) throws SQLException {
+        sourceExecuteWithLog(String.format("COMMENT ON COLUMN %s.t_order_copy.user_id IS 'user id'", schema));
+    }
+    
+    protected void createSourceOrderItemTable() throws SQLException {
+        sourceExecuteWithLog(extraSQLCommand.getCreateTableOrderItem());
+    }
+    
+    protected void createSourceSchema(final String schemaName) throws SQLException {
         if (DatabaseTypeUtil.isPostgreSQL(databaseType)) {
-            executeWithLog(String.format("CREATE SCHEMA IF NOT EXISTS %s", schemaName));
+            sourceExecuteWithLog(String.format("CREATE SCHEMA IF NOT EXISTS %s", schemaName));
             return;
         }
         if (DatabaseTypeUtil.isOpenGauss(databaseType)) {
             try {
-                executeWithLog(String.format("CREATE SCHEMA %s", schemaName));
-            } catch (final BadSqlGrammarException ex) {
+                sourceExecuteWithLog(String.format("CREATE SCHEMA %s", schemaName));
+            } catch (final SQLException ex) {
                 // only used for native mode.
-                if (ex.getCause() instanceof PSQLException && "42P06".equals(((PSQLException) ex.getCause()).getSQLState())) {
+                if (ex instanceof PSQLException && "42P06".equals(ex.getSQLState())) {
                     log.info("Schema {} already exists.", schemaName);
                 } else {
                     throw ex;
@@ -288,34 +222,55 @@ public abstract class BaseITCase {
         }
     }
     
-    protected void executeWithLog(final Connection connection, final String sql) throws SQLException {
-        log.info("connection execute:{}", sql);
-        connection.createStatement().execute(sql);
-        ThreadUtil.sleep(1, TimeUnit.SECONDS);
+    protected void sourceExecuteWithLog(final String sql) throws SQLException {
+        log.info("source execute :{}", sql);
+        try (Connection connection = sourceDataSource.getConnection()) {
+            connection.createStatement().execute(sql);
+        }
     }
     
-    private void executeWithLog(final String sql, final int sleepSeconds) {
-        log.info("jdbcTemplate execute:{}", sql);
-        jdbcTemplate.execute(sql);
+    protected void proxyExecuteWithLog(final String sql, final int sleepSeconds) throws SQLException {
+        log.info("proxy execute :{}", sql);
+        try (Connection connection = proxyDataSource.getConnection()) {
+            connection.createStatement().execute(sql);
+        }
         ThreadUtil.sleep(Math.max(sleepSeconds, 0), TimeUnit.SECONDS);
     }
     
-    protected void executeWithLog(final String sql) {
-        executeWithLog(sql, 2);
+    protected void connectionExecuteWithLog(final Connection connection, final String sql) throws SQLException {
+        log.info("connection execute:{}", sql);
+        connection.createStatement().execute(sql);
+        ThreadUtil.sleep(2, TimeUnit.SECONDS);
     }
     
     protected List<Map<String, Object>> queryForListWithLog(final String sql) {
+        log.info("proxy query for list:{}", sql);
         int retryNumber = 0;
         while (retryNumber <= 3) {
-            try {
-                return jdbcTemplate.queryForList(sql);
-            } catch (final DataAccessException ex) {
+            try (Connection connection = proxyDataSource.getConnection()) {
+                ResultSet resultSet = connection.createStatement().executeQuery(sql);
+                return resultSetToList(resultSet);
+            } catch (final SQLException ex) {
                 log.error("data access error", ex);
             }
-            ThreadUtil.sleep(2, TimeUnit.SECONDS);
+            ThreadUtil.sleep(3, TimeUnit.SECONDS);
             retryNumber++;
         }
         throw new RuntimeException("can't get result from proxy");
+    }
+    
+    protected List<Map<String, Object>> resultSetToList(final ResultSet rs) throws SQLException {
+        ResultSetMetaData md = rs.getMetaData();
+        int columns = md.getColumnCount();
+        List<Map<String, Object>> results = new ArrayList<>();
+        while (rs.next()) {
+            Map<String, Object> row = new HashMap<>();
+            for (int i = 1; i <= columns; i++) {
+                row.put(md.getColumnLabel(i).toLowerCase(), rs.getObject(i));
+            }
+            results.add(row);
+        }
+        return results;
     }
     
     protected void startIncrementTask(final BaseIncrementTask baseIncrementTask) {
@@ -323,115 +278,10 @@ public abstract class BaseITCase {
         getIncreaseTaskThread().start();
     }
     
-    protected void stopScalingSourceWriting(final String jobId) {
-        executeWithLog(String.format("STOP SCALING SOURCE WRITING %s", jobId));
+    protected void assertGreaterThanOrderTableInitRows(final int tableInitRows, final String schema) throws SQLException {
+        proxyExecuteWithLog("REFRESH TABLE METADATA", 2);
+        String countSQL = StringUtils.isBlank(schema) ? "SELECT COUNT(*) as count FROM t_order" : String.format("SELECT COUNT(*) as count FROM %s.t_order", schema);
+        Map<String, Object> actual = queryForListWithLog(countSQL).get(0);
+        assertTrue("actual count " + actual.get("count"), Integer.parseInt(actual.get("count").toString()) > tableInitRows);
     }
-    
-    protected void stopScaling(final String jobId) {
-        executeWithLog(String.format("STOP SCALING %s", jobId), 5);
-    }
-    
-    protected void startScaling(final String jobId) {
-        executeWithLog(String.format("START SCALING %s", jobId), 10);
-    }
-    
-    protected void applyScaling(final String jobId) {
-        executeWithLog(String.format("APPLY SCALING %s", jobId));
-    }
-    
-    protected void assertBeforeApplyScalingMetadataCorrectly() {
-        List<Map<String, Object>> previewResults = queryForListWithLog("PREVIEW SELECT COUNT(1) FROM t_order");
-        assertThat("data_source_name name not correct, it's effective early, search watcher failed get more info",
-                previewResults.stream().map(each -> each.get("data_source_name")).collect(Collectors.toSet()), is(new HashSet<>(Arrays.asList("ds_0", "ds_1"))));
-    }
-    
-    protected String getScalingJobId() {
-        List<Map<String, Object>> scalingListMap = queryForListWithLog("SHOW SCALING LIST");
-        String jobId = scalingListMap.get(0).get("id").toString();
-        log.info("jobId: {}", jobId);
-        return jobId;
-    }
-    
-    protected void waitScalingFinished(final String jobId) throws InterruptedException {
-        if (null != increaseTaskThread) {
-            TimeUnit.SECONDS.timedJoin(increaseTaskThread, 60);
-        }
-        log.info("jobId: {}", jobId);
-        Map<String, String> actualStatusMap = new HashMap<>(2, 1);
-        for (int i = 0; i < 15; i++) {
-            List<Map<String, Object>> showScalingStatusResMap = showScalingStatus(jobId);
-            log.info("show scaling status result: {}", showScalingStatusResMap);
-            boolean finished = true;
-            for (Map<String, Object> entry : showScalingStatusResMap) {
-                String status = entry.get("status").toString();
-                assertThat(status, not(JobStatus.PREPARING_FAILURE.name()));
-                assertThat(status, not(JobStatus.EXECUTE_INVENTORY_TASK_FAILURE.name()));
-                assertThat(status, not(JobStatus.EXECUTE_INCREMENTAL_TASK_FAILURE.name()));
-                String datasourceName = entry.get("data_source").toString();
-                actualStatusMap.put(datasourceName, status);
-                if (!Objects.equals(status, JobStatus.EXECUTE_INCREMENTAL_TASK.name())) {
-                    finished = false;
-                    break;
-                }
-            }
-            if (finished) {
-                break;
-            }
-            assertBeforeApplyScalingMetadataCorrectly();
-            ThreadUtil.sleep(4, TimeUnit.SECONDS);
-        }
-        assertThat(actualStatusMap.values().stream().filter(StringUtils::isNotBlank).collect(Collectors.toSet()), is(Collections.singleton(JobStatus.EXECUTE_INCREMENTAL_TASK.name())));
-    }
-    
-    protected List<Map<String, Object>> showScalingStatus(final String jobId) {
-        return queryForListWithLog(String.format("SHOW SCALING STATUS %s", jobId));
-    }
-    
-    protected void assertCheckScalingSuccess(final String jobId) {
-        for (int i = 0; i < 3; i++) {
-            if (checkJobIncrementTaskFinished(jobId)) {
-                break;
-            }
-            ThreadUtil.sleep(10, TimeUnit.SECONDS);
-        }
-        boolean secondCheckJobResult = checkJobIncrementTaskFinished(jobId);
-        log.info("second check job result: {}", secondCheckJobResult);
-        stopScalingSourceWriting(jobId);
-        assertStopScalingSourceWriting();
-        List<Map<String, Object>> checkScalingResults = queryForListWithLog(String.format("CHECK SCALING %s BY TYPE (NAME=DATA_MATCH)", jobId));
-        log.info("checkScalingResults: {}", checkScalingResults);
-        for (Map<String, Object> entry : checkScalingResults) {
-            assertTrue(Boolean.parseBoolean(entry.get("records_content_matched").toString()));
-        }
-    }
-    
-    private boolean checkJobIncrementTaskFinished(final String jobId) {
-        List<Map<String, Object>> listScalingStatus = showScalingStatus(jobId);
-        log.info("listScalingStatus result: {}", listScalingStatus);
-        for (Map<String, Object> entry : listScalingStatus) {
-            if (JobStatus.EXECUTE_INCREMENTAL_TASK.name().equalsIgnoreCase(entry.get("status").toString())) {
-                return false;
-            }
-            int incrementalIdleSeconds = Integer.parseInt(entry.get("incremental_idle_seconds").toString());
-            if (incrementalIdleSeconds <= 10) {
-                return false;
-            }
-        }
-        return true;
-    }
-    
-    protected void assertPreviewTableSuccess(final String tableName, final List<String> expect) {
-        List<Map<String, Object>> actualResults = queryForListWithLog(String.format("PREVIEW SELECT COUNT(1) FROM %s", tableName));
-        List<String> dataSourceNames = actualResults.stream().map(each -> String.valueOf(each.get("data_source_name"))).sorted().collect(Collectors.toList());
-        Collections.sort(expect);
-        assertThat(dataSourceNames, is(expect));
-    }
-    
-    protected void restoreScalingSourceWriting(final String jobId) {
-        executeWithLog(String.format("RESTORE SCALING SOURCE WRITING %s", jobId));
-    }
-    
-    protected abstract void assertStopScalingSourceWriting();
-    
-    protected abstract void assertRestoreScalingSourceWriting();
 }

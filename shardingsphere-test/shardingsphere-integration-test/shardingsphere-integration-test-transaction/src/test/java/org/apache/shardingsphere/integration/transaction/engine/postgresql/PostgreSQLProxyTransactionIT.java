@@ -30,7 +30,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Objects;
@@ -62,7 +61,7 @@ public final class PostgreSQLProxyTransactionIT extends BaseTransactionITCase {
             if (Objects.equals(parameterized.getTransactionType(), TransactionType.LOCAL)) {
                 alterLocalTransactionRule();
             } else if (Objects.equals(parameterized.getTransactionType(), TransactionType.XA)) {
-                alterXaAtomikosTransactionRule();
+                alterXaTransactionRule(parameterized.getProvider());
             }
         }
     }
@@ -71,18 +70,11 @@ public final class PostgreSQLProxyTransactionIT extends BaseTransactionITCase {
     @SneakyThrows(SQLException.class)
     public void after() {
         getDataSource().close();
-        getComposedContainer().close();
+        getContainerComposer().close();
     }
     
     @Test
-    @SneakyThrows
     public void assertTransaction() {
-        callTestCases();
+        callTestCases(parameterized);
     }
-    
-    @SneakyThrows
-    private void callTestCases() {
-        parameterized.getTransactionTestCaseClass().getConstructor(DataSource.class).newInstance(getDataSource()).executeTest();
-    }
-    
 }

@@ -19,8 +19,9 @@ package org.apache.shardingsphere.test.integration.env.container.atomic.storage.
 
 import com.google.common.base.Strings;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeFactory;
+import org.apache.shardingsphere.test.integration.env.container.atomic.constants.StorageContainerConstants;
 import org.apache.shardingsphere.test.integration.env.container.atomic.storage.DockerStorageContainer;
-import org.testcontainers.containers.BindMode;
+import org.apache.shardingsphere.test.integration.env.container.atomic.storage.config.StorageContainerConfiguration;
 
 import java.util.Optional;
 
@@ -29,27 +30,29 @@ import java.util.Optional;
  */
 public final class PostgreSQLContainer extends DockerStorageContainer {
     
-    public PostgreSQLContainer(final String dockerImageName, final String scenario, final boolean useRootUsername) {
-        super(DatabaseTypeFactory.getInstance("PostgreSQL"), Strings.isNullOrEmpty(dockerImageName) ? "postgres:12-alpine" : dockerImageName, scenario, useRootUsername);
+    private final StorageContainerConfiguration storageContainerConfiguration;
+    
+    public PostgreSQLContainer(final String dockerImageName, final String scenario, final StorageContainerConfiguration storageContainerConfiguration) {
+        super(DatabaseTypeFactory.getInstance("PostgreSQL"), Strings.isNullOrEmpty(dockerImageName) ? "postgres:12-alpine" : dockerImageName, scenario);
+        this.storageContainerConfiguration = storageContainerConfiguration;
     }
     
     @Override
     protected void configure() {
-        withCommand("--max_connections=600", "--wal_level=logical");
-        addEnv("POSTGRES_USER", getRootUsername());
-        addEnv("POSTGRES_PASSWORD", getUnifiedPassword());
-        withClasspathResourceMapping("/env/postgresql/postgresql.conf", "/etc/postgresql/postgresql.conf", BindMode.READ_ONLY);
+        setCommands(storageContainerConfiguration.getContainerCommand());
+        addEnvs(storageContainerConfiguration.getContainerEnvironments());
+        mapResources(storageContainerConfiguration.getMountedResources());
         super.configure();
     }
     
     @Override
-    public String getRootUsername() {
-        return "root";
+    public int getExposedPort() {
+        return StorageContainerConstants.POSTGRESQL_EXPOSED_PORT;
     }
     
     @Override
-    public int getPort() {
-        return 5432;
+    public int getMappedPort() {
+        return getMappedPort(StorageContainerConstants.POSTGRESQL_EXPOSED_PORT);
     }
     
     @Override

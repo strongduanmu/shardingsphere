@@ -36,18 +36,19 @@ import org.apache.shardingsphere.integration.transaction.engine.entity.JdbcInfoE
 import org.apache.shardingsphere.integration.transaction.env.IntegrationTestEnvironment;
 import org.apache.shardingsphere.integration.transaction.env.enums.TransactionITEnvTypeEnum;
 import org.apache.shardingsphere.integration.transaction.env.enums.TransactionTestCaseRegistry;
-import org.apache.shardingsphere.integration.transaction.framework.container.compose.BaseComposedContainer;
-import org.apache.shardingsphere.integration.transaction.framework.container.compose.DockerComposedContainer;
-import org.apache.shardingsphere.integration.transaction.framework.container.compose.NativeComposedContainer;
-import org.apache.shardingsphere.integration.transaction.framework.container.database.DatabaseContainer;
+import org.apache.shardingsphere.integration.transaction.framework.container.compose.BaseContainerComposer;
+import org.apache.shardingsphere.integration.transaction.framework.container.compose.DockerContainerComposer;
+import org.apache.shardingsphere.integration.transaction.framework.container.compose.NativeContainerComposer;
 import org.apache.shardingsphere.integration.transaction.framework.param.TransactionParameterized;
-import org.apache.shardingsphere.integration.transaction.util.DatabaseTypeUtil;
-import org.apache.shardingsphere.integration.transaction.util.TransactionTestCaseClassScanner;
+import org.apache.shardingsphere.integration.transaction.util.TestCaseClassScanner;
+import org.apache.shardingsphere.test.integration.env.container.atomic.storage.DockerStorageContainer;
+import org.apache.shardingsphere.test.integration.env.container.atomic.util.DatabaseTypeUtil;
 import org.apache.shardingsphere.test.integration.env.runtime.DataSourceEnvironment;
 import org.apache.shardingsphere.transaction.core.TransactionType;
 
 import javax.sql.DataSource;
 import javax.xml.bind.JAXB;
+import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -55,6 +56,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -80,13 +82,20 @@ public abstract class BaseITCase {
     
     protected static final String DS_1 = TRANSACTION_IT + "_1";
     
-    protected static final Collection<String> ALL_DS = Arrays.asList(DS_0, DS_1);
+    /**
+     * For adding resource tests.
+     */
+    protected static final String DS_2 = TRANSACTION_IT + "_2";
+    
+    protected static final Collection<String> ALL_DS = Arrays.asList(DS_0, DS_1, DS_2);
+    
+    protected static final Collection<String> ALL_XA_PROVIDERS = Arrays.asList(TransactionTestConstants.ATOMIKOS, TransactionTestConstants.BITRONIX, TransactionTestConstants.NARAYANA);
     
     protected static final String SHARDING_DB = "sharding_db";
     
     private static final List<Class<? extends BaseTransactionTestCase>> TEST_CASES;
     
-    private final BaseComposedContainer composedContainer;
+    private final BaseContainerComposer containerComposer;
     
     private final CommonSQLCommand commonSQLCommand;
     
@@ -99,14 +108,14 @@ public abstract class BaseITCase {
     
     static {
         long startTime = System.currentTimeMillis();
-        TEST_CASES = TransactionTestCaseClassScanner.scan();
+        TEST_CASES = TestCaseClassScanner.scan();
         log.info("Load transaction test case classes time consume: {}.", System.currentTimeMillis() - startTime);
     }
     
     public BaseITCase(final TransactionParameterized parameterized) {
         databaseType = parameterized.getDatabaseType();
         adapter = parameterized.getAdapter();
-        composedContainer = createAndStartComposedContainer(parameterized);
+        containerComposer = createAndStartContainerComposer(parameterized);
         commonSQLCommand = getSqlCommand();
         initActualDataSources();
         if (isProxyAdapter(parameterized)) {
@@ -117,23 +126,25 @@ public abstract class BaseITCase {
     }
     
     private void createJdbcDataSource() {
-        if (composedContainer instanceof DockerComposedContainer) {
-            DockerComposedContainer dockerComposedContainer = (DockerComposedContainer) composedContainer;
-            DatabaseContainer databaseContainer = dockerComposedContainer.getDatabaseContainer();
+        if (containerComposer instanceof DockerContainerComposer) {
+            DockerContainerComposer dockerContainerComposer = (DockerContainerComposer) containerComposer;
+            DockerStorageContainer databaseContainer = dockerContainerComposer.getStorageContainer();
             Map<String, DataSource> actualDataSourceMap = databaseContainer.getActualDataSourceMap();
             actualDataSourceMap.put("ds_0", createDataSource(databaseContainer, DS_0));
             actualDataSourceMap.put("ds_1", createDataSource(databaseContainer, DS_1));
-            dataSource = new JDBCDataSource(dockerComposedContainer);
+            dataSource = new JdbcDataSource(dockerContainerComposer);
         }
     }
     
-    private DataSource createDataSource(final DatabaseContainer databaseContainer, final String dataSourceName) {
+    private DataSource createDataSource(final DockerStorageContainer databaseContainer, final String dataSourceName) {
         HikariDataSource result = new HikariDataSource();
         result.setDriverClassName(DataSourceEnvironment.getDriverClassName(databaseType));
-        result.setJdbcUrl(DataSourceEnvironment.getURL(databaseType, databaseContainer.getHost(), databaseContainer.getMappedPort(databaseContainer.getPort()), dataSourceName));
+        result.setJdbcUrl(DataSourceEnvironment.getURL(databaseType, databaseContainer.getHost(), databaseContainer.getMappedPort(databaseContainer.getExposedPort()), dataSourceName));
         result.setUsername(databaseContainer.getUsername());
         result.setPassword(databaseContainer.getPassword());
-        result.setMaximumPoolSize(4);
+        result.setMaximumPoolSize(50);
+        result.setIdleTimeout(60000);
+        result.setMaxLifetime(1800000);
         result.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
         return result;
     }
@@ -169,45 +180,80 @@ public abstract class BaseITCase {
     
     private static void addParametersByVersions(final List<String> databaseVersion, final Collection<TransactionParameterized> result, final TransactionTestCaseRegistry currentTestCaseInfo) {
         for (String each : databaseVersion) {
-            addParametersByTestCaseClasses(result, each, currentTestCaseInfo);
+            result.addAll(addParametersByTestCaseClasses(each, currentTestCaseInfo));
         }
     }
     
-    private static void addParametersByTestCaseClasses(final Collection<TransactionParameterized> result, final String version, final TransactionTestCaseRegistry currentTestCaseInfo) {
-        for (Class<? extends BaseTransactionTestCase> caseClass : TEST_CASES) {
-            if (!ENV.getNeedToRunTestCases().isEmpty() && !ENV.getNeedToRunTestCases().contains(caseClass.getSimpleName())) {
-                log.info("Collect transaction test case, need to run cases don't contain this, skip: {}.", caseClass.getName());
+    private static Collection<TransactionParameterized> addParametersByTestCaseClasses(final String version, final TransactionTestCaseRegistry currentTestCaseInfo) {
+        Map<String, TransactionParameterized> parameterizedMap = new LinkedHashMap<>();
+        for (Class<? extends BaseTransactionTestCase> each : TEST_CASES) {
+            if (!ENV.getNeedToRunTestCases().isEmpty() && !ENV.getNeedToRunTestCases().contains(each.getSimpleName())) {
+                log.info("Collect transaction test case, need to run cases don't contain this, skip: {}.", each.getName());
                 continue;
             }
-            TransactionTestCase annotation = caseClass.getAnnotation(TransactionTestCase.class);
+            TransactionTestCase annotation = each.getAnnotation(TransactionTestCase.class);
             if (null == annotation) {
-                log.info("Collect transaction test case, annotation is null, skip: {}.", caseClass.getName());
+                log.info("Collect transaction test case, annotation is null, skip: {}.", each.getName());
                 continue;
             }
-            Optional<String> dbType = Arrays.stream(annotation.dbTypes()).filter(each -> currentTestCaseInfo.getDbType().equalsIgnoreCase(each)).findAny();
+            Optional<String> dbType = Arrays.stream(annotation.dbTypes()).filter(currentTestCaseInfo.getDbType()::equalsIgnoreCase).findAny();
             if (!dbType.isPresent()) {
-                log.info("Collect transaction test case, dbType is not matched, skip: {}.", caseClass.getName());
+                log.info("Collect transaction test case, dbType is not matched, skip: {}.", each.getName());
                 continue;
             }
-            Optional<String> runMode = Arrays.stream(annotation.runModes()).filter(each -> currentTestCaseInfo.getRunningAdaptor().equalsIgnoreCase(each)).findAny();
-            if (!runMode.isPresent()) {
-                log.info("Collect transaction test case, runMode is not matched, skip: {}.", caseClass.getName());
+            Optional<String> runAdapters = Arrays.stream(annotation.adapters()).filter(currentTestCaseInfo.getRunningAdaptor()::equalsIgnoreCase).findAny();
+            if (!runAdapters.isPresent()) {
+                log.info("Collect transaction test case, runAdapter is not matched, skip: {}.", each.getName());
                 continue;
             }
-            addParametersByTransactionTypes(result, version, currentTestCaseInfo, caseClass, annotation);
+            String group = annotation.group();
+            addParametersByTransactionTypes(version, currentTestCaseInfo, each, annotation, parameterizedMap, group);
         }
+        
+        return parameterizedMap.values();
     }
     
-    private static void addParametersByTransactionTypes(final Collection<TransactionParameterized> result, final String version, final TransactionTestCaseRegistry currentTestCaseInfo,
-                                                        final Class<? extends BaseTransactionTestCase> caseClass, final TransactionTestCase annotation) {
+    private static void addParametersByTransactionTypes(final String version, final TransactionTestCaseRegistry currentTestCaseInfo,
+                                                        final Class<? extends BaseTransactionTestCase> caseClass, final TransactionTestCase annotation,
+                                                        final Map<String, TransactionParameterized> parameterizedMap, final String group) {
         for (TransactionType each : annotation.transactionTypes()) {
             if (!ENV.getAllowTransactionTypes().isEmpty() && !ENV.getAllowTransactionTypes().contains(each.toString())) {
                 log.info("Collect transaction test case, need to run transaction types don't contain this, skip: {}-{}.", caseClass.getName(), each);
                 continue;
             }
-            result.add(new TransactionParameterized(getSqlDatabaseType(currentTestCaseInfo.getDbType()), currentTestCaseInfo.getRunningAdaptor(), each,
-                    getDockerImageName(currentTestCaseInfo.getDbType(), version), caseClass));
+            addParametersByTransactionProviders(version, currentTestCaseInfo, caseClass, each, parameterizedMap, group);
         }
+    }
+    
+    private static void addParametersByTransactionProviders(final String version, final TransactionTestCaseRegistry currentTestCaseInfo,
+                                                            final Class<? extends BaseTransactionTestCase> caseClass, final TransactionType transactionType,
+                                                            final Map<String, TransactionParameterized> parameterizedMap, final String group) {
+        if (TransactionType.LOCAL.equals(transactionType)) {
+            addTestParameters(version, currentTestCaseInfo, caseClass, transactionType, "", parameterizedMap, group);
+        } else if (TransactionType.XA.equals(transactionType)) {
+            if (ENV.getAllowXAProviders().isEmpty()) {
+                for (String provider : ALL_XA_PROVIDERS) {
+                    addTestParameters(version, currentTestCaseInfo, caseClass, transactionType, provider, parameterizedMap, group);
+                }
+            } else {
+                for (String provider : ENV.getAllowXAProviders()) {
+                    addTestParameters(version, currentTestCaseInfo, caseClass, transactionType, provider, parameterizedMap, group);
+                }
+            }
+        }
+    }
+    
+    private static void addTestParameters(final String version, final TransactionTestCaseRegistry currentTestCaseInfo,
+                                          final Class<? extends BaseTransactionTestCase> caseClass, final TransactionType transactionType, final String provider,
+                                          final Map<String, TransactionParameterized> parameterizedMap, final String group) {
+        String uniqueKey = getUniqueKey(currentTestCaseInfo.getDbType(), currentTestCaseInfo.getRunningAdaptor(), transactionType, provider, group);
+        parameterizedMap.putIfAbsent(uniqueKey, new TransactionParameterized(getSqlDatabaseType(currentTestCaseInfo.getDbType()), currentTestCaseInfo.getRunningAdaptor(), transactionType, provider,
+                getDockerImageName(currentTestCaseInfo.getDbType(), version), group, new LinkedList<>()));
+        parameterizedMap.get(uniqueKey).getTransactionTestCaseClasses().add(caseClass);
+    }
+    
+    private static String getUniqueKey(final String dbType, final String runningAdapter, final TransactionType transactionType, final String provider, final String group) {
+        return dbType + File.separator + runningAdapter + File.separator + transactionType + File.separator + provider + File.separator + group;
     }
     
     private static DatabaseType getSqlDatabaseType(final String databaseType) {
@@ -239,15 +285,15 @@ public abstract class BaseITCase {
         return JAXB.unmarshal(Objects.requireNonNull(BaseITCase.class.getClassLoader().getResource("env/common/command.xml")), CommonSQLCommand.class);
     }
     
-    private BaseComposedContainer createAndStartComposedContainer(final TransactionParameterized parameterized) {
-        final BaseComposedContainer composedContainer;
+    private BaseContainerComposer createAndStartContainerComposer(final TransactionParameterized parameterized) {
+        final BaseContainerComposer containerComposer;
         if (ENV.getItEnvType() == TransactionITEnvTypeEnum.DOCKER) {
-            composedContainer = new DockerComposedContainer(parameterized);
+            containerComposer = new DockerContainerComposer(parameterized);
         } else {
-            composedContainer = new NativeComposedContainer(parameterized.getDatabaseType());
+            containerComposer = new NativeContainerComposer(parameterized.getDatabaseType());
         }
-        composedContainer.start();
-        return composedContainer;
+        containerComposer.start();
+        return containerComposer;
     }
     
     @SneakyThrows(SQLException.class)
@@ -261,8 +307,8 @@ public abstract class BaseITCase {
     private String getJdbcUrl(final JdbcInfoEntity jdbcInfo) {
         String jdbcUrl;
         if (ENV.getItEnvType() == TransactionITEnvTypeEnum.DOCKER) {
-            DockerComposedContainer dockerComposedContainer = (DockerComposedContainer) composedContainer;
-            DatabaseContainer databaseContainer = dockerComposedContainer.getDatabaseContainer();
+            DockerContainerComposer dockerContainerComposer = (DockerContainerComposer) containerComposer;
+            DockerStorageContainer databaseContainer = dockerContainerComposer.getStorageContainer();
             jdbcUrl = databaseContainer.getJdbcUrl("");
         } else {
             jdbcUrl = DataSourceEnvironment.getURL(databaseType, "localhost", jdbcInfo.getPort());
@@ -273,9 +319,9 @@ public abstract class BaseITCase {
     private JdbcInfoEntity getJdbcInfoEntity() {
         JdbcInfoEntity jdbcInfo;
         if (ENV.getItEnvType() == TransactionITEnvTypeEnum.DOCKER) {
-            DockerComposedContainer dockerComposedContainer = (DockerComposedContainer) composedContainer;
-            DatabaseContainer databaseContainer = dockerComposedContainer.getDatabaseContainer();
-            jdbcInfo = new JdbcInfoEntity(databaseContainer.getUsername(), databaseContainer.getPassword(), databaseContainer.getPort());
+            DockerContainerComposer dockerContainerComposer = (DockerContainerComposer) containerComposer;
+            DockerStorageContainer databaseContainer = dockerContainerComposer.getStorageContainer();
+            jdbcInfo = new JdbcInfoEntity(databaseContainer.getUsername(), databaseContainer.getPassword(), databaseContainer.getExposedPort());
         } else {
             jdbcInfo = ENV.getActualDatabaseJdbcInfo(getDatabaseType());
         }
@@ -325,7 +371,7 @@ public abstract class BaseITCase {
         if (DatabaseTypeUtil.isPostgreSQL(databaseType) || DatabaseTypeUtil.isOpenGauss(databaseType)) {
             defaultDatabaseName = "postgres";
         }
-        String jdbcUrl = composedContainer.getProxyJdbcUrl(defaultDatabaseName);
+        String jdbcUrl = containerComposer.getProxyJdbcUrl(defaultDatabaseName);
         if (DatabaseTypeUtil.isPostgreSQL(databaseType) || DatabaseTypeUtil.isOpenGauss(databaseType)) {
             jdbcUrl = JDBC_URL_APPENDER.appendQueryProperties(jdbcUrl, getPostgreSQLQueryProperties());
         }
@@ -333,8 +379,7 @@ public abstract class BaseITCase {
     }
     
     protected AutoDataSource getProxyDataSource(final String databaseName) {
-        AutoDataSource result = new ProxyDataSource(composedContainer, databaseName, ENV.getProxyUserName(), ENV.getProxyPassword());
-        return result;
+        return new ProxyDataSource(containerComposer, databaseName, ENV.getProxyUserName(), ENV.getProxyPassword());
     }
     
     protected boolean waitShardingAlgorithmEffect(final int maxWaitTimes) {
@@ -354,15 +399,15 @@ public abstract class BaseITCase {
     
     @SneakyThrows
     protected void addResources() {
-        if (databaseType instanceof MySQLDatabaseType) {
-            try (Connection connection = DriverManager.getConnection(getComposedContainer().getProxyJdbcUrl(""), ENV.getProxyUserName(), ENV.getProxyPassword())) {
+        if (DatabaseTypeUtil.isMySQL(databaseType)) {
+            try (Connection connection = DriverManager.getConnection(getContainerComposer().getProxyJdbcUrl(""), ENV.getProxyUserName(), ENV.getProxyPassword())) {
                 executeWithLog(connection, "USE sharding_db");
                 addResources(connection);
             }
         } else {
             Properties queryProps = getPostgreSQLQueryProperties();
             try (
-                    Connection connection = DriverManager.getConnection(JDBC_URL_APPENDER.appendQueryProperties(getComposedContainer().getProxyJdbcUrl("sharding_db"), queryProps),
+                    Connection connection = DriverManager.getConnection(JDBC_URL_APPENDER.appendQueryProperties(getContainerComposer().getProxyJdbcUrl("sharding_db"), queryProps),
                             ENV.getProxyUserName(), ENV.getProxyPassword())) {
                 addResources(connection);
             }
@@ -380,10 +425,53 @@ public abstract class BaseITCase {
         executeWithLog(connection, addSourceResource);
     }
     
+    /**
+     * Add ds_2 resource to proxy.
+     *
+     * @param connection connection
+     */
+    @SneakyThrows({SQLException.class, InterruptedException.class})
+    public void addNewResource(final Connection connection) {
+        String addSourceResource = commonSQLCommand.getSourceAddNewResourceTemplate()
+                .replace("${user}", ENV.getActualDataSourceUsername(databaseType))
+                .replace("${password}", ENV.getActualDataSourcePassword(databaseType))
+                .replace("${ds2}", getActualJdbcUrlTemplate(DS_2));
+        executeWithLog(connection, addSourceResource);
+        int resourceCount = countWithLog("SHOW DATABASE RESOURCES FROM sharding_db");
+        Thread.sleep(5000);
+        assertThat(resourceCount, is(3));
+    }
+    
+    /**
+     * Drop previous account table rule and create the table rule with three data sources.
+     *
+     * @param connection connection
+     */
+    @SneakyThrows(SQLException.class)
+    public void createThreeDataSourceAccountTableRule(final Connection connection) {
+        executeWithLog(connection, "DROP SHARDING TABLE RULE account;");
+        executeWithLog(connection, getCommonSQLCommand().getCreateThreeDataSourceAccountTableRule());
+        int ruleCount = countWithLog("SHOW SHARDING TABLE RULES FROM sharding_db;");
+        assertThat(ruleCount, is(3));
+    }
+    
+    /**
+     * Create the account table rule with one data source.
+     *
+     * @param connection connection
+     */
+    @SneakyThrows(SQLException.class)
+    public void createOriginalAccountTableRule(final Connection connection) {
+        executeWithLog(connection, "DROP SHARDING TABLE RULE account;");
+        executeWithLog(connection, getCommonSQLCommand().getCreateOneDataSourceAccountTableRule());
+        int ruleCount = countWithLog("SHOW SHARDING TABLE RULES FROM sharding_db;");
+        assertThat(ruleCount, is(3));
+    }
+    
     private String getActualJdbcUrlTemplate(final String databaseName) {
         if (ENV.getItEnvType() == TransactionITEnvTypeEnum.DOCKER) {
-            final DatabaseContainer databaseContainer = ((DockerComposedContainer) composedContainer).getDatabaseContainer();
-            return DataSourceEnvironment.getURL(getDatabaseType(), getDatabaseType().getType().toLowerCase() + ".host", databaseContainer.getPort(), databaseName);
+            final DockerStorageContainer databaseContainer = ((DockerContainerComposer) containerComposer).getStorageContainer();
+            return DataSourceEnvironment.getURL(getDatabaseType(), getDatabaseType().getType().toLowerCase() + ".host", databaseContainer.getExposedPort(), databaseName);
         } else {
             return DataSourceEnvironment.getURL(getDatabaseType(), "127.0.0.1", ENV.getActualDataSourceDefaultPort(databaseType), databaseName);
         }

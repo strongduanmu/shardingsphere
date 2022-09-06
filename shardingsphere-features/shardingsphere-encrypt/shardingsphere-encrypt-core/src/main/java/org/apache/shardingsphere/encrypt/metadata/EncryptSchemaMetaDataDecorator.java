@@ -46,7 +46,7 @@ public final class EncryptSchemaMetaDataDecorator implements RuleBasedSchemaMeta
             for (TableMetaData each : entry.getValue().getTables()) {
                 tables.add(decorate(each.getName(), each, rule));
             }
-            result.put(entry.getKey(), new SchemaMetaData(entry.getKey(), tables));
+            result.put(entry.getKey(), new SchemaMetaData(entry.getKey(), tables, entry.getValue().getViews()));
         }
         return result;
     }
@@ -78,7 +78,7 @@ public final class EncryptSchemaMetaDataDecorator implements RuleBasedSchemaMeta
     }
     
     private ColumnMetaData createColumnMetaData(final String columnName, final ColumnMetaData columnMetaData) {
-        return new ColumnMetaData(columnName, columnMetaData.getDataType(), columnMetaData.isPrimaryKey(), columnMetaData.isGenerated(), columnMetaData.isCaseSensitive());
+        return new ColumnMetaData(columnName, columnMetaData.getDataType(), columnMetaData.isPrimaryKey(), columnMetaData.isGenerated(), columnMetaData.isCaseSensitive(), columnMetaData.isVisible());
     }
     
     @Override

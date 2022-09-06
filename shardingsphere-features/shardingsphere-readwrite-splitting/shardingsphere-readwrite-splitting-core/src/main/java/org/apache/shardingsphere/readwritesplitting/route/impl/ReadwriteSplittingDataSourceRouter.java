@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.infra.binder.statement.CommonSQLStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
+import org.apache.shardingsphere.infra.context.ConnectionContext;
 import org.apache.shardingsphere.infra.hint.HintManager;
 import org.apache.shardingsphere.readwritesplitting.rule.ReadwriteSplittingDataSourceRule;
 import org.apache.shardingsphere.readwritesplitting.strategy.type.DynamicReadwriteSplittingStrategy;
@@ -36,6 +37,8 @@ public final class ReadwriteSplittingDataSourceRouter {
     
     private final ReadwriteSplittingDataSourceRule rule;
     
+    private final ConnectionContext connectionContext;
+    
     /**
      * Route.
      * 
@@ -46,7 +49,8 @@ public final class ReadwriteSplittingDataSourceRouter {
         if (isPrimaryRoute(sqlStatementContext)) {
             return rule.getWriteDataSource();
         }
-        return rule.getLoadBalancer().getDataSource(rule.getName(), rule.getWriteDataSource(), rule.getEnabledReplicaDataSources());
+        return rule.getLoadBalancer().getDataSource(rule.getName(), rule.getWriteDataSource(), rule.getEnabledReplicaDataSources(),
+                connectionContext.getTransactionConnectionContext());
     }
     
     private boolean isPrimaryRoute(final SQLStatementContext<?> sqlStatementContext) {

@@ -22,21 +22,25 @@ import me.ahoo.cosid.snowflake.MillisecondSnowflakeId;
 import me.ahoo.cosid.snowflake.MillisecondSnowflakeIdStateParser;
 import me.ahoo.cosid.snowflake.SnowflakeIdState;
 import me.ahoo.cosid.snowflake.SnowflakeIdStateParser;
-import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
+import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
 import org.apache.shardingsphere.infra.config.mode.ModeConfiguration;
-import org.apache.shardingsphere.infra.eventbus.EventBusContext;
 import org.apache.shardingsphere.infra.instance.ComputeNodeInstance;
 import org.apache.shardingsphere.infra.instance.InstanceContext;
 import org.apache.shardingsphere.infra.instance.metadata.InstanceMetaData;
 import org.apache.shardingsphere.infra.lock.LockContext;
+import org.apache.shardingsphere.infra.schedule.ScheduleContext;
+import org.apache.shardingsphere.infra.util.eventbus.EventBusContext;
 import org.apache.shardingsphere.sharding.cosid.algorithm.keygen.fixture.WorkerIdGeneratorFixture;
 import org.apache.shardingsphere.sharding.factory.KeyGenerateAlgorithmFactory;
 import org.junit.Test;
 
 import java.util.Properties;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.closeTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -55,18 +59,59 @@ public final class CosIdSnowflakeKeyGenerateAlgorithmTest {
     @Test
     public void assertGenerateKey() {
         CosIdSnowflakeKeyGenerateAlgorithm algorithm = (CosIdSnowflakeKeyGenerateAlgorithm) KeyGenerateAlgorithmFactory.newInstance(
-                new ShardingSphereAlgorithmConfiguration("COSID_SNOWFLAKE", new Properties()));
+                new AlgorithmConfiguration("COSID_SNOWFLAKE", new Properties()));
         algorithm.setInstanceContext(new InstanceContext(new ComputeNodeInstance(mock(InstanceMetaData.class)), new WorkerIdGeneratorFixture(FIXTURE_WORKER_ID),
-                new ModeConfiguration("Standalone", null, false), mock(LockContext.class), eventBusContext));
+                new ModeConfiguration("Standalone", null, false), mock(LockContext.class), eventBusContext, mock(ScheduleContext.class)));
         long firstActualKey = (Long) algorithm.generateKey();
         long secondActualKey = (Long) algorithm.generateKey();
         SnowflakeIdState firstActualState = snowflakeIdStateParser.parse(firstActualKey);
         SnowflakeIdState secondActualState = snowflakeIdStateParser.parse(secondActualKey);
         assertThat(firstActualState.getMachineId(), is(FIXTURE_WORKER_ID));
-        assertThat(firstActualState.getSequence(), is(0L));
+        assertThat(firstActualState.getSequence(), is(1L));
         assertThat(secondActualState.getMachineId(), is(FIXTURE_WORKER_ID));
-        long expectedSecondSequence = secondActualState.getTimestamp().isAfter(firstActualState.getTimestamp()) ? 0L : 1L;
+        long expectedSecondSequence = 2L;
         assertThat(secondActualState.getSequence(), is(expectedSecondSequence));
+    }
+    
+    @Test
+    public void assertGenerateKeyModUniformity() {
+        CosIdSnowflakeKeyGenerateAlgorithm algorithm = (CosIdSnowflakeKeyGenerateAlgorithm) KeyGenerateAlgorithmFactory.newInstance(new AlgorithmConfiguration("COSID_SNOWFLAKE", new Properties()));
+        algorithm.setInstanceContext(new InstanceContext(new ComputeNodeInstance(mock(InstanceMetaData.class)), new WorkerIdGeneratorFixture(FIXTURE_WORKER_ID),
+                new ModeConfiguration("Standalone", null, false), mock(LockContext.class), eventBusContext, mock(ScheduleContext.class)));
+        int divisor = 4;
+        int total = 99999;
+        int avg = total / divisor;
+        double tolerance = avg * .0015;
+        int mod0Counter = 0;
+        int mod1Counter = 0;
+        int mod2Counter = 0;
+        int mod3Counter = 0;
+        for (int i = 0; i < total; i++) {
+            long id = (Long) algorithm.generateKey();
+            int mod = (int) (id % divisor);
+            switch (mod) {
+                case 0:
+                    mod0Counter++;
+                    break;
+                case 1:
+                    mod1Counter++;
+                    break;
+                case 2:
+                    mod2Counter++;
+                    break;
+                case 3:
+                    mod3Counter++;
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + mod);
+            }
+            int wait = ThreadLocalRandom.current().nextInt(10, 1000);
+            LockSupport.parkNanos(wait);
+        }
+        assertThat((double) mod0Counter, closeTo(avg, tolerance));
+        assertThat((double) mod1Counter, closeTo(avg, tolerance));
+        assertThat((double) mod2Counter, closeTo(avg, tolerance));
+        assertThat((double) mod3Counter, closeTo(avg, tolerance));
     }
     
     @Test
@@ -74,9 +119,10 @@ public final class CosIdSnowflakeKeyGenerateAlgorithmTest {
         Properties props = new Properties();
         props.setProperty(CosIdSnowflakeKeyGenerateAlgorithm.AS_STRING_KEY, Boolean.TRUE.toString());
         CosIdSnowflakeKeyGenerateAlgorithm algorithm = (CosIdSnowflakeKeyGenerateAlgorithm) KeyGenerateAlgorithmFactory.newInstance(
-                new ShardingSphereAlgorithmConfiguration("COSID_SNOWFLAKE", props));
+                new AlgorithmConfiguration("COSID_SNOWFLAKE", props));
         algorithm.setInstanceContext(new InstanceContext(new ComputeNodeInstance(mock(InstanceMetaData.class)),
-                new WorkerIdGeneratorFixture(FIXTURE_WORKER_ID), new ModeConfiguration("Standalone", null, false), mock(LockContext.class), eventBusContext));
+                new WorkerIdGeneratorFixture(FIXTURE_WORKER_ID), new ModeConfiguration("Standalone", null, false),
+                mock(LockContext.class), eventBusContext, mock(ScheduleContext.class)));
         Comparable<?> actualKey = algorithm.generateKey();
         assertThat(actualKey, instanceOf(String.class));
         String actualStringKey = (String) actualKey;
@@ -84,29 +130,29 @@ public final class CosIdSnowflakeKeyGenerateAlgorithmTest {
         long actualLongKey = Radix62IdConverter.PAD_START.asLong(actualStringKey);
         SnowflakeIdState actualState = snowflakeIdStateParser.parse(actualLongKey);
         assertThat(actualState.getMachineId(), is(FIXTURE_WORKER_ID));
-        assertThat(actualState.getSequence(), is(0L));
+        assertThat(actualState.getSequence(), is(1L));
     }
     
     @Test(expected = NullPointerException.class)
     public void assertGenerateKeyWhenNoneInstanceContext() {
-        KeyGenerateAlgorithmFactory.newInstance(new ShardingSphereAlgorithmConfiguration("COSID_SNOWFLAKE", new Properties())).generateKey();
+        KeyGenerateAlgorithmFactory.newInstance(new AlgorithmConfiguration("COSID_SNOWFLAKE", new Properties())).generateKey();
     }
     
     @Test(expected = IllegalArgumentException.class)
     public void assertGenerateKeyWhenNegative() {
         CosIdSnowflakeKeyGenerateAlgorithm algorithm = (CosIdSnowflakeKeyGenerateAlgorithm) KeyGenerateAlgorithmFactory.newInstance(
-                new ShardingSphereAlgorithmConfiguration("COSID_SNOWFLAKE", new Properties()));
+                new AlgorithmConfiguration("COSID_SNOWFLAKE", new Properties()));
         algorithm.setInstanceContext(new InstanceContext(new ComputeNodeInstance(mock(InstanceMetaData.class)), new WorkerIdGeneratorFixture(-1),
-                new ModeConfiguration("Standalone", null, false), mock(LockContext.class), eventBusContext));
+                new ModeConfiguration("Standalone", null, false), mock(LockContext.class), eventBusContext, mock(ScheduleContext.class)));
         algorithm.generateKey();
     }
     
     @Test(expected = IllegalArgumentException.class)
     public void assertGenerateKeyWhenGreaterThen1023() {
         CosIdSnowflakeKeyGenerateAlgorithm algorithm = (CosIdSnowflakeKeyGenerateAlgorithm) KeyGenerateAlgorithmFactory.newInstance(
-                new ShardingSphereAlgorithmConfiguration("COSID_SNOWFLAKE", new Properties()));
+                new AlgorithmConfiguration("COSID_SNOWFLAKE", new Properties()));
         algorithm.setInstanceContext(new InstanceContext(new ComputeNodeInstance(mock(InstanceMetaData.class)), new WorkerIdGeneratorFixture(1024),
-                new ModeConfiguration("Standalone", null, false), mock(LockContext.class), eventBusContext));
+                new ModeConfiguration("Standalone", null, false), mock(LockContext.class), eventBusContext, mock(ScheduleContext.class)));
         algorithm.generateKey();
     }
 }

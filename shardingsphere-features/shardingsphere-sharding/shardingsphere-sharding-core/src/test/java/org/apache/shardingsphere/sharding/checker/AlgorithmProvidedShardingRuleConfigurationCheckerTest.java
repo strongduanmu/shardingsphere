@@ -17,8 +17,8 @@
 
 package org.apache.shardingsphere.sharding.checker;
 
-import org.apache.shardingsphere.infra.config.checker.RuleConfigurationChecker;
-import org.apache.shardingsphere.infra.config.checker.RuleConfigurationCheckerFactory;
+import org.apache.shardingsphere.infra.config.rule.checker.RuleConfigurationChecker;
+import org.apache.shardingsphere.infra.config.rule.checker.RuleConfigurationCheckerFactory;
 import org.apache.shardingsphere.sharding.algorithm.config.AlgorithmProvidedShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingAutoTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
@@ -46,21 +46,7 @@ public final class AlgorithmProvidedShardingRuleConfigurationCheckerTest {
         ShardingStrategyConfiguration shardingStrategyConfig = createShardingStrategyConfiguration();
         ruleConfig.setTables(Collections.singleton(createShardingTableRuleConfiguration(shardingStrategyConfig, shardingAuditStrategyConfig, ruleConfig.getDefaultKeyGenerateStrategy())));
         ruleConfig.setAutoTables(Collections.singleton(createShardingAutoTableRuleConfiguration(shardingStrategyConfig, shardingAuditStrategyConfig, ruleConfig.getDefaultKeyGenerateStrategy())));
-        getChecker(ruleConfig).check("foo_db", ruleConfig);
-    }
-    
-    @Test(expected = IllegalStateException.class)
-    public void assertCheckTableConfigurationInitFailed() {
-        AlgorithmProvidedShardingRuleConfiguration ruleConfig = createRuleConfiguration();
-        getChecker(ruleConfig).check("foo_db", ruleConfig);
-    }
-    
-    @Test(expected = IllegalStateException.class)
-    public void assertCheckTableConfigurationFailed() {
-        AlgorithmProvidedShardingRuleConfiguration ruleConfig = createRuleConfiguration();
-        ruleConfig.setTables(Collections.singleton(createShardingTableRuleConfiguration(null, null, null)));
-        ruleConfig.setAutoTables(Collections.singleton(createShardingAutoTableRuleConfiguration(null, null, null)));
-        getChecker(ruleConfig).check("foo_db", ruleConfig);
+        getChecker(ruleConfig).check("foo_db", ruleConfig, Collections.emptyMap(), Collections.emptyList());
     }
     
     private AlgorithmProvidedShardingRuleConfiguration createRuleConfiguration() {

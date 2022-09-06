@@ -18,6 +18,8 @@
 package org.apache.shardingsphere.proxy.backend.communication.jdbc.transaction;
 
 import lombok.SneakyThrows;
+import org.apache.shardingsphere.infra.context.ConnectionContext;
+import org.apache.shardingsphere.infra.context.transaction.TransactionConnectionContext;
 import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
 import org.apache.shardingsphere.mode.manager.ContextManager;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.JDBCBackendConnection;
@@ -69,6 +71,10 @@ public final class JDBCBackendTransactionManagerTest extends ProxyContextRestore
         setTransactionContexts();
         when(connectionSession.getTransactionStatus()).thenReturn(transactionStatus);
         when(backendConnection.getConnectionSession()).thenReturn(connectionSession);
+        ConnectionContext connectionContext = mock(ConnectionContext.class);
+        when(connectionSession.getConnectionContext()).thenReturn(connectionContext);
+        TransactionConnectionContext context = new TransactionConnectionContext();
+        when(connectionContext.getTransactionConnectionContext()).thenReturn(context);
     }
     
     private void setTransactionContexts() {
@@ -93,7 +99,7 @@ public final class JDBCBackendTransactionManagerTest extends ProxyContextRestore
         newBackendTransactionManager(TransactionType.LOCAL, false);
         backendTransactionManager.begin();
         verify(transactionStatus).setInTransaction(true);
-        verify(backendConnection).closeDatabaseCommunicationEngines(true);
+        verify(backendConnection).closeHandlers(true);
         verify(backendConnection).closeConnections(false);
         verify(localTransactionManager).begin();
     }

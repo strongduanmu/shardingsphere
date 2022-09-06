@@ -63,6 +63,18 @@
             <artifactId>shardingsphere-sql-parser-opengauss</artifactId>
             <version>${project.version}</version>
         </dependency>
+        
+        <dependency>
+            <groupId>org.apache.shardingsphere</groupId>
+            <artifactId>shardingsphere-mysql-dialect-exception</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.shardingsphere</groupId>
+            <artifactId>shardingsphere-postgresql-dialect-exception</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
         <dependency>
             <groupId>org.apache.shardingsphere</groupId>
             <artifactId>shardingsphere-authority-core</artifactId>
@@ -90,7 +102,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.shardingsphere</groupId>
-            <artifactId>shardingsphere-standalone-mode-repository-h2</artifactId>
+            <artifactId>shardingsphere-standalone-mode-repository-jdbc-h2</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

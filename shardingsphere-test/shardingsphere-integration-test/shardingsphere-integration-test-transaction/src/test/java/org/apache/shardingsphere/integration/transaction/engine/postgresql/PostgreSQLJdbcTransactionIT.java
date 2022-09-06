@@ -27,7 +27,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.Collection;
 
@@ -55,18 +54,11 @@ public final class PostgreSQLJdbcTransactionIT extends BaseTransactionITCase {
     @SneakyThrows(SQLException.class)
     public void after() {
         getDataSource().close();
-        getComposedContainer().close();
+        getContainerComposer().close();
     }
     
     @Test
-    @SneakyThrows
     public void assertTransaction() {
-        callTestCases();
+        callTestCases(parameterized);
     }
-    
-    @SneakyThrows
-    private void callTestCases() {
-        parameterized.getTransactionTestCaseClass().getConstructor(DataSource.class).newInstance(getDataSource()).executeTest();
-    }
-    
 }

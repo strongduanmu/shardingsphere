@@ -98,10 +98,14 @@ public final class ConnectionManagerTest {
         return result;
     }
     
-    private Map<String, DataSource> mockTrafficDataSourceMap() {
-        Map<String, DataSource> result = new LinkedHashMap<>();
-        result.put("127.0.0.1@3307", new MockedDataSource("jdbc:mysql://127.0.0.1:3307/logic_db?serverTimezone=UTC&useSSL=false", "root", "123456"));
-        return result;
+    private Map<String, DataSource> mockTrafficDataSourceMap() throws SQLException {
+        MockedDataSource result = new MockedDataSource(mock(Connection.class, RETURNS_DEEP_STUBS));
+        result.setUrl("jdbc:mysql://127.0.0.1:3307/logic_db?serverTimezone=UTC&useSSL=false");
+        result.setUsername("root");
+        result.setPassword("123456");
+        when(result.getConnection().getMetaData().getURL()).thenReturn(result.getUrl());
+        when(result.getConnection().getMetaData().getUserName()).thenReturn(result.getUsername());
+        return Collections.singletonMap("127.0.0.1@3307", result);
     }
     
     private MetaDataPersistService mockMetaDataPersistService() {
@@ -221,7 +225,7 @@ public final class ConnectionManagerTest {
         try {
             connectionManager.getConnections("invalid_ds", 3, ConnectionMode.CONNECTION_STRICTLY);
         } catch (final SQLException ex) {
-            assertThat(ex.getMessage(), is("Can not get 3 connections one time, partition succeed connection(0) have released!"));
+            assertThat(ex.getMessage(), is("Can not get 3 connections one time, partition succeed connection(0) have released"));
         }
     }
 }

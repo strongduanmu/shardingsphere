@@ -19,7 +19,9 @@ package org.apache.shardingsphere.integration.data.pipeline.cases.task;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.shardingsphere.integration.data.pipeline.cases.base.BaseIncrementTask;
+import org.apache.shardingsphere.integration.data.pipeline.framework.helper.ScalingCaseHelper;
 import org.apache.shardingsphere.sharding.spi.KeyGenerateAlgorithm;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -32,9 +34,7 @@ public final class MySQLIncrementTask extends BaseIncrementTask {
     
     private final JdbcTemplate jdbcTemplate;
     
-    private final KeyGenerateAlgorithm keyGenerateAlgorithm;
-    
-    private final Boolean incrementOrderItemTogether;
+    private final KeyGenerateAlgorithm primaryKeyGenerateAlgorithm;
     
     private final int executeCountLimit;
     
@@ -44,15 +44,13 @@ public final class MySQLIncrementTask extends BaseIncrementTask {
         while (executeCount < executeCountLimit && !Thread.currentThread().isInterrupted()) {
             Object orderPrimaryKey = insertOrder();
             if (executeCount % 2 == 0) {
-                jdbcTemplate.update("DELETE FROM t_order WHERE id = ?", orderPrimaryKey);
+                jdbcTemplate.update("DELETE FROM t_order_copy WHERE id = ?", orderPrimaryKey);
             } else {
                 setNullToOrderFields(orderPrimaryKey);
                 updateOrderByPrimaryKey(orderPrimaryKey);
             }
-            if (incrementOrderItemTogether) {
-                Object orderItemPrimaryKey = insertOrderItem();
-                jdbcTemplate.update("UPDATE t_order_item SET status = ? WHERE item_id = ?", "updated" + Instant.now().getEpochSecond(), orderItemPrimaryKey);
-            }
+            Object orderItemPrimaryKey = insertOrderItem();
+            jdbcTemplate.update("UPDATE t_order_item SET status = ? WHERE item_id = ?", "updated" + Instant.now().getEpochSecond(), orderItemPrimaryKey);
             executeCount++;
         }
         log.info("MySQL increment task runnable execute successfully.");
@@ -60,26 +58,27 @@ public final class MySQLIncrementTask extends BaseIncrementTask {
     
     private Object insertOrder() {
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        String status = random.nextInt() % 2 == 0 ? null : "NOT-NULL";
-        Object[] orderInsertDate = new Object[]{keyGenerateAlgorithm.generateKey(), random.nextInt(0, 6), random.nextInt(0, 6), random.nextInt(1, 99), status};
-        jdbcTemplate.update("INSERT INTO t_order (id,order_id,user_id,t_unsigned_int,status) VALUES (?, ?, ?, ?, ?)", orderInsertDate);
+        Object[] orderInsertDate = new Object[]{primaryKeyGenerateAlgorithm.generateKey(), ScalingCaseHelper.generateSnowflakeKey(), random.nextInt(0, 6),
+                random.nextInt(1, 99), RandomStringUtils.randomAlphabetic(10)};
+        jdbcTemplate.update("INSERT INTO t_order_copy (id,order_id,user_id,t_unsigned_int,status) VALUES (?, ?, ?, ?, ?)", orderInsertDate);
         return orderInsertDate[0];
     }
     
     private Object insertOrderItem() {
-        String status = ThreadLocalRandom.current().nextInt() % 2 == 0 ? null : "NOT-NULL";
-        Object[] orderInsertItemDate = new Object[]{keyGenerateAlgorithm.generateKey(), ThreadLocalRandom.current().nextInt(0, 6), ThreadLocalRandom.current().nextInt(0, 6), status};
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        String status = random.nextInt() % 2 == 0 ? null : "NOT-NULL";
+        Object[] orderInsertItemDate = new Object[]{primaryKeyGenerateAlgorithm.generateKey(), ScalingCaseHelper.generateSnowflakeKey(), random.nextInt(0, 6), status};
         jdbcTemplate.update("INSERT INTO t_order_item(item_id,order_id,user_id,status) VALUES(?,?,?,?)", orderInsertItemDate);
         return orderInsertItemDate[0];
     }
     
     private void updateOrderByPrimaryKey(final Object primaryKey) {
         Object[] updateData = {"updated" + Instant.now().getEpochSecond(), ThreadLocalRandom.current().nextInt(0, 100), primaryKey};
-        jdbcTemplate.update("UPDATE t_order SET status = ?,t_unsigned_int = ? WHERE id = ?", updateData);
-        jdbcTemplate.update("UPDATE t_order SET status = null,t_unsigned_int = 299,t_timestamp='0000-00-00 00:00:00' WHERE id = ?", primaryKey);
+        jdbcTemplate.update("UPDATE t_order_copy SET t_char = ?,t_unsigned_int = ? WHERE id = ?", updateData);
+        jdbcTemplate.update("UPDATE t_order_copy SET t_char = null,t_unsigned_int = 299,t_datetime='0000-00-00 00:00:00' WHERE id = ?", primaryKey);
     }
     
     private void setNullToOrderFields(final Object primaryKey) {
-        jdbcTemplate.update("UPDATE t_order SET status = null, t_unsigned_int = null WHERE id = ?", primaryKey);
+        jdbcTemplate.update("UPDATE t_order_copy SET t_char = null, t_unsigned_int = null WHERE id = ?", primaryKey);
     }
 }

@@ -21,17 +21,16 @@ import com.google.common.base.Splitter;
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.Client;
 import io.etcd.jetcd.KeyValue;
-import io.etcd.jetcd.Observers;
 import io.etcd.jetcd.Util;
 import io.etcd.jetcd.Watch;
 import io.etcd.jetcd.options.DeleteOption;
 import io.etcd.jetcd.options.GetOption;
 import io.etcd.jetcd.options.PutOption;
 import io.etcd.jetcd.options.WatchOption;
+import io.etcd.jetcd.support.Observers;
 import io.etcd.jetcd.watch.WatchEvent;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.shardingsphere.infra.instance.InstanceContext;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepository;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepositoryConfiguration;
 import org.apache.shardingsphere.mode.repository.cluster.etcd.lock.EtcdInternalLockHolder;
@@ -44,7 +43,6 @@ import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEve
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 
 /**
@@ -81,7 +79,7 @@ public final class EtcdRepository implements ClusterPersistRepository {
     public List<String> getChildrenKeys(final String key) {
         String prefix = key + PATH_SEPARATOR;
         ByteSequence prefixByteSequence = ByteSequence.from(prefix, StandardCharsets.UTF_8);
-        GetOption getOption = GetOption.newBuilder().withPrefix(prefixByteSequence).withSortField(GetOption.SortTarget.KEY).withSortOrder(GetOption.SortOrder.ASCEND).build();
+        GetOption getOption = GetOption.newBuilder().isPrefix(true).withSortField(GetOption.SortTarget.KEY).withSortOrder(GetOption.SortOrder.ASCEND).build();
         List<KeyValue> keyValues = client.getKVClient().get(prefixByteSequence, getOption).get().getKvs();
         return keyValues.stream().map(each -> getSubNodeKeyName(prefix, each.getKey().toString(StandardCharsets.UTF_8))).distinct().collect(Collectors.toList());
     }
@@ -107,13 +105,13 @@ public final class EtcdRepository implements ClusterPersistRepository {
     }
     
     @Override
-    public String getSequentialId(final String key, final String value) {
-        return null;
+    public void persistExclusiveEphemeral(final String key, final String value) {
+        persistEphemeral(key, value);
     }
     
     @Override
     public void delete(final String key) {
-        client.getKVClient().delete(ByteSequence.from(key, StandardCharsets.UTF_8), DeleteOption.newBuilder().withPrefix(ByteSequence.from(key, StandardCharsets.UTF_8)).build());
+        client.getKVClient().delete(ByteSequence.from(key, StandardCharsets.UTF_8), DeleteOption.newBuilder().isPrefix(true).build());
     }
     
     @Override
@@ -146,18 +144,8 @@ public final class EtcdRepository implements ClusterPersistRepository {
     }
     
     @Override
-    public void watchSessionConnection(final InstanceContext instanceContext) {
-        // TODO
-    }
-    
-    @Override
-    public Lock getInternalMutexLock(final String lockName) {
-        return etcdInternalLockHolder.getInternalMutexLock(lockName);
-    }
-    
-    @Override
-    public Lock getInternalReentrantMutexLock(final String lockName) {
-        return etcdInternalLockHolder.getInternalReentrantMutexLock(lockName);
+    public boolean persistLock(final String lockKey, final long timeoutMillis) {
+        return etcdInternalLockHolder.getInternalLock(lockKey).tryLock(timeoutMillis);
     }
     
     @Override

@@ -20,6 +20,8 @@ package org.apache.shardingsphere.sharding.merge.ddl;
 import org.apache.shardingsphere.infra.binder.statement.ddl.CursorStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.ddl.FetchStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
+import org.apache.shardingsphere.infra.context.ConnectionContext;
+import org.apache.shardingsphere.infra.context.cursor.CursorConnectionContext;
 import org.apache.shardingsphere.infra.database.DefaultDatabase;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
 import org.apache.shardingsphere.infra.merge.result.impl.transparent.TransparentMergedResult;
@@ -53,7 +55,8 @@ public final class ShardingDDLResultMergerTest {
     @Test
     public void assertBuildIteratorStreamMergedResult() throws SQLException {
         ShardingDDLResultMerger merger = new ShardingDDLResultMerger();
-        assertThat(merger.merge(createSingleQueryResults(), mock(FetchStatementContext.class), mock(ShardingSphereDatabase.class)), instanceOf(IteratorStreamMergedResult.class));
+        assertThat(merger.merge(createSingleQueryResults(), mock(FetchStatementContext.class), mock(ShardingSphereDatabase.class), mock(ConnectionContext.class)),
+                instanceOf(IteratorStreamMergedResult.class));
     }
     
     @Test
@@ -61,13 +64,17 @@ public final class ShardingDDLResultMergerTest {
         ShardingDDLResultMerger merger = new ShardingDDLResultMerger();
         ShardingSphereDatabase database = mock(ShardingSphereDatabase.class, RETURNS_DEEP_STUBS);
         when(database.getSchema(DefaultDatabase.LOGIC_NAME)).thenReturn(mock(ShardingSphereSchema.class));
-        assertThat(merger.merge(createMultiQueryResults(), createFetchStatementContext(database), mock(ShardingSphereDatabase.class)), instanceOf(FetchStreamMergedResult.class));
+        ConnectionContext connectionContext = mock(ConnectionContext.class);
+        when(connectionContext.getCursorConnectionContext()).thenReturn(new CursorConnectionContext());
+        assertThat(merger.merge(createMultiQueryResults(), createFetchStatementContext(database), mock(ShardingSphereDatabase.class), connectionContext),
+                instanceOf(FetchStreamMergedResult.class));
     }
     
     @Test
     public void assertBuildTransparentMergedResult() throws SQLException {
         ShardingDDLResultMerger merger = new ShardingDDLResultMerger();
-        assertThat(merger.merge(createMultiQueryResults(), mock(SelectStatementContext.class), mock(ShardingSphereDatabase.class)), instanceOf(TransparentMergedResult.class));
+        assertThat(merger.merge(createMultiQueryResults(), mock(SelectStatementContext.class), mock(ShardingSphereDatabase.class), mock(ConnectionContext.class)),
+                instanceOf(TransparentMergedResult.class));
     }
     
     private FetchStatementContext createFetchStatementContext(final ShardingSphereDatabase database) {

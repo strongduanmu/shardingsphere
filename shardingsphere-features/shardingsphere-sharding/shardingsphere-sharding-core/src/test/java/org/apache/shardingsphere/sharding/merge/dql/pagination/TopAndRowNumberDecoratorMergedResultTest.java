@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.sharding.merge.dql.pagination;
 
 import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
+import org.apache.shardingsphere.infra.context.ConnectionContext;
 import org.apache.shardingsphere.infra.database.DefaultDatabase;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeFactory;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
@@ -63,7 +64,7 @@ public final class TopAndRowNumberDecoratorMergedResultTest {
                 Collections.emptyList(), sqlStatement, DefaultDatabase.LOGIC_NAME);
         ShardingDQLResultMerger resultMerger = new ShardingDQLResultMerger(DatabaseTypeFactory.getInstance("SQLServer"));
         MergedResult actual = resultMerger.merge(Arrays.asList(mockQueryResult(), mockQueryResult(),
-                mockQueryResult(), mockQueryResult()), selectStatementContext, mockShardingSphereDatabase());
+                mockQueryResult(), mockQueryResult()), selectStatementContext, mockShardingSphereDatabase(), mock(ConnectionContext.class));
         assertFalse(actual.next());
     }
     
@@ -78,7 +79,7 @@ public final class TopAndRowNumberDecoratorMergedResultTest {
         SelectStatementContext selectStatementContext = new SelectStatementContext(Collections.singletonMap(DefaultDatabase.LOGIC_NAME, database), Collections.emptyList(),
                 sqlStatement, DefaultDatabase.LOGIC_NAME);
         MergedResult actual = resultMerger.merge(Arrays.asList(mockQueryResult(), mockQueryResult(),
-                mockQueryResult(), mockQueryResult()), selectStatementContext, mockShardingSphereDatabase());
+                mockQueryResult(), mockQueryResult()), selectStatementContext, mockShardingSphereDatabase(), mock(ConnectionContext.class));
         for (int i = 0; i < 5; i++) {
             assertTrue(actual.next());
         }
@@ -96,7 +97,7 @@ public final class TopAndRowNumberDecoratorMergedResultTest {
                 Collections.emptyList(), sqlStatement, DefaultDatabase.LOGIC_NAME);
         ShardingDQLResultMerger resultMerger = new ShardingDQLResultMerger(DatabaseTypeFactory.getInstance("SQLServer"));
         MergedResult actual = resultMerger.merge(Arrays.asList(mockQueryResult(), mockQueryResult(),
-                mockQueryResult(), mockQueryResult()), selectStatementContext, mockShardingSphereDatabase());
+                mockQueryResult(), mockQueryResult()), selectStatementContext, mockShardingSphereDatabase(), mock(ConnectionContext.class));
         for (int i = 0; i < 7; i++) {
             assertTrue(actual.next());
         }
@@ -114,7 +115,7 @@ public final class TopAndRowNumberDecoratorMergedResultTest {
         SelectStatementContext selectStatementContext = new SelectStatementContext(Collections.singletonMap(DefaultDatabase.LOGIC_NAME, database),
                 Collections.emptyList(), sqlStatement, DefaultDatabase.LOGIC_NAME);
         MergedResult actual = resultMerger.merge(Arrays.asList(mockQueryResult(), mockQueryResult(),
-                mockQueryResult(), mockQueryResult()), selectStatementContext, mockShardingSphereDatabase());
+                mockQueryResult(), mockQueryResult()), selectStatementContext, mockShardingSphereDatabase(), mock(ConnectionContext.class));
         assertTrue(actual.next());
         assertTrue(actual.next());
         assertFalse(actual.next());
@@ -131,7 +132,7 @@ public final class TopAndRowNumberDecoratorMergedResultTest {
         SelectStatementContext selectStatementContext = new SelectStatementContext(Collections.singletonMap(DefaultDatabase.LOGIC_NAME, database),
                 Collections.emptyList(), sqlStatement, DefaultDatabase.LOGIC_NAME);
         MergedResult actual = resultMerger.merge(Arrays.asList(mockQueryResult(), mockQueryResult(),
-                mockQueryResult(), mockQueryResult()), selectStatementContext, mockShardingSphereDatabase());
+                mockQueryResult(), mockQueryResult()), selectStatementContext, mockShardingSphereDatabase(), mock(ConnectionContext.class));
         assertTrue(actual.next());
         assertTrue(actual.next());
         assertTrue(actual.next());

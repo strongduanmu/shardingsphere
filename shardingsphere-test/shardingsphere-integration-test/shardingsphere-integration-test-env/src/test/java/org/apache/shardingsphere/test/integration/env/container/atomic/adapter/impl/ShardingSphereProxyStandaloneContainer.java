@@ -22,7 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.test.integration.env.container.atomic.DockerITContainer;
 import org.apache.shardingsphere.test.integration.env.container.atomic.adapter.AdapterContainer;
-import org.apache.shardingsphere.test.integration.env.container.wait.JDBCConnectionWaitStrategy;
+import org.apache.shardingsphere.test.integration.env.container.atomic.adapter.config.AdaptorContainerConfiguration;
+import org.apache.shardingsphere.test.integration.env.container.atomic.constants.ProxyContainerConstants;
+import org.apache.shardingsphere.test.integration.env.container.wait.JdbcConnectionWaitStrategy;
 import org.apache.shardingsphere.test.integration.env.runtime.DataSourceEnvironment;
 import org.testcontainers.containers.BindMode;
 
@@ -37,20 +39,18 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 public final class ShardingSphereProxyStandaloneContainer extends DockerITContainer implements AdapterContainer {
     
-    private static final String AGENT_HOME_IN_CONTAINER = "/usr/local/shardingsphere-agent";
-    
     private static final String PROPERTY_AGENT_HOME = "AGENT_HOME";
     
     private final DatabaseType databaseType;
     
-    private final String scenario;
+    private final AdaptorContainerConfiguration config;
     
     private final AtomicReference<DataSource> targetDataSourceProvider = new AtomicReference<>();
     
-    public ShardingSphereProxyStandaloneContainer(final DatabaseType databaseType, final String scenario) {
-        super("ShardingSphere-Proxy", "apache/shardingsphere-proxy-test");
+    public ShardingSphereProxyStandaloneContainer(final DatabaseType databaseType, final AdaptorContainerConfiguration config) {
+        super(ProxyContainerConstants.PROXY_CONTAINER_NAME_PREFIX, ProxyContainerConstants.PROXY_CONTAINER_IMAGE);
         this.databaseType = databaseType;
-        this.scenario = scenario;
+        this.config = config;
     }
     
     /**
@@ -60,21 +60,21 @@ public final class ShardingSphereProxyStandaloneContainer extends DockerITContai
      * @return self
      */
     public ShardingSphereProxyStandaloneContainer withAgent(final String agentHome) {
-        withEnv(PROPERTY_AGENT_HOME, AGENT_HOME_IN_CONTAINER);
-        withFileSystemBind(agentHome, AGENT_HOME_IN_CONTAINER, BindMode.READ_ONLY);
+        withEnv(PROPERTY_AGENT_HOME, ProxyContainerConstants.AGENT_HOME_IN_CONTAINER);
+        withFileSystemBind(agentHome, ProxyContainerConstants.AGENT_HOME_IN_CONTAINER, BindMode.READ_ONLY);
         return this;
     }
     
     @Override
     protected void configure() {
-        mapConfigurationFiles();
-        setWaitStrategy(new JDBCConnectionWaitStrategy(() -> DriverManager.getConnection(DataSourceEnvironment.getURL(databaseType, getHost(), getMappedPort(3307), scenario), "root", "Root@123")));
+        withExposedPorts(3307);
+        mountConfigurationFiles();
+        setWaitStrategy(new JdbcConnectionWaitStrategy(() -> DriverManager.getConnection(
+                DataSourceEnvironment.getURL(databaseType, getHost(), getMappedPort(3307), config.getProxyDataSourceName()), "proxy", "Proxy@123")));
     }
     
-    private void mapConfigurationFiles() {
-        String containerPath = "/opt/shardingsphere-proxy/conf";
-        withClasspathResourceMapping("/env/common/standalone/proxy/conf/", containerPath, BindMode.READ_ONLY);
-        withClasspathResourceMapping("/env/scenario/" + scenario + "/proxy/conf/" + databaseType.getType().toLowerCase(), containerPath, BindMode.READ_ONLY);
+    private void mountConfigurationFiles() {
+        config.getMountedResources().forEach((key, value) -> withClasspathResourceMapping(key, value, BindMode.READ_ONLY));
     }
     
     @Override
@@ -89,9 +89,9 @@ public final class ShardingSphereProxyStandaloneContainer extends DockerITContai
     private DataSource createProxyDataSource() {
         HikariDataSource result = new HikariDataSource();
         result.setDriverClassName(DataSourceEnvironment.getDriverClassName(databaseType));
-        result.setJdbcUrl(DataSourceEnvironment.getURL(databaseType, getHost(), getMappedPort(3307), scenario));
-        result.setUsername("root");
-        result.setPassword("Root@123");
+        result.setJdbcUrl(DataSourceEnvironment.getURL(databaseType, getHost(), getMappedPort(3307), config.getProxyDataSourceName()));
+        result.setUsername(ProxyContainerConstants.USERNAME);
+        result.setPassword(ProxyContainerConstants.PASSWORD);
         result.setMaximumPoolSize(2);
         result.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
         return result;
@@ -99,6 +99,6 @@ public final class ShardingSphereProxyStandaloneContainer extends DockerITContai
     
     @Override
     public String getAbbreviation() {
-        return "proxy";
+        return ProxyContainerConstants.PROXY_CONTAINER_ABBREVIATION;
     }
 }

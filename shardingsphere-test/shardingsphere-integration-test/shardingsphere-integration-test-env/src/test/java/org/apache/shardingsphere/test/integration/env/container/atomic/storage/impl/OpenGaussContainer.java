@@ -18,9 +18,12 @@
 package org.apache.shardingsphere.test.integration.env.container.atomic.storage.impl;
 
 import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeFactory;
+import org.apache.shardingsphere.test.integration.env.container.atomic.constants.StorageContainerConstants;
 import org.apache.shardingsphere.test.integration.env.container.atomic.storage.DockerStorageContainer;
-import org.testcontainers.containers.BindMode;
+import org.apache.shardingsphere.test.integration.env.container.atomic.storage.config.StorageContainerConfiguration;
+import org.apache.shardingsphere.test.integration.env.runtime.DataSourceEnvironment;
 
 import java.util.Optional;
 
@@ -29,32 +32,40 @@ import java.util.Optional;
  */
 public final class OpenGaussContainer extends DockerStorageContainer {
     
-    public OpenGaussContainer(final String dockerImageName, final String scenario, final boolean useRootUsername) {
-        super(DatabaseTypeFactory.getInstance("openGauss"), Strings.isNullOrEmpty(dockerImageName) ? "enmotech/opengauss:3.0.0" : dockerImageName, scenario, useRootUsername);
+    private final StorageContainerConfiguration storageContainerConfiguration;
+    
+    public OpenGaussContainer(final String dockerImageName, final String scenario, final StorageContainerConfiguration storageContainerConfiguration) {
+        super(DatabaseTypeFactory.getInstance("openGauss"), Strings.isNullOrEmpty(dockerImageName) ? "enmotech/opengauss:3.0.0" : dockerImageName, scenario);
+        this.storageContainerConfiguration = storageContainerConfiguration;
     }
     
     @Override
     protected void configure() {
-        withCommand("--max_connections=600");
-        addEnv("GS_PASSWORD", getUnifiedPassword());
-        withClasspathResourceMapping("/env/postgresql/postgresql.conf", "/usr/local/opengauss/share/postgresql/postgresql.conf.sample", BindMode.READ_ONLY);
-        withClasspathResourceMapping("/env/opengauss/pg_hba.conf", "/usr/local/opengauss/share/postgresql/pg_hba.conf.sample", BindMode.READ_ONLY);
+        setCommands(storageContainerConfiguration.getContainerCommand());
+        addEnvs(storageContainerConfiguration.getContainerEnvironments());
+        mapResources(storageContainerConfiguration.getMountedResources());
         withPrivilegedMode(true);
         super.configure();
     }
     
     @Override
-    public String getRootUsername() {
-        return "root";
+    public int getExposedPort() {
+        return StorageContainerConstants.OPENGAUSS_EXPOSED_PORT;
     }
     
     @Override
-    public int getPort() {
-        return 5432;
+    public int getMappedPort() {
+        return this.getMappedPort(StorageContainerConstants.OPENGAUSS_EXPOSED_PORT);
     }
     
     @Override
     protected Optional<String> getDefaultDatabaseName() {
-        return Optional.of("postgres");
+        return Optional.of(StorageContainerConstants.USERNAME);
+    }
+    
+    @Override
+    public String getJdbcUrl(final String dataSourceName) {
+        return DataSourceEnvironment.getURL(getDatabaseType(), getHost(),
+                getMappedPort(getExposedPort()), StringUtils.isNotEmpty(dataSourceName) ? dataSourceName : StorageContainerConstants.USERNAME);
     }
 }

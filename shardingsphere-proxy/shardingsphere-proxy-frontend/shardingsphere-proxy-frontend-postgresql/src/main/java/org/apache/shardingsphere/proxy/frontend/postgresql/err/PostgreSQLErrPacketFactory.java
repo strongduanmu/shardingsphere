@@ -20,17 +20,12 @@ package org.apache.shardingsphere.proxy.frontend.postgresql.err;
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.apache.shardingsphere.db.protocol.postgresql.constant.PostgreSQLErrorCode;
 import org.apache.shardingsphere.db.protocol.postgresql.constant.PostgreSQLMessageSeverityLevel;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.generic.PostgreSQLErrorResponsePacket;
-import org.apache.shardingsphere.infra.exception.InsertColumnsAndValuesMismatchedException;
-import org.apache.shardingsphere.proxy.backend.exception.DBCreateExistsException;
-import org.apache.shardingsphere.proxy.backend.exception.InTransactionException;
-import org.apache.shardingsphere.proxy.backend.exception.UnsupportedUpdateOperationException;
-import org.apache.shardingsphere.proxy.frontend.postgresql.authentication.exception.InvalidAuthorizationSpecificationException;
-import org.apache.shardingsphere.proxy.frontend.postgresql.authentication.exception.PostgreSQLAuthenticationException;
-import org.apache.shardingsphere.proxy.frontend.postgresql.authentication.exception.PostgreSQLProtocolViolationException;
-import org.apache.shardingsphere.proxy.backend.exception.InvalidParameterValueException;
+import org.apache.shardingsphere.dialect.SQLExceptionTransformEngine;
+import org.apache.shardingsphere.dialect.exception.SQLDialectException;
+import org.apache.shardingsphere.dialect.postgresql.vendor.PostgreSQLVendorError;
+import org.apache.shardingsphere.infra.util.exception.external.sql.ShardingSphereSQLException;
 import org.postgresql.util.PSQLException;
 import org.postgresql.util.ServerErrorMessage;
 
@@ -48,53 +43,16 @@ public final class PostgreSQLErrPacketFactory {
      * @param cause cause
      * @return created instance
      */
+    @SuppressWarnings("ConstantConditions")
     public static PostgreSQLErrorResponsePacket newInstance(final Exception cause) {
         if (cause instanceof PSQLException && null != ((PSQLException) cause).getServerErrorMessage()) {
             return createErrorResponsePacket(((PSQLException) cause).getServerErrorMessage());
         }
-        if (cause instanceof InTransactionException) {
-            return PostgreSQLErrorResponsePacket.newBuilder(PostgreSQLMessageSeverityLevel.WARNING, PostgreSQLErrorCode.WARNING.getErrorCode(), cause.getMessage()).build();
-        }
-        if (cause instanceof SQLException) {
-            return createErrorResponsePacket((SQLException) cause);
-        }
-        if (cause instanceof InsertColumnsAndValuesMismatchedException) {
-            return PostgreSQLErrorResponsePacket.newBuilder(PostgreSQLMessageSeverityLevel.ERROR, PostgreSQLErrorCode.SYNTAX_ERROR, cause.getMessage()).build();
-        }
-        if (cause instanceof InvalidAuthorizationSpecificationException) {
-            return PostgreSQLErrorResponsePacket.newBuilder(PostgreSQLMessageSeverityLevel.FATAL, PostgreSQLErrorCode.INVALID_AUTHORIZATION_SPECIFICATION, cause.getMessage()).build();
-        }
-        if (cause instanceof PostgreSQLProtocolViolationException) {
-            return PostgreSQLErrorResponsePacket.newBuilder(PostgreSQLMessageSeverityLevel.FATAL, PostgreSQLErrorCode.PROTOCOL_VIOLATION,
-                    String.format("expected %s response, got message type %s", ((PostgreSQLProtocolViolationException) cause).getExpectedMessageType(),
-                            ((PostgreSQLProtocolViolationException) cause).getActualMessageType()))
-                    .build();
-        }
-        if (cause instanceof PostgreSQLAuthenticationException) {
-            return PostgreSQLErrorResponsePacket.newBuilder(PostgreSQLMessageSeverityLevel.FATAL, ((PostgreSQLAuthenticationException) cause).getErrorCode(), cause.getMessage()).build();
-        }
-        if (cause instanceof InvalidParameterValueException) {
-            InvalidParameterValueException ex = (InvalidParameterValueException) cause;
-            String message = String.format("invalid value for parameter \"%s\": \"%s\"", ex.getParameterName(), ex.getParameterValue());
-            return PostgreSQLErrorResponsePacket.newBuilder(PostgreSQLMessageSeverityLevel.ERROR, PostgreSQLErrorCode.INVALID_PARAMETER_VALUE, message).build();
-        }
-        if (cause instanceof DBCreateExistsException) {
-            return PostgreSQLErrorResponsePacket.newBuilder(PostgreSQLMessageSeverityLevel.ERROR, PostgreSQLErrorCode.DUPLICATE_DATABASE,
-                    String.format(PostgreSQLErrorCode.DUPLICATE_DATABASE.getConditionName(), ((DBCreateExistsException) cause).getDatabaseName())).build();
-        }
-        if (cause instanceof UnsupportedUpdateOperationException) {
-            UnsupportedUpdateOperationException exception = (UnsupportedUpdateOperationException) cause;
-            return PostgreSQLErrorResponsePacket.newBuilder(PostgreSQLMessageSeverityLevel.ERROR, PostgreSQLErrorCode.MODIFYING_SQL_DATA_NOT_PERMITTED, exception.getErrorMessage()).build();
+        if (cause instanceof SQLException || cause instanceof ShardingSphereSQLException || cause instanceof SQLDialectException) {
+            return createErrorResponsePacket(SQLExceptionTransformEngine.toSQLException(cause, "PostgreSQL"));
         }
         // TODO PostgreSQL need consider FrontendConnectionLimitException
         return createErrorResponsePacketForUnknownException(cause);
-    }
-    
-    private static PostgreSQLErrorResponsePacket createErrorResponsePacket(final SQLException cause) {
-        // TODO consider what severity to use
-        String sqlState = Strings.isNullOrEmpty(cause.getSQLState()) ? PostgreSQLErrorCode.SYSTEM_ERROR.getErrorCode() : cause.getSQLState();
-        String message = Strings.isNullOrEmpty(cause.getMessage()) ? cause.toString() : cause.getMessage();
-        return PostgreSQLErrorResponsePacket.newBuilder(PostgreSQLMessageSeverityLevel.ERROR, sqlState, message).build();
     }
     
     private static PostgreSQLErrorResponsePacket createErrorResponsePacket(final ServerErrorMessage serverErrorMessage) {
@@ -105,9 +63,19 @@ public final class PostgreSQLErrPacketFactory {
                 .constraintName(serverErrorMessage.getConstraint()).file(serverErrorMessage.getFile()).line(serverErrorMessage.getLine()).routine(serverErrorMessage.getRoutine()).build();
     }
     
+    @SuppressWarnings("ConstantConditions")
+    private static PostgreSQLErrorResponsePacket createErrorResponsePacket(final SQLException cause) {
+        if (cause instanceof PSQLException && null != ((PSQLException) cause).getServerErrorMessage()) {
+            return createErrorResponsePacket(((PSQLException) cause).getServerErrorMessage());
+        }
+        String sqlState = Strings.isNullOrEmpty(cause.getSQLState()) ? PostgreSQLVendorError.SYSTEM_ERROR.getSqlState().getValue() : cause.getSQLState();
+        String message = Strings.isNullOrEmpty(cause.getMessage()) ? cause.toString() : cause.getMessage();
+        return PostgreSQLErrorResponsePacket.newBuilder(PostgreSQLMessageSeverityLevel.ERROR, sqlState, message).build();
+    }
+    
     private static PostgreSQLErrorResponsePacket createErrorResponsePacketForUnknownException(final Exception cause) {
         // TODO add FIELD_TYPE_CODE for common error and consider what severity to use
         String message = Strings.isNullOrEmpty(cause.getLocalizedMessage()) ? cause.toString() : cause.getLocalizedMessage();
-        return PostgreSQLErrorResponsePacket.newBuilder(PostgreSQLMessageSeverityLevel.ERROR, PostgreSQLErrorCode.SYSTEM_ERROR, message).build();
+        return PostgreSQLErrorResponsePacket.newBuilder(PostgreSQLMessageSeverityLevel.ERROR, PostgreSQLVendorError.SYSTEM_ERROR, message).build();
     }
 }

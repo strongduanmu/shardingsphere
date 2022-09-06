@@ -31,8 +31,9 @@ execute
     | clearHint
     | enableInstance
     | disableInstance
-    | showInstance
-    | showInstanceMode
+    | showInstanceList
+    | showInstanceInfo
+    | showModeInfo
     | labelInstance
     | unlabelInstance
     | countSingleTableRule
@@ -48,19 +49,14 @@ execute
     | dropDefaultSingleTableRule
     | refreshTableMetadata
     | showTableMetadata
-    | showSQLParserRule
-    | alterSQLParserRule
-    | showAuthorityRule
-    | showTransactionRule
-    | alterTransactionRule
-    | showTrafficRules
-    | dropTrafficRule
-    | createTrafficRule
-    | alterTrafficRule
     | exportDatabaseConfiguration
     | showRulesUsedResource
     | importDatabaseConfiguration
     | convertYamlConfiguration
     | showSQLTranslatorRule
+    | showMigrationProcessConfiguration
+    | createMigrationProcessConfiguration
+    | alterMigrationProcessConfiguration
+    | dropMigrationProcessConfiguration
     ) SEMI?
     ;

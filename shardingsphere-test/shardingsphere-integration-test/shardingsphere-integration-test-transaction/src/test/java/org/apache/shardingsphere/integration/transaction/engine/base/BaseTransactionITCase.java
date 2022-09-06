@@ -20,10 +20,12 @@ package org.apache.shardingsphere.integration.transaction.engine.base;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.data.pipeline.core.util.ThreadUtil;
+import org.apache.shardingsphere.integration.transaction.cases.base.BaseTransactionTestCase;
 import org.apache.shardingsphere.integration.transaction.engine.constants.TransactionTestConstants;
 import org.apache.shardingsphere.integration.transaction.framework.param.TransactionParameterized;
 import org.apache.shardingsphere.transaction.core.TransactionType;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -33,7 +35,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 @Slf4j
@@ -44,7 +47,7 @@ public abstract class BaseTransactionITCase extends BaseITCase {
         if (isProxyAdapter(parameterized)) {
             initProxyConfig();
         } else {
-            initJDBCConfig();
+            initJdbcConfig();
         }
     }
     
@@ -56,7 +59,7 @@ public abstract class BaseTransactionITCase extends BaseITCase {
         createTables();
     }
     
-    private void initJDBCConfig() throws SQLException {
+    private void initJdbcConfig() throws SQLException {
         createTables();
     }
     
@@ -65,6 +68,7 @@ public abstract class BaseTransactionITCase extends BaseITCase {
         createOrderTable(conn);
         createOrderItemTable(conn);
         createAccountTable(conn);
+        createAddressTable(conn);
     }
     
     private void initTableRules() throws SQLException {
@@ -73,6 +77,7 @@ public abstract class BaseTransactionITCase extends BaseITCase {
         createOrderItemTableRule(connection);
         bindingShardingRule(connection);
         createAccountTableRule(connection);
+        createAddressBroadcastTableRule(connection);
     }
     
     protected void createOrderTableRule(final Connection connection) throws SQLException {
@@ -87,20 +92,40 @@ public abstract class BaseTransactionITCase extends BaseITCase {
         executeWithLog(connection, getCommonSQLCommand().getCreateAccountTableRule());
     }
     
+    private void createAddressBroadcastTableRule(final Connection connection) throws SQLException {
+        executeWithLog(connection, getCommonSQLCommand().getCreateAddressBroadcastTableRule());
+    }
+    
     protected void bindingShardingRule(final Connection connection) throws SQLException {
         executeWithLog(connection, "CREATE SHARDING BINDING TABLE RULES (t_order, t_order_item)");
     }
     
-    protected void createAccountTable(final Connection connection) throws SQLException {
+    /**
+     * Create account table.
+     * 
+     * @param connection connection 
+     * @throws SQLException SQL exception
+     */
+    public void createAccountTable(final Connection connection) throws SQLException {
         executeWithLog(connection, getCommonSQLCommand().getCreateAccountTable());
     }
     
-    protected void dropAccountTable(final Connection connection) throws SQLException {
-        executeWithLog(connection, "DROP TABLE IF EXISTS account;");
+    /**
+     * Drop account table.
+     *
+     * @param connection connection 
+     * @throws SQLException SQL exception
+     */
+    public void dropAccountTable(final Connection connection) throws SQLException {
+        executeWithLog(connection, "drop table if exists account;");
     }
     
     protected void createOrderItemTable(final Connection connection) throws SQLException {
         executeWithLog(connection, getCommonSQLCommand().getCreateOrderItemTable());
+    }
+    
+    protected void createAddressTable(final Connection connection) throws SQLException {
+        executeWithLog(connection, getCommonSQLCommand().getCreateAddressTable());
     }
     
     protected void dropOrderItemTable(final Connection connection) throws SQLException {
@@ -128,7 +153,7 @@ public abstract class BaseTransactionITCase extends BaseITCase {
             resultSetCount++;
         }
         statement.close();
-        assertEquals(String.format("Recode num assert error, expect:%s, actual:%s.", rowNum, resultSetCount), resultSetCount, rowNum);
+        assertThat(String.format("Recode num assert error, expect:%s, actual:%s.", rowNum, resultSetCount), resultSetCount, is(rowNum));
     }
     
     protected void alterLocalTransactionRule() throws SQLException {
@@ -141,14 +166,14 @@ public abstract class BaseTransactionITCase extends BaseITCase {
         assertTrue(waitExpectedTransactionRule(TransactionType.LOCAL, "", 5));
     }
     
-    protected void alterXaAtomikosTransactionRule() throws SQLException {
+    protected void alterXaTransactionRule(final String providerType) throws SQLException {
         Connection connection = getProxyConnection();
-        if (isExpectedTransactionRule(connection, TransactionType.XA, "Atomikos")) {
+        if (isExpectedTransactionRule(connection, TransactionType.XA, providerType)) {
             return;
         }
-        String alterXaAtomikosTransactionRule = getCommonSQLCommand().getAlterXaAtomikosTransactionRule();
-        executeWithLog(connection, alterXaAtomikosTransactionRule);
-        assertTrue(waitExpectedTransactionRule(TransactionType.XA, "Atomikos", 5));
+        String alterXaTransactionRule = getCommonSQLCommand().getAlterXATransactionRule().replace("${providerType}", providerType);
+        executeWithLog(connection, alterXaTransactionRule);
+        assertTrue(waitExpectedTransactionRule(TransactionType.XA, providerType, 5));
     }
     
     private boolean isExpectedTransactionRule(final Connection connection, final TransactionType expectedTransType, final String expectedProviderType) {
@@ -158,6 +183,7 @@ public abstract class BaseTransactionITCase extends BaseITCase {
     }
     
     protected boolean waitExpectedTransactionRule(final TransactionType expectedTransType, final String expectedProviderType, final int maxWaitTimes) {
+        ThreadUtil.sleep(5, TimeUnit.SECONDS);
         Connection connection = getProxyConnection();
         int waitTimes = 0;
         do {
@@ -185,4 +211,22 @@ public abstract class BaseTransactionITCase extends BaseITCase {
         return result;
     }
     
+    protected void callTestCases(final TransactionParameterized parameterized) {
+        for (Class<? extends BaseTransactionTestCase> each : parameterized.getTransactionTestCaseClasses()) {
+            log.info("Transaction IT {} -> {} test begin.", parameterized, each.getSimpleName());
+            try {
+                each.getConstructor(BaseTransactionITCase.class, DataSource.class).newInstance(this, getDataSource()).execute();
+                // CHECKSTYLE:OFF
+            } catch (final Exception ex) {
+                // CHECKSTYLE:ON
+                log.error(String.format("Transaction IT %s -> %s test failed", parameterized, each.getSimpleName()), ex);
+                throw new RuntimeException(ex);
+            }
+            log.info("Transaction IT {} -> {} test end.", parameterized, each.getSimpleName());
+            try {
+                getDataSource().close();
+            } catch (final SQLException ignored) {
+            }
+        }
+    }
 }

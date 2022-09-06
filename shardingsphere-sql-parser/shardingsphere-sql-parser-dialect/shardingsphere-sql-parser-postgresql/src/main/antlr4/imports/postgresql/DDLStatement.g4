@@ -340,7 +340,7 @@ alterDefinitionClause
 
 partitionCmd
     : ATTACH PARTITION qualifiedName partitionBoundSpec
-    | DETACH PARTITION qualifiedName
+    | DETACH PARTITION qualifiedName (CONCURRENTLY | FINALIZE)?
     ;
 
 alterIndexDefinitionClause
@@ -383,18 +383,28 @@ alterTableAction
     | modifyConstraintSpecification
     | validateConstraintSpecification
     | dropConstraintSpecification
+    | ALTER COLUMN? colId SET STATISTICS signedIconst
+    | ALTER COLUMN? NUMBER_ SET STATISTICS signedIconst
+    | ALTER COLUMN? colId SET reloptions
+    | ALTER COLUMN? colId RESET reloptions
+    | ALTER COLUMN? colId SET STORAGE colId
+    | ALTER COLUMN? colId SET columnCompression
+    | ALTER COLUMN? colId DROP EXPRESSION ifExists?
     | (DISABLE | ENABLE) TRIGGER (ignoredIdentifier | ALL | USER)?
     | ENABLE (REPLICA | ALWAYS) TRIGGER ignoredIdentifier
     | (DISABLE | ENABLE) RULE ignoredIdentifier
     | ENABLE (REPLICA | ALWAYS) RULE ignoredIdentifier
     | (DISABLE | ENABLE | (NO? FORCE)) ROW LEVEL SECURITY
     | CLUSTER ON indexName
+    | SET (ACCESS METHOD name) (COMMA_ ACCESS METHOD name)*
     | SET WITHOUT CLUSTER
     | SET (WITH | WITHOUT) OIDS
+    | SET STATISTICS signedIconst
     | SET TABLESPACE ignoredIdentifier
     | SET (LOGGED | UNLOGGED)
-    | SET LP_ storageParameterWithValue (COMMA_ storageParameterWithValue)* RP_
-    | RESET LP_ storageParameter (COMMA_ storageParameter)* RP_
+    | SET LP_ (storageParameterWithValue) (COMMA_ storageParameterWithValue)* RP_
+    | SET LP_ (storageParameter) (COMMA_ storageParameter)* RP_
+    | RESET LP_ storageParameterWithValue (COMMA_ storageParameterWithValue)* RP_
     | INHERIT tableName
     | NO INHERIT tableName
     | OF dataTypeName
@@ -973,7 +983,7 @@ createMaterializedView
     ;
 
 createMvTarget
-    : qualifiedName optColumnList? tableAccessMethodClause (WITH reloptions)? (TABLESPACE name)?
+    : qualifiedName optColumnList? tableAccessMethodClause? (WITH reloptions)? (TABLESPACE name)?
     ;
 
 alterPolicy
@@ -1059,7 +1069,7 @@ alterStatistics
     ( ifExists? anyName SET STATISTICS signedIconst
     | anyName RENAME TO name
     | anyName SET SCHEMA name
-    | anyName OWNER TO roleSpec)
+    | anyName OWNER TO roleSpec )
     ;
 
 alterSubscription
@@ -1070,6 +1080,8 @@ alterSubscription
     | CONNECTION STRING_
     | REFRESH PUBLICATION (WITH definition)?
     | SET PUBLICATION publicationNameList (WITH definition)?
+    | ADD PUBLICATION publicationNameList (WITH definition)?
+    | DROP PUBLICATION publicationNameList (WITH definition)?
     | (ENABLE | DISABLE))
     ;
 
@@ -1118,11 +1130,11 @@ alterTextSearchDictionary
     ;
 
 alterTextSearchParser
-    : ALTER TEXT SEARCH PARSER (anyName RENAME TO name | SET SCHEMA name)
+    : ALTER TEXT SEARCH PARSER anyName (RENAME TO name | SET SCHEMA name)
     ;
 
 alterTextSearchTemplate
-    : ALTER TEXT SEARCH TEMPLATE (anyName RENAME TO name | SET SCHEMA name)
+    : ALTER TEXT SEARCH TEMPLATE anyName (RENAME TO name | SET SCHEMA name)
     ;
 
 alterTrigger
@@ -1150,8 +1162,7 @@ alterTypeCmds
 
 alterTypeCmd
     : ADD ATTRIBUTE tableFuncElement dropBehavior?
-    | DROP ATTRIBUTE ifExists colId dropBehavior?
-    | DROP ATTRIBUTE colId dropBehavior?
+    | DROP ATTRIBUTE ifExists? colId dropBehavior?
     | ALTER ATTRIBUTE colId setData? TYPE typeName collateClause? dropBehavior?
     ;
 
@@ -1776,6 +1787,7 @@ cursorOption
     : NO SCROLL
     | SCROLL
     | BINARY
+    | ASENSITIVE
     | INSENSITIVE
     ;
 

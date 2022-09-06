@@ -17,39 +17,40 @@
 
 package org.apache.shardingsphere.infra.federation.optimizer;
 
+import org.apache.calcite.config.CalciteConnectionConfig;
+import org.apache.calcite.config.CalciteConnectionConfigImpl;
+import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
+import org.apache.calcite.prepare.CalciteCatalogReader;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeEngine;
 import org.apache.shardingsphere.infra.database.type.dialect.H2DatabaseType;
-import org.apache.shardingsphere.infra.federation.optimizer.context.OptimizerContextFactory;
-import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.infra.metadata.database.resource.ShardingSphereResource;
-import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
+import org.apache.shardingsphere.infra.federation.optimizer.context.planner.OptimizerPlannerContextFactory;
+import org.apache.shardingsphere.infra.federation.optimizer.metadata.translatable.TranslatableSchema;
+import org.apache.shardingsphere.infra.federation.optimizer.planner.QueryOptimizePlannerFactory;
 import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereColumn;
 import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereTable;
 import org.apache.shardingsphere.infra.parser.ShardingSphereSQLParserEngine;
-import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
-import org.apache.shardingsphere.parser.config.SQLParserRuleConfiguration;
 import org.apache.shardingsphere.parser.rule.SQLParserRule;
 import org.apache.shardingsphere.parser.rule.builder.DefaultSQLParserRuleConfigurationBuilder;
-import org.apache.shardingsphere.sql.parser.api.CacheOption;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.sql.Types;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public final class ShardingSphereOptimizerTest {
+    
+    private static final String LINE_SEPARATOR = System.lineSeparator();
     
     private static final String SELECT_CROSS_JOIN_CONDITION = "SELECT t_order_federate.order_id, t_order_federate.user_id, t_user_info.user_id "
             + "FROM t_order_federate JOIN t_user_info ON t_order_federate.user_id = t_user_info.user_id "
@@ -81,12 +82,12 @@ public final class ShardingSphereOptimizerTest {
             + "WHERE t_order_federate.user_id IN (SELECT t_user_info.user_id FROM t_user_info)";
     
     private static final String SELECT_SUBQUERY_WHERE_BETWEEN = "SELECT t_order_federate.order_id, t_order_federate.user_id FROM t_order_federate "
-            + "WHERE user_id BETWEEN (SELECT user_id FROM t_user_info WHERE information = 'before') "
-            + "AND (SELECT user_id FROM t_user_info WHERE information = 'after')";
+            + "WHERE user_id BETWEEN (SELECT user_id FROM t_user_info WHERE user_id = 1) "
+            + "AND (SELECT user_id FROM t_user_info WHERE user_id = 3)";
     
-    private final String databaseName = "sharding_db";
+    private static final String SELECT_UNION = "SELECT order_id, user_id FROM t_order_federate UNION SELECT 1, user_id FROM t_user_info WHERE information = 'before'";
     
-    private final String schemaName = "federate_jdbc";
+    private static final String SCHEMA_NAME = "federate_jdbc";
     
     private final SQLParserRule sqlParserRule = new SQLParserRule(new DefaultSQLParserRuleConfigurationBuilder().build());
     
@@ -97,178 +98,169 @@ public final class ShardingSphereOptimizerTest {
         Map<String, ShardingSphereTable> tables = new HashMap<>(2, 1);
         tables.put("t_order_federate", createOrderTableMetaData());
         tables.put("t_user_info", createUserInfoTableMetaData());
-        ShardingSphereDatabase database = new ShardingSphereDatabase(databaseName,
-                new H2DatabaseType(), mockResource(), null, Collections.singletonMap(schemaName, new ShardingSphereSchema(tables)));
-        optimizer = new ShardingSphereOptimizer(OptimizerContextFactory.create(Collections.singletonMap(databaseName, database), createGlobalRuleMetaData()));
-    }
-    
-    private ShardingSphereRuleMetaData createGlobalRuleMetaData() {
-        Collection<ShardingSphereRule> rules = new LinkedList<>();
-        CacheOption cacheOption = new CacheOption(128, 1024L);
-        rules.add(new SQLParserRule(new SQLParserRuleConfiguration(false, cacheOption, cacheOption)));
-        return new ShardingSphereRuleMetaData(rules);
-    }
-    
-    private ShardingSphereResource mockResource() {
-        ShardingSphereResource result = mock(ShardingSphereResource.class);
-        when(result.getDatabaseType()).thenReturn(new H2DatabaseType());
-        return result;
+        ShardingSphereSchema schema = new ShardingSphereSchema(tables, Collections.emptyMap());
+        SqlToRelConverter converter = createSqlToRelConverter(schema);
+        optimizer = new ShardingSphereOptimizer(converter, QueryOptimizePlannerFactory.createHepPlannerWithoutCalc(), QueryOptimizePlannerFactory.createHepPlannerWithCalc());
     }
     
     private ShardingSphereTable createOrderTableMetaData() {
-        ShardingSphereColumn orderIdColumn = new ShardingSphereColumn("order_id", Types.VARCHAR, true, false, false);
-        ShardingSphereColumn userIdColumn = new ShardingSphereColumn("user_id", Types.VARCHAR, false, false, false);
-        ShardingSphereColumn statusColumn = new ShardingSphereColumn("status", Types.VARCHAR, false, false, false);
+        ShardingSphereColumn orderIdColumn = new ShardingSphereColumn("order_id", Types.VARCHAR, true, false, false, true);
+        ShardingSphereColumn userIdColumn = new ShardingSphereColumn("user_id", Types.VARCHAR, false, false, false, true);
+        ShardingSphereColumn statusColumn = new ShardingSphereColumn("status", Types.VARCHAR, false, false, false, true);
         return new ShardingSphereTable("t_order_federate", Arrays.asList(orderIdColumn, userIdColumn, statusColumn), Collections.emptyList(), Collections.emptyList());
     }
     
     private ShardingSphereTable createUserInfoTableMetaData() {
-        ShardingSphereColumn userIdColumn = new ShardingSphereColumn("user_id", Types.VARCHAR, true, false, false);
-        ShardingSphereColumn informationColumn = new ShardingSphereColumn("information", Types.VARCHAR, false, false, false);
+        ShardingSphereColumn userIdColumn = new ShardingSphereColumn("user_id", Types.VARCHAR, true, false, false, true);
+        ShardingSphereColumn informationColumn = new ShardingSphereColumn("information", Types.VARCHAR, false, false, false, true);
         return new ShardingSphereTable("t_user_info", Arrays.asList(userIdColumn, informationColumn), Collections.emptyList(), Collections.emptyList());
+    }
+    
+    private static SqlToRelConverter createSqlToRelConverter(final ShardingSphereSchema schema) {
+        CalciteConnectionConfig connectionConfig = new CalciteConnectionConfigImpl(OptimizerPlannerContextFactory.createConnectionProperties());
+        RelDataTypeFactory relDataTypeFactory = new JavaTypeFactoryImpl();
+        TranslatableSchema federationSchema = new TranslatableSchema(SCHEMA_NAME, schema, null);
+        CalciteCatalogReader catalogReader = OptimizerPlannerContextFactory.createCatalogReader(SCHEMA_NAME, federationSchema, relDataTypeFactory, connectionConfig);
+        SqlValidator validator = OptimizerPlannerContextFactory.createValidator(catalogReader, relDataTypeFactory, connectionConfig);
+        return OptimizerPlannerContextFactory.createConverter(catalogReader, validator, relDataTypeFactory);
     }
     
     @Test
     public void assertSelectCrossJoinCondition() {
         ShardingSphereSQLParserEngine sqlParserEngine = sqlParserRule.getSQLParserEngine(DatabaseTypeEngine.getTrunkDatabaseTypeName(new H2DatabaseType()));
         SQLStatement sqlStatement = sqlParserEngine.parse(SELECT_CROSS_JOIN_CONDITION, false);
-        String actual = optimizer.optimize(databaseName, schemaName, sqlStatement).explain();
-        String expected =
-                "EnumerableCalc(expr#0..4=[{inputs}],proj#0..1=[{exprs}],user_id1=[$t3])"
-                        + "EnumerableInterpreter"
-                        + " BindableJoin(condition=[=($2,$4)],joinType=[inner])"
-                        + "    BindableProject(order_id=[$0],user_id=[$1],user_id0=[CAST($1):VARCHAR])"
-                        + "        BindableTableScan(table=[[federate_jdbc,t_order_federate]],projects=[[0,1]])"
-                        + "    EnumerableBindable"
-                        + "        EnumerableCalc(expr#0=[{inputs}],expr#1=[CAST($t0):VARCHAR],proj#0..1=[{exprs}])"
-                        + "            EnumerableInterpreter"
-                        + "                BindableTableScan(table=[[federate_jdbc,t_user_info]],filters=[[=(CAST($0):INTEGER,13)]],projects=[[0]])";
-        assertThat(actual.replaceAll("\\s*", ""), is(expected.replaceAll("\\s*", "")));
+        String actual = optimizer.optimize(sqlStatement).explain();
+        String expected = "EnumerableCalc(expr#0..4=[{inputs}], proj#0..1=[{exprs}], user_id0=[$t3])" + LINE_SEPARATOR
+                + "  EnumerableHashJoin(condition=[=($2, $4)], joinType=[inner])" + LINE_SEPARATOR
+                + "    EnumerableCalc(expr#0..2=[{inputs}], expr#3=[CAST($t1):VARCHAR], proj#0..1=[{exprs}], user_id0=[$t3])" + LINE_SEPARATOR
+                + "      TranslatableTableScan(table=[[federate_jdbc, t_order_federate]], fields=[[0, 1, 2]])" + LINE_SEPARATOR
+                + "    EnumerableCalc(expr#0..1=[{inputs}], expr#2=[CAST($t0):VARCHAR], user_id=[$t0], user_id0=[$t2])" + LINE_SEPARATOR
+                + "      TranslatableTableScan(table=[[federate_jdbc, t_user_info]], fields=[[0, 1]], filters=[[13, null]])" + LINE_SEPARATOR;
+        assertThat(actual, is(expected));
     }
     
     @Test
     public void assertSelectWhereAllFields() {
         ShardingSphereSQLParserEngine sqlParserEngine = sqlParserRule.getSQLParserEngine(DatabaseTypeEngine.getTrunkDatabaseTypeName(new H2DatabaseType()));
         SQLStatement sqlStatement = sqlParserEngine.parse(SELECT_WHERE_ALL_FIELDS, false);
-        String actual = optimizer.optimize(databaseName, schemaName, sqlStatement).explain();
-        String expected =
-                "EnumerableInterpreter"
-                        + "  BindableTableScan(table=[[federate_jdbc,t_user_info]],filters=[[=(CAST($0):INTEGER,12)]])";
-        assertThat(actual.replaceAll("\\s*", ""), is(expected.replaceAll("\\s*", "")));
+        String actual = optimizer.optimize(sqlStatement).explain();
+        String expected = "TranslatableTableScan(table=[[federate_jdbc, t_user_info]], fields=[[0, 1]], filters=[[12, null]])" + LINE_SEPARATOR;
+        assertThat(actual, is(expected));
     }
     
     @Test
     public void assertSelectWhereSingleField() {
         ShardingSphereSQLParserEngine sqlParserEngine = sqlParserRule.getSQLParserEngine(DatabaseTypeEngine.getTrunkDatabaseTypeName(new H2DatabaseType()));
         SQLStatement sqlStatement = sqlParserEngine.parse(SELECT_WHERE_SINGLE_FIELD, false);
-        String actual = optimizer.optimize(databaseName, schemaName, sqlStatement).explain();
-        String expected =
-                "EnumerableInterpreter"
-                        + "  BindableTableScan(table=[[federate_jdbc,t_user_info]],filters=[[=(CAST($0):INTEGER,12)]],projects=[[0]])";
-        assertThat(actual.replaceAll("\\s*", ""), is(expected.replaceAll("\\s*", "")));
+        String actual = optimizer.optimize(sqlStatement).explain();
+        String expected = "TranslatableTableScan(table=[[federate_jdbc, t_user_info]], fields=[[0]], filters=[[12]])" + LINE_SEPARATOR;
+        assertThat(actual, is(expected));
     }
     
     @Test
     public void assertSelectCrossWhere() {
         ShardingSphereSQLParserEngine sqlParserEngine = sqlParserRule.getSQLParserEngine(DatabaseTypeEngine.getTrunkDatabaseTypeName(new H2DatabaseType()));
         SQLStatement sqlStatement = sqlParserEngine.parse(SELECT_CROSS_WHERE, false);
-        String actual = optimizer.optimize(databaseName, schemaName, sqlStatement).explain();
-        String expected =
-                "EnumerableInterpreter"
-                        + "BindableJoin(condition=[=(CAST($1):VARCHAR,CAST($2):VARCHAR)],joinType=[inner])"
-                        + "     BindableTableScan(table=[[federate_jdbc,t_order_federate]],projects=[[0,1]])"
-                        + "     BindableTableScan(table=[[federate_jdbc,t_user_info]],projects=[[0]])";
-        assertThat(actual.replaceAll("\\s*", ""), is(expected.replaceAll("\\s*", "")));
+        String actual = optimizer.optimize(sqlStatement).explain();
+        String expected = "EnumerableCalc(expr#0..4=[{inputs}], proj#0..1=[{exprs}], user_id0=[$t3])" + LINE_SEPARATOR
+                + "  EnumerableHashJoin(condition=[=($2, $4)], joinType=[inner])" + LINE_SEPARATOR
+                + "    EnumerableCalc(expr#0..2=[{inputs}], expr#3=[CAST($t1):VARCHAR], proj#0..1=[{exprs}], user_id0=[$t3])" + LINE_SEPARATOR
+                + "      TranslatableTableScan(table=[[federate_jdbc, t_order_federate]], fields=[[0, 1, 2]])" + LINE_SEPARATOR
+                + "    EnumerableCalc(expr#0..1=[{inputs}], expr#2=[CAST($t0):VARCHAR], user_id=[$t0], user_id0=[$t2])" + LINE_SEPARATOR
+                + "      TranslatableTableScan(table=[[federate_jdbc, t_user_info]], fields=[[0, 1]])" + LINE_SEPARATOR;
+        assertThat(actual, is(expected));
     }
     
     @Test
     public void assertSelectCrossJoin() {
         ShardingSphereSQLParserEngine sqlParserEngine = sqlParserRule.getSQLParserEngine(DatabaseTypeEngine.getTrunkDatabaseTypeName(new H2DatabaseType()));
         SQLStatement sqlStatement = sqlParserEngine.parse(SELECT_CROSS_JOIN, false);
-        String actual = optimizer.optimize(databaseName, schemaName, sqlStatement).explain();
-        String expected =
-                "EnumerableCalc(expr#0..4=[{inputs}],proj#0..1=[{exprs}],user_id0=[$t3])"
-                        + "EnumerableMergeJoin(condition=[=($2,$4)],joinType=[inner])"
-                        + "     EnumerableSort(sort0=[$2],dir0=[ASC])"
-                        + "         EnumerableInterpreter"
-                        + "             BindableProject(order_id=[$0],user_id=[$1],user_id0=[CAST($1):VARCHAR])"
-                        + "                 BindableTableScan(table=[[federate_jdbc,t_order_federate]],projects=[[0,1]])"
-                        + "     EnumerableSort(sort0=[$1],dir0=[ASC])"
-                        + "         EnumerableInterpreter"
-                        + "             BindableProject(user_id=[$0],user_id0=[CAST($0):VARCHAR])"
-                        + "                 BindableTableScan(table=[[federate_jdbc,t_user_info]],projects=[[0]])";
-        assertThat(actual.replaceAll("\\s*", ""), is(expected.replaceAll("\\s*", "")));
+        String actual = optimizer.optimize(sqlStatement).explain();
+        String expected = "EnumerableCalc(expr#0..4=[{inputs}], proj#0..1=[{exprs}], user_id0=[$t3])" + LINE_SEPARATOR
+                + "  EnumerableHashJoin(condition=[=($2, $4)], joinType=[inner])" + LINE_SEPARATOR
+                + "    EnumerableCalc(expr#0..2=[{inputs}], expr#3=[CAST($t1):VARCHAR], proj#0..1=[{exprs}], user_id0=[$t3])" + LINE_SEPARATOR
+                + "      TranslatableTableScan(table=[[federate_jdbc, t_order_federate]], fields=[[0, 1, 2]])" + LINE_SEPARATOR
+                + "    EnumerableCalc(expr#0..1=[{inputs}], expr#2=[CAST($t0):VARCHAR], user_id=[$t0], user_id0=[$t2])" + LINE_SEPARATOR
+                + "      TranslatableTableScan(table=[[federate_jdbc, t_user_info]], fields=[[0, 1]])" + LINE_SEPARATOR;
+        assertThat(actual, is(expected));
     }
     
     @Test
     public void assertSelectJoinWhere() {
         ShardingSphereSQLParserEngine sqlParserEngine = sqlParserRule.getSQLParserEngine(DatabaseTypeEngine.getTrunkDatabaseTypeName(new H2DatabaseType()));
         SQLStatement sqlStatement = sqlParserEngine.parse(SELECT_CROSS_WHERE_CONDITION, false);
-        String actual = optimizer.optimize(databaseName, schemaName, sqlStatement).explain();
-        String expected =
-                "EnumerableInterpreter"
-                        + " BindableJoin(condition=[=(CAST($1):VARCHAR,CAST($2):VARCHAR)],joinType=[inner])"
-                        + "     BindableTableScan(table=[[federate_jdbc,t_order_federate]],projects=[[0,1]])"
-                        + "     BindableTableScan(table=[[federate_jdbc,t_user_info]],filters=[[=(CAST($0):INTEGER,13)]],projects=[[0]])";
-        assertThat(actual.replaceAll("\\s*", ""), is(expected.replaceAll("\\s*", "")));
+        String actual = optimizer.optimize(sqlStatement).explain();
+        String expected = "EnumerableCalc(expr#0..4=[{inputs}], proj#0..1=[{exprs}], user_id0=[$t3])" + LINE_SEPARATOR
+                + "  EnumerableHashJoin(condition=[=($2, $4)], joinType=[inner])" + LINE_SEPARATOR
+                + "    EnumerableCalc(expr#0..2=[{inputs}], expr#3=[CAST($t1):VARCHAR], proj#0..1=[{exprs}], user_id0=[$t3])" + LINE_SEPARATOR
+                + "      TranslatableTableScan(table=[[federate_jdbc, t_order_federate]], fields=[[0, 1, 2]])" + LINE_SEPARATOR
+                + "    EnumerableCalc(expr#0..1=[{inputs}], expr#2=[CAST($t0):VARCHAR], user_id=[$t0], user_id0=[$t2])" + LINE_SEPARATOR
+                + "      TranslatableTableScan(table=[[federate_jdbc, t_user_info]], fields=[[0, 1]], filters=[[13, null]])" + LINE_SEPARATOR;
+        assertThat(actual, is(expected));
     }
     
     @Test
     public void assertSelectSubQueryFrom() {
         ShardingSphereSQLParserEngine sqlParserEngine = sqlParserRule.getSQLParserEngine(DatabaseTypeEngine.getTrunkDatabaseTypeName(new H2DatabaseType()));
         SQLStatement sqlStatement = sqlParserEngine.parse(SELECT_SUBQUERY_FROM, false);
-        String actual = optimizer.optimize(databaseName, schemaName, sqlStatement).explain();
-        String expected =
-                "EnumerableInterpreter"
-                        + "  BindableTableScan(table=[[federate_jdbc,t_user_info]],filters=[[>(CAST($0):INTEGER,1)]])";
-        assertThat(actual.replaceAll("\\s*", ""), is(expected.replaceAll("\\s*", "")));
+        String actual = optimizer.optimize(sqlStatement).explain();
+        String expected = "TranslatableTableScan(table=[[federate_jdbc, t_user_info]], fields=[[0, 1]], filters=[[null, null]])" + LINE_SEPARATOR;
+        assertThat(actual, is(expected));
     }
     
     @Test
     public void assertSelectSubQueryWhereExist() {
         ShardingSphereSQLParserEngine sqlParserEngine = sqlParserRule.getSQLParserEngine(DatabaseTypeEngine.getTrunkDatabaseTypeName(new H2DatabaseType()));
         SQLStatement sqlStatement = sqlParserEngine.parse(SELECT_SUBQUERY_WHERE_EXIST, false);
-        String actual = optimizer.optimize(databaseName, schemaName, sqlStatement).explain();
-        String expected =
-                "EnumerableInterpreter"
-                        + "BindableProject(order_id=[$0],user_id=[$1])"
-                        + "     BindableJoin(condition=[=($2,$3)],joinType=[semi])"
-                        + "         BindableProject(order_id=[$0],user_id=[$1],user_id0=[CAST($1):VARCHAR])"
-                        + "             BindableTableScan(table=[[federate_jdbc,t_order_federate]],projects=[[0,1]])"
-                        + "         BindableProject(user_id0=[CAST($0):VARCHAR],$f0=[true])"
-                        + "             BindableTableScan(table=[[federate_jdbc,t_user_info]],filters=[[ISNOTNULL(CAST($0):VARCHAR)]],projects=[[0]])";
-        assertThat(actual.replaceAll("\\s*", ""), is(expected.replaceAll("\\s*", "")));
+        String actual = optimizer.optimize(sqlStatement).explain();
+        String expected = "EnumerableCalc(expr#0..3=[{inputs}], expr#4=[IS NOT NULL($t3)], proj#0..1=[{exprs}], $condition=[$t4])" + LINE_SEPARATOR
+                + "  EnumerableCorrelate(correlation=[$cor0], joinType=[left], requiredColumns=[{1}])" + LINE_SEPARATOR
+                + "    TranslatableTableScan(table=[[federate_jdbc, t_order_federate]], fields=[[0, 1, 2]])" + LINE_SEPARATOR
+                + "    EnumerableAggregate(group=[{}], agg#0=[MIN($0)])" + LINE_SEPARATOR
+                + "      EnumerableCalc(expr#0..1=[{inputs}], expr#2=[true], $f0=[$t2])" + LINE_SEPARATOR
+                + "        TranslatableTableScan(table=[[federate_jdbc, t_user_info]], fields=[[0, 1]], filters=[[null, null]])" + LINE_SEPARATOR;
+        assertThat(actual, is(expected));
     }
     
     @Test
     public void assertSelectSubQueryWhereIn() {
         ShardingSphereSQLParserEngine sqlParserEngine = sqlParserRule.getSQLParserEngine(DatabaseTypeEngine.getTrunkDatabaseTypeName(new H2DatabaseType()));
         SQLStatement sqlStatement = sqlParserEngine.parse(SELECT_SUBQUERY_WHERE_IN, false);
-        String actual = optimizer.optimize(databaseName, schemaName, sqlStatement).explain();
-        String expected =
-                "EnumerableInterpreter"
-                        + " BindableJoin(condition=[=($1,$2)],joinType=[semi])"
-                        + "     BindableTableScan(table=[[federate_jdbc,t_order_federate]],projects=[[0,1]])"
-                        + "     BindableTableScan(table=[[federate_jdbc,t_user_info]],projects=[[0]])";
-        assertThat(actual.replaceAll("\\s*", ""), is(expected.replaceAll("\\s*", "")));
+        String actual = optimizer.optimize(sqlStatement).explain();
+        String expected = "EnumerableCalc(expr#0..2=[{inputs}], proj#0..1=[{exprs}])" + LINE_SEPARATOR
+                + "  EnumerableHashJoin(condition=[=($1, $2)], joinType=[inner])" + LINE_SEPARATOR
+                + "    TranslatableTableScan(table=[[federate_jdbc, t_order_federate]], fields=[[0, 1]])" + LINE_SEPARATOR
+                + "    EnumerableAggregate(group=[{0}])" + LINE_SEPARATOR
+                + "      TranslatableTableScan(table=[[federate_jdbc, t_user_info]], fields=[[0]])" + LINE_SEPARATOR;
+        assertThat(actual, is(expected));
     }
     
     @Test
     public void assertSelectSubQueryWhereBetween() {
         ShardingSphereSQLParserEngine sqlParserEngine = sqlParserRule.getSQLParserEngine(DatabaseTypeEngine.getTrunkDatabaseTypeName(new H2DatabaseType()));
         SQLStatement sqlStatement = sqlParserEngine.parse(SELECT_SUBQUERY_WHERE_BETWEEN, false);
-        String actual = optimizer.optimize(databaseName, schemaName, sqlStatement).explain();
-        String expected =
-                "EnumerableCalc(expr#0..3=[{inputs}],proj#0..1=[{exprs}])"
-                        + "EnumerableInterpreter"
-                        + " BindableFilter(condition=[AND(>=($1,$2),<=($1,$3))])"
-                        + "    BindableJoin(condition=[true],joinType=[left])"
-                        + "        BindableJoin(condition=[true],joinType=[left])"
-                        + "            BindableTableScan(table=[[federate_jdbc,t_order_federate]],projects=[[0,1]])"
-                        + "                BindableAggregate(group=[{}],agg#0=[SINGLE_VALUE($0)])"
-                        + "            BindableTableScan(table=[[federate_jdbc,t_user_info]],filters=[[=(CAST($1):VARCHAR,'before')]],projects=[[0]])"
-                        + "                BindableAggregate(group=[{}],agg#0=[SINGLE_VALUE($0)])"
-                        + "        BindableTableScan(table=[[federate_jdbc,t_user_info]],filters=[[=(CAST($1):VARCHAR,'after')]],projects=[[0]])";
-        assertThat(actual.replaceAll("\\s*", ""), is(expected.replaceAll("\\s*", "")));
+        String actual = optimizer.optimize(sqlStatement).explain();
+        String expected = "EnumerableCalc(expr#0..2=[{inputs}], proj#0..1=[{exprs}])" + LINE_SEPARATOR
+                + "  EnumerableNestedLoopJoin(condition=[<=($1, $2)], joinType=[inner])" + LINE_SEPARATOR
+                + "    EnumerableCalc(expr#0..2=[{inputs}], proj#0..1=[{exprs}])" + LINE_SEPARATOR
+                + "      EnumerableNestedLoopJoin(condition=[>=($1, $2)], joinType=[inner])" + LINE_SEPARATOR
+                + "        TranslatableTableScan(table=[[federate_jdbc, t_order_federate]], fields=[[0, 1]])" + LINE_SEPARATOR
+                + "        EnumerableAggregate(group=[{}], agg#0=[SINGLE_VALUE($0)])" + LINE_SEPARATOR
+                + "          TranslatableTableScan(table=[[federate_jdbc, t_user_info]], fields=[[0]], filters=[[1]])" + LINE_SEPARATOR
+                + "    EnumerableAggregate(group=[{}], agg#0=[SINGLE_VALUE($0)])" + LINE_SEPARATOR
+                + "      TranslatableTableScan(table=[[federate_jdbc, t_user_info]], fields=[[0]], filters=[[3]])" + LINE_SEPARATOR;
+        assertThat(actual, is(expected));
+    }
+    
+    @Test
+    public void assertSelectUnion() {
+        ShardingSphereSQLParserEngine sqlParserEngine = sqlParserRule.getSQLParserEngine(DatabaseTypeEngine.getTrunkDatabaseTypeName(new H2DatabaseType()));
+        SQLStatement sqlStatement = sqlParserEngine.parse(SELECT_UNION, false);
+        String actual = optimizer.optimize(sqlStatement).explain();
+        String expected = "EnumerableUnion(all=[false])" + LINE_SEPARATOR
+                + "  TranslatableTableScan(table=[[federate_jdbc, t_order_federate]], fields=[[0, 1]])" + LINE_SEPARATOR
+                + "  EnumerableCalc(expr#0..1=[{inputs}], expr#2=['1':VARCHAR], EXPR$0=[$t2], user_id=[$t0])" + LINE_SEPARATOR
+                + "    TranslatableTableScan(table=[[federate_jdbc, t_user_info]], fields=[[0, 1]], filters=[[null, before]])" + LINE_SEPARATOR;
+        assertThat(actual, is(expected));
     }
 }

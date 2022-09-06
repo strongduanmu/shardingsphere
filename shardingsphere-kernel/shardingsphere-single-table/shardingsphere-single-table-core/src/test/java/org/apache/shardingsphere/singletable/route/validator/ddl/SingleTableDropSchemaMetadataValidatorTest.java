@@ -19,10 +19,11 @@ package org.apache.shardingsphere.singletable.route.validator.ddl;
 
 import org.apache.shardingsphere.infra.binder.statement.CommonSQLStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.infra.exception.ShardingSphereException;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereTable;
+import org.apache.shardingsphere.singletable.exception.DropNotEmptySchemaException;
+import org.apache.shardingsphere.singletable.exception.SchemaNotFoundException;
 import org.apache.shardingsphere.singletable.rule.SingleTableRule;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropSchemaStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
@@ -37,12 +38,12 @@ import static org.mockito.Mockito.when;
 
 public final class SingleTableDropSchemaMetadataValidatorTest {
     
-    @Test(expected = ShardingSphereException.class)
+    @Test(expected = DropNotEmptySchemaException.class)
     public void assertValidateWithoutCascadeSchema() {
         new SingleTableDropSchemaMetadataValidator().validate(mock(SingleTableRule.class, RETURNS_DEEP_STUBS), createSQLStatementContext("foo_schema", false), mockDatabase());
     }
     
-    @Test(expected = ShardingSphereException.class)
+    @Test(expected = SchemaNotFoundException.class)
     public void assertValidateWithNotExistedSchema() {
         ShardingSphereDatabase database = mockDatabase();
         when(database.getSchema("not_existed_schema")).thenReturn(null);
@@ -57,7 +58,7 @@ public final class SingleTableDropSchemaMetadataValidatorTest {
     private ShardingSphereDatabase mockDatabase() {
         ShardingSphereDatabase result = mock(ShardingSphereDatabase.class, RETURNS_DEEP_STUBS);
         ShardingSphereSchema schema = new ShardingSphereSchema();
-        schema.put("foo_table", new ShardingSphereTable());
+        schema.putTable("foo_table", new ShardingSphereTable());
         when(result.getSchemas()).thenReturn(Collections.singletonMap("foo_schema", schema));
         return result;
     }

@@ -18,41 +18,21 @@
 package org.apache.shardingsphere.data.pipeline.core.prepare.datasource;
 
 import lombok.Getter;
-import lombok.NonNull;
-import org.apache.shardingsphere.data.pipeline.api.config.TableNameSchemaNameMapping;
-import org.apache.shardingsphere.data.pipeline.api.config.rulealtered.RuleAlteredJobConfiguration;
-import org.apache.shardingsphere.data.pipeline.api.config.rulealtered.TaskConfiguration;
-import org.apache.shardingsphere.data.pipeline.api.datanode.JobDataNodeLine;
-import org.apache.shardingsphere.data.pipeline.core.datasource.PipelineDataSourceManager;
+import lombok.RequiredArgsConstructor;
+import org.apache.shardingsphere.data.pipeline.api.config.CreateTableConfiguration;
+import org.apache.shardingsphere.data.pipeline.api.datasource.PipelineDataSourceManager;
+import org.apache.shardingsphere.infra.parser.ShardingSphereSQLParserEngine;
 
 /**
  * Prepare target tables parameter.
  */
+@RequiredArgsConstructor
 @Getter
 public final class PrepareTargetTablesParameter {
     
-    private final TaskConfiguration taskConfig;
-    
-    private final JobDataNodeLine tablesFirstDataNodes;
+    private final CreateTableConfiguration createTableConfig;
     
     private final PipelineDataSourceManager dataSourceManager;
     
-    private final TableNameSchemaNameMapping tableNameSchemaNameMapping;
-    
-    public PrepareTargetTablesParameter(@NonNull final TaskConfiguration taskConfig, @NonNull final PipelineDataSourceManager dataSourceManager,
-                                        final TableNameSchemaNameMapping tableNameSchemaNameMapping) {
-        this.taskConfig = taskConfig;
-        tablesFirstDataNodes = JobDataNodeLine.unmarshal(taskConfig.getJobConfig().getTablesFirstDataNodes());
-        this.dataSourceManager = dataSourceManager;
-        this.tableNameSchemaNameMapping = tableNameSchemaNameMapping;
-    }
-    
-    /**
-     * Get job configuration.
-     *
-     * @return job configuration
-     */
-    public RuleAlteredJobConfiguration getJobConfig() {
-        return taskConfig.getJobConfig();
-    }
+    private final ShardingSphereSQLParserEngine sqlParserEngine;
 }

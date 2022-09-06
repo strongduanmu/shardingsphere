@@ -21,10 +21,11 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.infra.database.type.dialect.OpenGaussDatabaseType;
 import org.apache.shardingsphere.integration.transaction.engine.entity.JdbcInfoEntity;
 import org.apache.shardingsphere.integration.transaction.env.enums.TransactionITEnvTypeEnum;
 import org.apache.shardingsphere.integration.transaction.env.enums.TransactionTestCaseRegistry;
+import org.apache.shardingsphere.test.integration.env.container.atomic.constants.ProxyContainerConstants;
+import org.apache.shardingsphere.test.integration.env.container.atomic.constants.StorageContainerConstants;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,6 +56,8 @@ public final class IntegrationTestEnvironment {
     
     private final List<String> allowTransactionTypes;
     
+    private final List<String> allowXAProviders;
+    
     private final Map<String, TransactionTestCaseRegistry> transactionTestCaseRegistryMap;
     
     private IntegrationTestEnvironment() {
@@ -65,6 +68,8 @@ public final class IntegrationTestEnvironment {
         openGaussVersions = splitProperty("transaction.it.docker.opengauss.version");
         needToRunTestCases = splitProperty("transaction.it.env.cases");
         allowTransactionTypes = splitProperty("transaction.it.env.transtypes");
+        allowXAProviders = splitProperty("transaction.it.env.xa.providers");
+        log.info("Loaded properties, allowTransactionTypes:{}, allowXAProviders:{}", allowTransactionTypes, allowXAProviders);
         transactionTestCaseRegistryMap = initTransactionTestCaseRegistryMap();
     }
     
@@ -83,7 +88,7 @@ public final class IntegrationTestEnvironment {
     
     private Properties loadProperties() {
         Properties result = new Properties();
-        try (InputStream inputStream = IntegrationTestEnvironment.class.getClassLoader().getResourceAsStream("env/transaction-it-env.properties")) {
+        try (InputStream inputStream = IntegrationTestEnvironment.class.getClassLoader().getResourceAsStream("env/it-env.properties")) {
             result.load(inputStream);
         } catch (final IOException ex) {
             throw new RuntimeException(ex);
@@ -135,11 +140,11 @@ public final class IntegrationTestEnvironment {
     public int getActualDataSourceDefaultPort(final DatabaseType databaseType) {
         switch (databaseType.getType()) {
             case "MySQL":
-                return Integer.parseInt(props.getOrDefault("transaction.it.native.mysql.port", 3306).toString());
+                return Integer.parseInt(props.getOrDefault("transaction.it.native.mysql.port", StorageContainerConstants.MYSQL_EXPOSED_PORT).toString());
             case "PostgreSQL":
-                return Integer.parseInt(props.getOrDefault("transaction.it.native.postgresql.port", 5432).toString());
+                return Integer.parseInt(props.getOrDefault("transaction.it.native.postgresql.port", StorageContainerConstants.POSTGRESQL_EXPOSED_PORT).toString());
             case "openGauss":
-                return Integer.parseInt(props.getOrDefault("transaction.it.native.opengauss.port", 5432).toString());
+                return Integer.parseInt(props.getOrDefault("transaction.it.native.opengauss.port", StorageContainerConstants.OPENGAUSS_EXPOSED_PORT).toString());
             default:
                 throw new IllegalArgumentException("Unsupported database type: " + databaseType.getType());
         }
@@ -161,16 +166,9 @@ public final class IntegrationTestEnvironment {
      * @return actual data source username
      */
     public String getActualDataSourceUsername(final DatabaseType databaseType) {
-        String username;
-        if (databaseType instanceof OpenGaussDatabaseType) {
-            username = "gaussdb";
-        } else {
-            username = "root";
-        }
-        if (itEnvType == TransactionITEnvTypeEnum.NATIVE) {
-            username = String.valueOf(props.getOrDefault(String.format("transaction.it.native.%s.username", databaseType.getType().toLowerCase()), username));
-        }
-        return username;
+        return itEnvType == TransactionITEnvTypeEnum.NATIVE
+                ? String.valueOf(props.getOrDefault(String.format("transaction.it.native.%s.username", databaseType.getType().toLowerCase()), ProxyContainerConstants.USERNAME))
+                : StorageContainerConstants.USERNAME;
     }
     
     /**
@@ -180,16 +178,9 @@ public final class IntegrationTestEnvironment {
      * @return actual data source username
      */
     public String getActualDataSourcePassword(final DatabaseType databaseType) {
-        String password;
-        if (databaseType instanceof OpenGaussDatabaseType) {
-            password = "Root@123";
-        } else {
-            password = "root";
-        }
-        if (itEnvType == TransactionITEnvTypeEnum.NATIVE) {
-            password = props.getOrDefault(String.format("transaction.it.native.%s.password", databaseType.getType().toLowerCase()), password).toString();
-        }
-        return password;
+        return itEnvType == TransactionITEnvTypeEnum.NATIVE
+                ? props.getOrDefault(String.format("transaction.it.native.%s.password", databaseType.getType().toLowerCase()), ProxyContainerConstants.PASSWORD).toString()
+                : StorageContainerConstants.PASSWORD;
     }
     
     /**
@@ -198,7 +189,8 @@ public final class IntegrationTestEnvironment {
      * @return proxy password
      */
     public String getProxyPassword() {
-        return props.getOrDefault("transaction.it.proxy.password", "root").toString();
+        // TODO this should extract into a constant
+        return props.getOrDefault("transaction.it.proxy.password", ProxyContainerConstants.PASSWORD).toString();
     }
     
     /**
@@ -207,7 +199,8 @@ public final class IntegrationTestEnvironment {
      * @return proxy userName
      */
     public String getProxyUserName() {
-        return props.getOrDefault("transaction.it.proxy.username", "root").toString();
+        // TODO this should extract into a constant
+        return props.getOrDefault("transaction.it.proxy.username", ProxyContainerConstants.USERNAME).toString();
     }
     
     /**

@@ -17,11 +17,8 @@
 
 package org.apache.shardingsphere.sharding.metadata;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
 import org.apache.shardingsphere.infra.datanode.DataNode;
-import org.apache.shardingsphere.infra.exception.ShardingSphereException;
 import org.apache.shardingsphere.infra.metadata.database.schema.builder.GenericSchemaBuilderMaterials;
 import org.apache.shardingsphere.infra.metadata.database.schema.decorator.spi.RuleBasedSchemaMetaDataDecorator;
 import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.ColumnMetaData;
@@ -30,6 +27,7 @@ import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.Ind
 import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.SchemaMetaData;
 import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.TableMetaData;
 import org.apache.shardingsphere.sharding.constant.ShardingOrder;
+import org.apache.shardingsphere.sharding.exception.InconsistentShardingTableMetaDataException;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sharding.rule.TableRule;
 
@@ -59,7 +57,7 @@ public final class ShardingSchemaMetaDataDecorator implements RuleBasedSchemaMet
                 }
                 tables.add(tableEntry.getValue().iterator().next());
             }
-            result.put(entry.getKey(), new SchemaMetaData(entry.getKey(), tables));
+            result.put(entry.getKey(), new SchemaMetaData(entry.getKey(), tables, entry.getValue().getViews()));
         }
         return result;
     }
@@ -89,17 +87,8 @@ public final class ShardingSchemaMetaDataDecorator implements RuleBasedSchemaMet
         TableMetaData sample = tableMetaDataList.iterator().next();
         Collection<TableMetaDataViolation> violations = tableMetaDataList.stream()
                 .filter(each -> !sample.equals(each)).map(each -> new TableMetaDataViolation(each.getName(), each)).collect(Collectors.toList());
-        throwExceptionIfNecessary(violations, logicTableName);
-    }
-    
-    private void throwExceptionIfNecessary(final Collection<TableMetaDataViolation> violations, final String logicTableName) {
         if (!violations.isEmpty()) {
-            StringBuilder errorMessage = new StringBuilder(
-                    "Cannot get uniformed table structure for logic table `%s`, it has different meta data of actual tables are as follows:").append(System.lineSeparator());
-            for (TableMetaDataViolation each : violations) {
-                errorMessage.append("actual table: ").append(each.getActualTableName()).append(", meta data: ").append(each.getTableMetaData()).append(System.lineSeparator());
-            }
-            throw new ShardingSphereException(errorMessage.toString(), logicTableName);
+            throw new InconsistentShardingTableMetaDataException(logicTableName, violations);
         }
     }
     
@@ -107,7 +96,7 @@ public final class ShardingSchemaMetaDataDecorator implements RuleBasedSchemaMet
         Collection<ColumnMetaData> result = new LinkedList<>();
         for (ColumnMetaData each : tableMetaData.getColumns()) {
             boolean generated = each.getName().equalsIgnoreCase(tableRule.getGenerateKeyColumn().orElse(null));
-            result.add(new ColumnMetaData(each.getName(), each.getDataType(), each.isPrimaryKey(), generated, each.isCaseSensitive()));
+            result.add(new ColumnMetaData(each.getName(), each.getDataType(), each.isPrimaryKey(), generated, each.isCaseSensitive(), each.isVisible()));
         }
         return result;
     }
@@ -147,14 +136,5 @@ public final class ShardingSchemaMetaDataDecorator implements RuleBasedSchemaMet
     @Override
     public Class<ShardingRule> getTypeClass() {
         return ShardingRule.class;
-    }
-    
-    @RequiredArgsConstructor
-    @Getter
-    private static final class TableMetaDataViolation {
-        
-        private final String actualTableName;
-        
-        private final TableMetaData tableMetaData;
     }
 }

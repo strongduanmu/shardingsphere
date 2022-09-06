@@ -17,9 +17,9 @@
 
 package org.apache.shardingsphere.sharding.distsql.query;
 
-import org.apache.shardingsphere.infra.config.RuleConfiguration;
-import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
-import org.apache.shardingsphere.infra.distsql.query.DistSQLResultSet;
+import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
+import org.apache.shardingsphere.infra.config.rule.RuleConfiguration;
+import org.apache.shardingsphere.infra.distsql.query.DatabaseDistSQLResultSet;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingAutoTableRuleConfiguration;
@@ -45,7 +45,7 @@ public final class ShardingTableNodesQueryResultSetTest {
     
     @Test
     public void assertGetRowData() {
-        DistSQLResultSet resultSet = new ShardingTableNodesQueryResultSet();
+        DatabaseDistSQLResultSet resultSet = new ShardingTableNodesQueryResultSet();
         resultSet.init(mockDatabase(), mock(ShowShardingTableNodesStatement.class));
         List<Object> actual = new ArrayList<>(resultSet.getRowData());
         assertThat(actual.size(), is(2));
@@ -73,8 +73,8 @@ public final class ShardingTableNodesQueryResultSetTest {
         result.getTables().add(createShardingTableRuleConfiguration());
         result.getAutoTables().add(createProductAutoTableConfiguration());
         result.getAutoTables().add(createUserAutoTableConfiguration());
-        result.getShardingAlgorithms().put("t_product_algorithm", new ShardingSphereAlgorithmConfiguration("FOO.DISTSQL.FIXTURE", newProperties("sharding-count", 2)));
-        result.getShardingAlgorithms().put("t_user_algorithm", new ShardingSphereAlgorithmConfiguration("BAR.DISTSQL.FIXTURE", newProperties("sharding-ranges", "10,20,30")));
+        result.getShardingAlgorithms().put("t_product_algorithm", new AlgorithmConfiguration("FOO.DISTSQL.FIXTURE", newProperties("sharding-count", 2)));
+        result.getShardingAlgorithms().put("t_user_algorithm", new AlgorithmConfiguration("BAR.DISTSQL.FIXTURE", newProperties("sharding-ranges", "10,20,30")));
         result.setDefaultTableShardingStrategy(new StandardShardingStrategyConfiguration("user_id", "t_product_algorithm"));
         result.setDefaultDatabaseShardingStrategy(new StandardShardingStrategyConfiguration("user_id", "t_product_algorithm"));
         return result;

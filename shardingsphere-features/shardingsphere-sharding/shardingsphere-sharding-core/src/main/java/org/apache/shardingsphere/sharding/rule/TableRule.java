@@ -21,12 +21,11 @@ import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.ToString;
-import org.apache.shardingsphere.infra.config.exception.ShardingSphereConfigurationException;
 import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.apache.shardingsphere.infra.datanode.DataNodeInfo;
 import org.apache.shardingsphere.infra.datanode.DataNodeUtil;
-import org.apache.shardingsphere.infra.exception.ShardingSphereException;
-import org.apache.shardingsphere.infra.expr.InlineExpressionParser;
+import org.apache.shardingsphere.infra.util.exception.ShardingSpherePreconditions;
+import org.apache.shardingsphere.infra.util.expr.InlineExpressionParser;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingAutoTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.audit.ShardingAuditStrategyConfiguration;
@@ -34,6 +33,8 @@ import org.apache.shardingsphere.sharding.api.config.strategy.keygen.KeyGenerate
 import org.apache.shardingsphere.sharding.api.config.strategy.sharding.NoneShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.sharding.ShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.api.sharding.ShardingAutoTableAlgorithm;
+import org.apache.shardingsphere.sharding.exception.ActualDataNodesMissedWithShardingTableException;
+import org.apache.shardingsphere.sharding.exception.DataNodeGenerateException;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -53,18 +54,16 @@ import java.util.stream.Collectors;
  * Table rule.
  */
 @Getter
-@ToString(exclude = {"dataNodeIndexMap", "actualTables", "actualTablePrefix", "actualDataSourceNames", "datasourceToTablesMap", "dataSourceDataNode", "tableDataNode"})
+@ToString(exclude = {"dataNodeIndexMap", "actualTables", "actualDataSourceNames", "dataSourceDataNode", "tableDataNode"})
 public final class TableRule {
     
-    private static final Pattern DATA_NODE_SUFFIX_PATTERN = Pattern.compile("\\d+$");
+    private static final Pattern DATA_NODE_SUFFIX_PATTERN = Pattern.compile("(\\d+[\\-_]){0,}(\\d+$)");
     
     private static final char DEFAULT_PADDING_CHAR = '0';
     
     private final String logicTable;
     
     private final List<DataNode> actualDataNodes;
-    
-    private final String actualTablePrefix;
     
     @Getter(AccessLevel.NONE)
     private final Set<String> actualTables;
@@ -94,8 +93,7 @@ public final class TableRule {
     public TableRule(final Collection<String> dataSourceNames, final String logicTableName) {
         logicTable = logicTableName;
         dataNodeIndexMap = new HashMap<>(dataSourceNames.size(), 1);
-        actualTablePrefix = null;
-        actualDataNodes = generateDataNodes(logicTableName, dataSourceNames, null);
+        actualDataNodes = generateDataNodes(logicTableName, dataSourceNames);
         actualTables = getActualTables();
         databaseShardingStrategyConfig = null;
         tableShardingStrategyConfig = null;
@@ -110,9 +108,7 @@ public final class TableRule {
         logicTable = tableRuleConfig.getLogicTable();
         List<String> dataNodes = new InlineExpressionParser(tableRuleConfig.getActualDataNodes()).splitAndEvaluate();
         dataNodeIndexMap = new HashMap<>(dataNodes.size(), 1);
-        actualTablePrefix = tableRuleConfig.getActualTablePrefix();
-        actualDataNodes = isEmptyDataNodes(dataNodes) ? generateDataNodes(tableRuleConfig.getLogicTable(), dataSourceNames, actualTablePrefix)
-                : generateDataNodes(dataNodes, dataSourceNames, actualTablePrefix);
+        actualDataNodes = isEmptyDataNodes(dataNodes) ? generateDataNodes(tableRuleConfig.getLogicTable(), dataSourceNames) : generateDataNodes(dataNodes, dataSourceNames);
         actualTables = getActualTables();
         databaseShardingStrategyConfig = tableRuleConfig.getDatabaseShardingStrategy();
         tableShardingStrategyConfig = tableRuleConfig.getTableShardingStrategy();
@@ -133,9 +129,7 @@ public final class TableRule {
         auditStrategyConfig = tableRuleConfig.getAuditStrategy();
         List<String> dataNodes = getDataNodes(tableRuleConfig, shardingAutoTableAlgorithm, dataSourceNames);
         dataNodeIndexMap = new HashMap<>(dataNodes.size(), 1);
-        actualTablePrefix = tableRuleConfig.getActualTablePrefix();
-        actualDataNodes = isEmptyDataNodes(dataNodes) ? generateDataNodes(tableRuleConfig.getLogicTable(), dataSourceNames, actualTablePrefix)
-                : generateDataNodes(dataNodes, dataSourceNames, actualTablePrefix);
+        actualDataNodes = isEmptyDataNodes(dataNodes) ? generateDataNodes(tableRuleConfig.getLogicTable(), dataSourceNames) : generateDataNodes(dataNodes, dataSourceNames);
         actualTables = getActualTables();
         KeyGenerateStrategyConfiguration keyGeneratorConfig = tableRuleConfig.getKeyGenerateStrategy();
         generateKeyColumn = null != keyGeneratorConfig && !Strings.isNullOrEmpty(keyGeneratorConfig.getColumn()) ? keyGeneratorConfig.getColumn() : defaultGenerateKeyColumn;
@@ -158,9 +152,6 @@ public final class TableRule {
     }
     
     private List<String> getDataNodes(final ShardingAutoTableRuleConfiguration tableRuleConfig, final ShardingAutoTableAlgorithm shardingAlgorithm, final Collection<String> dataSourceNames) {
-        if (null != tableRuleConfig.getActualDataNodes() && !tableRuleConfig.getActualDataNodes().isEmpty()) {
-            return new InlineExpressionParser(tableRuleConfig.getActualDataNodes()).splitAndEvaluate();
-        }
         if (null == tableShardingStrategyConfig) {
             return new LinkedList<>();
         }
@@ -181,12 +172,11 @@ public final class TableRule {
         return null == dataNodes || dataNodes.isEmpty();
     }
     
-    private List<DataNode> generateDataNodes(final String logicTable, final Collection<String> dataSourceNames, final String actualTablePrefix) {
+    private List<DataNode> generateDataNodes(final String logicTable, final Collection<String> dataSourceNames) {
         List<DataNode> result = new LinkedList<>();
         int index = 0;
         for (String each : dataSourceNames) {
-            String actualTable = Strings.isNullOrEmpty(actualTablePrefix) ? logicTable : actualTablePrefix + logicTable;
-            DataNode dataNode = new DataNode(each, actualTable);
+            DataNode dataNode = new DataNode(each, logicTable);
             result.add(dataNode);
             dataNodeIndexMap.put(dataNode, index);
             actualDataSourceNames.add(each);
@@ -196,13 +186,13 @@ public final class TableRule {
         return result;
     }
     
-    private List<DataNode> generateDataNodes(final List<String> actualDataNodes, final Collection<String> dataSourceNames, final String actualTablePrefix) {
+    private List<DataNode> generateDataNodes(final List<String> actualDataNodes, final Collection<String> dataSourceNames) {
         List<DataNode> result = new LinkedList<>();
         int index = 0;
         for (String each : actualDataNodes) {
-            DataNode dataNode = generateDataNode(each, actualTablePrefix);
+            DataNode dataNode = new DataNode(each);
             if (!dataSourceNames.contains(dataNode.getDataSourceName())) {
-                throw new ShardingSphereException("Cannot find data source in sharding rule, invalid actual data node is: '%s'", each);
+                throw new DataNodeGenerateException(each);
             }
             result.add(dataNode);
             dataNodeIndexMap.put(dataNode, index);
@@ -211,14 +201,6 @@ public final class TableRule {
             index++;
         }
         return result;
-    }
-    
-    private DataNode generateDataNode(final String dataNode, final String actualTablePrefix) {
-        DataNode result = new DataNode(dataNode);
-        if (Strings.isNullOrEmpty(actualTablePrefix)) {
-            return result;
-        }
-        return new DataNode(result.getDataSourceName(), actualTablePrefix + result.getTableName());
     }
     
     /**
@@ -258,9 +240,8 @@ public final class TableRule {
     }
     
     private void checkRule(final List<String> dataNodes) {
-        if (isEmptyDataNodes(dataNodes) && null != tableShardingStrategyConfig && !(tableShardingStrategyConfig instanceof NoneShardingStrategyConfiguration)) {
-            throw new ShardingSphereConfigurationException("ActualDataNodes must be configured if want to shard tables for logicTable [%s]", logicTable);
-        }
+        ShardingSpherePreconditions.checkState(!isEmptyDataNodes(dataNodes) || null == tableShardingStrategyConfig || tableShardingStrategyConfig instanceof NoneShardingStrategyConfiguration,
+                new ActualDataNodesMissedWithShardingTableException(logicTable));
     }
     
     /**

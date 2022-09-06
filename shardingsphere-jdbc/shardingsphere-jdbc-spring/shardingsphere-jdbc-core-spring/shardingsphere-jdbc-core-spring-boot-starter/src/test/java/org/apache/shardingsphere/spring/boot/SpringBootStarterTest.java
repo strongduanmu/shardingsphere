@@ -74,9 +74,10 @@ public class SpringBootStarterTest {
     @Test
     public void assertDataSources() {
         Map<String, DataSource> dataSources = getContextManager(dataSource).getMetaDataContexts().getMetaData().getDatabase("foo_db").getResource().getDataSources();
-        assertThat(dataSources.size(), is(2));
-        assertTrue(dataSources.containsKey("ds0"));
-        assertTrue(dataSources.containsKey("ds1"));
+        assertThat(dataSources.size(), is(3));
+        assertTrue(dataSources.containsKey("read_ds_0"));
+        assertTrue(dataSources.containsKey("read_ds_1"));
+        assertTrue(dataSources.containsKey("write_ds"));
     }
     
     @Test
@@ -170,8 +171,8 @@ public class SpringBootStarterTest {
     
     private void assertShadowDataSourceMappings(final Map<String, ShadowDataSourceRule> actual) {
         assertThat(actual.size(), is(1));
-        assertThat(actual.get("shadow-data-source").getSourceDataSource(), is("ds"));
-        assertThat(actual.get("shadow-data-source").getShadowDataSource(), is("ds-shadow"));
+        assertThat(actual.get("shadow-data-source").getProductionDataSource(), is("read_ds_0"));
+        assertThat(actual.get("shadow-data-source").getShadowDataSource(), is("read_ds_1"));
     }
     
     private void assertShadowAlgorithms(final Map<String, ShadowAlgorithm> actual) {

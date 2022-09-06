@@ -17,10 +17,10 @@
 
 package org.apache.shardingsphere.proxy.backend.communication.jdbc;
 
-import lombok.SneakyThrows;
-import org.apache.shardingsphere.infra.binder.LogicSQL;
-import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
+import org.apache.shardingsphere.infra.binder.QueryContext;
+import org.apache.shardingsphere.infra.binder.decider.context.SQLFederationDeciderContext;
+import org.apache.shardingsphere.infra.binder.decider.engine.SQLFederationDeciderEngine;
+import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeEngine;
@@ -36,8 +36,9 @@ import org.apache.shardingsphere.infra.executor.sql.prepare.driver.jdbc.Statemen
 import org.apache.shardingsphere.infra.federation.executor.FederationContext;
 import org.apache.shardingsphere.infra.federation.executor.FederationExecutor;
 import org.apache.shardingsphere.infra.federation.executor.FederationExecutorFactory;
+import org.apache.shardingsphere.infra.federation.optimizer.context.OptimizerContext;
+import org.apache.shardingsphere.infra.federation.optimizer.context.OptimizerContextFactory;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.infra.metadata.database.schema.util.SystemSchemaUtil;
 import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
 import org.apache.shardingsphere.proxy.backend.communication.DatabaseCommunicationEngine;
 import org.apache.shardingsphere.proxy.backend.communication.ProxySQLExecutor;
@@ -63,12 +64,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * JDBC database communication engine.
  */
-public final class JDBCDatabaseCommunicationEngine extends DatabaseCommunicationEngine<ResponseHeader> {
+public final class JDBCDatabaseCommunicationEngine extends DatabaseCommunicationEngine {
     
     private final ProxySQLExecutor proxySQLExecutor;
     
@@ -76,21 +78,14 @@ public final class JDBCDatabaseCommunicationEngine extends DatabaseCommunication
     
     private final Collection<ResultSet> cachedResultSets = new CopyOnWriteArrayList<>();
     
-    private final FederationExecutor federationExecutor;
-    
     private final JDBCBackendConnection backendConnection;
     
-    public JDBCDatabaseCommunicationEngine(final String driverType, final ShardingSphereDatabase database, final LogicSQL logicSQL, final JDBCBackendConnection backendConnection) {
-        super(driverType, database, logicSQL, backendConnection);
+    private volatile FederationExecutor federationExecutor;
+    
+    public JDBCDatabaseCommunicationEngine(final String driverType, final ShardingSphereDatabase database, final QueryContext queryContext, final JDBCBackendConnection backendConnection) {
+        super(driverType, database, queryContext, backendConnection);
         proxySQLExecutor = new ProxySQLExecutor(driverType, backendConnection, this);
         this.backendConnection = backendConnection;
-        MetaDataContexts metaDataContexts = ProxyContext.getInstance().getContextManager().getMetaDataContexts();
-        String databaseName = backendConnection.getConnectionSession().getDatabaseName();
-        DatabaseType databaseType = logicSQL.getSqlStatementContext().getDatabaseType();
-        String schemaName = logicSQL.getSqlStatementContext().getTablesContext().getSchemaName().orElseGet(() -> DatabaseTypeEngine.getDefaultSchemaName(databaseType, databaseName));
-        federationExecutor = FederationExecutorFactory.newInstance(databaseName, schemaName, metaDataContexts.getOptimizerContext(), metaDataContexts.getMetaData().getGlobalRuleMetaData(),
-                metaDataContexts.getMetaData().getProps(), new JDBCExecutor(BackendExecutorContext.getInstance().getExecutorEngine(), backendConnection.isSerialExecute()),
-                ProxyContext.getInstance().getContextManager().getInstanceContext().getEventBusContext());
     }
     
     /**
@@ -117,25 +112,23 @@ public final class JDBCDatabaseCommunicationEngine extends DatabaseCommunication
      * @return backend response
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    @SneakyThrows(SQLException.class)
-    public ResponseHeader execute() {
-        LogicSQL logicSQL = getLogicSQL();
+    @Override
+    public ResponseHeader execute() throws SQLException {
+        QueryContext queryContext = getQueryContext();
         MetaDataContexts metaDataContexts = ProxyContext.getInstance().getContextManager().getMetaDataContexts();
-        ExecutionContext executionContext = getKernelProcessor().generateExecutionContext(
-                logicSQL, getDatabase(), metaDataContexts.getMetaData().getGlobalRuleMetaData(), metaDataContexts.getMetaData().getProps());
-        // TODO move federation route logic to binder
-        SQLStatementContext<?> sqlStatementContext = logicSQL.getSqlStatementContext();
         ShardingSphereDatabase database = metaDataContexts.getMetaData().getDatabase(backendConnection.getConnectionSession().getDatabaseName());
-        if (executionContext.getRouteContext().isFederated() || (sqlStatementContext instanceof SelectStatementContext
-                && SystemSchemaUtil.containsSystemSchema(sqlStatementContext.getDatabaseType(), sqlStatementContext.getTablesContext().getSchemaNames(), database))) {
-            ResultSet resultSet = doExecuteFederation(logicSQL, metaDataContexts);
+        SQLFederationDeciderContext deciderContext = decide(queryContext, metaDataContexts.getMetaData().getProps(), database);
+        if (deciderContext.isUseSQLFederation()) {
+            prepareFederationExecutor();
+            ResultSet resultSet = doExecuteFederation(queryContext, metaDataContexts);
             return processExecuteFederation(resultSet, metaDataContexts);
         }
+        ExecutionContext executionContext = getKernelProcessor().generateExecutionContext(queryContext, getDatabase(), metaDataContexts.getMetaData().getGlobalRuleMetaData(),
+                metaDataContexts.getMetaData().getProps(), backendConnection.getConnectionSession().getConnectionContext());
         if (executionContext.getExecutionUnits().isEmpty()) {
             return new UpdateResponseHeader(executionContext.getSqlStatementContext().getSqlStatement());
         }
         proxySQLExecutor.checkExecutePrerequisites(executionContext);
-        checkLockedDatabase(executionContext);
         List result = proxySQLExecutor.execute(executionContext);
         refreshMetaData(executionContext);
         Object executeResultSample = result.iterator().next();
@@ -144,16 +137,31 @@ public final class JDBCDatabaseCommunicationEngine extends DatabaseCommunication
                 : processExecuteUpdate(executionContext, result);
     }
     
-    private ResultSet doExecuteFederation(final LogicSQL logicSQL, final MetaDataContexts metaDataContexts) throws SQLException {
-        boolean isReturnGeneratedKeys = logicSQL.getSqlStatementContext().getSqlStatement() instanceof MySQLInsertStatement;
+    private static SQLFederationDeciderContext decide(final QueryContext queryContext, final ConfigurationProperties props, final ShardingSphereDatabase database) {
+        SQLFederationDeciderEngine deciderEngine = new SQLFederationDeciderEngine(database.getRuleMetaData().getRules(), props);
+        return deciderEngine.decide(queryContext, database);
+    }
+    
+    private void prepareFederationExecutor() {
+        MetaDataContexts metaDataContexts = ProxyContext.getInstance().getContextManager().getMetaDataContexts();
+        String databaseName = backendConnection.getConnectionSession().getDatabaseName();
+        DatabaseType databaseType = getQueryContext().getSqlStatementContext().getDatabaseType();
+        String schemaName = getQueryContext().getSqlStatementContext().getTablesContext().getSchemaName().orElseGet(() -> DatabaseTypeEngine.getDefaultSchemaName(databaseType, databaseName));
+        OptimizerContext optimizerContext = OptimizerContextFactory.create(metaDataContexts.getMetaData().getDatabases(), metaDataContexts.getMetaData().getGlobalRuleMetaData());
+        federationExecutor = FederationExecutorFactory.newInstance(databaseName, schemaName, optimizerContext, metaDataContexts.getMetaData().getGlobalRuleMetaData(),
+                metaDataContexts.getMetaData().getProps(), new JDBCExecutor(BackendExecutorContext.getInstance().getExecutorEngine(), backendConnection.isSerialExecute()),
+                ProxyContext.getInstance().getContextManager().getInstanceContext().getEventBusContext());
+    }
+    
+    private ResultSet doExecuteFederation(final QueryContext queryContext, final MetaDataContexts metaDataContexts) throws SQLException {
+        boolean isReturnGeneratedKeys = queryContext.getSqlStatementContext().getSqlStatement() instanceof MySQLInsertStatement;
         ShardingSphereDatabase database = metaDataContexts.getMetaData().getDatabase(backendConnection.getConnectionSession().getDatabaseName());
         DatabaseType protocolType = database.getProtocolType();
         DatabaseType databaseType = database.getResource().getDatabaseType();
         ProxyJDBCExecutorCallback callback = ProxyJDBCExecutorCallbackFactory.newInstance(getDriverType(), protocolType, databaseType,
-                logicSQL.getSqlStatementContext().getSqlStatement(), this, isReturnGeneratedKeys, SQLExecutorExceptionHandler.isExceptionThrown(), true);
-        backendConnection.setFederationExecutor(federationExecutor);
+                queryContext.getSqlStatementContext().getSqlStatement(), this, isReturnGeneratedKeys, SQLExecutorExceptionHandler.isExceptionThrown(), true);
         DriverExecutionPrepareEngine<JDBCExecutionUnit, Connection> prepareEngine = createDriverExecutionPrepareEngine(isReturnGeneratedKeys, metaDataContexts);
-        FederationContext context = new FederationContext(false, logicSQL, metaDataContexts.getMetaData().getDatabases());
+        FederationContext context = new FederationContext(false, queryContext, metaDataContexts.getMetaData().getDatabases());
         return federationExecutor.executeQuery(prepareEngine, callback, context);
     }
     
@@ -161,7 +169,8 @@ public final class JDBCDatabaseCommunicationEngine extends DatabaseCommunication
         int maxConnectionsSizePerQuery = metaData.getMetaData().getProps().<Integer>getValue(ConfigurationPropertyKey.MAX_CONNECTIONS_SIZE_PER_QUERY);
         JDBCBackendStatement statementManager = (JDBCBackendStatement) backendConnection.getConnectionSession().getStatementManager();
         return new DriverExecutionPrepareEngine<>(getDriverType(), maxConnectionsSizePerQuery, backendConnection, statementManager,
-                new StatementOption(isReturnGeneratedKeys), metaData.getMetaData().getDatabase(backendConnection.getConnectionSession().getDatabaseName()).getRuleMetaData().getRules());
+                new StatementOption(isReturnGeneratedKeys), metaData.getMetaData().getDatabase(backendConnection.getConnectionSession().getDatabaseName()).getRuleMetaData().getRules(),
+                backendConnection.getConnectionSession().getDatabaseType());
     }
     
     private ResponseHeader processExecuteFederation(final ResultSet resultSet, final MetaDataContexts metaDataContexts) throws SQLException {
@@ -181,10 +190,12 @@ public final class JDBCDatabaseCommunicationEngine extends DatabaseCommunication
      *
      * @throws SQLException SQL exception
      */
+    @Override
     public void close() throws SQLException {
         Collection<SQLException> result = new LinkedList<>();
         result.addAll(closeResultSets());
         result.addAll(closeStatements());
+        closeFederationExecutor().ifPresent(result::add);
         if (result.isEmpty()) {
             return;
         }
@@ -218,5 +229,16 @@ public final class JDBCDatabaseCommunicationEngine extends DatabaseCommunication
         }
         cachedStatements.clear();
         return result;
+    }
+    
+    private Optional<SQLException> closeFederationExecutor() {
+        if (null != federationExecutor) {
+            try {
+                federationExecutor.close();
+            } catch (final SQLException ex) {
+                return Optional.of(ex);
+            }
+        }
+        return Optional.empty();
     }
 }

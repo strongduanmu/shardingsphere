@@ -26,11 +26,11 @@ import org.apache.shardingsphere.db.protocol.packet.CommandPacket;
 import org.apache.shardingsphere.db.protocol.packet.CommandPacketType;
 import org.apache.shardingsphere.db.protocol.packet.DatabasePacket;
 import org.apache.shardingsphere.db.protocol.payload.PacketPayload;
+import org.apache.shardingsphere.dialect.exception.SQLDialectException;
 import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
-import org.apache.shardingsphere.proxy.backend.communication.SQLStatementDatabaseHolder;
+import org.apache.shardingsphere.infra.util.exception.external.sql.ShardingSphereSQLException;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.exception.BackendConnectionException;
-import org.apache.shardingsphere.proxy.backend.exception.BackendException;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.frontend.command.executor.CommandExecutor;
 import org.apache.shardingsphere.proxy.frontend.command.executor.QueryCommandExecutor;
@@ -85,8 +85,7 @@ public final class CommandExecutorTask implements Runnable {
             // CHECKSTYLE:ON
             processException(new RuntimeException(error));
         } finally {
-            // TODO optimize SQLStatementDatabaseHolder
-            SQLStatementDatabaseHolder.remove();
+            connectionSession.clearQueryContext();
             Collection<SQLException> exceptions = Collections.emptyList();
             try {
                 connectionSession.getBackendConnection().closeExecutionResources();
@@ -118,7 +117,7 @@ public final class CommandExecutorTask implements Runnable {
                 commandExecuteEngine.writeQueryData(context, connectionSession.getBackendConnection(), (QueryCommandExecutor) commandExecutor, responsePackets.size());
             }
             return true;
-        } catch (final SQLException | BackendException ex) {
+        } catch (final SQLException | ShardingSphereSQLException | SQLDialectException ex) {
             databaseProtocolFrontendEngine.handleException(connectionSession, ex);
             throw ex;
         } finally {

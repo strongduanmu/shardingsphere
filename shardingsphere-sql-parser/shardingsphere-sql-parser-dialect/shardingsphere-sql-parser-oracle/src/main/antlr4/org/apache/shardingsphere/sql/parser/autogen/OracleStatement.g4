@@ -120,5 +120,10 @@ execute
     | alterMaterializedViewLog
     | alterFunction
     | alterHierarchy
+    | alterLockdownProfile
+    | alterPluggableDatabase
+    | createProcedure
+    | dropProcedure
+    | alterProcedure
     ) SEMI_?
     ;

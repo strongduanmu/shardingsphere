@@ -43,7 +43,7 @@ disableInstance
     : DISABLE INSTANCE instanceId
     ;
 
-showInstance
+showInstanceList
     : SHOW INSTANCE LIST
     ;
 
@@ -59,44 +59,12 @@ showTableMetadata
     : SHOW TABLE METADATA tableName (COMMA tableName*)? (FROM databaseName)?
     ;
 
-showAuthorityRule
-    : SHOW AUTHORITY RULE
+showInstanceInfo
+    : SHOW INSTANCE INFO
     ;
 
-showTransactionRule
-    : SHOW TRANSACTION RULE
-    ;
-
-alterTransactionRule
-    : ALTER TRANSACTION RULE transactionRuleDefinition
-    ;
-
-showSQLParserRule
-    : SHOW SQL_PARSER RULE
-    ;
-
-alterSQLParserRule
-    : ALTER SQL_PARSER RULE sqlParserRuleDefinition
-    ;
-
-showInstanceMode
-    : SHOW INSTANCE MODE
-    ;
-
-createTrafficRule
-    : CREATE TRAFFIC RULE trafficRuleDefinition (COMMA trafficRuleDefinition)* 
-    ;
-
-alterTrafficRule
-    : ALTER TRAFFIC RULE trafficRuleDefinition (COMMA trafficRuleDefinition)* 
-    ;
-
-showTrafficRules
-    : SHOW TRAFFIC (RULES | RULE ruleName)
-    ;
-
-dropTrafficRule
-    : DROP TRAFFIC RULE ifExists? ruleName (COMMA ruleName)*
+showModeInfo
+    : SHOW MODE INFO
     ;
 
 labelInstance
@@ -105,30 +73,6 @@ labelInstance
 
 unlabelInstance
     : UNLABEL INSTANCE instanceId (WITH label (COMMA label)*)?
-    ;
-
-trafficRuleDefinition
-    : ruleName LP (labelDefinition COMMA)? trafficAlgorithmDefinition (COMMA loadBalancerDefinition)? RP
-    ;
-
-labelDefinition
-    : LABELS LP label (COMMA label)* RP
-    ;
-
-trafficAlgorithmDefinition
-    : TRAFFIC_ALGORITHM LP algorithmDefinition RP 
-    ;
-
-loadBalancerDefinition
-    : LOAD_BALANCER LP algorithmDefinition RP
-    ;
-
-algorithmDefinition
-    : TYPE LP NAME EQ typeName (COMMA PROPERTIES LP algorithmProperties? RP)? RP
-    ;
-
-typeName
-    : IDENTIFIER
     ;
 
 exportDatabaseConfiguration
@@ -147,28 +91,60 @@ showSQLTranslatorRule
     : SHOW SQL_TRANSLATOR RULE
     ;
 
-filePath
+showMigrationProcessConfiguration
+    : SHOW MIGRATION PROCESS CONFIGURATION
+    ;
+
+createMigrationProcessConfiguration
+    : CREATE MIGRATION PROCESS CONFIGURATION migrationProcessConfiguration?
+    ;
+
+alterMigrationProcessConfiguration
+    : ALTER MIGRATION PROCESS CONFIGURATION migrationProcessConfiguration?
+    ;
+
+dropMigrationProcessConfiguration
+    : DROP MIGRATION PROCESS CONFIGURATION confPath
+    ;
+
+migrationProcessConfiguration
+    : LP readDefinition? (COMMA? writeDefinition)? (COMMA? streamChannel)? RP
+    ;
+
+readDefinition
+    : READ LP workerThread? (COMMA? batchSize)? (COMMA? shardingSize)? (COMMA? rateLimiter)? RP
+    ;
+
+writeDefinition
+    : WRITE LP workerThread? (COMMA? batchSize)? (COMMA? rateLimiter)? RP
+    ;
+
+workerThread
+    : WORKER_THREAD EQ intValue
+    ;
+
+batchSize
+    : BATCH_SIZE EQ intValue
+    ;
+
+shardingSize
+    : SHARDING_SIZE EQ intValue
+    ;
+
+rateLimiter
+    : RATE_LIMITER LP algorithmDefinition RP
+    ;
+
+streamChannel
+    : STREAM_CHANNEL LP algorithmDefinition RP
+    ;
+
+confPath
     : STRING
     ;
 
-transactionRuleDefinition
-    : LP DEFAULT EQ defaultType (COMMA providerDefinition)?
-    ;
-
-providerDefinition
-    : TYPE LP NAME EQ providerName propertiesDefinition? RP
-    ;
-
-defaultType
-    : IDENTIFIER
-    ;
-
-providerName
-    : IDENTIFIER
-    ;
-
-sqlParserRuleDefinition
-    : SQL_COMMENT_PARSE_ENABLE EQ sqlCommentParseEnable (COMMA PARSE_TREE_CACHE LP parseTreeCache RP)? (COMMA SQL_STATEMENT_CACHE LP sqlStatementCache RP)?
+filePath
+    : STRING
     ;
 
 variableName
@@ -180,7 +156,7 @@ variableValues
     ;
 
 variableValue
-    : IDENTIFIER | STRING | (MINUS)? INT | TRUE | FALSE
+    : STRING | (MINUS)? INT | TRUE | FALSE
     ;
 
 instanceId
@@ -195,52 +171,12 @@ fromSegment
     : FROM RESOURCE resourceName (SCHEMA schemaName)?
     ;
 
-sqlCommentParseEnable
-    : TRUE | FALSE
-    ;
-
-parseTreeCache
-    : cacheOption
-    ;
-
-sqlStatementCache
-    : cacheOption
-    ;
-
-cacheOption
-    : (INITIAL_CAPACITY EQ initialCapacity)? (COMMA? MAXIMUM_SIZE EQ maximumSize)? (COMMA? CONCURRENCY_LEVEL EQ concurrencyLevel)? 
-    ;
-
-initialCapacity
-    : INT
-    ;
-
-maximumSize
-    : INT
-    ;
-
-concurrencyLevel
-    : INT
-    ;
-
-ruleName
-    : IDENTIFIER
-    ;
-
 label
     : IDENTIFIER
     ;
 
-algorithmProperties
-    : algorithmProperty (COMMA algorithmProperty)*
-    ;
-
-algorithmProperty
-    : key=(IDENTIFIER | STRING) EQ value=(NUMBER | INT | IDENTIFIER | STRING)
-    ;
-
-ifExists
-    : IF EXISTS
+intValue
+    : INT
     ;
 
 prepareDistSQL

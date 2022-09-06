@@ -24,7 +24,7 @@ import org.apache.shardingsphere.infra.instance.ComputeNodeInstance;
 import org.apache.shardingsphere.infra.instance.metadata.InstanceMetaData;
 import org.apache.shardingsphere.infra.instance.metadata.InstanceMetaDataBuilderFactory;
 import org.apache.shardingsphere.infra.instance.metadata.InstanceType;
-import org.apache.shardingsphere.infra.yaml.engine.YamlEngine;
+import org.apache.shardingsphere.infra.util.yaml.YamlEngine;
 import org.apache.shardingsphere.mode.metadata.persist.node.ComputeNode;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepository;
 
@@ -150,15 +150,18 @@ public final class ComputeNodeStatusService {
     }
     
     /**
-     * Get used worker ids.
+     * Get assigned worker ids.
      *
-     * @return used worker ids
+     * @return assigned worker ids
      */
-    public Set<Long> getUsedWorkerIds() {
+    public Set<Long> getAssignedWorkerIds() {
         Set<Long> result = new LinkedHashSet<>();
         List<String> childrenKeys = repository.getChildrenKeys(ComputeNode.getInstanceWorkerIdRootNodePath());
         for (String each : childrenKeys) {
-            result.add(Long.parseLong(repository.get(ComputeNode.getInstanceWorkerIdNodePath(each))));
+            String workerId = repository.get(ComputeNode.getInstanceWorkerIdNodePath(each));
+            if (null != workerId) {
+                result.add(Long.parseLong(workerId));
+            }
         }
         return result;
     }

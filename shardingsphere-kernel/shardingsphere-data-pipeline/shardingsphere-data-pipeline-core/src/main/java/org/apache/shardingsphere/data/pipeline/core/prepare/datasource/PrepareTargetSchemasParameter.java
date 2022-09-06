@@ -19,9 +19,9 @@ package org.apache.shardingsphere.data.pipeline.core.prepare.datasource;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.shardingsphere.data.pipeline.api.config.TableNameSchemaNameMapping;
-import org.apache.shardingsphere.data.pipeline.api.config.rulealtered.TaskConfiguration;
-import org.apache.shardingsphere.data.pipeline.core.datasource.PipelineDataSourceManager;
+import org.apache.shardingsphere.data.pipeline.api.config.CreateTableConfiguration;
+import org.apache.shardingsphere.data.pipeline.api.datasource.PipelineDataSourceManager;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
 
 /**
  * Prepare target schemas parameter.
@@ -30,9 +30,9 @@ import org.apache.shardingsphere.data.pipeline.core.datasource.PipelineDataSourc
 @Getter
 public final class PrepareTargetSchemasParameter {
     
-    private final TaskConfiguration taskConfig;
+    private final DatabaseType targetDatabaseType;
+    
+    private final CreateTableConfiguration createTableConfig;
     
     private final PipelineDataSourceManager dataSourceManager;
-    
-    private final TableNameSchemaNameMapping tableNameSchemaNameMapping;
 }

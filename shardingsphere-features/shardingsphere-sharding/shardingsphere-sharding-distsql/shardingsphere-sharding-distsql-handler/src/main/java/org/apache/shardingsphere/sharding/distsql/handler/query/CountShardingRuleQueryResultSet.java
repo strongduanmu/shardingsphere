@@ -17,9 +17,8 @@
 
 package org.apache.shardingsphere.sharding.distsql.handler.query;
 
-import org.apache.shardingsphere.infra.distsql.query.DistSQLResultSet;
+import org.apache.shardingsphere.infra.distsql.query.DatabaseDistSQLResultSet;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.distsql.parser.statement.CountShardingRuleStatement;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
@@ -38,15 +37,13 @@ import java.util.function.Supplier;
 /**
  * Query result set for count sharding rule.
  */
-public final class CountShardingRuleQueryResultSet implements DistSQLResultSet {
+public final class CountShardingRuleQueryResultSet implements DatabaseDistSQLResultSet {
     
     private static final String SHARDING_TABLE = "sharding_table";
     
     private static final String SHARDING_BINDING_TABLE = "sharding_binding_table";
     
     private static final String SHARDING_BROADCAST_TABLE = "sharding_broadcast_table";
-    
-    private static final String SHARDING_SCALING = "sharding_scaling";
     
     private Iterator<Entry<String, LinkedList<Object>>> data = Collections.emptyIterator();
     
@@ -67,7 +64,6 @@ public final class CountShardingRuleQueryResultSet implements DistSQLResultSet {
         addData(rowMap, SHARDING_TABLE, databaseName, () -> rule.getTables().size());
         addData(rowMap, SHARDING_BINDING_TABLE, databaseName, () -> rule.getBindingTableRules().size());
         addData(rowMap, SHARDING_BROADCAST_TABLE, databaseName, () -> rule.getBroadcastTables().size());
-        addData(rowMap, SHARDING_SCALING, databaseName, () -> ((ShardingRuleConfiguration) rule.getConfiguration()).getScaling().size());
     }
     
     private void addData(final Map<String, LinkedList<Object>> rowMap, final String dataKey, final String databaseName, final Supplier<Integer> apply) {

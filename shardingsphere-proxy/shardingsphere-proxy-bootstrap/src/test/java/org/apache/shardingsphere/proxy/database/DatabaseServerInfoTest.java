@@ -17,7 +17,7 @@
 
 package org.apache.shardingsphere.proxy.database;
 
-import org.apache.shardingsphere.infra.exception.ShardingSphereException;
+import org.apache.shardingsphere.proxy.exception.DatabaseServerLoadingServerException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Answers;
@@ -39,8 +39,7 @@ public final class DatabaseServerInfoTest {
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private DataSource dataSource;
     
-    @SuppressWarnings("ResultOfObjectAllocationIgnored")
-    @Test(expected = ShardingSphereException.class)
+    @Test(expected = DatabaseServerLoadingServerException.class)
     public void assertNewInstanceFailure() throws SQLException {
         when(dataSource.getConnection()).thenThrow(SQLException.class);
         new DatabaseServerInfo(dataSource);

@@ -1,7 +1,11 @@
 +++
-title = "Mode Configuration"
+title = "Mode"
 weight = 1
 +++
+
+## Background
+
+The default configuration uses standalone mode.
 
 ## Parameters Explained
 
@@ -37,7 +41,7 @@ Namespace：[http://shardingsphere.apache.org/schema/shardingsphere/mode-reposit
 
 ## Operating Procedures
 
-Import MAVEN dependency
+Introduce MAVEN dependency
 
 ```xml
 <dependency>
@@ -65,10 +69,14 @@ Import MAVEN dependency
                   http://shardingsphere.apache.org/schema/shardingsphere/datasource/datasource.xsd
                            http://shardingsphere.apache.org/schema/shardingsphere/mode-repository/standalone
                            http://shardingsphere.apache.org/schema/shardingsphere/mode-repository/standalone/repository.xsd">
-    <standalone:repository id="standaloneRepository" type="H2"/>
+    <standalone:repository id="standaloneRepository" type="File">
+        <props>
+            <prop key="path">.shardingsphere</prop>
+        </props>
+    </standalone:repository>
 
-    <shardingsphere:data-source id="ds" database-name="foo_db" data-source-names="..." rule-refs="...">
-        <shardingsphere:mode type="Standalone" repository-ref="standaloneRepository" />
+    <shardingsphere:data-source id="ds" database-name="foo_db" data-source-names="..." rule-refs="..." >
+        <shardingsphere:mode type="Standalone" repository-ref="standaloneRepository" overwrite="false" />
     </shardingsphere:data-source>
 </beans>
 ``` 
@@ -103,4 +111,4 @@ Import MAVEN dependency
 ## Relevant References
 
 - [Installation and use of ZooKeeper Registry Center](https://zookeeper.apache.org/doc/r3.7.1/zookeeperStarted.html)
-- For details about persistent repository, please refer to [List of Built-in repository types](/cn/user-manual/shardingsphere-jdbc/builtin-algorithm/metadata-repository/)
+- For details about persistent repository, please refer to [List of Built-in repository types](/cn/user-manual/common-config/builtin-algorithm/metadata-repository/)

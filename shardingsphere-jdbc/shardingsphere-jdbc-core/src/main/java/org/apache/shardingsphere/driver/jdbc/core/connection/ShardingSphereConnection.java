@@ -23,15 +23,16 @@ import org.apache.shardingsphere.driver.jdbc.context.JDBCContext;
 import org.apache.shardingsphere.driver.jdbc.core.datasource.metadata.ShardingSphereDatabaseMetaData;
 import org.apache.shardingsphere.driver.jdbc.core.statement.ShardingSpherePreparedStatement;
 import org.apache.shardingsphere.driver.jdbc.core.statement.ShardingSphereStatement;
+import org.apache.shardingsphere.driver.jdbc.exception.ConnectionClosedException;
+import org.apache.shardingsphere.infra.context.ConnectionContext;
+import org.apache.shardingsphere.infra.util.exception.ShardingSpherePreconditions;
 import org.apache.shardingsphere.mode.manager.ContextManager;
-import org.apache.shardingsphere.sharding.merge.ddl.fetch.FetchOrderByValueGroupsHolder;
-import org.apache.shardingsphere.traffic.context.TrafficContextHolder;
-import org.apache.shardingsphere.transaction.TransactionHolder;
 
 import java.sql.Array;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Savepoint;
 import java.sql.Statement;
 
@@ -60,11 +61,15 @@ public final class ShardingSphereConnection extends AbstractConnectionAdapter {
     
     private volatile boolean closed;
     
+    @Getter
+    private final ConnectionContext connectionContext;
+    
     public ShardingSphereConnection(final String databaseName, final ContextManager contextManager, final JDBCContext jdbcContext) {
         this.databaseName = databaseName;
         this.contextManager = contextManager;
         this.jdbcContext = jdbcContext;
         connectionManager = new ConnectionManager(databaseName, contextManager);
+        connectionContext = new ConnectionContext();
     }
     
     /**
@@ -108,7 +113,7 @@ public final class ShardingSphereConnection extends AbstractConnectionAdapter {
     
     @Override
     public PreparedStatement prepareStatement(final String sql, final String[] columnNames) throws SQLException {
-        return new ShardingSpherePreparedStatement(this, sql, Statement.RETURN_GENERATED_KEYS);
+        return new ShardingSpherePreparedStatement(this, sql, columnNames);
     }
     
     @Override
@@ -144,7 +149,7 @@ public final class ShardingSphereConnection extends AbstractConnectionAdapter {
     private void processLocalTransaction() throws SQLException {
         connectionManager.setAutoCommit(autoCommit);
         if (!autoCommit) {
-            TransactionHolder.setInTransaction();
+            connectionContext.getTransactionConnectionContext().setInTransaction(true);
         }
     }
     
@@ -153,7 +158,7 @@ public final class ShardingSphereConnection extends AbstractConnectionAdapter {
             case BEGIN:
                 connectionManager.close();
                 connectionManager.getConnectionTransaction().begin();
-                TransactionHolder.setInTransaction();
+                getConnectionContext().getTransactionConnectionContext().setInTransaction(true);
                 break;
             case COMMIT:
                 connectionManager.getConnectionTransaction().commit();
@@ -169,9 +174,9 @@ public final class ShardingSphereConnection extends AbstractConnectionAdapter {
             connectionManager.commit();
         } finally {
             connectionManager.getConnectionTransaction().setRollbackOnly(false);
-            TransactionHolder.clear();
-            TrafficContextHolder.remove();
-            FetchOrderByValueGroupsHolder.remove();
+            connectionContext.clearTransactionConnectionContext();
+            connectionContext.clearTrafficInstance();
+            connectionContext.clearCursorConnectionContext();
         }
     }
     
@@ -181,9 +186,9 @@ public final class ShardingSphereConnection extends AbstractConnectionAdapter {
             connectionManager.rollback();
         } finally {
             connectionManager.getConnectionTransaction().setRollbackOnly(false);
-            TransactionHolder.clear();
-            TrafficContextHolder.remove();
-            FetchOrderByValueGroupsHolder.remove();
+            connectionContext.clearTransactionConnectionContext();
+            connectionContext.clearTrafficInstance();
+            connectionContext.clearCursorConnectionContext();
         }
     }
     
@@ -197,7 +202,7 @@ public final class ShardingSphereConnection extends AbstractConnectionAdapter {
     public Savepoint setSavepoint(final String name) throws SQLException {
         checkClose();
         if (!isHoldTransaction()) {
-            throw new SQLException("Savepoint can only be used in transaction blocks.");
+            throw new SQLFeatureNotSupportedException("Savepoint can only be used in transaction blocks.");
         }
         return connectionManager.setSavepoint(name);
     }
@@ -205,9 +210,7 @@ public final class ShardingSphereConnection extends AbstractConnectionAdapter {
     @Override
     public Savepoint setSavepoint() throws SQLException {
         checkClose();
-        if (!isHoldTransaction()) {
-            throw new SQLException("Savepoint can only be used in transaction blocks.");
-        }
+        ShardingSpherePreconditions.checkState(isHoldTransaction(), new SQLFeatureNotSupportedException("Savepoint can only be used in transaction blocks."));
         return connectionManager.setSavepoint();
     }
     
@@ -221,9 +224,7 @@ public final class ShardingSphereConnection extends AbstractConnectionAdapter {
     }
     
     private void checkClose() throws SQLException {
-        if (isClosed()) {
-            throw new SQLException("This connection has been closed");
-        }
+        ShardingSpherePreconditions.checkState(!isClosed(), new ConnectionClosedException().toSQLException());
     }
     
     @SuppressWarnings("MagicConstant")

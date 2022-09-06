@@ -17,8 +17,8 @@
 
 package org.apache.shardingsphere.sharding.distsql.query;
 
-import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
-import org.apache.shardingsphere.infra.distsql.query.DistSQLResultSet;
+import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
+import org.apache.shardingsphere.infra.distsql.query.DatabaseDistSQLResultSet;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingAutoTableRuleConfiguration;
@@ -50,15 +50,15 @@ public final class ShowShardingTableRulesUsedAlgorithmQueryResultSetTest {
         ShardingRule rule = mock(ShardingRule.class);
         when(rule.getConfiguration()).thenReturn(createRuleConfiguration());
         when(database.getRuleMetaData().findSingleRule(ShardingRule.class)).thenReturn(Optional.of(rule));
-        DistSQLResultSet resultSet = new ShardingTableRulesUsedAlgorithmQueryResultSet();
+        DatabaseDistSQLResultSet resultSet = new ShardingTableRulesUsedAlgorithmQueryResultSet();
         ShowShardingTableRulesUsedAlgorithmStatement statement = mock(ShowShardingTableRulesUsedAlgorithmStatement.class);
-        when(statement.getAlgorithmName()).thenReturn(Optional.of("t_order_inline"));
+        when(statement.getShardingAlgorithmName()).thenReturn(Optional.of("t_order_inline"));
         resultSet.init(database, statement);
         List<Object> actual = new ArrayList<>(resultSet.getRowData());
         assertThat(actual.size(), is(2));
         assertThat(actual.get(0), is("table"));
         assertThat(actual.get(1), is("t_order"));
-        when(statement.getAlgorithmName()).thenReturn(Optional.of("auto_mod"));
+        when(statement.getShardingAlgorithmName()).thenReturn(Optional.of("auto_mod"));
         resultSet.init(database, statement);
         actual = new ArrayList<>(resultSet.getRowData());
         assertThat(actual.size(), is(2));
@@ -94,19 +94,19 @@ public final class ShowShardingTableRulesUsedAlgorithmQueryResultSetTest {
         return result;
     }
     
-    private ShardingSphereAlgorithmConfiguration createShardingInlineAlgorithmConfiguration(final String algorithmExpression) {
+    private AlgorithmConfiguration createShardingInlineAlgorithmConfiguration(final String algorithmExpression) {
         Properties props = new Properties();
         props.put("algorithm-expression", algorithmExpression);
-        return new ShardingSphereAlgorithmConfiguration("INLINE", props);
+        return new AlgorithmConfiguration("INLINE", props);
     }
     
-    private ShardingSphereAlgorithmConfiguration createShardingAutoModAlgorithmConfiguration() {
+    private AlgorithmConfiguration createShardingAutoModAlgorithmConfiguration() {
         Properties props = new Properties();
         props.put("sharding-count", 4);
-        return new ShardingSphereAlgorithmConfiguration("MOD", props);
+        return new AlgorithmConfiguration("MOD", props);
     }
     
-    private ShardingSphereAlgorithmConfiguration createKeyGeneratorConfiguration() {
-        return new ShardingSphereAlgorithmConfiguration("SNOWFLAKE", new Properties());
+    private AlgorithmConfiguration createKeyGeneratorConfiguration() {
+        return new AlgorithmConfiguration("SNOWFLAKE", new Properties());
     }
 }

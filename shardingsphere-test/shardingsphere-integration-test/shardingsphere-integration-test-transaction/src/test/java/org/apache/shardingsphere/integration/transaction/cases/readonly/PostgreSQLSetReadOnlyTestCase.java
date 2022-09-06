@@ -19,6 +19,7 @@ package org.apache.shardingsphere.integration.transaction.cases.readonly;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.shardingsphere.integration.transaction.engine.base.BaseTransactionITCase;
 import org.apache.shardingsphere.integration.transaction.engine.base.TransactionTestCase;
 import org.apache.shardingsphere.integration.transaction.engine.constants.TransactionTestConstants;
 import org.junit.Assert;
@@ -31,12 +32,12 @@ import java.sql.Statement;
 /**
  * PostgreSQL set read only transaction integration test.
  */
-@Slf4j
 @TransactionTestCase(dbTypes = {TransactionTestConstants.POSTGRESQL})
+@Slf4j
 public final class PostgreSQLSetReadOnlyTestCase extends SetReadOnlyTestCase {
     
-    public PostgreSQLSetReadOnlyTestCase(final DataSource dataSource) {
-        super(dataSource);
+    public PostgreSQLSetReadOnlyTestCase(final BaseTransactionITCase baseTransactionITCase, final DataSource dataSource) {
+        super(baseTransactionITCase, dataSource);
     }
     
     @Override
@@ -57,10 +58,9 @@ public final class PostgreSQLSetReadOnlyTestCase extends SetReadOnlyTestCase {
             String updateSql = "update account set balance=100 where id=2;";
             log.info("Connection execute update: {}.", updateSql);
             updateStatement.execute(updateSql);
-            log.info("Using the driver of postgresql:42.3.3 expect to update successfully");
+            log.info("Using the driver of postgresql:42.4.1 expect to update successfully");
         } catch (SQLException e) {
             Assert.fail("Update failed, should be successfully.");
         }
     }
-    
 }

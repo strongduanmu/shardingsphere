@@ -19,7 +19,7 @@ package org.apache.shardingsphere.sharding.yaml.config.rule;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.shardingsphere.infra.yaml.config.pojo.YamlConfiguration;
+import org.apache.shardingsphere.infra.util.yaml.YamlConfiguration;
 import org.apache.shardingsphere.sharding.yaml.config.strategy.keygen.YamlKeyGenerateStrategyConfiguration;
 import org.apache.shardingsphere.sharding.yaml.config.strategy.sharding.YamlShardingStrategyConfiguration;
 
@@ -34,11 +34,7 @@ public final class YamlShardingAutoTableRuleConfiguration implements YamlConfigu
     
     private String actualDataSources;
     
-    private String actualTablePrefix;
-    
     private YamlShardingStrategyConfiguration shardingStrategy;
     
     private YamlKeyGenerateStrategyConfiguration keyGenerateStrategy;
-    
-    private String actualDataNodes;
 }

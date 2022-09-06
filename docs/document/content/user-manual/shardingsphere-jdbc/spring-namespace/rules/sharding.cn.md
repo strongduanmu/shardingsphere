@@ -114,7 +114,7 @@ weight = 1
 | type      | 属性  | 分布式序列算法类型    |
 | props (?) | 标签  | 分布式序列算法属性配置 |
 
-算法类型的详情，请参见[内置分片算法列表](/cn/user-manual/shardingsphere-jdbc/builtin-algorithm/sharding)和[内置分布式序列算法列表](/cn/user-manual/shardingsphere-jdbc/builtin-algorithm/keygen)。
+算法类型的详情，请参见[内置分片算法列表](/cn/user-manual/common-config/builtin-algorithm/sharding)和[内置分布式序列算法列表](/cn/user-manual/common-config/builtin-algorithm/keygen)。
 
 > 注意事项：行表达式标识符可以使用 `${...}` 或 `$->{...}`，但前者与 Spring 本身的属性文件占位符冲突，因此在 Spring 环境中使用行表达式标识符建议使用 `$->{...}`。
 
@@ -128,10 +128,10 @@ weight = 1
 ```xml
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:shardingsphere="http://shardingsphere.apache.org/schema/shardingsphere/datasource"
        xmlns:context="http://www.springframework.org/schema/context"
        xmlns:tx="http://www.springframework.org/schema/tx"
-       xmlns:encrypt="http://shardingsphere.apache.org/schema/shardingsphere/encrypt"
+       xmlns:shardingsphere="http://shardingsphere.apache.org/schema/shardingsphere/datasource"
+       xmlns:sharding="http://shardingsphere.apache.org/schema/shardingsphere/sharding"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
                            http://www.springframework.org/schema/beans/spring-beans.xsd 
                            http://www.springframework.org/schema/tx 
@@ -140,41 +140,61 @@ weight = 1
                            http://www.springframework.org/schema/context/spring-context.xsd
                            http://shardingsphere.apache.org/schema/shardingsphere/datasource
                            http://shardingsphere.apache.org/schema/shardingsphere/datasource/datasource.xsd
-                           http://shardingsphere.apache.org/schema/shardingsphere/encrypt
-                           http://shardingsphere.apache.org/schema/shardingsphere/encrypt/encrypt.xsd 
+                           http://shardingsphere.apache.org/schema/shardingsphere/sharding
+                           http://shardingsphere.apache.org/schema/shardingsphere/sharding/sharding.xsd
                            ">
     <context:component-scan base-package="org.apache.shardingsphere.example.core.mybatis" />
     
-    <bean id="ds" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">
+    <bean id="demo_ds_0" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">
         <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
-        <property name="jdbcUrl" value="jdbc:mysql://localhost:3306/demo_ds?serverTimezone=UTC&amp;useSSL=false&amp;useUnicode=true&amp;characterEncoding=UTF-8"/>
+        <property name="jdbcUrl" value="jdbc:mysql://localhost:3306/demo_ds_0?serverTimezone=UTC&amp;useSSL=false&amp;useUnicode=true&amp;characterEncoding=UTF-8"/>
         <property name="username" value="root"/>
         <property name="password" value=""/>
     </bean>
     
-    <encrypt:encrypt-algorithm id="name_encryptor" type="AES">
+    <bean id="demo_ds_1" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+        <property name="jdbcUrl" value="jdbc:mysql://localhost:3306/demo_ds_1?serverTimezone=UTC&amp;useSSL=false&amp;useUnicode=true&amp;characterEncoding=UTF-8"/>
+        <property name="username" value="root"/>
+        <property name="password" value=""/>
+    </bean>
+    
+    <sharding:standard-strategy id="databaseStrategy" sharding-column="user_id" algorithm-ref="inlineStrategyShardingAlgorithm" />
+
+    <sharding:sharding-algorithm id="inlineStrategyShardingAlgorithm" type="INLINE">
         <props>
-            <prop key="aes-key-value">123456</prop>
+            <prop key="algorithm-expression">demo_ds_${user_id % 2}</prop>
         </props>
-    </encrypt:encrypt-algorithm>
-    <encrypt:encrypt-algorithm id="pwd_encryptor" type="assistedTest" />
+    </sharding:sharding-algorithm>
     
-    <encrypt:rule id="encryptRule">
-        <encrypt:table name="t_user">
-            <encrypt:column logic-column="username" cipher-column="username" plain-column="username_plain" encrypt-algorithm-ref="name_encryptor" />
-            <encrypt:column logic-column="pwd" cipher-column="pwd" assisted-query-column="assisted_query_pwd" encrypt-algorithm-ref="pwd_encryptor" />
-        </encrypt:table>
-    </encrypt:rule>
+    <sharding:key-generate-algorithm id="snowflakeAlgorithm" type="SNOWFLAKE">
+    </sharding:key-generate-algorithm>
     
-    <shardingsphere:data-source id="encryptDataSource" data-source-names="ds" rule-refs="encryptRule" />
+    <sharding:key-generate-strategy id="orderKeyGenerator" column="order_id" algorithm-ref="snowflakeAlgorithm" />
+    <sharding:key-generate-strategy id="itemKeyGenerator" column="order_item_id" algorithm-ref="snowflakeAlgorithm" />
+    
+    <sharding:rule id="shardingRule">
+        <sharding:table-rules>
+            <sharding:table-rule logic-table="t_order" database-strategy-ref="databaseStrategy" key-generate-strategy-ref="orderKeyGenerator" />
+            <sharding:table-rule logic-table="t_order_item" database-strategy-ref="databaseStrategy" key-generate-strategy-ref="itemKeyGenerator" />
+        </sharding:table-rules>
+        <sharding:binding-table-rules>
+            <sharding:binding-table-rule logic-tables="t_order,t_order_item"/>
+        </sharding:binding-table-rules>
+        <sharding:broadcast-table-rules>
+            <sharding:broadcast-table-rule table="t_address"/>
+        </sharding:broadcast-table-rules>
+    </sharding:rule>
+    
+    <shardingsphere:data-source id="shardingDataSource" database-name="sharding-databases" data-source-names="demo_ds_0, demo_ds_1" rule-refs="shardingRule" />
     
     <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
-        <property name="dataSource" ref="encryptDataSource" />
+        <property name="dataSource" ref="shardingDataSource" />
     </bean>
     <tx:annotation-driven />
     
     <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
-        <property name="dataSource" ref="encryptDataSource"/>
+        <property name="dataSource" ref="shardingDataSource"/>
         <property name="mapperLocations" value="classpath*:META-INF/mappers/*.xml"/>
     </bean>
     

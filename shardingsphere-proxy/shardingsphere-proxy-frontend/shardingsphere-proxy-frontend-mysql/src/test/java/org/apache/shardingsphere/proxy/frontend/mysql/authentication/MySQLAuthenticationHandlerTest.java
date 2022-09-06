@@ -24,11 +24,10 @@ import org.apache.shardingsphere.authority.model.AuthorityRegistry;
 import org.apache.shardingsphere.authority.rule.AuthorityRule;
 import org.apache.shardingsphere.authority.rule.builder.AuthorityRuleBuilder;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLAuthenticationMethod;
-import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLServerErrorCode;
+import org.apache.shardingsphere.dialect.mysql.vendor.MySQLVendorError;
 import org.apache.shardingsphere.db.protocol.mysql.packet.handshake.MySQLAuthPluginData;
-import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
+import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
-import org.apache.shardingsphere.infra.federation.optimizer.context.OptimizerContext;
 import org.apache.shardingsphere.infra.instance.InstanceContext;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
@@ -93,14 +92,14 @@ public final class MySQLAuthenticationHandlerTest extends ProxyContextRestorer {
     public void assertLoginWithAbsentUser() {
         initProxyContext(new ShardingSphereUser("root", "root", ""), true);
         byte[] authResponse = {-27, 89, -20, -27, 65, -120, -64, -101, 86, -100, -108, -100, 6, -125, -37, 117, 14, -43, 95, -113};
-        assertThat(authenticationHandler.login("root1", "", authResponse, "db1").orElse(null), is(MySQLServerErrorCode.ER_ACCESS_DENIED_ERROR));
+        assertThat(authenticationHandler.login("root1", "", authResponse, "db1").orElse(null), is(MySQLVendorError.ER_ACCESS_DENIED_ERROR));
     }
     
     @Test
     public void assertLoginWithIncorrectPassword() {
         initProxyContext(new ShardingSphereUser("root", "root", ""), true);
         byte[] authResponse = {0, 89, -20, -27, 65, -120, -64, -101, 86, -100, -108, -100, 6, -125, -37, 117, 14, -43, 95, -113};
-        assertThat(authenticationHandler.login("root", "", authResponse, "db1").orElse(null), is(MySQLServerErrorCode.ER_ACCESS_DENIED_ERROR));
+        assertThat(authenticationHandler.login("root", "", authResponse, "db1").orElse(null), is(MySQLVendorError.ER_ACCESS_DENIED_ERROR));
     }
     
     @Test
@@ -114,7 +113,7 @@ public final class MySQLAuthenticationHandlerTest extends ProxyContextRestorer {
     public void assertLoginWithUnauthorizedSchema() {
         initProxyContext(new ShardingSphereUser("root", "root", ""), false);
         byte[] authResponse = {-27, 89, -20, -27, 65, -120, -64, -101, 86, -100, -108, -100, 6, -125, -37, 117, 14, -43, 95, -113};
-        assertThat(authenticationHandler.login("root", "", authResponse, "db11").orElse(null), is(MySQLServerErrorCode.ER_DBACCESS_DENIED_ERROR));
+        assertThat(authenticationHandler.login("root", "", authResponse, "db11").orElse(null), is(MySQLVendorError.ER_DBACCESS_DENIED_ERROR));
     }
     
     @Test
@@ -139,7 +138,7 @@ public final class MySQLAuthenticationHandlerTest extends ProxyContextRestorer {
     
     private MetaDataContexts getMetaDataContexts(final ShardingSphereUser user, final boolean isNeedSuper) throws NoSuchFieldException, IllegalAccessException {
         return new MetaDataContexts(mock(MetaDataPersistService.class),
-                new ShardingSphereMetaData(getDatabases(), buildGlobalRuleMetaData(user, isNeedSuper), new ConfigurationProperties(new Properties())), mock(OptimizerContext.class));
+                new ShardingSphereMetaData(getDatabases(), buildGlobalRuleMetaData(user, isNeedSuper), new ConfigurationProperties(new Properties())));
     }
     
     private Map<String, ShardingSphereDatabase> getDatabases() {
@@ -153,7 +152,7 @@ public final class MySQLAuthenticationHandlerTest extends ProxyContextRestorer {
     }
     
     private ShardingSphereRuleMetaData buildGlobalRuleMetaData(final ShardingSphereUser user, final boolean isNeedSuper) throws NoSuchFieldException, IllegalAccessException {
-        AuthorityRuleConfiguration ruleConfig = new AuthorityRuleConfiguration(Collections.singletonList(user), new ShardingSphereAlgorithmConfiguration("ALL_PERMITTED", new Properties()));
+        AuthorityRuleConfiguration ruleConfig = new AuthorityRuleConfiguration(Collections.singletonList(user), new AlgorithmConfiguration("ALL_PERMITTED", new Properties()));
         AuthorityRule rule = new AuthorityRuleBuilder().build(ruleConfig, Collections.emptyMap(), mock(InstanceContext.class));
         if (!isNeedSuper) {
             Field authorityRegistryField = AuthorityRule.class.getDeclaredField("authorityRegistry");

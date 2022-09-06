@@ -21,19 +21,22 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shardingsphere.integration.data.pipeline.cases.base.BaseIncrementTask;
+import org.apache.shardingsphere.integration.data.pipeline.framework.helper.ScalingCaseHelper;
+import org.apache.shardingsphere.sharding.algorithm.keygen.SnowflakeKeyGenerateAlgorithm;
 import org.apache.shardingsphere.sharding.spi.KeyGenerateAlgorithm;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.Instant;
+import java.util.Properties;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @RequiredArgsConstructor
 public final class PostgreSQLIncrementTask extends BaseIncrementTask {
     
-    private final JdbcTemplate jdbcTemplate;
+    private static final KeyGenerateAlgorithm KEY_GENERATE_ALGORITHM = new SnowflakeKeyGenerateAlgorithm();
     
-    private final KeyGenerateAlgorithm keyGenerateAlgorithm;
+    private final JdbcTemplate jdbcTemplate;
     
     private final String schema;
     
@@ -41,13 +44,19 @@ public final class PostgreSQLIncrementTask extends BaseIncrementTask {
     
     private final int executeCountLimit;
     
+    static {
+        Properties props = new Properties();
+        props.setProperty("max-vibration-offset", "2");
+        KEY_GENERATE_ALGORITHM.init(props);
+    }
+    
     @Override
     public void run() {
         int executeCount = 0;
         while (executeCount < executeCountLimit && !Thread.currentThread().isInterrupted()) {
             Object orderPrimaryKey = insertOrder();
             if (executeCount % 2 == 0) {
-                jdbcTemplate.update(prefixSchema("DELETE FROM ${schema}t_order WHERE id = ?", schema), orderPrimaryKey);
+                jdbcTemplate.update(prefixSchema("DELETE FROM ${schema}t_order_copy WHERE id = ?", schema), orderPrimaryKey);
             } else {
                 updateOrderByPrimaryKey(orderPrimaryKey);
             }
@@ -62,22 +71,24 @@ public final class PostgreSQLIncrementTask extends BaseIncrementTask {
     }
     
     private Object insertOrder() {
-        String status = ThreadLocalRandom.current().nextInt() % 2 == 0 ? null : "NOT-NULL";
-        Object[] orderInsertDate = new Object[]{keyGenerateAlgorithm.generateKey(), ThreadLocalRandom.current().nextInt(0, 6), ThreadLocalRandom.current().nextInt(0, 6), status};
-        jdbcTemplate.update(prefixSchema("INSERT INTO ${schema}t_order (id,order_id,user_id,status) VALUES (?, ?, ?, ?)", schema), orderInsertDate);
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        String status = random.nextInt() % 2 == 0 ? null : "NOT-NULL";
+        Object[] orderInsertDate = new Object[]{KEY_GENERATE_ALGORITHM.generateKey(), ScalingCaseHelper.generateSnowflakeKey(), random.nextInt(0, 6), status};
+        jdbcTemplate.update(prefixSchema("INSERT INTO ${schema}t_order_copy (id,order_id,user_id,status) VALUES (?, ?, ?, ?)", schema), orderInsertDate);
         return orderInsertDate[0];
     }
     
     private Object insertOrderItem() {
-        String status = ThreadLocalRandom.current().nextInt() % 2 == 0 ? null : "NOT-NULL";
-        Object[] orderInsertItemDate = new Object[]{keyGenerateAlgorithm.generateKey(), ThreadLocalRandom.current().nextInt(0, 6), ThreadLocalRandom.current().nextInt(0, 6), status};
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        String status = random.nextInt() % 2 == 0 ? null : "NOT-NULL";
+        Object[] orderInsertItemDate = new Object[]{KEY_GENERATE_ALGORITHM.generateKey(), ScalingCaseHelper.generateSnowflakeKey(), random.nextInt(0, 6), status};
         jdbcTemplate.update(prefixSchema("INSERT INTO ${schema}t_order_item(item_id,order_id,user_id,status) VALUES(?,?,?,?)", schema), orderInsertItemDate);
         return orderInsertItemDate[0];
     }
     
     private void updateOrderByPrimaryKey(final Object primaryKey) {
         Object[] updateData = {"updated" + Instant.now().getEpochSecond(), primaryKey};
-        jdbcTemplate.update(prefixSchema("UPDATE ${schema}t_order SET status = ? WHERE id = ?", schema), updateData);
+        jdbcTemplate.update(prefixSchema("UPDATE ${schema}t_order_copy SET status = ? WHERE id = ?", schema), updateData);
     }
     
     private String prefixSchema(final String sql, final String schema) {

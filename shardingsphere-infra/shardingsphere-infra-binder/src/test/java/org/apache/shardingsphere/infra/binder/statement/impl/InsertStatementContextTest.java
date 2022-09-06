@@ -32,6 +32,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.L
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.subquery.SubquerySegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ProjectionsSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.OwnerSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableNameSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.InsertStatement;
@@ -92,7 +93,9 @@ public final class InsertStatementContextTest {
     }
     
     private void assertInsertStatementContextWithColumnNames(final InsertStatement insertStatement) {
-        insertStatement.setTable(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("tbl"))));
+        SimpleTableSegment tableSegment = new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("tbl")));
+        tableSegment.setOwner(new OwnerSegment(0, 0, new IdentifierValue(DefaultDatabase.LOGIC_NAME.toUpperCase())));
+        insertStatement.setTable(tableSegment);
         InsertColumnsSegment insertColumnsSegment = new InsertColumnsSegment(0, 0, Arrays.asList(
                 new ColumnSegment(0, 0, new IdentifierValue("id")), new ColumnSegment(0, 0, new IdentifierValue("name")), new ColumnSegment(0, 0, new IdentifierValue("status"))));
         insertStatement.setInsertColumns(insertColumnsSegment);
@@ -107,7 +110,7 @@ public final class InsertStatementContextTest {
         ShardingSphereSchema schema = mock(ShardingSphereSchema.class);
         String defaultSchemaName = insertStatement instanceof PostgreSQLStatement || insertStatement instanceof OpenGaussStatement ? "public" : DefaultDatabase.LOGIC_NAME;
         when(database.getSchema(defaultSchemaName)).thenReturn(schema);
-        when(schema.getAllColumnNames("tbl")).thenReturn(Arrays.asList("id", "name", "status"));
+        when(schema.getVisibleColumnNames("tbl")).thenReturn(Arrays.asList("id", "name", "status"));
         return new InsertStatementContext(Collections.singletonMap(DefaultDatabase.LOGIC_NAME, database), parameters, insertStatement, DefaultDatabase.LOGIC_NAME);
     }
     
@@ -194,18 +197,18 @@ public final class InsertStatementContextTest {
         assertThat(actual.getGeneratedKeyContext(), is(Optional.empty()));
         assertThat(actual.getColumnNames(), is(Arrays.asList("id", "name", "status")));
         assertThat(actual.getInsertValueContexts().size(), is(2));
-        assertTrue(actual.getInsertValueContexts().get(0).getValue(0).isPresent());
-        assertTrue(actual.getInsertValueContexts().get(0).getValue(1).isPresent());
-        assertTrue(actual.getInsertValueContexts().get(0).getValue(2).isPresent());
-        assertTrue(actual.getInsertValueContexts().get(1).getValue(0).isPresent());
-        assertTrue(actual.getInsertValueContexts().get(1).getValue(1).isPresent());
-        assertTrue(actual.getInsertValueContexts().get(1).getValue(2).isPresent());
-        assertThat(actual.getInsertValueContexts().get(0).getValue(0).get(), is(1));
-        assertThat(actual.getInsertValueContexts().get(0).getValue(1).get(), is("Tom"));
-        assertThat(actual.getInsertValueContexts().get(0).getValue(2).get(), is("init"));
-        assertThat(actual.getInsertValueContexts().get(1).getValue(0).get(), is(2));
-        assertThat(actual.getInsertValueContexts().get(1).getValue(1).get(), is("Jerry"));
-        assertThat(actual.getInsertValueContexts().get(1).getValue(2).get(), is("init"));
+        assertTrue(actual.getInsertValueContexts().get(0).getLiteralValue(0).isPresent());
+        assertTrue(actual.getInsertValueContexts().get(0).getLiteralValue(1).isPresent());
+        assertTrue(actual.getInsertValueContexts().get(0).getLiteralValue(2).isPresent());
+        assertTrue(actual.getInsertValueContexts().get(1).getLiteralValue(0).isPresent());
+        assertTrue(actual.getInsertValueContexts().get(1).getLiteralValue(1).isPresent());
+        assertTrue(actual.getInsertValueContexts().get(1).getLiteralValue(2).isPresent());
+        assertThat(actual.getInsertValueContexts().get(0).getLiteralValue(0).get(), is(1));
+        assertThat(actual.getInsertValueContexts().get(0).getLiteralValue(1).get(), is("Tom"));
+        assertThat(actual.getInsertValueContexts().get(0).getLiteralValue(2).get(), is("init"));
+        assertThat(actual.getInsertValueContexts().get(1).getLiteralValue(0).get(), is(2));
+        assertThat(actual.getInsertValueContexts().get(1).getLiteralValue(1).get(), is("Jerry"));
+        assertThat(actual.getInsertValueContexts().get(1).getLiteralValue(2).get(), is("init"));
     }
     
     @Test

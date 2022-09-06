@@ -94,14 +94,14 @@ public final class MySQLQueryHeaderBuilderTest {
         QueryHeader actual = new MySQLQueryHeaderBuilder().build(
                 queryResultMetaData, mock(ShardingSphereDatabase.class, RETURNS_DEEP_STUBS), queryResultMetaData.getColumnName(1), queryResultMetaData.getColumnLabel(1), 1);
         assertFalse(actual.isPrimaryKey());
-        assertThat(actual.getTable(), is(""));
+        assertThat(actual.getTable(), is(actual.getTable()));
     }
     
     private ShardingSphereDatabase createDatabase() {
         ShardingSphereDatabase result = mock(ShardingSphereDatabase.class, RETURNS_DEEP_STUBS);
-        ShardingSphereColumn column = new ShardingSphereColumn("order_id", Types.INTEGER, true, false, false);
+        ShardingSphereColumn column = new ShardingSphereColumn("order_id", Types.INTEGER, true, false, false, true);
         ShardingSphereSchema schema = mock(ShardingSphereSchema.class);
-        when(schema.get("t_logic_order")).thenReturn(
+        when(schema.getTable("t_logic_order")).thenReturn(
                 new ShardingSphereTable("t_logic_order", Collections.singleton(column), Collections.singleton(new ShardingSphereIndex("order_id")), Collections.emptyList()));
         when(result.getSchema(DefaultDatabase.LOGIC_NAME)).thenReturn(schema);
         ShardingRule shardingRule = mock(ShardingRule.class);

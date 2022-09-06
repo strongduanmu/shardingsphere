@@ -179,10 +179,6 @@ METADATA
     : M E T A D A T A
     ;
 
-SQL_PARSER
-    : S Q L UL_ P A R S E R
-    ;
-
 AUTHORITY
     : A U T H O R I T Y
     ;
@@ -193,30 +189,6 @@ TRUE
 
 FALSE
     : F A L S E
-    ;
-
-SQL_COMMENT_PARSE_ENABLE
-    : S Q L UL_ C O M M E N T UL_ P A R S E UL_ E N A B L E
-    ;
-
-PARSE_TREE_CACHE
-    : P A R S E UL_ T R E E UL_ C A C H E
-    ;
-
-SQL_STATEMENT_CACHE
-    : S Q L UL_ S T A T E M E N T UL_ C A C H E
-    ;
-
-INITIAL_CAPACITY
-    : I N I T I A L UL_ C A P A C I T Y
-    ;
-
-MAXIMUM_SIZE
-    : M A X I M U M UL_ S I Z E
-    ;
-
-CONCURRENCY_LEVEL
-    : C O N C U R R E N C Y UL_ L E V E L
     ;
 
 IF  
@@ -239,10 +211,6 @@ COUNT
     : C O U N T
     ;
 
-TRAFFIC
-    : T R A F F I C
-    ;
-
 LABEL
     : L A B E L
     ;
@@ -257,14 +225,6 @@ UNLABEL
 
 LABELS
     : L A B E L S
-    ;
-
-TRAFFIC_ALGORITHM
-    : T R A F F I C UL_ A L G O R I T H M
-    ;
-
-LOAD_BALANCER
-    : L O A D UL_ B A L A N C E R
     ;
 
 EXPORT
@@ -329,4 +289,44 @@ SINGLE_TABLE
 
 SQL_TRANSLATOR
     : S Q L UL_ T R A N S L A T O R
+    ;
+
+INFO
+    : I N F O
+    ;
+
+MIGRATION
+    : M I G R A T I O N
+    ;
+
+PROCESS
+    : P R O C E S S
+    ;
+
+READ
+    : R E A D
+    ;
+
+WRITE
+    : W R I T E
+    ;
+
+WORKER_THREAD
+    : W O R K E R UL_ T H R E A D
+    ;
+
+BATCH_SIZE
+    : B A T C H UL_ S I Z E
+    ;
+
+SHARDING_SIZE
+    : S H A R D I N G UL_ S I Z E
+    ;
+
+RATE_LIMITER
+    : R A T E UL_ L I M I T E R
+    ;
+
+STREAM_CHANNEL
+    : S T R E A M UL_ C H A N N E L
     ;

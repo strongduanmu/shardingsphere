@@ -19,11 +19,11 @@ package org.apache.shardingsphere.singletable.route.engine;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.infra.datanode.DataNode;
-import org.apache.shardingsphere.infra.exception.ShardingSphereException;
 import org.apache.shardingsphere.infra.metadata.database.schema.QualifiedTable;
 import org.apache.shardingsphere.infra.route.context.RouteContext;
 import org.apache.shardingsphere.infra.route.context.RouteMapper;
 import org.apache.shardingsphere.infra.route.context.RouteUnit;
+import org.apache.shardingsphere.singletable.exception.SingleTableNotFoundException;
 import org.apache.shardingsphere.singletable.rule.SingleTableRule;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterTableStatement;
@@ -84,9 +84,6 @@ public final class SingleTableStandardRouteEngine implements SingleTableRouteEng
             routeContext.getRouteUnits().add(new RouteUnit(new RouteMapper(dataSourceName, dataSourceName), Collections.singleton(new RouteMapper(tableName, tableName))));
         } else if (sqlStatement instanceof AlterTableStatement || sqlStatement instanceof DropTableStatement || rule.isAllTablesInSameDataSource(routeContext, singleTableNames)) {
             fillRouteContext(rule, routeContext, rule.getSingleTableNames(singleTableNames));
-        } else {
-            decorateFederationRouteContext(routeContext);
-            fillRouteContext(rule, routeContext, singleTableNames);
         }
     }
     
@@ -95,22 +92,10 @@ public final class SingleTableStandardRouteEngine implements SingleTableRouteEng
             String tableName = each.getTableName();
             Optional<DataNode> dataNode = singleTableRule.findSingleTableDataNode(each.getSchemaName(), tableName);
             if (!dataNode.isPresent()) {
-                throw new ShardingSphereException("`%s` single table does not exist.", each);
+                throw new SingleTableNotFoundException(tableName);
             }
             String dataSource = dataNode.get().getDataSourceName();
             routeContext.putRouteUnit(new RouteMapper(dataSource, dataSource), Collections.singletonList(new RouteMapper(tableName, tableName)));
         }
-    }
-    
-    private void decorateFederationRouteContext(final RouteContext routeContext) {
-        RouteContext newRouteContext = new RouteContext();
-        for (RouteUnit each : routeContext.getRouteUnits()) {
-            newRouteContext.putRouteUnit(each.getDataSourceMapper(), each.getTableMappers());
-        }
-        routeContext.setFederated(true);
-        routeContext.getRouteUnits().clear();
-        routeContext.getOriginalDataNodes().clear();
-        routeContext.getRouteUnits().addAll(newRouteContext.getRouteUnits());
-        routeContext.getOriginalDataNodes().addAll(newRouteContext.getOriginalDataNodes());
     }
 }

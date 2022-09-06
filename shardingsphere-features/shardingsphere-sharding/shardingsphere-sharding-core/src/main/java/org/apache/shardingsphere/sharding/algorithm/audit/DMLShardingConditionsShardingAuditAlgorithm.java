@@ -19,13 +19,11 @@ package org.apache.shardingsphere.sharding.algorithm.audit;
 
 import lombok.Getter;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.infra.binder.statement.dml.InsertStatementContext;
 import org.apache.shardingsphere.infra.check.SQLCheckResult;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.metadata.user.Grantee;
 import org.apache.shardingsphere.sharding.route.engine.condition.engine.ShardingConditionEngine;
-import org.apache.shardingsphere.sharding.route.engine.condition.engine.impl.InsertClauseShardingConditionEngine;
-import org.apache.shardingsphere.sharding.route.engine.condition.engine.impl.WhereClauseShardingConditionEngine;
+import org.apache.shardingsphere.sharding.route.engine.condition.engine.ShardingConditionEngineFactory;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sharding.spi.ShardingAuditAlgorithm;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.DMLStatement;
@@ -50,14 +48,12 @@ public final class DMLShardingConditionsShardingAuditAlgorithm implements Shardi
     @Override
     public SQLCheckResult check(final SQLStatementContext<?> sqlStatementContext, final List<Object> parameters, final Grantee grantee, final ShardingSphereDatabase database) {
         if (sqlStatementContext.getSqlStatement() instanceof DMLStatement) {
-            ShardingRule rule = ((List<ShardingRule>) database.getRuleMetaData().findRules(ShardingRule.class)).get(0);
+            ShardingRule rule = database.getRuleMetaData().getSingleRule(ShardingRule.class);
             if (rule.isAllBroadcastTables(sqlStatementContext.getTablesContext().getTableNames())
                     || sqlStatementContext.getTablesContext().getTableNames().stream().noneMatch(rule::isShardingTable)) {
                 return new SQLCheckResult(true, "");
             }
-            ShardingConditionEngine shardingConditionEngine = sqlStatementContext instanceof InsertStatementContext
-                    ? new InsertClauseShardingConditionEngine(rule, database)
-                    : new WhereClauseShardingConditionEngine(rule, database);
+            ShardingConditionEngine shardingConditionEngine = ShardingConditionEngineFactory.createShardingConditionEngine(sqlStatementContext, database, rule);
             if (shardingConditionEngine.createShardingConditions(sqlStatementContext, parameters).isEmpty()) {
                 return new SQLCheckResult(false, "Not allow DML operation without sharding conditions");
             }

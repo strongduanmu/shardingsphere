@@ -20,11 +20,12 @@ package org.apache.shardingsphere.infra.metadata.database.schema.loader.dialect;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeFactory;
-import org.apache.shardingsphere.infra.metadata.database.schema.loader.common.DataTypeLoader;
 import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.ColumnMetaData;
 import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.IndexMetaData;
 import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.SchemaMetaData;
 import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.TableMetaData;
+import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.ViewMetaData;
+import org.apache.shardingsphere.infra.metadata.database.schema.loader.spi.DataTypeLoaderFactory;
 import org.apache.shardingsphere.infra.metadata.database.schema.loader.spi.DialectSchemaMetaDataLoader;
 
 import javax.sql.DataSource;
@@ -51,6 +52,8 @@ public final class OpenGaussSchemaMetaDataLoader implements DialectSchemaMetaDat
     
     private static final String TABLE_META_DATA_SQL_WITHOUT_TABLES = BASIC_TABLE_META_DATA_SQL + " ORDER BY ordinal_position";
     
+    private static final String VIEW_META_DATA_SQL = "SELECT table_name, view_definition FROM information_schema.views WHERE table_schema = ?";
+    
     private static final String TABLE_META_DATA_SQL_WITH_TABLES = BASIC_TABLE_META_DATA_SQL + " AND table_name IN (%s) ORDER BY ordinal_position";
     
     private static final String PRIMARY_KEY_META_DATA_SQL = "SELECT tc.table_name, kc.column_name, kc.table_schema FROM information_schema.table_constraints tc"
@@ -68,7 +71,7 @@ public final class OpenGaussSchemaMetaDataLoader implements DialectSchemaMetaDat
         for (String each : schemaNames) {
             Multimap<String, IndexMetaData> tableIndexMetaDataMap = schemaIndexMetaDataMap.getOrDefault(each, LinkedHashMultimap.create());
             Multimap<String, ColumnMetaData> tableColumnMetaDataMap = schemaColumnMetaDataMap.getOrDefault(each, LinkedHashMultimap.create());
-            result.add(new SchemaMetaData(each, createTableMetaDataList(tableIndexMetaDataMap, tableColumnMetaDataMap)));
+            result.add(new SchemaMetaData(each, createTableMetaDataList(tableIndexMetaDataMap, tableColumnMetaDataMap), loadViewMetaData(dataSource, each)));
         }
         return result;
     }
@@ -83,11 +86,28 @@ public final class OpenGaussSchemaMetaDataLoader implements DialectSchemaMetaDat
         return result;
     }
     
+    private Collection<ViewMetaData> loadViewMetaData(final DataSource dataSource, final String schemaName) throws SQLException {
+        Collection<ViewMetaData> result = new LinkedList<>();
+        try (
+                Connection connection = dataSource.getConnection();
+                PreparedStatement preparedStatement = connection.prepareStatement(VIEW_META_DATA_SQL)) {
+            preparedStatement.setString(1, schemaName);
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    String tableName = resultSet.getString("table_name");
+                    String viewDefinition = resultSet.getString("view_definition");
+                    result.add(new ViewMetaData(tableName, viewDefinition));
+                }
+            }
+        }
+        return result;
+    }
+    
     private Map<String, Multimap<String, ColumnMetaData>> loadColumnMetaDataMap(final DataSource dataSource, final Collection<String> tables,
                                                                                 final Collection<String> schemaNames) throws SQLException {
         Map<String, Multimap<String, ColumnMetaData>> result = new LinkedHashMap<>();
         try (Connection connection = dataSource.getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(getColumnMetaDataSQL(schemaNames, tables))) {
-            Map<String, Integer> dataTypes = DataTypeLoader.load(connection.getMetaData());
+            Map<String, Integer> dataTypes = DataTypeLoaderFactory.getInstance(DatabaseTypeFactory.getInstance("openGauss")).load(connection.getMetaData());
             Set<String> primaryKeys = loadPrimaryKeys(connection, schemaNames);
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 while (resultSet.next()) {
@@ -130,7 +150,7 @@ public final class OpenGaussSchemaMetaDataLoader implements DialectSchemaMetaDat
         boolean generated = null != columnDefault && columnDefault.startsWith("nextval(");
         // TODO user defined collation which deterministic is false
         boolean caseSensitive = true;
-        return new ColumnMetaData(columnName, dataTypeMap.get(dataType), isPrimaryKey, generated, caseSensitive);
+        return new ColumnMetaData(columnName, dataTypeMap.get(dataType), isPrimaryKey, generated, caseSensitive, true);
     }
     
     private String getColumnMetaDataSQL(final Collection<String> schemaNames, final Collection<String> tables) {

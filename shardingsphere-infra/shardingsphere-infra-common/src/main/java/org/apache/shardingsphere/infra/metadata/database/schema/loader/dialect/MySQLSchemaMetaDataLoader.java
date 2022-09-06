@@ -17,13 +17,15 @@
 
 package org.apache.shardingsphere.infra.metadata.database.schema.loader.dialect;
 
+import org.apache.shardingsphere.infra.database.type.DatabaseTypeFactory;
 import org.apache.shardingsphere.infra.datasource.registry.GlobalDataSourceRegistry;
-import org.apache.shardingsphere.infra.metadata.database.schema.loader.common.DataTypeLoader;
 import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.ColumnMetaData;
 import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.ConstraintMetaData;
 import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.IndexMetaData;
 import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.SchemaMetaData;
 import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.TableMetaData;
+import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.ViewMetaData;
+import org.apache.shardingsphere.infra.metadata.database.schema.loader.spi.DataTypeLoaderFactory;
 import org.apache.shardingsphere.infra.metadata.database.schema.loader.spi.DialectSchemaMetaDataLoader;
 
 import javax.sql.DataSource;
@@ -31,7 +33,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,6 +54,8 @@ public final class MySQLSchemaMetaDataLoader implements DialectSchemaMetaDataLoa
     
     private static final String TABLE_META_DATA_SQL = TABLE_META_DATA_NO_ORDER + ORDER_BY_ORDINAL_POSITION;
     
+    private static final String VIEW_META_DATA_SQL = "SELECT TABLE_NAME, VIEW_DEFINITION FROM information_schema.VIEWS WHERE TABLE_SCHEMA = ?";
+    
     private static final String TABLE_META_DATA_SQL_IN_TABLES = TABLE_META_DATA_NO_ORDER + " AND TABLE_NAME IN (%s)" + ORDER_BY_ORDINAL_POSITION;
     
     private static final String INDEX_META_DATA_SQL = "SELECT TABLE_NAME, INDEX_NAME FROM information_schema.statistics WHERE TABLE_SCHEMA=? and TABLE_NAME IN (%s)";
@@ -71,7 +74,25 @@ public final class MySQLSchemaMetaDataLoader implements DialectSchemaMetaDataLoa
             Collection<ConstraintMetaData> constraintMetaDataList = constraintMetaDataMap.getOrDefault(entry.getKey(), Collections.emptyList());
             tableMetaDataList.add(new TableMetaData(entry.getKey(), entry.getValue(), indexMetaDataList, constraintMetaDataList));
         }
-        return Collections.singletonList(new SchemaMetaData(defaultSchemaName, tableMetaDataList));
+        return Collections.singletonList(new SchemaMetaData(defaultSchemaName, tableMetaDataList, loadViewMetaData(dataSource, tables)));
+    }
+    
+    private Collection<ViewMetaData> loadViewMetaData(final DataSource dataSource, final Collection<String> tables) throws SQLException {
+        Collection<ViewMetaData> result = new LinkedList<>();
+        try (
+                Connection connection = dataSource.getConnection();
+                PreparedStatement preparedStatement = connection.prepareStatement(VIEW_META_DATA_SQL)) {
+            String databaseName = "".equals(connection.getCatalog()) ? GlobalDataSourceRegistry.getInstance().getCachedDatabaseTables().get(tables.iterator().next()) : connection.getCatalog();
+            preparedStatement.setString(1, databaseName);
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    String tableName = resultSet.getString("TABLE_NAME");
+                    String viewDefinition = resultSet.getString("VIEW_DEFINITION");
+                    result.add(new ViewMetaData(tableName, viewDefinition));
+                }
+            }
+        }
+        return result;
     }
     
     private Map<String, Collection<ConstraintMetaData>> loadConstraintMetaDataMap(final DataSource dataSource, final Collection<String> tables) throws SQLException {
@@ -103,8 +124,7 @@ public final class MySQLSchemaMetaDataLoader implements DialectSchemaMetaDataLoa
         try (
                 Connection connection = dataSource.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(getTableMetaDataSQL(tables))) {
-            Map<String, Integer> dataTypes = DataTypeLoader.load(connection.getMetaData());
-            appendDataTypes(dataTypes);
+            Map<String, Integer> dataTypes = DataTypeLoaderFactory.getInstance(DatabaseTypeFactory.getInstance("MySQL")).load(connection.getMetaData());
             String databaseName = "".equals(connection.getCatalog()) ? GlobalDataSourceRegistry.getInstance().getCachedDatabaseTables().get(tables.iterator().next()) : connection.getCatalog();
             preparedStatement.setString(1, databaseName);
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -121,25 +141,16 @@ public final class MySQLSchemaMetaDataLoader implements DialectSchemaMetaDataLoa
         return result;
     }
     
-    private void appendDataTypes(final Map<String, Integer> dataTypes) {
-        dataTypes.putIfAbsent("JSON", Types.LONGVARCHAR);
-        dataTypes.putIfAbsent("GEOMETRY", Types.BINARY);
-        dataTypes.putIfAbsent("YEAR", Types.DATE);
-        dataTypes.putIfAbsent("POINT", Types.BINARY);
-        dataTypes.putIfAbsent("MULTIPOINT", Types.BINARY);
-        dataTypes.putIfAbsent("POLYGON", Types.BINARY);
-        dataTypes.putIfAbsent("MULTIPOLYGON", Types.BINARY);
-        dataTypes.putIfAbsent("MULTILINESTRING", Types.BINARY);
-    }
-    
     private ColumnMetaData loadColumnMetaData(final Map<String, Integer> dataTypeMap, final ResultSet resultSet) throws SQLException {
         String columnName = resultSet.getString("COLUMN_NAME");
         String dataType = resultSet.getString("DATA_TYPE");
         boolean primaryKey = "PRI".equals(resultSet.getString("COLUMN_KEY"));
-        boolean generated = "auto_increment".equals(resultSet.getString("EXTRA"));
+        String extra = resultSet.getString("EXTRA");
+        boolean generated = "auto_increment".equals(extra);
         String collationName = resultSet.getString("COLLATION_NAME");
         boolean caseSensitive = null != collationName && !collationName.endsWith("_ci");
-        return new ColumnMetaData(columnName, dataTypeMap.get(dataType), primaryKey, generated, caseSensitive);
+        boolean visible = !"INVISIBLE".equals(extra);
+        return new ColumnMetaData(columnName, dataTypeMap.get(dataType), primaryKey, generated, caseSensitive, visible);
     }
     
     private String getTableMetaDataSQL(final Collection<String> tables) {
@@ -151,7 +162,6 @@ public final class MySQLSchemaMetaDataLoader implements DialectSchemaMetaDataLoa
         try (
                 Connection connection = dataSource.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(getIndexMetaDataSQL(tableNames))) {
-            preparedStatement.setString(1, connection.getCatalog());
             String databaseName = "".equals(connection.getCatalog()) ? GlobalDataSourceRegistry.getInstance().getCachedDatabaseTables().get(tableNames.iterator().next()) : connection.getCatalog();
             preparedStatement.setString(1, databaseName);
             try (ResultSet resultSet = preparedStatement.executeQuery()) {

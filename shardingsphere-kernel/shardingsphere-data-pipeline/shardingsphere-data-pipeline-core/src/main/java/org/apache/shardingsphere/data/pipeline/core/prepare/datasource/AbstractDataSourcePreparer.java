@@ -18,18 +18,19 @@
 package org.apache.shardingsphere.data.pipeline.core.prepare.datasource;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.shardingsphere.data.pipeline.api.config.rulealtered.RuleAlteredJobConfiguration;
-import org.apache.shardingsphere.data.pipeline.api.config.rulealtered.TaskConfiguration;
+import org.apache.shardingsphere.data.pipeline.api.config.CreateTableConfiguration;
+import org.apache.shardingsphere.data.pipeline.api.config.CreateTableConfiguration.CreateTableEntry;
+import org.apache.shardingsphere.data.pipeline.api.datasource.PipelineDataSourceManager;
 import org.apache.shardingsphere.data.pipeline.api.datasource.PipelineDataSourceWrapper;
-import org.apache.shardingsphere.data.pipeline.api.datasource.config.PipelineDataSourceConfigurationFactory;
-import org.apache.shardingsphere.data.pipeline.core.datasource.PipelineDataSourceManager;
-import org.apache.shardingsphere.data.pipeline.core.exception.PipelineJobPrepareFailedException;
+import org.apache.shardingsphere.data.pipeline.api.datasource.config.PipelineDataSourceConfiguration;
+import org.apache.shardingsphere.data.pipeline.core.metadata.generator.PipelineDDLGenerator;
 import org.apache.shardingsphere.data.pipeline.core.sqlbuilder.PipelineSQLBuilderFactory;
 import org.apache.shardingsphere.data.pipeline.spi.sqlbuilder.PipelineSQLBuilder;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeEngine;
-import org.apache.shardingsphere.infra.database.type.DatabaseTypeFactory;
+import org.apache.shardingsphere.infra.parser.ShardingSphereSQLParserEngine;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -50,53 +51,42 @@ public abstract class AbstractDataSourcePreparer implements DataSourcePreparer {
     private static final String[] IGNORE_EXCEPTION_MESSAGE = {"multiple primary keys for table", "already exists"};
     
     @Override
-    public void prepareTargetSchemas(final PrepareTargetSchemasParameter parameter) {
-        DatabaseType sourceDatabaseType = DatabaseTypeFactory.getInstance(parameter.getTaskConfig().getJobConfig().getSourceDatabaseType());
-        DatabaseType targetDatabaseType = DatabaseTypeFactory.getInstance(parameter.getTaskConfig().getJobConfig().getTargetDatabaseType());
-        if (!sourceDatabaseType.isSchemaAvailable() || !targetDatabaseType.isSchemaAvailable()) {
-            log.info("prepareTargetSchemas, one of source or target database type schema is not available, ignore");
+    public void prepareTargetSchemas(final PrepareTargetSchemasParameter parameter) throws SQLException {
+        DatabaseType targetDatabaseType = parameter.getTargetDatabaseType();
+        if (!targetDatabaseType.isSchemaAvailable()) {
+            log.info("prepareTargetSchemas, target database does not support schema, ignore, targetDatabaseType={}", targetDatabaseType);
             return;
         }
-        Set<String> schemaNames = getSchemaNames(parameter);
-        String defaultSchema = DatabaseTypeEngine.getDefaultSchemaName(targetDatabaseType, parameter.getTaskConfig().getJobConfig().getDatabaseName());
-        log.info("prepareTargetSchemas, schemaNames={}, defaultSchema={}", schemaNames, defaultSchema);
+        CreateTableConfiguration createTableConfig = parameter.getCreateTableConfig();
+        String defaultSchema = DatabaseTypeEngine.getDefaultSchemaName(targetDatabaseType).orElse(null);
         PipelineSQLBuilder pipelineSQLBuilder = PipelineSQLBuilderFactory.getInstance(targetDatabaseType.getType());
-        try (Connection targetConnection = getTargetCachedDataSource(parameter.getTaskConfig(), parameter.getDataSourceManager()).getConnection()) {
-            for (String each : schemaNames) {
-                if (each.equalsIgnoreCase(defaultSchema)) {
-                    continue;
-                }
-                String sql = pipelineSQLBuilder.buildCreateSchemaSQL(each);
+        Set<String> createdSchemaNames = new HashSet<>();
+        for (CreateTableEntry each : createTableConfig.getCreateTableEntries()) {
+            String targetSchemaName = each.getTargetName().getSchemaName().getOriginal();
+            if (null == targetSchemaName) {
+                continue;
+            }
+            if (targetSchemaName.equalsIgnoreCase(defaultSchema)) {
+                continue;
+            }
+            if (createdSchemaNames.contains(targetSchemaName)) {
+                continue;
+            }
+            try (Connection targetConnection = getCachedDataSource(each.getTargetDataSourceConfig(), parameter.getDataSourceManager()).getConnection()) {
+                String sql = pipelineSQLBuilder.buildCreateSchemaSQL(targetSchemaName);
                 log.info("prepareTargetSchemas, sql={}", sql);
                 try (Statement statement = targetConnection.createStatement()) {
                     statement.execute(sql);
+                    createdSchemaNames.add(targetSchemaName);
                 } catch (final SQLException ignored) {
                 }
             }
-        } catch (final SQLException ex) {
-            throw new PipelineJobPrepareFailedException("Can not get connection.", ex);
         }
+        log.info("prepareTargetSchemas, createdSchemaNames={}, defaultSchema={}", createdSchemaNames, defaultSchema);
     }
     
-    private Set<String> getSchemaNames(final PrepareTargetSchemasParameter parameter) {
-        Set<String> result = new HashSet<>();
-        for (String each : parameter.getTaskConfig().getJobConfig().splitLogicTableNames()) {
-            String schemaName = parameter.getTableNameSchemaNameMapping().getSchemaName(each);
-            if (null == schemaName) {
-                throw new PipelineJobPrepareFailedException("Can not get schemaName by logic table name " + each);
-            }
-            result.add(schemaName);
-        }
-        return result;
-    }
-    
-    // TODO the invocation is disabled for now, it might be used again for next new feature
-    protected final PipelineDataSourceWrapper getSourceCachedDataSource(final RuleAlteredJobConfiguration jobConfig, final PipelineDataSourceManager dataSourceManager) {
-        return dataSourceManager.getDataSource(PipelineDataSourceConfigurationFactory.newInstance(jobConfig.getSource().getType(), jobConfig.getSource().getParameter()));
-    }
-    
-    protected final PipelineDataSourceWrapper getTargetCachedDataSource(final TaskConfiguration taskConfig, final PipelineDataSourceManager dataSourceManager) {
-        return dataSourceManager.getDataSource(taskConfig.getImporterConfig().getDataSourceConfig());
+    protected final PipelineDataSourceWrapper getCachedDataSource(final PipelineDataSourceConfiguration dataSourceConfig, final PipelineDataSourceManager dataSourceManager) {
+        return dataSourceManager.getDataSource(dataSourceConfig);
     }
     
     protected final void executeTargetTableSQL(final Connection targetConnection, final String sql) throws SQLException {
@@ -104,6 +94,7 @@ public abstract class AbstractDataSourcePreparer implements DataSourcePreparer {
         try (Statement statement = targetConnection.createStatement()) {
             statement.execute(sql);
         } catch (final SQLException ex) {
+            log.warn("execute target table sql failed", ex);
             for (String ignoreMessage : IGNORE_EXCEPTION_MESSAGE) {
                 if (ex.getMessage().contains(ignoreMessage)) {
                     return;
@@ -118,5 +109,16 @@ public abstract class AbstractDataSourcePreparer implements DataSourcePreparer {
             return createTableSQL;
         }
         return PATTERN_CREATE_TABLE.matcher(createTableSQL).replaceFirst("CREATE TABLE IF NOT EXISTS ");
+    }
+    
+    protected final String getCreateTargetTableSQL(final CreateTableEntry createTableEntry, final PipelineDataSourceManager dataSourceManager,
+                                                   final ShardingSphereSQLParserEngine sqlParserEngine) throws SQLException {
+        DatabaseType databaseType = createTableEntry.getSourceDataSourceConfig().getDatabaseType();
+        DataSource sourceDataSource = dataSourceManager.getDataSource(createTableEntry.getSourceDataSourceConfig());
+        String schemaName = createTableEntry.getSourceName().getSchemaName().getOriginal();
+        String sourceTableName = createTableEntry.getSourceName().getTableName().getOriginal();
+        String targetTableName = createTableEntry.getTargetName().getTableName().getOriginal();
+        PipelineDDLGenerator generator = new PipelineDDLGenerator();
+        return generator.generateLogicDDL(databaseType, sourceDataSource, schemaName, sourceTableName, targetTableName, sqlParserEngine);
     }
 }

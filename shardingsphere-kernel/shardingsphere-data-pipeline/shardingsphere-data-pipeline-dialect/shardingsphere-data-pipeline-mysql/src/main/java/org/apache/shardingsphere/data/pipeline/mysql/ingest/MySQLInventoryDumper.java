@@ -19,46 +19,23 @@ package org.apache.shardingsphere.data.pipeline.mysql.ingest;
 
 import org.apache.shardingsphere.data.pipeline.api.config.ingest.InventoryDumperConfiguration;
 import org.apache.shardingsphere.data.pipeline.api.ingest.channel.PipelineChannel;
+import org.apache.shardingsphere.data.pipeline.api.metadata.loader.PipelineTableMetaDataLoader;
 import org.apache.shardingsphere.data.pipeline.core.ingest.dumper.AbstractInventoryDumper;
-import org.apache.shardingsphere.data.pipeline.core.metadata.loader.PipelineTableMetaDataLoader;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
 
 /**
  * MySQL JDBC Dumper.
  */
 public final class MySQLInventoryDumper extends AbstractInventoryDumper {
     
-    private static final String YEAR_DATA_TYPE = "YEAR";
-    
     public MySQLInventoryDumper(final InventoryDumperConfiguration inventoryDumperConfig, final PipelineChannel channel,
                                 final DataSource dataSource, final PipelineTableMetaDataLoader metaDataLoader) {
         super(inventoryDumperConfig, channel, dataSource, metaDataLoader);
-    }
-    
-    @Override
-    public Object readValue(final ResultSet resultSet, final int index) throws SQLException {
-        if (isYearDataType(resultSet.getMetaData().getColumnTypeName(index))) {
-            Object result = resultSet.getObject(index);
-            return resultSet.wasNull() ? null : result;
-        } else if (isDateTimeValue(resultSet.getMetaData().getColumnType(index))) {
-            return resultSet.getString(index);
-        } else {
-            return resultSet.getObject(index);
-        }
-    }
-    
-    private boolean isDateTimeValue(final int columnType) {
-        return Types.TIME == columnType || Types.DATE == columnType || Types.TIMESTAMP == columnType;
-    }
-    
-    private boolean isYearDataType(final String columnDataTypeName) {
-        return YEAR_DATA_TYPE.equalsIgnoreCase(columnDataTypeName);
     }
     
     @Override

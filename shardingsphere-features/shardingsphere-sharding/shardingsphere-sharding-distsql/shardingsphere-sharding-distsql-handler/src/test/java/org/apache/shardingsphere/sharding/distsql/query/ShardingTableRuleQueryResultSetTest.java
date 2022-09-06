@@ -17,9 +17,9 @@
 
 package org.apache.shardingsphere.sharding.distsql.query;
 
-import org.apache.shardingsphere.infra.config.RuleConfiguration;
-import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
-import org.apache.shardingsphere.infra.distsql.query.DistSQLResultSet;
+import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
+import org.apache.shardingsphere.infra.config.rule.RuleConfiguration;
+import org.apache.shardingsphere.infra.distsql.query.DatabaseDistSQLResultSet;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
@@ -46,7 +46,7 @@ public final class ShardingTableRuleQueryResultSetTest {
     
     @Test
     public void assertGetRowData() {
-        DistSQLResultSet resultSet = new ShardingTableRuleQueryResultSet();
+        DatabaseDistSQLResultSet resultSet = new ShardingTableRuleQueryResultSet();
         resultSet.init(mockDatabase(), mock(ShowShardingTableRulesStatement.class));
         List<Object> actual = new ArrayList<>(resultSet.getRowData());
         assertThat(actual.size(), is(14));
@@ -92,13 +92,13 @@ public final class ShardingTableRuleQueryResultSetTest {
         return result;
     }
     
-    private ShardingSphereAlgorithmConfiguration createShardingInlineAlgorithmConfiguration(final String algorithmExpression) {
+    private AlgorithmConfiguration createShardingInlineAlgorithmConfiguration(final String algorithmExpression) {
         Properties props = new Properties();
         props.put("algorithm-expression", algorithmExpression);
-        return new ShardingSphereAlgorithmConfiguration("INLINE", props);
+        return new AlgorithmConfiguration("INLINE", props);
     }
     
-    private ShardingSphereAlgorithmConfiguration createKeyGeneratorConfiguration() {
-        return new ShardingSphereAlgorithmConfiguration("SNOWFLAKE", new Properties());
+    private AlgorithmConfiguration createKeyGeneratorConfiguration() {
+        return new AlgorithmConfiguration("SNOWFLAKE", new Properties());
     }
 }

@@ -17,15 +17,14 @@
 
 package org.apache.shardingsphere.dbdiscovery.distsql.handler.query;
 
-import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import org.apache.shardingsphere.dbdiscovery.api.config.DatabaseDiscoveryRuleConfiguration;
 import org.apache.shardingsphere.dbdiscovery.api.config.rule.DatabaseDiscoveryDataSourceRuleConfiguration;
 import org.apache.shardingsphere.dbdiscovery.api.config.rule.DatabaseDiscoveryHeartBeatConfiguration;
 import org.apache.shardingsphere.dbdiscovery.distsql.parser.statement.ShowDatabaseDiscoveryRulesStatement;
 import org.apache.shardingsphere.dbdiscovery.rule.DatabaseDiscoveryRule;
-import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
-import org.apache.shardingsphere.infra.distsql.query.DistSQLResultSet;
+import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
+import org.apache.shardingsphere.infra.distsql.query.DatabaseDistSQLResultSet;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 
@@ -42,7 +41,7 @@ import java.util.stream.Collectors;
 /**
  * Query result set for show database discovery rule.
  */
-public final class DatabaseDiscoveryRuleQueryResultSet implements DistSQLResultSet {
+public final class DatabaseDiscoveryRuleQueryResultSet implements DatabaseDistSQLResultSet {
     
     private static final String GROUP_NAME = "group_name";
     
@@ -58,7 +57,7 @@ public final class DatabaseDiscoveryRuleQueryResultSet implements DistSQLResultS
     
     private Iterator<DatabaseDiscoveryDataSourceRuleConfiguration> dataSourceRules;
     
-    private Map<String, ShardingSphereAlgorithmConfiguration> discoveryTypes;
+    private Map<String, AlgorithmConfiguration> discoveryTypes;
     
     private Map<String, DatabaseDiscoveryHeartBeatConfiguration> discoveryHeartbeats;
     
@@ -67,7 +66,10 @@ public final class DatabaseDiscoveryRuleQueryResultSet implements DistSQLResultS
     @Override
     public void init(final ShardingSphereDatabase database, final SQLStatement sqlStatement) {
         Optional<DatabaseDiscoveryRule> rule = database.getRuleMetaData().findSingleRule(DatabaseDiscoveryRule.class);
-        Preconditions.checkState(rule.isPresent());
+        if (!rule.isPresent()) {
+            dataSourceRules = Collections.emptyIterator();
+            return;
+        }
         DatabaseDiscoveryRuleConfiguration ruleConfig = (DatabaseDiscoveryRuleConfiguration) rule.get().getConfiguration();
         dataSourceRules = ruleConfig.getDataSources().iterator();
         discoveryTypes = ruleConfig.getDiscoveryTypes();

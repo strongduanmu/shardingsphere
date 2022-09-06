@@ -17,9 +17,13 @@
 
 package org.apache.shardingsphere.integration.transaction.engine.constants;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 /**
  * Constants for transaction test.
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TransactionTestConstants {
     
     public static final String MYSQL = "mysql";
@@ -37,4 +41,10 @@ public final class TransactionTestConstants {
     public static final String DEFAULT_TYPE = "default_type";
     
     public static final String PROVIDER_TYPE = "provider_type";
+    
+    public static final String ATOMIKOS = "Atomikos";
+    
+    public static final String NARAYANA = "Narayana";
+    
+    public static final String BITRONIX = "Bitronix";
 }

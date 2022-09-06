@@ -21,8 +21,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.shardingsphere.integration.transaction.cases.base.BaseTransactionTestCase;
+import org.apache.shardingsphere.integration.transaction.engine.base.BaseTransactionITCase;
 import org.apache.shardingsphere.integration.transaction.engine.base.TransactionTestCase;
-import org.junit.Assert;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -32,14 +32,17 @@ import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 /**
  * Classic transfer transaction integration test.
  */
 @TransactionTestCase
 public final class ClassicTransferTestCase extends BaseTransactionTestCase {
     
-    public ClassicTransferTestCase(final DataSource dataSource) {
-        super(dataSource);
+    public ClassicTransferTestCase(final BaseTransactionITCase baseTransactionITCase, final DataSource dataSource) {
+        super(baseTransactionITCase, dataSource);
     }
     
     @Override
@@ -58,11 +61,11 @@ public final class ClassicTransferTestCase extends BaseTransactionTestCase {
             updateThread.start();
             tasks.add(updateThread);
             int sum = getBalanceSum();
-            Assert.assertEquals(String.format("Balance sum is %s, should be 100.", sum), 100, sum);
+            assertThat(String.format("Balance sum is %s, should be 100.", sum), sum, is(100));
         }
         Thread.sleep(3000);
         int sum = getBalanceSum();
-        Assert.assertEquals(String.format("Balance sum is %s, should be 100.", sum), 100, sum);
+        assertThat(String.format("Balance sum is %s, should be 100.", sum), sum, is(100));
         for (Thread task : tasks) {
             task.join();
         }
@@ -70,16 +73,14 @@ public final class ClassicTransferTestCase extends BaseTransactionTestCase {
     
     private int getBalanceSum() throws Exception {
         int result = 0;
-        Connection connection = getDataSource().getConnection();
-        connection.setAutoCommit(false);
-        Statement statement = connection.createStatement();
-        ResultSet resultSet = statement.executeQuery("select sum(balance) as a from account where transaction_id in (1, 2)");
-        if (resultSet.next()) {
-            result = resultSet.getInt(1);
+        try (Connection connection = getDataSource().getConnection(); Statement statement = connection.createStatement()) {
+            connection.setAutoCommit(false);
+            ResultSet resultSet = statement.executeQuery("select sum(balance) as a from account where transaction_id in (1, 2)");
+            if (resultSet.next()) {
+                result = resultSet.getInt(1);
+            }
+            connection.commit();
         }
-        connection.commit();
-        statement.close();
-        connection.close();
         return result;
     }
     
@@ -90,11 +91,9 @@ public final class ClassicTransferTestCase extends BaseTransactionTestCase {
         private DataSource dataSource;
         
         public void run() {
-            Connection connection = null;
             Statement statement1 = null;
             Statement statement2 = null;
-            try {
-                connection = dataSource.getConnection();
+            try (Connection connection = dataSource.getConnection()) {
                 connection.setAutoCommit(false);
                 statement1 = connection.createStatement();
                 statement1.execute("update account set balance=balance-1 where transaction_id=2;");
@@ -107,7 +106,6 @@ public final class ClassicTransferTestCase extends BaseTransactionTestCase {
                 try {
                     statement1.close();
                     statement2.close();
-                    connection.close();
                 } catch (SQLException ignored) {
                 }
             }

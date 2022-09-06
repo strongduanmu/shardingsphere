@@ -21,15 +21,15 @@ import org.apache.shardingsphere.data.pipeline.spi.ddlgenerator.CreateTableSQLGe
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
 import org.apache.shardingsphere.infra.database.type.dialect.OpenGaussDatabaseType;
 import org.apache.shardingsphere.infra.database.type.dialect.PostgreSQLDatabaseType;
-import org.apache.shardingsphere.infra.exception.ShardingSphereException;
 import org.apache.shardingsphere.integration.data.pipeline.cases.entity.CreateTableSQLGeneratorAssertionEntity;
 import org.apache.shardingsphere.integration.data.pipeline.cases.entity.CreateTableSQLGeneratorAssertionsRootEntity;
 import org.apache.shardingsphere.integration.data.pipeline.cases.entity.CreateTableSQLGeneratorOutputEntity;
 import org.apache.shardingsphere.integration.data.pipeline.env.IntegrationTestEnvironment;
-import org.apache.shardingsphere.integration.data.pipeline.env.enums.ScalingITEnvTypeEnum;
+import org.apache.shardingsphere.integration.data.pipeline.env.enums.ITEnvTypeEnum;
 import org.apache.shardingsphere.integration.data.pipeline.framework.param.ScalingParameterized;
 import org.apache.shardingsphere.test.integration.env.container.atomic.storage.DockerStorageContainer;
 import org.apache.shardingsphere.test.integration.env.container.atomic.storage.StorageContainerFactory;
+import org.apache.shardingsphere.test.integration.env.container.atomic.storage.config.impl.StorageContainerConfigurationFactory;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,7 +57,7 @@ public final class CreateTableSQLGeneratorIT {
     
     private static final String MYSQL_CASE_FILE_PATH = "mysql/create-table-sql-generator.xml";
     
-    private static final String OPEN_GAUSS_CASE_FILE_PATH = "openGauss/create-table-sql-generator.xml";
+    private static final String OPEN_GAUSS_CASE_FILE_PATH = "opengauss/create-table-sql-generator.xml";
     
     private static final String PARENT_PATH = "env/scenario/createtablegenerator";
     
@@ -79,14 +79,15 @@ public final class CreateTableSQLGeneratorIT {
         this.parameterized = parameterized;
         rootEntity = JAXB.unmarshal(
                 Objects.requireNonNull(CreateTableSQLGeneratorIT.class.getClassLoader().getResource(parameterized.getScenario())), CreateTableSQLGeneratorAssertionsRootEntity.class);
-        storageContainer = (DockerStorageContainer) StorageContainerFactory.newInstance(parameterized.getDatabaseType(), parameterized.getDockerImageName(), "", false);
+        storageContainer = (DockerStorageContainer) StorageContainerFactory.newInstance(parameterized.getDatabaseType(), parameterized.getDockerImageName(), "",
+                StorageContainerConfigurationFactory.newInstance(parameterized.getDatabaseType()));
         storageContainer.start();
     }
     
     @Parameters(name = "{0}")
     public static Collection<ScalingParameterized> getParameters() {
         Collection<ScalingParameterized> result = new LinkedList<>();
-        if (ENV.getItEnvType() == ScalingITEnvTypeEnum.NONE) {
+        if (ENV.getItEnvType() == ITEnvTypeEnum.NONE) {
             return result;
         }
         for (String each : ENV.getPostgresVersions()) {
@@ -111,15 +112,16 @@ public final class CreateTableSQLGeneratorIT {
             int majorVersion = connection.getMetaData().getDatabaseMajorVersion();
             for (CreateTableSQLGeneratorAssertionEntity each : rootEntity.getAssertions()) {
                 statement.execute(each.getInput().getSql());
-                Collection<String> multiSQL = CreateTableSQLGeneratorFactory.findInstance(parameterized.getDatabaseType())
-                        .orElseThrow(() -> new ShardingSphereException("Failed to get create table sql generator")).generate(each.getInput().getTable(), DEFAULT_SCHEMA, dataSource);
-                assertIsCorrect(multiSQL, getVersionOutput(each.getOutputs(), majorVersion));
+                Collection<String> actualDDLs = CreateTableSQLGeneratorFactory.getInstance(parameterized.getDatabaseType()).generate(dataSource, DEFAULT_SCHEMA, each.getInput().getTable());
+                assertIsCorrect(actualDDLs, getVersionOutput(each.getOutputs(), majorVersion));
             }
         }
     }
     
     private void initData() throws SQLException {
-        storageContainer.createAccessDataSource("").getConnection().createStatement().execute("CREATE DATABASE " + DEFAULT_DATABASE);
+        try (Statement statement = storageContainer.createAccessDataSource("").getConnection().createStatement()) {
+            statement.execute("CREATE DATABASE " + DEFAULT_DATABASE);
+        }
     }
     
     private void assertIsCorrect(final Collection<String> actualSQL, final Collection<String> expectedSQL) {

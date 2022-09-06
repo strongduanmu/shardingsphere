@@ -21,7 +21,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Scaling Job status.
+ * Job status.
  */
 @RequiredArgsConstructor
 @Getter
@@ -36,6 +36,11 @@ public enum JobStatus {
      * Job is in prepare status.
      */
     PREPARING(true),
+    
+    /**
+     * Job is in prepare success status.
+     */
+    PREPARE_SUCCESS(true),
     
     /**
      * Job is in execute inventory task status.

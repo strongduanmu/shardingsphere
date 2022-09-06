@@ -56,7 +56,7 @@ public final class ShardingSchemaMetaDataDecoratorTest {
         GenericSchemaBuilderMaterials materials = mock(GenericSchemaBuilderMaterials.class);
         when(materials.getProps()).thenReturn(new ConfigurationProperties(new Properties()));
         Map<String, SchemaMetaData> actual = builder.decorate(Collections.singletonMap("sharding_db",
-                new SchemaMetaData("sharding_db", tableMetaDataList)), shardingRule, materials);
+                new SchemaMetaData("sharding_db", tableMetaDataList, Collections.emptyList())), shardingRule, materials);
         Collection<ColumnMetaData> columns = actual.get("sharding_db").getTables().iterator().next().getColumns();
         Iterator<ColumnMetaData> iterator = columns.iterator();
         assertTrue(iterator.next().isGenerated());
@@ -66,10 +66,10 @@ public final class ShardingSchemaMetaDataDecoratorTest {
     }
     
     private TableMetaData createTableMetaData() {
-        Collection<ColumnMetaData> columns = Arrays.asList(new ColumnMetaData("id", 1, true, true, true),
-                new ColumnMetaData("pwd_cipher", 2, false, false, true),
-                new ColumnMetaData("pwd_plain", 2, false, false, true),
-                new ColumnMetaData("product_id", 2, false, false, true));
+        Collection<ColumnMetaData> columns = Arrays.asList(new ColumnMetaData("id", 1, true, true, true, true),
+                new ColumnMetaData("pwd_cipher", 2, false, false, true, true),
+                new ColumnMetaData("pwd_plain", 2, false, false, true, true),
+                new ColumnMetaData("product_id", 2, false, false, true, true));
         return new TableMetaData(TABLE_NAME, columns, Collections.emptyList(), Collections.emptyList());
     }
 }

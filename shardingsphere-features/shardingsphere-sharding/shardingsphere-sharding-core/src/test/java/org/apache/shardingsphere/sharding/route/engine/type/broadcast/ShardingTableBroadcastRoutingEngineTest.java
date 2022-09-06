@@ -37,8 +37,6 @@ import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.index.IndexSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropIndexStatement;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,7 +52,6 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
 public final class ShardingTableBroadcastRoutingEngineTest extends AbstractRoutingEngineTest {
     
     @Test
@@ -98,7 +95,7 @@ public final class ShardingTableBroadcastRoutingEngineTest extends AbstractRouti
     public void assertRouteForDropIndexStatement() {
         ShardingSphereSchema schema = mock(ShardingSphereSchema.class, RETURNS_DEEP_STUBS);
         when(schema.getAllTableNames()).thenReturn(Collections.singleton("t_order"));
-        when(schema.get(anyString()).getIndexes().containsKey(anyString())).thenReturn(true);
+        when(schema.getTable(anyString()).getIndexes().containsKey(anyString())).thenReturn(true);
         IndexSegment segment = mock(IndexSegment.class, RETURNS_DEEP_STUBS);
         when(segment.getIndexName().getIdentifier().getValue()).thenReturn("t_order");
         when(segment.getOwner()).thenReturn(Optional.empty());
@@ -123,7 +120,7 @@ public final class ShardingTableBroadcastRoutingEngineTest extends AbstractRouti
     @Test
     public void assertRouteForDropIndexStatementDoNotFoundTables() {
         ShardingSphereSchema schema = mock(ShardingSphereSchema.class, RETURNS_DEEP_STUBS);
-        when(schema.get(anyString()).getIndexes().containsKey(anyString())).thenReturn(false);
+        when(schema.getTable(anyString()).getIndexes().containsKey(anyString())).thenReturn(false);
         IndexSegment segment = mock(IndexSegment.class, RETURNS_DEEP_STUBS);
         when(segment.getIndexName().getIdentifier().getValue()).thenReturn("t_order");
         SQLStatementContext<DropIndexStatement> sqlStatementContext = mock(DropIndexStatementContext.class, RETURNS_DEEP_STUBS);

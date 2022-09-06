@@ -17,9 +17,11 @@
 
 package org.apache.shardingsphere.integration.transaction.cases.base;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.shardingsphere.integration.transaction.engine.base.BaseTransactionITCase;
 import org.apache.shardingsphere.integration.transaction.engine.constants.TransactionTestConstants;
 
 import javax.sql.DataSource;
@@ -28,25 +30,50 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * Base transaction test case.
  */
 @Slf4j
+@Getter(AccessLevel.PROTECTED)
 public abstract class BaseTransactionTestCase {
     
-    @Getter
-    private DataSource dataSource;
+    private final BaseTransactionITCase baseTransactionITCase;
     
-    public BaseTransactionTestCase(final DataSource dataSource) {
+    private final DataSource dataSource;
+    
+    public BaseTransactionTestCase(final BaseTransactionITCase baseTransactionITCase, final DataSource dataSource) {
+        this.baseTransactionITCase = baseTransactionITCase;
         this.dataSource = dataSource;
+    }
+    
+    /**
+     * Execute test cases.
+     */
+    public void execute() {
+        beforeTest();
+        executeTest();
+        afterTest();
     }
     
     /**
      * Integration testing method with assertions.
      */
-    public abstract void executeTest();
+    protected abstract void executeTest();
+    
+    @SneakyThrows(SQLException.class)
+    protected void beforeTest() {
+        Connection conn = getDataSource().getConnection();
+        executeWithLog(conn, "delete from account;");
+        executeWithLog(conn, "delete from t_order;");
+        executeWithLog(conn, "delete from t_order_item;");
+        conn.close();
+    }
+    
+    protected void afterTest() {
+    }
     
     @SneakyThrows(SQLException.class)
     protected static void executeWithLog(final Connection connection, final String sql) {
@@ -79,7 +106,7 @@ public abstract class BaseTransactionTestCase {
             resultSetCount++;
         }
         statement.close();
-        assertEquals(String.format("Recode num assert error, expect: %s, actual: %s.", rowNum, resultSetCount), resultSetCount, rowNum);
+        assertThat(String.format("Recode num assert error, expect: %s, actual: %s.", rowNum, resultSetCount), resultSetCount, is(rowNum));
     }
     
     @SneakyThrows(SQLException.class)

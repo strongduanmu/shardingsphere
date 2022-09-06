@@ -17,8 +17,8 @@
 
 package org.apache.shardingsphere.proxy.backend.session;
 
+import org.apache.shardingsphere.infra.binder.QueryContext;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
-import org.apache.shardingsphere.infra.exception.ShardingSphereException;
 import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
 import org.apache.shardingsphere.mode.manager.ContextManager;
 import org.apache.shardingsphere.proxy.backend.communication.jdbc.connection.JDBCBackendConnection;
@@ -26,6 +26,7 @@ import org.apache.shardingsphere.proxy.backend.communication.jdbc.transaction.JD
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.util.ProxyContextRestorer;
 import org.apache.shardingsphere.transaction.core.TransactionType;
+import org.apache.shardingsphere.transaction.exception.SwitchTypeInTransactionException;
 import org.apache.shardingsphere.transaction.rule.TransactionRule;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,6 +39,8 @@ import java.sql.SQLException;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -70,7 +73,7 @@ public final class ConnectionSessionTest extends ProxyContextRestorer {
         assertThat(connectionSession.getDatabaseName(), is("currentDatabase"));
     }
     
-    @Test(expected = ShardingSphereException.class)
+    @Test(expected = SwitchTypeInTransactionException.class)
     public void assertFailedSwitchTransactionTypeWhileBegin() throws SQLException {
         connectionSession.setCurrentDatabase("db");
         JDBCBackendTransactionManager transactionManager = new JDBCBackendTransactionManager(backendConnection);
@@ -78,12 +81,13 @@ public final class ConnectionSessionTest extends ProxyContextRestorer {
         connectionSession.getTransactionStatus().setTransactionType(TransactionType.XA);
     }
     
-    @Test(expected = ShardingSphereException.class)
-    public void assertFailedSwitchSchemaWhileBegin() throws SQLException {
+    @Test
+    public void assertSwitchSchemaWhileBegin() throws SQLException {
         connectionSession.setCurrentDatabase("db");
         JDBCBackendTransactionManager transactionManager = new JDBCBackendTransactionManager(backendConnection);
         transactionManager.begin();
         connectionSession.setCurrentDatabase("newDB");
+        assertThat(connectionSession.getDefaultDatabaseName(), is("newDB"));
     }
     
     @Test
@@ -95,5 +99,13 @@ public final class ConnectionSessionTest extends ProxyContextRestorer {
     public void assertSetAutocommit() {
         connectionSession.setAutoCommit(false);
         assertFalse(connectionSession.isAutoCommit());
+    }
+    
+    @Test
+    public void assertClearQueryContext() {
+        connectionSession.setQueryContext(mock(QueryContext.class));
+        assertNotNull(connectionSession.getQueryContext());
+        connectionSession.clearQueryContext();
+        assertNull(connectionSession.getQueryContext());
     }
 }

@@ -17,12 +17,10 @@
 
 package org.apache.shardingsphere.proxy.frontend.exception;
 
-import org.apache.shardingsphere.infra.config.exception.ShardingSphereConfigurationException;
-import org.apache.shardingsphere.infra.exception.ShardingSphereException;
-import org.apache.shardingsphere.proxy.backend.exception.BackendException;
-import org.apache.shardingsphere.proxy.backend.exception.NoDatabaseSelectedException;
-import org.apache.shardingsphere.proxy.backend.text.distsql.ral.common.exception.CommonDistSQLException;
-import org.apache.shardingsphere.sql.parser.exception.SQLParsingException;
+import org.apache.shardingsphere.dialect.exception.SQLDialectException;
+import org.apache.shardingsphere.infra.util.exception.internal.ShardingSphereInternalException;
+import org.apache.shardingsphere.infra.util.exception.external.server.ShardingSphereServerException;
+import org.apache.shardingsphere.infra.util.exception.external.sql.ShardingSphereSQLException;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
@@ -32,18 +30,15 @@ public final class ExpectedExceptionsTest {
     
     @Test
     public void assertIsExpected() {
-        assertTrue(ExpectedExceptions.isExpected(ShardingSphereException.class));
-        assertTrue(ExpectedExceptions.isExpected(ShardingSphereConfigurationException.class));
-        assertTrue(ExpectedExceptions.isExpected(SQLParsingException.class));
-        assertTrue(ExpectedExceptions.isExpected(CommonDistSQLException.class));
-        assertTrue(ExpectedExceptions.isExpected(BackendException.class));
-        assertTrue(ExpectedExceptions.isExpected(NoDatabaseSelectedException.class));
-        assertTrue(ExpectedExceptions.isExpected(UnsupportedPreparedStatementException.class));
+        assertTrue(ExpectedExceptions.isExpected(ShardingSphereServerException.class));
+        assertTrue(ExpectedExceptions.isExpected(SQLDialectException.class));
+        assertTrue(ExpectedExceptions.isExpected(ShardingSphereSQLException.class));
     }
     
     @Test
     public void assertIsNotExpected() {
         assertFalse(ExpectedExceptions.isExpected(Exception.class));
         assertFalse(ExpectedExceptions.isExpected(IllegalArgumentException.class));
+        assertFalse(ExpectedExceptions.isExpected(ShardingSphereInternalException.class));
     }
 }

@@ -19,20 +19,18 @@ package org.apache.shardingsphere.data.pipeline.core.util;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.apache.shardingsphere.data.pipeline.api.config.rulealtered.RuleAlteredJobConfiguration;
-import org.apache.shardingsphere.data.pipeline.api.config.rulealtered.yaml.RuleAlteredJobConfigurationSwapper;
-import org.apache.shardingsphere.data.pipeline.api.config.rulealtered.yaml.YamlRuleAlteredJobConfiguration;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.shardingsphere.data.pipeline.api.config.job.MigrationJobConfiguration;
+import org.apache.shardingsphere.data.pipeline.api.config.job.yaml.YamlMigrationJobConfiguration;
+import org.apache.shardingsphere.data.pipeline.api.config.job.yaml.YamlMigrationJobConfigurationSwapper;
 import org.apache.shardingsphere.data.pipeline.api.datasource.config.PipelineDataSourceConfiguration;
 import org.apache.shardingsphere.data.pipeline.api.datasource.config.impl.ShardingSpherePipelineDataSourceConfiguration;
 import org.apache.shardingsphere.data.pipeline.api.datasource.config.impl.StandardPipelineDataSourceConfiguration;
 import org.apache.shardingsphere.data.pipeline.api.datasource.config.yaml.YamlPipelineDataSourceConfiguration;
-import org.apache.shardingsphere.data.pipeline.api.job.JobSubType;
 import org.apache.shardingsphere.data.pipeline.api.job.JobType;
-import org.apache.shardingsphere.data.pipeline.api.job.RuleAlteredJobId;
-import org.apache.shardingsphere.sharding.yaml.config.YamlShardingRuleConfiguration;
-
-import java.util.Collections;
-import java.util.concurrent.ThreadLocalRandom;
+import org.apache.shardingsphere.data.pipeline.core.api.PipelineAPIFactory;
+import org.apache.shardingsphere.data.pipeline.scenario.migration.MigrationJobAPIFactory;
+import org.apache.shardingsphere.data.pipeline.scenario.migration.MigrationJobId;
 
 /**
  * Job configuration builder.
@@ -45,20 +43,25 @@ public final class JobConfigurationBuilder {
      *
      * @return created job configuration
      */
-    public static RuleAlteredJobConfiguration createJobConfiguration() {
-        YamlRuleAlteredJobConfiguration result = new YamlRuleAlteredJobConfiguration();
-        result.setDatabaseName("logic_db");
-        result.setAlteredRuleYamlClassNameTablesMap(Collections.singletonMap(YamlShardingRuleConfiguration.class.getName(), Collections.singletonList("t_order")));
-        result.setActiveVersion(0);
-        result.setNewVersion(1);
-        // TODO add autoTables in config file
-        result.setSource(createYamlPipelineDataSourceConfiguration(
-                new ShardingSpherePipelineDataSourceConfiguration(ConfigurationFileUtil.readFile("config_sharding_sphere_jdbc_source.yaml"))));
-        result.setTarget(createYamlPipelineDataSourceConfiguration(new StandardPipelineDataSourceConfiguration(ConfigurationFileUtil.readFile("config_standard_jdbc_target.yaml"))));
-        result.extendConfiguration();
-        int activeVersion = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE - 10) + 1;
-        result.setJobId(generateJobId(activeVersion, "logic_db"));
-        return new RuleAlteredJobConfigurationSwapper().swapToObject(result);
+    public static MigrationJobConfiguration createJobConfiguration() {
+        YamlMigrationJobConfiguration result = new YamlMigrationJobConfiguration();
+        result.setTargetDatabaseName("logic_db");
+        result.setSourceResourceName("standard_0");
+        result.setSourceTableName("t_order");
+        result.setTargetTableName("t_order");
+        result.setJobId(generateJobId(result));
+        result.setSource(createYamlPipelineDataSourceConfiguration(new StandardPipelineDataSourceConfiguration(ConfigurationFileUtil.readFile("migration_standard_jdbc_source.yaml"))));
+        result.setTarget(createYamlPipelineDataSourceConfiguration(new ShardingSpherePipelineDataSourceConfiguration(
+                ConfigurationFileUtil.readFile("migration_sharding_sphere_jdbc_target.yaml"))));
+        PipelineAPIFactory.getPipelineJobAPI(JobType.MIGRATION).extendYamlJobConfiguration(result);
+        return new YamlMigrationJobConfigurationSwapper().swapToObject(result);
+    }
+    
+    private static String generateJobId(final YamlMigrationJobConfiguration yamlJobConfig) {
+        String sourceTableName = RandomStringUtils.randomAlphabetic(32);
+        MigrationJobId migrationJobId = new MigrationJobId(yamlJobConfig.getSourceResourceName(), yamlJobConfig.getSourceSchemaName(), sourceTableName,
+                yamlJobConfig.getTargetDatabaseName(), yamlJobConfig.getTargetTableName());
+        return MigrationJobAPIFactory.getInstance().marshalJobId(migrationJobId);
     }
     
     private static YamlPipelineDataSourceConfiguration createYamlPipelineDataSourceConfiguration(final PipelineDataSourceConfiguration config) {
@@ -66,16 +69,5 @@ public final class JobConfigurationBuilder {
         result.setType(config.getType());
         result.setParameter(config.getParameter());
         return result;
-    }
-    
-    private static String generateJobId(final int activeVersion, final String databaseName) {
-        RuleAlteredJobId jobId = new RuleAlteredJobId();
-        jobId.setType(JobType.RULE_ALTERED.getValue());
-        jobId.setFormatVersion(RuleAlteredJobId.CURRENT_VERSION);
-        jobId.setSubTypes(Collections.singletonList(JobSubType.SCALING.getValue()));
-        jobId.setCurrentMetadataVersion(activeVersion);
-        jobId.setNewMetadataVersion(activeVersion + 1);
-        jobId.setDatabaseName(databaseName);
-        return jobId.marshal();
     }
 }

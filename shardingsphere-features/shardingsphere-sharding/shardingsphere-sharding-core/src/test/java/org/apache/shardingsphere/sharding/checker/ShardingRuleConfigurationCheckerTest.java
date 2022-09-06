@@ -17,9 +17,9 @@
 
 package org.apache.shardingsphere.sharding.checker;
 
-import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
-import org.apache.shardingsphere.infra.config.checker.RuleConfigurationChecker;
-import org.apache.shardingsphere.infra.config.checker.RuleConfigurationCheckerFactory;
+import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
+import org.apache.shardingsphere.infra.config.rule.checker.RuleConfigurationChecker;
+import org.apache.shardingsphere.infra.config.rule.checker.RuleConfigurationCheckerFactory;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingAutoTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
@@ -44,13 +44,7 @@ public final class ShardingRuleConfigurationCheckerTest {
         ShardingStrategyConfiguration shardingStrategyConfig = createShardingStrategyConfiguration();
         ruleConfig.setTables(Collections.singleton(createShardingTableRuleConfiguration(shardingStrategyConfig, shardingAuditStrategyConfig, ruleConfig.getDefaultKeyGenerateStrategy())));
         ruleConfig.setAutoTables(Collections.singleton(createShardingAutoTableRuleConfiguration(shardingStrategyConfig, shardingAuditStrategyConfig, ruleConfig.getDefaultKeyGenerateStrategy())));
-        getChecker(ruleConfig).check("foo_db", ruleConfig);
-    }
-    
-    @Test(expected = IllegalStateException.class)
-    public void assertCheckTableConfigurationInitFailed() {
-        ShardingRuleConfiguration ruleConfig = createRuleConfiguration();
-        getChecker(ruleConfig).check("foo_db", ruleConfig);
+        getChecker(ruleConfig).check("foo_db", ruleConfig, Collections.emptyMap(), Collections.emptyList());
     }
     
     @Test(expected = IllegalStateException.class)
@@ -58,14 +52,14 @@ public final class ShardingRuleConfigurationCheckerTest {
         ShardingRuleConfiguration configuration = createRuleConfiguration();
         configuration.setTables(Collections.singletonList(createShardingTableRuleConfiguration(null, null, null)));
         configuration.setAutoTables(Collections.singleton(createShardingAutoTableRuleConfiguration(null, null, null)));
-        getChecker(configuration).check("foo_db", configuration);
+        getChecker(configuration).check("foo_db", configuration, Collections.emptyMap(), Collections.emptyList());
     }
     
     private ShardingRuleConfiguration createRuleConfiguration() {
         ShardingRuleConfiguration result = new ShardingRuleConfiguration();
-        result.getShardingAlgorithms().put("foo_algorithm", mock(ShardingSphereAlgorithmConfiguration.class));
-        result.getAuditors().put("foo_audit", mock(ShardingSphereAlgorithmConfiguration.class));
-        result.getKeyGenerators().put("foo_keygen", mock(ShardingSphereAlgorithmConfiguration.class));
+        result.getShardingAlgorithms().put("foo_algorithm", mock(AlgorithmConfiguration.class));
+        result.getAuditors().put("foo_audit", mock(AlgorithmConfiguration.class));
+        result.getKeyGenerators().put("foo_keygen", mock(AlgorithmConfiguration.class));
         result.setDefaultKeyGenerateStrategy(new KeyGenerateStrategyConfiguration("foo_col", "foo_keygen"));
         return result;
     }

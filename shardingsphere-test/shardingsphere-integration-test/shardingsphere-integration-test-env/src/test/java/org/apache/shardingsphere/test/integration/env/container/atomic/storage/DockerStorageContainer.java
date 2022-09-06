@@ -22,9 +22,12 @@ import com.zaxxer.hikari.HikariDataSource;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.test.integration.env.container.atomic.DockerITContainer;
-import org.apache.shardingsphere.test.integration.env.container.wait.JDBCConnectionWaitStrategy;
+import org.apache.shardingsphere.test.integration.env.container.atomic.constants.StorageContainerConstants;
+import org.apache.shardingsphere.test.integration.env.container.wait.JdbcConnectionWaitStrategy;
 import org.apache.shardingsphere.test.integration.env.runtime.DataSourceEnvironment;
 import org.apache.shardingsphere.test.integration.env.runtime.scenario.database.DatabaseEnvironmentManager;
 import org.apache.shardingsphere.test.integration.env.runtime.scenario.path.ScenarioDataPath;
@@ -43,42 +46,57 @@ import java.util.Optional;
  * Docker storage container.
  */
 @Getter
+@Slf4j
 public abstract class DockerStorageContainer extends DockerITContainer implements StorageContainer {
     
+    @Getter
     private final DatabaseType databaseType;
     
     @Getter(AccessLevel.NONE)
     private final String scenario;
     
-    @Getter(AccessLevel.NONE)
-    private final boolean useRootUsername;
-    
     private final Map<String, DataSource> actualDataSourceMap;
     
     private final Map<String, DataSource> expectedDataSourceMap;
     
-    public DockerStorageContainer(final DatabaseType databaseType, final String dockerImageName, final String scenario, final boolean useRootUsername) {
+    public DockerStorageContainer(final DatabaseType databaseType, final String dockerImageName, final String scenario) {
         super(databaseType.getType().toLowerCase(), dockerImageName);
         this.databaseType = databaseType;
         this.scenario = scenario;
-        this.useRootUsername = useRootUsername;
         actualDataSourceMap = new LinkedHashMap<>();
         expectedDataSourceMap = new LinkedHashMap<>();
     }
     
     @Override
     protected void configure() {
+        withClasspathResourceMapping("/container/init-sql/" + databaseType.getType().toLowerCase() + "/00-init-authority.sql", "/docker-entrypoint-initdb.d/00-init-authority.sql", BindMode.READ_ONLY);
         if (Strings.isNullOrEmpty(scenario)) {
-            withClasspathResourceMapping("/env/" + databaseType.getType().toLowerCase() + "/initdb.sql", "/docker-entrypoint-initdb.d/", BindMode.READ_ONLY);
+            withClasspathResourceMapping("/env/" + databaseType.getType().toLowerCase() + "/01-initdb.sql", "/docker-entrypoint-initdb.d/01-initdb.sql", BindMode.READ_ONLY);
         } else {
             withClasspathResourceMapping(new ScenarioDataPath(scenario).getInitSQLResourcePath(Type.ACTUAL, databaseType), "/docker-entrypoint-initdb.d/", BindMode.READ_ONLY);
             withClasspathResourceMapping(new ScenarioDataPath(scenario).getInitSQLResourcePath(Type.EXPECTED, databaseType), "/docker-entrypoint-initdb.d/", BindMode.READ_ONLY);
         }
-        withExposedPorts(getPort());
-        setWaitStrategy(new JDBCConnectionWaitStrategy(
+        withExposedPorts(getExposedPort());
+        setWaitStrategy(new JdbcConnectionWaitStrategy(
                 () -> DriverManager.getConnection(getDefaultDatabaseName().isPresent()
                         ? DataSourceEnvironment.getURL(databaseType, "localhost", getFirstMappedPort(), getDefaultDatabaseName().get())
-                        : DataSourceEnvironment.getURL(databaseType, "localhost", getFirstMappedPort()), getUsername(), getUnifiedPassword())));
+                        : DataSourceEnvironment.getURL(databaseType, "localhost", getFirstMappedPort()), getUsername(), getPassword())));
+    }
+    
+    protected final void setCommands(final String command) {
+        if (StringUtils.isBlank(command)) {
+            log.info("command is blank, not set");
+            return;
+        }
+        setCommand(command);
+    }
+    
+    protected final void addEnvs(final Map<String, String> envs) {
+        envs.forEach(this::addEnv);
+    }
+    
+    protected final void mapResources(final Map<String, String> resources) {
+        resources.forEach((key, value) -> withClasspathResourceMapping(key, value, BindMode.READ_ONLY));
     }
     
     @Override
@@ -92,58 +110,64 @@ public abstract class DockerStorageContainer extends DockerITContainer implement
     
     /**
      * Create access data source.
-     * 
+     *
      * @param dataSourceName data source name
      * @return access data source
      */
     public DataSource createAccessDataSource(final String dataSourceName) {
         HikariDataSource result = new HikariDataSource();
         result.setDriverClassName(DataSourceEnvironment.getDriverClassName(databaseType));
-        result.setJdbcUrl(DataSourceEnvironment.getURL(databaseType, getHost(), getMappedPort(getPort()), dataSourceName));
+        result.setJdbcUrl(getJdbcUrl(dataSourceName));
         result.setUsername(getUsername());
-        result.setPassword(getUnifiedPassword());
+        result.setPassword(getPassword());
         result.setMaximumPoolSize(4);
         result.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
         return result;
     }
     
     /**
+     * Get JDBC URL.
+     *
+     * @param dataSourceName datasource name
+     * @return JDBC URL
+     */
+    public String getJdbcUrl(final String dataSourceName) {
+        return DataSourceEnvironment.getURL(databaseType, getHost(), getMappedPort(getExposedPort()), dataSourceName);
+    }
+    
+    protected abstract Optional<String> getDefaultDatabaseName();
+    
+    /**
      * Get username.
-     * 
+     *
      * @return username
      */
     public final String getUsername() {
-        return useRootUsername ? getRootUsername() : getNormalUsername();
+        return StorageContainerConstants.USERNAME;
     }
-    
-    /**
-     * Get root username.
-     *
-     * @return root username
-     */
-    public abstract String getRootUsername();
-    
-    protected final String getNormalUsername() {
-        return "normal_user";
-    }
-    
-    /**
-     * Get database port.
-     *
-     * @return database port
-     */
-    public abstract int getPort();
     
     /**
      * Get unified database access password.
      *
      * @return unified database access password
      */
-    public final String getUnifiedPassword() {
-        return "Root@123";
+    public final String getPassword() {
+        return StorageContainerConstants.PASSWORD;
     }
     
-    protected abstract Optional<String> getDefaultDatabaseName();
+    /**
+     * Get database container exposed port.
+     *
+     * @return exposed database container port
+     */
+    public abstract int getExposedPort();
+    
+    /**
+     * Get database container mapped port.
+     * 
+     * @return mapped database container port
+     */
+    public abstract int getMappedPort();
     
     @Override
     public final String getAbbreviation() {
