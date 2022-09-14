@@ -74,6 +74,7 @@ import org.apache.shardingsphere.distsql.parser.autogen.ShardingDistSQLStatement
 import org.apache.shardingsphere.distsql.parser.autogen.ShardingDistSQLStatementParser.ShowShardingTableRulesUsedAlgorithmContext;
 import org.apache.shardingsphere.distsql.parser.autogen.ShardingDistSQLStatementParser.ShowShardingTableRulesUsedKeyGeneratorContext;
 import org.apache.shardingsphere.distsql.parser.autogen.ShardingDistSQLStatementParser.ShowUnusedShardingAlgorithmsContext;
+import org.apache.shardingsphere.distsql.parser.autogen.ShardingDistSQLStatementParser.ShowUnusedShardingAuditorsContext;
 import org.apache.shardingsphere.distsql.parser.autogen.ShardingDistSQLStatementParser.ShowUnusedShardingKeyGeneratorsContext;
 import org.apache.shardingsphere.distsql.parser.autogen.ShardingDistSQLStatementParser.TableNameContext;
 import org.apache.shardingsphere.distsql.parser.segment.AlgorithmSegment;
@@ -120,6 +121,7 @@ import org.apache.shardingsphere.sharding.distsql.parser.statement.ShowShardingT
 import org.apache.shardingsphere.sharding.distsql.parser.statement.ShowShardingTableRulesUsedAlgorithmStatement;
 import org.apache.shardingsphere.sharding.distsql.parser.statement.ShowShardingTableRulesUsedKeyGeneratorStatement;
 import org.apache.shardingsphere.sharding.distsql.parser.statement.ShowUnusedShardingAlgorithmsStatement;
+import org.apache.shardingsphere.sharding.distsql.parser.statement.ShowUnusedShardingAuditorsStatement;
 import org.apache.shardingsphere.sharding.distsql.parser.statement.ShowUnusedShardingKeyGeneratorsStatement;
 import org.apache.shardingsphere.sharding.distsql.parser.statement.hint.AddShardingHintDatabaseValueStatement;
 import org.apache.shardingsphere.sharding.distsql.parser.statement.hint.AddShardingHintTableValueStatement;
@@ -339,18 +341,12 @@ public final class ShardingDistSQLStatementVisitor extends ShardingDistSQLStatem
     
     @Override
     public ASTNode visitKeyGenerateStrategy(final KeyGenerateStrategyContext ctx) {
-        if (null == ctx) {
-            return null;
-        }
-        return new KeyGenerateStrategySegment(getIdentifierValue(ctx.columnName()), getIdentifierValue(ctx.keyGenerator().shardingAlgorithmName()));
+        return null == ctx ? null : new KeyGenerateStrategySegment(getIdentifierValue(ctx.columnName()), getIdentifierValue(ctx.keyGenerator().shardingAlgorithmName()));
     }
     
     @Override
     public ASTNode visitKeyGenerateDefinition(final KeyGenerateDefinitionContext ctx) {
-        if (null == ctx) {
-            return null;
-        }
-        return new KeyGenerateStrategySegment(getIdentifierValue(ctx.columnName()), (AlgorithmSegment) visit(ctx.algorithmDefinition()));
+        return null == ctx ? null : new KeyGenerateStrategySegment(getIdentifierValue(ctx.columnName()), (AlgorithmSegment) visit(ctx.algorithmDefinition()));
     }
     
     @Override
@@ -383,10 +379,7 @@ public final class ShardingDistSQLStatementVisitor extends ShardingDistSQLStatem
     }
     
     private String getIdentifierValue(final ParseTree context) {
-        if (null == context) {
-            return null;
-        }
-        return new IdentifierValue(context.getText()).getValue();
+        return null == context ? null : new IdentifierValue(context.getText()).getValue();
     }
     
     private String getIdentifierValueForDataNodes(final ParseTree context) {
@@ -507,6 +500,11 @@ public final class ShardingDistSQLStatementVisitor extends ShardingDistSQLStatem
     @Override
     public ASTNode visitShowUnusedShardingKeyGenerators(final ShowUnusedShardingKeyGeneratorsContext ctx) {
         return new ShowUnusedShardingKeyGeneratorsStatement(Objects.nonNull(ctx.databaseName()) ? (DatabaseSegment) visit(ctx.databaseName()) : null);
+    }
+    
+    @Override
+    public ASTNode visitShowUnusedShardingAuditors(final ShowUnusedShardingAuditorsContext ctx) {
+        return new ShowUnusedShardingAuditorsStatement(Objects.nonNull(ctx.databaseName()) ? (DatabaseSegment) visit(ctx.databaseName()) : null);
     }
     
     @Override

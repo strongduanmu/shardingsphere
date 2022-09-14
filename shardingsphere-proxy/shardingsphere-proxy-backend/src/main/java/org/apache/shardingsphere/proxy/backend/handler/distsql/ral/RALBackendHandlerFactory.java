@@ -45,6 +45,8 @@ import org.apache.shardingsphere.distsql.parser.statement.ral.updatable.SetVaria
 import org.apache.shardingsphere.distsql.parser.statement.ral.updatable.UnlabelInstanceStatement;
 import org.apache.shardingsphere.infra.distsql.query.DatabaseDistSQLResultSet;
 import org.apache.shardingsphere.infra.distsql.query.DistSQLResultSet;
+import org.apache.shardingsphere.infra.util.exception.ShardingSpherePreconditions;
+import org.apache.shardingsphere.infra.util.exception.external.sql.type.generic.UnsupportedSQLOperationException;
 import org.apache.shardingsphere.proxy.backend.handler.ProxyBackendHandler;
 import org.apache.shardingsphere.proxy.backend.handler.distsql.ral.hint.HintRALBackendHandler;
 import org.apache.shardingsphere.proxy.backend.handler.distsql.ral.migration.query.QueryableScalingRALBackendHandler;
@@ -74,7 +76,6 @@ import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.readwritesplitting.distsql.parser.statement.ShowReadwriteSplittingReadResourcesStatement;
 import org.apache.shardingsphere.readwritesplitting.distsql.parser.statement.status.SetReadwriteSplittingStatusStatement;
 
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -115,9 +116,8 @@ public final class RALBackendHandlerFactory {
      * @param sqlStatement RAL statement
      * @param connectionSession connection session
      * @return created instance
-     * @throws SQLException SQL exception
      */
-    public static ProxyBackendHandler newInstance(final RALStatement sqlStatement, final ConnectionSession connectionSession) throws SQLException {
+    public static ProxyBackendHandler newInstance(final RALStatement sqlStatement, final ConnectionSession connectionSession) {
         if (sqlStatement instanceof HintRALStatement) {
             return new HintRALBackendHandler((HintRALStatement) sqlStatement, connectionSession);
         }
@@ -141,15 +141,13 @@ public final class RALBackendHandlerFactory {
         try {
             return clazz.getDeclaredConstructor().newInstance();
         } catch (final ReflectiveOperationException ex) {
-            throw new UnsupportedOperationException(String.format("Can not find public constructor for class `%s`", clazz.getName()));
+            throw new UnsupportedSQLOperationException(String.format("Can not find public constructor for class `%s`", clazz.getName()));
         }
     }
     
     private static RALBackendHandler<?> createRALBackendHandler(final RALStatement sqlStatement, final ConnectionSession connectionSession) {
         Class<? extends RALBackendHandler<?>> clazz = HANDLERS.get(sqlStatement.getClass());
-        if (null == clazz) {
-            throw new UnsupportedOperationException(String.format("Unsupported SQL statement : %s", sqlStatement.getClass().getCanonicalName()));
-        }
+        ShardingSpherePreconditions.checkState(null != clazz, new UnsupportedSQLOperationException(String.format("Unsupported SQL statement : %s", sqlStatement.getClass().getCanonicalName())));
         RALBackendHandler<?> result = newInstance(clazz);
         result.init(sqlStatement, connectionSession);
         return result;
