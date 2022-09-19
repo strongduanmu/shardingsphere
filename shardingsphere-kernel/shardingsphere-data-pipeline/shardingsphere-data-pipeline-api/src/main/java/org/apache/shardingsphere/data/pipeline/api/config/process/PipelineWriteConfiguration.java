@@ -15,19 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.data.pipeline.core.exception.job;
+package org.apache.shardingsphere.data.pipeline.api.config.process;
 
-import org.apache.shardingsphere.data.pipeline.core.exception.PipelineSQLException;
-import org.apache.shardingsphere.infra.util.exception.external.sql.sqlstate.XOpenSQLState;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
+import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
 
 /**
- * Split pipeline job exception.
+ * Pipeline write configuration.
  */
-public final class SplitPipelineJobException extends PipelineSQLException {
+@RequiredArgsConstructor
+@Getter
+@ToString
+public final class PipelineWriteConfiguration {
     
-    private static final long serialVersionUID = -8509592086832334026L;
+    private final Integer workerThread;
     
-    public SplitPipelineJobException(final String tableName, final String reason) {
-        super(XOpenSQLState.GENERAL_ERROR, 83, "Can not split range for table `%s`, reason: %s", tableName, reason);
-    }
+    private final Integer batchSize;
+    
+    private final AlgorithmConfiguration rateLimiter;
 }

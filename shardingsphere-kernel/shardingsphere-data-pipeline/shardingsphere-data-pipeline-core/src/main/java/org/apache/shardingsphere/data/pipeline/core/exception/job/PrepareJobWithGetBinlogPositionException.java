@@ -17,14 +17,19 @@
 
 package org.apache.shardingsphere.data.pipeline.core.exception.job;
 
+import org.apache.shardingsphere.data.pipeline.core.exception.PipelineSQLException;
+import org.apache.shardingsphere.infra.util.exception.external.sql.sqlstate.XOpenSQLState;
+
+import java.sql.SQLException;
+
 /**
- * Pipeline job prepare failed exception.
+ * Prepare job with get binlog position.
  */
-public final class PipelineJobPrepareFailedException extends RuntimeException {
+public final class PrepareJobWithGetBinlogPositionException extends PipelineSQLException {
     
-    private static final long serialVersionUID = 1409505606319197767L;
+    private static final long serialVersionUID = -3701189611685636704L;
     
-    public PipelineJobPrepareFailedException(final String message, final Throwable cause) {
-        super(message, cause);
+    public PrepareJobWithGetBinlogPositionException(final String jobId, final SQLException cause) {
+        super(XOpenSQLState.CONNECTION_EXCEPTION, 92, "Get binlog position failed by job `%s`, reason is: %s", jobId, cause.getMessage());
     }
 }
