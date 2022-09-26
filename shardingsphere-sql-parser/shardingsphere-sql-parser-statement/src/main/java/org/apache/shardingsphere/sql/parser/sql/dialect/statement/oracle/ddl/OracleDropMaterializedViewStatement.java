@@ -15,18 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.mode.repository.cluster.lock;
+package org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.ddl;
+
+import lombok.ToString;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropMaterializedViewStatement;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.OracleStatement;
 
 /**
- * Internal lock holder.
+ * Oracle drop materialized view statement.
  */
-public interface InternalLockHolder {
-    
-    /**
-     * Get internal lock.
-     *
-     * @param lockKey lock key
-     * @return internal lock
-     */
-    InternalLock getInternalLock(String lockKey);
+@ToString(callSuper = true)
+public final class OracleDropMaterializedViewStatement extends DropMaterializedViewStatement implements OracleStatement {
 }

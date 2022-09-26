@@ -3490,3 +3490,19 @@ dropPluggableDatabase
      : DROP JAVA (SOURCE | CLASS | RESOURCE) objectName
      ;
 
+dropLibrary
+    : DROP LIBRARY libraryName
+    ;
+
+dropMaterializedView
+    : DROP MATERIALIZED VIEW materializedViewName (PRESERVE TABLE)?
+    ;
+
+dropMaterializedViewLog
+    : DROP MATERIALIZED VIEW LOG ON tableName
+    ;
+
+dropMaterializedZonemap
+    : DROP MATERIALIZED ZONEMAP zonemapName
+    ;
+

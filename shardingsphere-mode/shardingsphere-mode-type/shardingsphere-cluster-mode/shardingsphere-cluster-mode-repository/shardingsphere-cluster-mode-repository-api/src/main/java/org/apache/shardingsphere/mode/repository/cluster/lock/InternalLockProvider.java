@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.agent.exception;
+package org.apache.shardingsphere.mode.repository.cluster.lock;
 
 /**
- * Plugin configuration exception.
+ * Internal lock provider.
  */
-public final class PluginConfigurationException extends RuntimeException {
+public interface InternalLockProvider {
     
-    private static final long serialVersionUID = -3298813951573088711L;
-    
-    public PluginConfigurationException(final String errorMessage, final Object... args) {
-        super(String.format(errorMessage, args));
-    }
+    /**
+     * Get internal lock.
+     *
+     * @param lockKey lock key
+     * @return internal lock
+     */
+    InternalLock getInternalLock(String lockKey);
 }

@@ -33,7 +33,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepository;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepositoryConfiguration;
-import org.apache.shardingsphere.mode.repository.cluster.etcd.lock.EtcdInternalLockHolder;
+import org.apache.shardingsphere.mode.repository.cluster.etcd.lock.EtcdInternalLockProvider;
 import org.apache.shardingsphere.mode.repository.cluster.etcd.props.EtcdProperties;
 import org.apache.shardingsphere.mode.repository.cluster.etcd.props.EtcdPropertyKey;
 import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEvent;
@@ -55,7 +55,7 @@ public final class EtcdRepository implements ClusterPersistRepository {
     
     private EtcdProperties etcdProps;
     
-    private EtcdInternalLockHolder etcdInternalLockHolder;
+    private EtcdInternalLockProvider etcdInternalLockHolder;
     
     @Override
     public void init(final ClusterPersistRepositoryConfiguration config) {
@@ -64,7 +64,7 @@ public final class EtcdRepository implements ClusterPersistRepository {
                 .namespace(ByteSequence.from(config.getNamespace(), StandardCharsets.UTF_8))
                 .maxInboundMessageSize((int) 32e9)
                 .build();
-        etcdInternalLockHolder = new EtcdInternalLockHolder(client, etcdProps);
+        etcdInternalLockHolder = new EtcdInternalLockProvider(client, etcdProps);
     }
     
     @SneakyThrows({InterruptedException.class, ExecutionException.class})
@@ -92,12 +92,14 @@ public final class EtcdRepository implements ClusterPersistRepository {
     @SneakyThrows({InterruptedException.class, ExecutionException.class})
     @Override
     public void persist(final String key, final String value) {
+        buildParentPath(key);
         client.getKVClient().put(ByteSequence.from(key, StandardCharsets.UTF_8), ByteSequence.from(value, StandardCharsets.UTF_8)).get();
     }
     
     @SneakyThrows({InterruptedException.class, ExecutionException.class})
     @Override
     public void persistEphemeral(final String key, final String value) {
+        buildParentPath(key);
         long leaseId = client.getLeaseClient().grant(etcdProps.getValue(EtcdPropertyKey.TIME_TO_LIVE_SECONDS)).get().getID();
         client.getLeaseClient().keepAlive(leaseId, Observers.observer(response -> {
         }));
@@ -107,6 +109,20 @@ public final class EtcdRepository implements ClusterPersistRepository {
     @Override
     public void persistExclusiveEphemeral(final String key, final String value) {
         persistEphemeral(key, value);
+    }
+    
+    private void buildParentPath(final String key) throws ExecutionException, InterruptedException {
+        StringBuilder parentPath = new StringBuilder();
+        String[] partPath = key.split(PATH_SEPARATOR);
+        for (int index = 1; index < partPath.length - 1; index++) {
+            parentPath.append(PATH_SEPARATOR);
+            parentPath.append(partPath[index]);
+            String path = parentPath.toString();
+            List<KeyValue> keyValues = client.getKVClient().get(ByteSequence.from(path, StandardCharsets.UTF_8)).get().getKvs();
+            if (keyValues.isEmpty()) {
+                client.getKVClient().put(ByteSequence.from(path, StandardCharsets.UTF_8), ByteSequence.from("", StandardCharsets.UTF_8)).get();
+            }
+        }
     }
     
     @Override
@@ -144,12 +160,12 @@ public final class EtcdRepository implements ClusterPersistRepository {
     }
     
     @Override
-    public boolean persistLock(final String lockKey, final long timeoutMillis) {
+    public boolean tryLock(final String lockKey, final long timeoutMillis) {
         return etcdInternalLockHolder.getInternalLock(lockKey).tryLock(timeoutMillis);
     }
     
     @Override
-    public void deleteLock(final String lockKey) {
+    public void unlock(final String lockKey) {
         etcdInternalLockHolder.getInternalLock(lockKey).unlock();
     }
     
