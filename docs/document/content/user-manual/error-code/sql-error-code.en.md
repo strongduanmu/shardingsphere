@@ -23,7 +23,8 @@ SQL error codes provide by standard `SQL State`, `Vendor Code` and `Reason`, whi
 | 42S02     | 10020       | Schema \`%s\` does not exist |
 | 42S02     | 10021       | Single table \`%s\` does not exist |
 | HY000     | 10022       | Can not load table with database name \`%s\` and data source name \`%s\` |
-| 0A000     | 11030       | Can not drop schema \`%s\` because of contains tables |
+| 0A000     | 10030       | Can not drop schema \`%s\` because of contains tables |
+| 0A000     | 10050       | The property \`proxy-backend-executor-suitable\` must be \`OLAP\` or \`OLTP\` |
 
 ### Data
 
@@ -84,6 +85,7 @@ SQL error codes provide by standard `SQL State`, `Vendor Code` and `Reason`, whi
 | HY000     | 17000       | Work ID assigned failed, which can not exceed 1024 |
 | HY000     | 17001       | Can not find \`%s\` file for datetime initialize |
 | HY000     | 17002       | File access failed, reason is: %s |
+| HY000     | 17010       | Cluster persist repository error, reason is: %s |
 
 ### Migration
 
