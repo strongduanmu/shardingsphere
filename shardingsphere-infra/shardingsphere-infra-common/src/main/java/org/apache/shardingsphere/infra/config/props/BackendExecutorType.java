@@ -15,33 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.shardingsphere.sharding.route.engine.condition.value;
-
-import java.util.List;
+package org.apache.shardingsphere.infra.config.props;
 
 /**
- * Sharding condition value.
+ * Backend executor type.
  */
-public interface ShardingConditionValue {
+public enum BackendExecutorType {
     
-    /**
-     * Get column name.
-     * 
-     * @return column name
-     */
-    String getColumnName();
-    
-    /**
-     * Get table name.
-     * 
-     * @return table name
-     */
-    String getTableName();
-    
-    /**
-     * Get parameter marker indexes.
-     *
-     * @return parameter marker indexes
-     */
-    List<Integer> getParameterMarkerIndexes();
+    OLTP, OLAP
 }
