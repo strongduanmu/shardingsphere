@@ -31,11 +31,11 @@ import org.apache.curator.framework.recipes.cache.CuratorCacheListener;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.shardingsphere.elasticjob.lite.internal.storage.LeaderExecutionCallback;
 import org.apache.shardingsphere.infra.instance.InstanceContext;
 import org.apache.shardingsphere.infra.instance.InstanceContextAware;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepository;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepositoryConfiguration;
+import org.apache.shardingsphere.mode.repository.cluster.LeaderExecutionCallback;
 import org.apache.shardingsphere.mode.repository.cluster.exception.ClusterPersistRepositoryException;
 import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEvent;
 import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEvent.Type;
@@ -152,9 +152,9 @@ public final class CuratorZookeeperRepository implements ClusterPersistRepositor
         CuratorCache cache = CuratorCache.build(client, cachePath);
         try {
             cache.start();
-            //CHECKSTYLE:OFF
+            // CHECKSTYLE:OFF
         } catch (final Exception ex) {
-            //CHECKSTYLE:ON
+            // CHECKSTYLE:ON
             CuratorZookeeperExceptionHandler.handleException(ex);
         }
         caches.put(cachePath + "/", cache);
@@ -206,9 +206,9 @@ public final class CuratorZookeeperRepository implements ClusterPersistRepositor
                 default:
                     throw new UnsupportedOperationException(each.toString());
             }
-            //CHECKSTYLE:OFF
+            // CHECKSTYLE:OFF
         } catch (final Exception ex) {
-            //CHECKSTYLE:ON
+            // CHECKSTYLE:ON
             throw new ClusterPersistRepositoryException(ex);
         }
     }
@@ -218,9 +218,9 @@ public final class CuratorZookeeperRepository implements ClusterPersistRepositor
         try {
             TransactionOp transactionOp = client.transactionOp();
             client.transaction().forOperations(transactionOp.check().forPath(key), transactionOp.setData().forPath(key, value.getBytes(StandardCharsets.UTF_8)));
-            //CHECKSTYLE:OFF
+            // CHECKSTYLE:OFF
         } catch (final Exception ex) {
-            //CHECKSTYLE:ON
+            // CHECKSTYLE:ON
             CuratorZookeeperExceptionHandler.handleException(ex);
         }
     }

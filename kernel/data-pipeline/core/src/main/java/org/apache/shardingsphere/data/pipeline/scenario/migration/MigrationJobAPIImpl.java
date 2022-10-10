@@ -48,7 +48,7 @@ import org.apache.shardingsphere.data.pipeline.api.metadata.SchemaName;
 import org.apache.shardingsphere.data.pipeline.api.metadata.SchemaTableName;
 import org.apache.shardingsphere.data.pipeline.api.metadata.TableName;
 import org.apache.shardingsphere.data.pipeline.api.pojo.CreateMigrationJobParameter;
-import org.apache.shardingsphere.data.pipeline.api.pojo.MigrationJobInfo;
+import org.apache.shardingsphere.data.pipeline.api.pojo.TableBasedPipelineJobInfo;
 import org.apache.shardingsphere.data.pipeline.core.api.PipelineAPIFactory;
 import org.apache.shardingsphere.data.pipeline.core.api.impl.AbstractInventoryIncrementalJobAPIImpl;
 import org.apache.shardingsphere.data.pipeline.core.api.impl.PipelineDataSourcePersistService;
@@ -122,15 +122,9 @@ public final class MigrationJobAPIImpl extends AbstractInventoryIncrementalJobAP
         return DigestUtils.md5Hex(text.getBytes(StandardCharsets.UTF_8));
     }
     
-    @SuppressWarnings("unchecked")
     @Override
-    public List<MigrationJobInfo> list() {
-        return (List<MigrationJobInfo>) super.list();
-    }
-    
-    @Override
-    protected MigrationJobInfo getJobInfo(final String jobId) {
-        MigrationJobInfo result = new MigrationJobInfo(jobId);
+    protected TableBasedPipelineJobInfo getJobInfo(final String jobId) {
+        TableBasedPipelineJobInfo result = new TableBasedPipelineJobInfo(jobId);
         JobConfigurationPOJO jobConfigPOJO = getElasticJobConfigPOJO(jobId);
         fillJobInfo(result, jobConfigPOJO);
         result.setTable(getJobConfiguration(jobConfigPOJO).getSourceTableName());
