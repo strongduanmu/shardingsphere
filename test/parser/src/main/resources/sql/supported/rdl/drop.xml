@@ -17,14 +17,13 @@
   -->
 
 <sql-cases>
-    <distsql-case id="drop-resource" value="UNREGISTER STORAGE UNIT ds_0,ds_1" />
-    <distsql-case id="drop-resource-if-exists" value="UNREGISTER STORAGE UNIT IF EXISTS ds_0,ds_1" />
-    <distsql-case id="drop-resource-ignore-single-tables" value="UNREGISTER STORAGE UNIT ds_0,ds_1 ignore single tables;" />
+    <distsql-case id="unregister-storage-unit" value="UNREGISTER STORAGE UNIT ds_0,ds_1" />
+    <distsql-case id="unregister-storage-unit-if-exists" value="UNREGISTER STORAGE UNIT IF EXISTS ds_0,ds_1" />
+    <distsql-case id="unregister-storage-unit-ignore-single-tables" value="UNREGISTER STORAGE UNIT ds_0,ds_1 ignore single tables;" />
     <distsql-case id="drop-sharding-table-rule" value="DROP SHARDING TABLE RULE t_order,t_order_item" />
     <distsql-case id="drop-sharding-table-rule-if-exists" value="DROP SHARDING TABLE RULE IF EXISTS t_order,t_order_item" />
-    <distsql-case id="drop-sharding-binding-table-rules" value="DROP SHARDING BINDING TABLE RULES" />
-    <distsql-case id="drop-sharding-binding-table-specified-rules" value="DROP SHARDING BINDING TABLE RULES (t_1,t_2)" />
-    <distsql-case id="drop-sharding-binding-table-specified-rules-if-exists" value="DROP SHARDING BINDING TABLE RULES IF EXISTS (t_1,t_2)" />
+    <distsql-case id="drop-sharding-table-reference-rule" value="DROP SHARDING TABLE REFERENCE RULE (t_1,t_2)" />
+    <distsql-case id="drop-sharding-table-reference-rule-if-exists" value="DROP SHARDING TABLE REFERENCE RULE IF EXISTS (t_1,t_2)" />
     <distsql-case id="drop-broadcast-table-rule" value="DROP BROADCAST TABLE RULE t_1" />
     <distsql-case id="drop-multiple-broadcast-table-rules" value="DROP BROADCAST TABLE RULE t_1,t_2" />
     <distsql-case id="drop-broadcast-table-rule-if-exists" value="DROP BROADCAST TABLE RULE IF EXISTS t_1" />

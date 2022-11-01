@@ -69,23 +69,23 @@ public abstract class AbstractMigrationITCase extends BaseITCase {
     protected void addMigrationSourceResource() throws SQLException {
         if (ITEnvTypeEnum.NATIVE == ENV.getItEnvType()) {
             try {
-                proxyExecuteWithLog("DROP MIGRATION SOURCE RESOURCE ds_0", 2);
+                proxyExecuteWithLog("UNREGISTER MIGRATION SOURCE STORAGE UNIT ds_0", 2);
             } catch (final SQLException ex) {
                 log.warn("Drop sharding_db failed, maybe it's not exist. error msg={}", ex.getMessage());
             }
         }
         String addSourceResource = migrationDistSQLCommand.getRegisterMigrationSourceStorageUnitTemplate().replace("${user}", getUsername())
                 .replace("${password}", getPassword())
-                .replace("${ds0}", appendBatchInsertParam(getActualJdbcUrlTemplate(DS_0, true)));
+                .replace("${ds0}", appendExtraParam(getActualJdbcUrlTemplate(DS_0, true)));
         addResource(addSourceResource);
     }
     
     protected void addMigrationTargetResource() throws SQLException {
         String addTargetResource = migrationDistSQLCommand.getRegisterMigrationTargetStorageUnitTemplate().replace("${user}", getUsername())
                 .replace("${password}", getPassword())
-                .replace("${ds2}", appendBatchInsertParam(getActualJdbcUrlTemplate(DS_2, true)))
-                .replace("${ds3}", appendBatchInsertParam(getActualJdbcUrlTemplate(DS_3, true)))
-                .replace("${ds4}", appendBatchInsertParam(getActualJdbcUrlTemplate(DS_4, true)));
+                .replace("${ds2}", appendExtraParam(getActualJdbcUrlTemplate(DS_2, true)))
+                .replace("${ds3}", appendExtraParam(getActualJdbcUrlTemplate(DS_3, true)))
+                .replace("${ds4}", appendExtraParam(getActualJdbcUrlTemplate(DS_4, true)));
         addResource(addTargetResource);
         List<Map<String, Object>> resources = queryForListWithLog("SHOW STORAGE UNITS from sharding_db");
         assertThat(resources.size(), is(3));

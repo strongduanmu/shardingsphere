@@ -21,7 +21,6 @@ import org.apache.shardingsphere.distsql.parser.statement.rdl.alter.AlterStorage
 import org.apache.shardingsphere.distsql.parser.statement.rdl.create.RegisterStorageUnitStatement;
 import org.apache.shardingsphere.distsql.parser.statement.rdl.drop.UnregisterStorageUnitStatement;
 import org.apache.shardingsphere.distsql.parser.statement.rql.show.ShowStorageUnitsStatement;
-import org.apache.shardingsphere.distsql.parser.statement.rql.show.ShowUnusedResourcesStatement;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
 import org.apache.shardingsphere.infra.distsql.exception.rule.MissingRequiredRuleException;
@@ -91,7 +90,7 @@ public final class DistSQLBackendHandlerFactoryTest extends ProxyContextRestorer
     
     private Map<String, ShardingSphereDatabase> getDatabases() {
         ShardingSphereDatabase database = mock(ShardingSphereDatabase.class, RETURNS_DEEP_STUBS);
-        when(database.getResourceMetaData().getDatabaseType()).thenReturn(new MySQLDatabaseType());
+        when(database.getProtocolType()).thenReturn(new MySQLDatabaseType());
         Map<String, ShardingSphereDatabase> result = new LinkedHashMap<>(1, 1);
         result.put("db", database);
         return result;
@@ -226,13 +225,6 @@ public final class DistSQLBackendHandlerFactoryTest extends ProxyContextRestorer
         assertThat(response, instanceOf(QueryResponseHeader.class));
     }
     
-    @Test
-    public void assertExecuteShowUnusedResourceContext() throws SQLException {
-        setContextManager(true);
-        ResponseHeader response = RQLBackendHandlerFactory.newInstance(mock(ShowUnusedResourcesStatement.class), connectionSession).execute();
-        assertThat(response, instanceOf(QueryResponseHeader.class));
-    }
-    
     private void setContextManager(final boolean isGovernance) {
         ContextManager contextManager = mock(ContextManager.class, RETURNS_DEEP_STUBS);
         MetaDataContexts metaDataContexts = isGovernance
@@ -245,7 +237,7 @@ public final class DistSQLBackendHandlerFactoryTest extends ProxyContextRestorer
     private MetaDataContexts mockMetaDataContexts() {
         MetaDataContexts result = mock(MetaDataContexts.class, RETURNS_DEEP_STUBS);
         ShardingSphereDatabase database = mock(ShardingSphereDatabase.class, RETURNS_DEEP_STUBS);
-        when(database.getResourceMetaData().getDatabaseType()).thenReturn(new MySQLDatabaseType());
+        when(database.getProtocolType()).thenReturn(new MySQLDatabaseType());
         when(database.getResourceMetaData().getDataSources()).thenReturn(Collections.emptyMap());
         when(database.getResourceMetaData().getNotExistedResources(any())).thenReturn(Collections.emptyList());
         when(database.getRuleMetaData()).thenReturn(new ShardingSphereRuleMetaData(Collections.emptyList()));

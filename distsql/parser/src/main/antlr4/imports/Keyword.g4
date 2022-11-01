@@ -59,16 +59,12 @@ SHOW
     : S H O W
     ;
 
-RESOURCE
-    : R E S O U R C E
-    ;
-
-RESOURCES
-    : R E S O U R C E S
-    ;
-
 FROM
     : F R O M
+    ;
+
+TO
+    : T O
     ;
 
 URL
@@ -229,10 +225,6 @@ YAML
 
 CONFIGURATION
     : C O N F I G U R A T I O N
-    ;
-
-CONFIG
-    : C O N F I G
     ;
 
 FILE
