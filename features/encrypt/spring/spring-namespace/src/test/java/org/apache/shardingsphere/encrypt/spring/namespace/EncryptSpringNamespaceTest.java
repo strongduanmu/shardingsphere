@@ -17,10 +17,10 @@
 
 package org.apache.shardingsphere.encrypt.spring.namespace;
 
+import org.apache.shardingsphere.encrypt.algorithm.config.AlgorithmProvidedEncryptRuleConfiguration;
 import org.apache.shardingsphere.encrypt.algorithm.encrypt.AESEncryptAlgorithm;
 import org.apache.shardingsphere.encrypt.algorithm.encrypt.MD5EncryptAlgorithm;
-import org.apache.shardingsphere.encrypt.algorithm.config.AlgorithmProvidedEncryptRuleConfiguration;
-import org.apache.shardingsphere.encrypt.algorithm.fuzzy.CharDigestFuzzyEncryptAlgorithm;
+import org.apache.shardingsphere.encrypt.algorithm.like.CharDigestLikeEncryptAlgorithm;
 import org.apache.shardingsphere.encrypt.api.config.rule.EncryptColumnRuleConfiguration;
 import org.apache.shardingsphere.encrypt.api.config.rule.EncryptTableRuleConfiguration;
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithm;
@@ -34,8 +34,8 @@ import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @ContextConfiguration(locations = "classpath:META-INF/spring/encrypt-application-context.xml")
@@ -48,7 +48,7 @@ public final class EncryptSpringNamespaceTest extends AbstractJUnit4SpringContex
     private EncryptAlgorithm<Object, String> md5Encryptor;
     
     @Resource
-    private EncryptAlgorithm<Object, String> fuzzyCnEncryptor;
+    private EncryptAlgorithm<Object, String> likeQueryEncryptor;
     
     @Resource
     private AlgorithmProvidedEncryptRuleConfiguration encryptRule;
@@ -65,8 +65,8 @@ public final class EncryptSpringNamespaceTest extends AbstractJUnit4SpringContex
     }
     
     @Test
-    public void assertFuzzyCnEncryptor() {
-        assertThat(fuzzyCnEncryptor.getType(), is("CHAR_DIGEST_FUZZY"));
+    public void assertLikeQueryEncryptor() {
+        assertThat(likeQueryEncryptor.getType(), is("CHAR_DIGEST_LIKE"));
     }
     
     @Test
@@ -81,17 +81,16 @@ public final class EncryptSpringNamespaceTest extends AbstractJUnit4SpringContex
         assertThat(encryptors.get("aesEncryptor"), instanceOf(AESEncryptAlgorithm.class));
         assertThat(encryptors.get("aesEncryptor").getProps().getProperty("aes-key-value"), is("123456"));
         assertThat(encryptors.get("md5Encryptor"), instanceOf(MD5EncryptAlgorithm.class));
-        assertThat(encryptors.get("fuzzyCnEncryptor"), instanceOf(CharDigestFuzzyEncryptAlgorithm.class));
+        assertThat(encryptors.get("likeQueryEncryptor"), instanceOf(CharDigestLikeEncryptAlgorithm.class));
     }
     
     private void assertEncryptTable(final EncryptTableRuleConfiguration tableRuleConfig) {
         assertThat(tableRuleConfig.getName(), is("t_order"));
         assertFalse(tableRuleConfig.getQueryWithCipherColumn());
-        assertThat(tableRuleConfig.getColumns().size(), is(3));
+        assertThat(tableRuleConfig.getColumns().size(), is(2));
         Iterator<EncryptColumnRuleConfiguration> columnRuleConfigs = tableRuleConfig.getColumns().iterator();
         assertEncryptColumn1(columnRuleConfigs.next());
         assertEncryptColumn2(columnRuleConfigs.next());
-        assertEncryptColumn3(columnRuleConfigs.next());
     }
     
     private void assertEncryptColumn1(final EncryptColumnRuleConfiguration columnRuleConfig) {
@@ -104,18 +103,10 @@ public final class EncryptSpringNamespaceTest extends AbstractJUnit4SpringContex
     private void assertEncryptColumn2(final EncryptColumnRuleConfiguration columnRuleConfig) {
         assertThat(columnRuleConfig.getLogicColumn(), is("credit_card"));
         assertThat(columnRuleConfig.getCipherColumn(), is("credit_card_cipher"));
-        assertThat(columnRuleConfig.getAssistedQueryColumn(), is("credit_card_assisted_query"));
+        assertThat(columnRuleConfig.getLikeQueryColumn(), is("credit_card_like_query"));
         assertThat(columnRuleConfig.getPlainColumn(), is("credit_card_plain"));
         assertThat(columnRuleConfig.getEncryptorName(), is("md5Encryptor"));
-        assertFalse(columnRuleConfig.getQueryWithCipherColumn());
-    }
-    
-    private void assertEncryptColumn3(final EncryptColumnRuleConfiguration columnRuleConfig) {
-        assertThat(columnRuleConfig.getLogicColumn(), is("credit_card"));
-        assertThat(columnRuleConfig.getCipherColumn(), is("credit_card_cipher"));
-        assertThat(columnRuleConfig.getFuzzyQueryColumn(), is("credit_card_fuzzy_query"));
-        assertThat(columnRuleConfig.getPlainColumn(), is("credit_card_plain"));
-        assertThat(columnRuleConfig.getEncryptorName(), is("fuzzyCnEncryptor"));
+        assertThat(columnRuleConfig.getLikeQueryEncryptorName(), is("likeQueryEncryptor"));
         assertFalse(columnRuleConfig.getQueryWithCipherColumn());
     }
 }

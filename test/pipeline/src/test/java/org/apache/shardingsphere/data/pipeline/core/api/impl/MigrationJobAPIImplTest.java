@@ -154,7 +154,7 @@ public final class MigrationJobAPIImplTest {
         DataConsistencyCalculateAlgorithm calculateAlgorithm = jobAPI.buildDataConsistencyCalculateAlgorithm(jobConfig, "FIXTURE", null);
         ConsistencyCheckJobConfiguration checkJobConfig = mock(ConsistencyCheckJobConfiguration.class);
         when(checkJobConfig.getJobId()).thenReturn(jobConfig.getJobId() + "1");
-        ConsistencyCheckJobItemContext checkJobItemContext = new ConsistencyCheckJobItemContext(checkJobConfig, 0, JobStatus.RUNNING);
+        ConsistencyCheckJobItemContext checkJobItemContext = new ConsistencyCheckJobItemContext(checkJobConfig, 0, JobStatus.RUNNING, null);
         Map<String, DataConsistencyCheckResult> checkResultMap = jobAPI.dataConsistencyCheck(jobConfig, calculateAlgorithm, checkJobItemContext);
         assertThat(checkResultMap.size(), is(1));
         assertTrue(checkResultMap.get("t_order").getCountCheckResult().isMatched());
@@ -252,8 +252,7 @@ public final class MigrationJobAPIImplTest {
     @Test
     public void assertCreateJobConfig() throws SQLException {
         initIntPrimaryEnvironment();
-        CreateMigrationJobParameter parameter = new CreateMigrationJobParameter("ds_0", null, "t_order", "logic_db", "t_order");
-        String jobId = jobAPI.createJobAndStart(parameter);
+        String jobId = jobAPI.createJobAndStart(new CreateMigrationJobParameter("ds_0", null, "t_order", "logic_db", "t_order"));
         MigrationJobConfiguration jobConfig = jobAPI.getJobConfiguration(jobId);
         assertThat(jobConfig.getSourceResourceName(), is("ds_0"));
         assertThat(jobConfig.getSourceTableName(), is("t_order"));
@@ -263,8 +262,8 @@ public final class MigrationJobAPIImplTest {
     
     private void initIntPrimaryEnvironment() throws SQLException {
         Map<String, DataSourceProperties> metaDataDataSource = new PipelineDataSourcePersistService().load(JobType.MIGRATION);
-        DataSourceProperties dataSourceProperties = metaDataDataSource.get("ds_0");
-        DataSource dataSource = DataSourcePoolCreator.create(dataSourceProperties);
+        DataSourceProperties dataSourceProps = metaDataDataSource.get("ds_0");
+        DataSource dataSource = DataSourcePoolCreator.create(dataSourceProps);
         try (
                 Connection connection = dataSource.getConnection();
                 Statement statement = connection.createStatement()) {

@@ -58,20 +58,19 @@ public final class StandardPipelineDataSourceConfiguration implements PipelineDa
     private final DatabaseType databaseType;
     
     @SuppressWarnings("unchecked")
-    public StandardPipelineDataSourceConfiguration(final String parameter) {
-        this(parameter, YamlEngine.unmarshal(parameter, Map.class));
+    public StandardPipelineDataSourceConfiguration(final String param) {
+        this(param, YamlEngine.unmarshal(param, Map.class));
     }
     
-    public StandardPipelineDataSourceConfiguration(final Map<String, Object> yamlDataSourceConfig) {
-        this(YamlEngine.marshal(yamlDataSourceConfig), yamlDataSourceConfig);
+    public StandardPipelineDataSourceConfiguration(final Map<String, Object> yamlConfig) {
+        this(YamlEngine.marshal(yamlConfig), yamlConfig);
     }
     
-    private StandardPipelineDataSourceConfiguration(final String parameter, final Map<String, Object> yamlConfig) {
-        this.parameter = parameter;
+    private StandardPipelineDataSourceConfiguration(final String param, final Map<String, Object> yamlConfig) {
+        parameter = param;
         for (String each : Arrays.asList("minPoolSize", "minimumIdle")) {
             yamlConfig.put(each, "1");
         }
-        // TODO jdbcUrl not find now, can be deleted after confirmation
         if (yamlConfig.containsKey("jdbcUrl")) {
             yamlConfig.put("url", yamlConfig.get("jdbcUrl"));
             yamlConfig.remove("jdbcUrl");

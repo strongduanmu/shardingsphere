@@ -41,7 +41,7 @@ import static org.junit.Assert.assertTrue;
 @Slf4j
 public abstract class BaseTransactionITCase extends BaseITCase {
     
-    public BaseTransactionITCase(final TransactionParameterized parameterized) throws SQLException {
+    public BaseTransactionITCase(final TransactionParameterized parameterized) {
         super(parameterized);
     }
     
@@ -105,8 +105,8 @@ public abstract class BaseTransactionITCase extends BaseITCase {
         return false;
     }
     
-    private Map<String, String> executeShowTransactionRule(final Connection conn) throws SQLException {
-        Statement statement = conn.createStatement();
+    private Map<String, String> executeShowTransactionRule(final Connection connection) throws SQLException {
+        Statement statement = connection.createStatement();
         ResultSet resultSet = statement.executeQuery("SHOW TRANSACTION RULE;");
         Map<String, String> result = new HashMap<>(1, 1);
         while (resultSet.next()) {

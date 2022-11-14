@@ -40,7 +40,6 @@ import org.apache.shardingsphere.integration.transaction.framework.param.Transac
 import org.apache.shardingsphere.integration.transaction.util.TestCaseClassScanner;
 import org.apache.shardingsphere.test.integration.env.container.atomic.constants.AdapterContainerConstants;
 import org.apache.shardingsphere.test.integration.env.container.atomic.storage.DockerStorageContainer;
-import org.apache.shardingsphere.test.integration.env.container.atomic.util.DatabaseTypeUtil;
 import org.apache.shardingsphere.test.integration.env.container.atomic.util.StorageContainerUtil;
 import org.apache.shardingsphere.test.integration.env.runtime.DataSourceEnvironment;
 import org.apache.shardingsphere.transaction.core.TransactionType;
@@ -49,7 +48,6 @@ import javax.sql.DataSource;
 import javax.xml.bind.JAXB;
 import java.io.File;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -62,7 +60,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -128,17 +125,11 @@ public abstract class BaseITCase {
     }
     
     final boolean isProxyAdapter(final TransactionParameterized parameterized) {
-        return parameterized.getAdapter().equalsIgnoreCase(AdapterContainerConstants.PROXY);
+        return AdapterContainerConstants.PROXY.equalsIgnoreCase(parameterized.getAdapter());
     }
     
     private ProxyDataSource createProxyDataSource() {
         return new ProxyDataSource(containerComposer, SHARDING_DB, ENV.getProxyUserName(), ENV.getProxyPassword());
-    }
-    
-    private Properties getPostgreSQLQueryProperties() {
-        Properties result = new Properties();
-        result.put("preferQueryMode", "extendedForPrepared");
-        return result;
     }
     
     private JdbcDataSource createJdbcDataSource() {
@@ -211,7 +202,6 @@ public abstract class BaseITCase {
             String scenario = annotation.scenario();
             addParametersByTransactionTypes(version, currentTestCaseInfo, each, annotation, parameterizedMap, scenario);
         }
-        
         return parameterizedMap.values();
     }
     
@@ -289,33 +279,6 @@ public abstract class BaseITCase {
         return dataSource.getConnection();
     }
     
-    final void addResources() throws SQLException {
-        if (DatabaseTypeUtil.isMySQL(databaseType)) {
-            try (Connection connection = DriverManager.getConnection(getContainerComposer().getProxyJdbcUrl(""), ENV.getProxyUserName(), ENV.getProxyPassword())) {
-                executeWithLog(connection, "USE sharding_db");
-                addResources(connection);
-            }
-        } else {
-            Properties queryProps = getPostgreSQLQueryProperties();
-            try (
-                    Connection connection = DriverManager.getConnection(JDBC_URL_APPENDER.appendQueryProperties(getContainerComposer().getProxyJdbcUrl("sharding_db"), queryProps),
-                            ENV.getProxyUserName(), ENV.getProxyPassword())) {
-                addResources(connection);
-            }
-        }
-        int resourceCount = countWithLog("SHOW STORAGE UNITS FROM sharding_db");
-        assertThat(resourceCount, is(2));
-    }
-    
-    private void addResources(final Connection connection) throws SQLException {
-        String addSourceResource = commonSQLCommand.getSourceAddResourceTemplate()
-                .replace("${user}", ENV.getActualDataSourceUsername(databaseType))
-                .replace("${password}", ENV.getActualDataSourcePassword(databaseType))
-                .replace("${ds0}", getActualJdbcUrlTemplate(DATA_SOURCE_0))
-                .replace("${ds1}", getActualJdbcUrlTemplate(DATA_SOURCE_1));
-        executeWithLog(connection, addSourceResource);
-    }
-    
     private String getActualJdbcUrlTemplate(final String databaseName) {
         if (ENV.getItEnvType() == TransactionITEnvTypeEnum.DOCKER) {
             DockerStorageContainer storageContainer = ((DockerContainerComposer) containerComposer).getStorageContainer();
@@ -361,9 +324,9 @@ public abstract class BaseITCase {
         while (retryNumber <= 3) {
             try {
                 Statement statement = connection.createStatement();
-                ResultSet rs = statement.executeQuery(sql);
+                ResultSet resultSet = statement.executeQuery(sql);
                 int result = 0;
-                while (rs.next()) {
+                while (resultSet.next()) {
                     result++;
                 }
                 return result;
