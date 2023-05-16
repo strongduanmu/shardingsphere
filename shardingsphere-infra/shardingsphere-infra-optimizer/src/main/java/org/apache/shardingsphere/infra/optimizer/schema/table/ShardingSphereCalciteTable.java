@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 @Getter
 @Setter
@@ -79,6 +80,9 @@ public final class ShardingSphereCalciteTable extends AbstractTable implements T
 
     @Override
     public Statistic getStatistic() {
-        return Statistics.of(StatisticsProvider.get(schemaName).getTableRowCount(tableName), Collections.emptyList());
+        int randomRowCount = new Random().nextInt(100000);
+        System.out.println("randomRowCount:" + randomRowCount);
+        double rowCount = null == StatisticsProvider.get(schemaName) ? randomRowCount : StatisticsProvider.get(schemaName).getTableRowCount(tableName);  
+        return Statistics.of(rowCount, Collections.emptyList());
     }
 }

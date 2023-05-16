@@ -16,3 +16,5 @@
 #
  
 org.apache.shardingsphere.infra.optimizer.sharding.InlineShardingAlgorithm
+org.apache.shardingsphere.infra.optimizer.sharding.mod.HashModShardingAlgorithm
+org.apache.shardingsphere.infra.optimizer.sharding.mod.ModShardingAlgorithm

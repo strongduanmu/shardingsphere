@@ -111,6 +111,19 @@ public class DefaultPlannerTest extends AbstractSchemaTest {
         Assert.assertTrue(physicalRelNode instanceof SSMergeSort);
         Assert.assertTrue(((SSMergeSort) physicalRelNode).getInput() instanceof SSScan);
     }
+
+    @Test
+    public void testWithMultiTableJoin() {
+        String sql = "select * from t_order o inner join t_order_item i on "
+                + "o.order_id = i.order_id inner join t_user u on i.user_id = u.user_id";
+
+        SqlNode sqlNode = SqlParserFacade.parse(sql);
+        RelNode relNode = relNodeConverter.validateAndConvert(sqlNode);
+
+        RelNode physicalRelNode = defaultPlanner.getPhysicPlan(relNode);
+        Assert.assertTrue(physicalRelNode instanceof SSMergeSort);
+        Assert.assertTrue(((SSMergeSort) physicalRelNode).getInput() instanceof SSScan);
+    }
     
     @Test
     public void testWithSort() {

@@ -56,6 +56,7 @@ public final class SSScan extends AbstractScan implements SSRel {
      * @return <code>SSScan</code> instance
      */
     public static SSScan create(final RelOptCluster cluster, final RelTraitSet traitSet, final RelNode pushdownRelNode) {
+        // TODO A JOIN B JOIN C 时，会将其中的一个 JOIN 下推到数据库执行，需要优化根据是否绑定表决定是否下推
         return new SSScan(cluster, traitSet, pushdownRelNode);
     }
 }
