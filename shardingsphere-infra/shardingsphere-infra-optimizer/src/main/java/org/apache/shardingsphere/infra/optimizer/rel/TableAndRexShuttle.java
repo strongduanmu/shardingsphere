@@ -36,11 +36,11 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.shardingsphere.infra.optimizer.sharding.ShardingRule;
+import org.apache.shardingsphere.infra.optimizer.sharding.route.engine.condition.value.ListShardingConditionValue;
+import org.apache.shardingsphere.infra.optimizer.sharding.route.engine.condition.value.RangeShardingConditionValue;
+import org.apache.shardingsphere.infra.optimizer.sharding.route.engine.condition.value.ShardingConditionValue;
 import org.apache.shardingsphere.infra.optimizer.tools.RelNodeUtil;
-import org.apache.shardingsphere.sharding.route.engine.condition.value.ListShardingConditionValue;
-import org.apache.shardingsphere.sharding.route.engine.condition.value.RangeShardingConditionValue;
-import org.apache.shardingsphere.sharding.route.engine.condition.value.ShardingConditionValue;
-import org.apache.shardingsphere.sharding.rule.ShardingRule;
 
 import java.sql.Types;
 import java.util.ArrayList;

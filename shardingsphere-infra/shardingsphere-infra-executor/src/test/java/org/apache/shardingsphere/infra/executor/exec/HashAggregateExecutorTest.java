@@ -49,6 +49,7 @@ public class HashAggregateExecutorTest extends BaseExecutorTest {
         Executor executor = buildExecutor(hashAggregate);
         while (executor.moveNext()) {
             Row row = executor.current();
+            print(row);
             Assert.assertNotNull(row);
         }
         executor.close();

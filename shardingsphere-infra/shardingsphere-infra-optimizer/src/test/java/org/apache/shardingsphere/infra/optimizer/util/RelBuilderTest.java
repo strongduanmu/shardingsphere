@@ -53,7 +53,7 @@ public class RelBuilderTest {
                     protected Map<String, Table> getTableMap() {
                         Collection<ColumnMetaData> columnMetaDataList = new ArrayList<>();
                         ColumnMetaData columnMetaData = new ColumnMetaData("c", 4, true, false, false);
-                        TableMetaData tableMetaData = new TableMetaData(Arrays.asList(columnMetaData), Collections.emptyList());
+                        TableMetaData tableMetaData = new TableMetaData("test", Arrays.asList(columnMetaData), Collections.emptyList());
                         ShardingSphereCalciteTable table = new ShardingSphereCalciteTable("logic_db", "EMP", tableMetaData);
                         return ImmutableMap.of(table.getTableName(), table);
                     }

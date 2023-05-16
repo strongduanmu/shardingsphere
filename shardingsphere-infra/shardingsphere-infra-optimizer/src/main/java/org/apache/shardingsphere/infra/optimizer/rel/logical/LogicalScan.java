@@ -34,10 +34,10 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.tools.RelBuilder.GroupKey;
 import org.apache.shardingsphere.infra.optimizer.rel.AbstractScan;
+import org.apache.shardingsphere.infra.optimizer.sharding.ShardingRule;
 import org.apache.shardingsphere.infra.optimizer.tools.OptimizerContext;
 import org.apache.shardingsphere.infra.optimizer.tools.PushdownRelBuilder;
 import org.apache.shardingsphere.infra.route.context.RouteContext;
-import org.apache.shardingsphere.sharding.rule.ShardingRule;
 
 import java.util.List;
 import java.util.Set;

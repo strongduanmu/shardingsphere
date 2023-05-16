@@ -26,6 +26,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.shardingsphere.infra.executor.exec.ExecContext;
 import org.apache.shardingsphere.infra.executor.exec.func.BuiltinFunction;
 import org.apache.shardingsphere.infra.executor.exec.func.BuiltinFunctionTable;
@@ -54,7 +55,13 @@ public final class RexEvaluatorConverter extends RexVisitorImpl<Evaluator> {
     
     @Override
     public Evaluator visitLiteral(final RexLiteral literal) {
-        return new ConstantEvaluator(literal.getValue4(), literal.getType());
+        Object value;
+        if (literal.getType().getSqlTypeName().equals(SqlTypeName.INTEGER)) {
+            value = Integer.parseInt(literal.getValue4().toString());    
+        } else {
+            value = literal.getValue4();
+        }
+        return new ConstantEvaluator(value, literal.getType());
     }
     
     @Override

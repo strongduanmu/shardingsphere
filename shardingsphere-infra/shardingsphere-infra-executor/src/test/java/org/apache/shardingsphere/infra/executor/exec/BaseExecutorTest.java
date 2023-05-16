@@ -39,6 +39,7 @@ import org.apache.shardingsphere.infra.config.RuleConfiguration;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
 import org.apache.shardingsphere.infra.database.type.dialect.H2DatabaseType;
 import org.apache.shardingsphere.infra.executor.exec.ExecContext.OriginSql;
+import org.apache.shardingsphere.infra.executor.exec.meta.Row;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResultMetaData;
 import org.apache.shardingsphere.infra.executor.sql.prepare.driver.jdbc.ExecutorJDBCManager;
 import org.apache.shardingsphere.infra.executor.sql.prepare.driver.jdbc.StatementOption;
@@ -46,13 +47,14 @@ import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.metadata.schema.model.ColumnMetaData;
 import org.apache.shardingsphere.infra.metadata.schema.model.TableMetaData;
 import org.apache.shardingsphere.infra.optimizer.schema.ShardingSphereCalciteSchema;
+import org.apache.shardingsphere.infra.optimizer.sharding.ShardingRule;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
 import org.apache.shardingsphere.infra.rule.builder.ShardingSphereRulesBuilder;
-import org.apache.shardingsphere.infra.yaml.config.YamlRootRuleConfigurations;
+import org.apache.shardingsphere.infra.rule.builder.ShardingSphereRulesBuilderMaterials;
+import org.apache.shardingsphere.infra.yaml.config.pojo.YamlRootConfiguration;
+import org.apache.shardingsphere.infra.yaml.config.swapper.YamlDataSourceConfigurationSwapper;
+import org.apache.shardingsphere.infra.yaml.config.swapper.YamlRuleConfigurationSwapperEngine;
 import org.apache.shardingsphere.infra.yaml.engine.YamlEngine;
-import org.apache.shardingsphere.infra.yaml.swapper.YamlDataSourceConfigurationSwapper;
-import org.apache.shardingsphere.infra.yaml.swapper.YamlRuleConfigurationSwapperEngine;
-import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.h2.tools.RunScript;
 
 import javax.sql.DataSource;
@@ -129,26 +131,26 @@ public abstract class BaseExecutorTest {
      * init sharding rule.
      * @throws IOException io exception
      */
-    public static void initRule() throws IOException {
+    public static void initRule() throws IOException, SQLException {
         File yamlFile = new File(BaseExecutorTest.class.getResource("/config/sharding-databases-tables.yaml").getFile());
-        YamlRootRuleConfigurations configurations = YamlEngine.unmarshal(yamlFile, YamlRootRuleConfigurations.class);
+        YamlRootConfiguration configurations = YamlEngine.unmarshal(yamlFile, YamlRootConfiguration.class);
         ACTUAL_DATA_SOURCES.putAll(DATASOURCE_SWAPPER.swapToDataSources(configurations.getDataSources()));
         Collection<RuleConfiguration> ruleConfigs = SWAPPER_ENGINE.swapToRuleConfigurations(configurations.getRules());
-        rules = ShardingSphereRulesBuilder.buildSchemaRules(SCHEMA_NAME, ruleConfigs, new H2DatabaseType(), ACTUAL_DATA_SOURCES);
+        rules = ShardingSphereRulesBuilder.buildSchemaRules(new ShardingSphereRulesBuilderMaterials(SCHEMA_NAME, ruleConfigs, new H2DatabaseType(), ACTUAL_DATA_SOURCES, new ConfigurationProperties(new Properties())));
     }
     
     protected static void initSchema() {
         Map<String, TableMetaData> tableMetaDataMap = new HashMap<>(3, 1);
-        tableMetaDataMap.put("t_order", new TableMetaData(
+        tableMetaDataMap.put("t_order", new TableMetaData("t_order",
                 Arrays.asList(new ColumnMetaData("order_id", Types.INTEGER, true, false, false),
                         new ColumnMetaData("user_id", Types.INTEGER, false, false, false),
                         new ColumnMetaData("status", Types.VARCHAR, false, false, false)), Collections.emptySet()));
-        tableMetaDataMap.put("t_order_item", new TableMetaData(Arrays.asList(new ColumnMetaData("order_item_id", Types.INTEGER, true, false, false),
+        tableMetaDataMap.put("t_order_item", new TableMetaData("t_order_item", Arrays.asList(new ColumnMetaData("order_item_id", Types.INTEGER, true, false, false),
                 new ColumnMetaData("order_id", Types.INTEGER, false, false, false),
                 new ColumnMetaData("user_id", Types.INTEGER, false, false, false),
                 new ColumnMetaData("status", Types.VARCHAR, false, false, false),
                 new ColumnMetaData("remarks", Types.VARCHAR, false, false, false)), Collections.emptySet()));
-        tableMetaDataMap.put("t_user", new TableMetaData(Arrays.asList(new ColumnMetaData("user_id", Types.INTEGER, true, false, false),
+        tableMetaDataMap.put("t_user", new TableMetaData("t_user", Arrays.asList(new ColumnMetaData("user_id", Types.INTEGER, true, false, false),
                 new ColumnMetaData("plain_pwd", Types.VARCHAR, false, false, false),
                 new ColumnMetaData("user_name", Types.VARCHAR, false, false, false)), Collections.emptySet()));
         schema = new ShardingSphereSchema(tableMetaDataMap);
@@ -197,5 +199,12 @@ public abstract class BaseExecutorTest {
             result.put(resultSetMetaData.getColumnLabel(columnIndex), columnIndex);
         }
         return result;
+    }
+
+    protected void print(Row row) {
+        for (int i = 1; i <= row.length(); i++) {
+            System.out.print(row.getColumnValue(i).toString() + " ");
+        }
+        System.out.println();
     }
 }

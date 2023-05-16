@@ -69,13 +69,14 @@ public class NestedLoopJoinExecutorTest extends BaseExecutorTest {
         Executor executor = buildExecutor(nestedLoopJoin);
         while (executor.moveNext()) {
             Row row = executor.current();
+            print(row);
             Assert.assertNotNull(row);
             rowCount++;
         }
         Assert.assertEquals(3, rowCount);
         executor.close();
     }
-    
+
     private RelDataTypeField getField(final RelNode relNode, final String field) {
         return relNode.getRowType().getField(field, false, false);
     }

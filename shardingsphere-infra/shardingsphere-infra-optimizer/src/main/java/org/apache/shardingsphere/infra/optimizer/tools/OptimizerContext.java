@@ -18,7 +18,7 @@
 package org.apache.shardingsphere.infra.optimizer.tools;
 
 import lombok.Getter;
-import org.apache.shardingsphere.sharding.rule.ShardingRule;
+import org.apache.shardingsphere.infra.optimizer.sharding.ShardingRule;
 
 import java.util.Optional;
 

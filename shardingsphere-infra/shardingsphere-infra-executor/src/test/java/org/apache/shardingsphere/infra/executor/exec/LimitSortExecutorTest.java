@@ -57,6 +57,7 @@ public class LimitSortExecutorTest extends BaseExecutorTest {
         Comparable pre = null;
         while (executor.moveNext()) {
             Row row = executor.current();
+            print(row);
             Comparable value = row.getColumnValue(columnNameIdxMap.get("order_item_id"));
             if (pre != null) {
                 Assert.assertTrue(pre.compareTo(value) < 0);
@@ -90,6 +91,7 @@ public class LimitSortExecutorTest extends BaseExecutorTest {
         int rowCount = 0;
         while (executor.moveNext()) {
             Row row = executor.current();
+            print(row);
             Comparable value = row.getColumnValue(columnNameIdxMap.get("order_item_id"));
             if (pre != null) {
                 Assert.assertTrue(pre.compareTo(value) < 0);

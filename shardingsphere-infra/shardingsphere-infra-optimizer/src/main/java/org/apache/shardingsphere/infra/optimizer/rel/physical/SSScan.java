@@ -24,8 +24,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.shardingsphere.infra.optimizer.planner.ShardingSphereConvention;
 import org.apache.shardingsphere.infra.optimizer.rel.AbstractScan;
+import org.apache.shardingsphere.infra.optimizer.sharding.ShardingRule;
 import org.apache.shardingsphere.infra.route.context.RouteContext;
-import org.apache.shardingsphere.sharding.rule.ShardingRule;
 
 public final class SSScan extends AbstractScan implements SSRel {
     

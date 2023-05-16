@@ -55,6 +55,7 @@ public class MergeSortExecutorTest extends BaseExecutorTest {
         Comparable pre = null;
         while (executor.moveNext()) {
             Row row = executor.current();
+            print(row);
             Comparable value = row.getColumnValue(columNameIndexMap.get("order_item_id"));
             if (pre == null) {
                 pre = value;

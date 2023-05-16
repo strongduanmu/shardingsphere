@@ -21,8 +21,8 @@ import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
 import org.apache.shardingsphere.infra.metadata.resource.ShardingSphereResource;
 import org.apache.shardingsphere.infra.metadata.schema.ShardingSphereSchema;
-import org.apache.shardingsphere.sharding.rule.ShardingRule;
-import org.apache.shardingsphere.sharding.rule.TableRule;
+import org.apache.shardingsphere.infra.optimizer.sharding.ShardingRule;
+import org.apache.shardingsphere.infra.optimizer.sharding.TableRule;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

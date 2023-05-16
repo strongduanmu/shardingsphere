@@ -24,14 +24,14 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.shardingsphere.infra.config.properties.ConfigurationProperties;
+import org.apache.shardingsphere.infra.optimizer.sharding.ShardingRule;
+import org.apache.shardingsphere.infra.optimizer.sharding.route.engine.condition.ShardingCondition;
+import org.apache.shardingsphere.infra.optimizer.sharding.route.engine.condition.ShardingConditions;
+import org.apache.shardingsphere.infra.optimizer.sharding.route.engine.condition.value.ShardingConditionValue;
+import org.apache.shardingsphere.infra.optimizer.sharding.route.engine.type.ShardingRouteEngine;
+import org.apache.shardingsphere.infra.optimizer.sharding.route.engine.type.complex.ShardingComplexRoutingEngine;
+import org.apache.shardingsphere.infra.optimizer.sharding.route.engine.type.standard.ShardingStandardRoutingEngine;
 import org.apache.shardingsphere.infra.route.context.RouteContext;
-import org.apache.shardingsphere.sharding.route.engine.condition.ShardingCondition;
-import org.apache.shardingsphere.sharding.route.engine.condition.ShardingConditions;
-import org.apache.shardingsphere.sharding.route.engine.condition.value.ShardingConditionValue;
-import org.apache.shardingsphere.sharding.route.engine.type.ShardingRouteEngine;
-import org.apache.shardingsphere.sharding.route.engine.type.complex.ShardingComplexRoutingEngine;
-import org.apache.shardingsphere.sharding.route.engine.type.standard.ShardingStandardRoutingEngine;
-import org.apache.shardingsphere.sharding.rule.ShardingRule;
 
 import java.util.Collection;
 import java.util.List;
@@ -77,7 +77,7 @@ public abstract class AbstractScan extends AbstractRelNode {
             return result;
         }).collect(Collectors.toList());
         ShardingRouteEngine shardingRouteEngine = getShardingRouteEngine(shardingRule,
-                new ShardingConditions(shardingConditions), map.keySet(),
+                new ShardingConditions(shardingConditions, false), map.keySet(),
                 new ConfigurationProperties(new Properties()));
         RouteContext routeContext = new RouteContext();
         shardingRouteEngine.route(routeContext, shardingRule);

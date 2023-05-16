@@ -43,7 +43,7 @@ public class CalcExecutorTest extends BaseExecutorTest {
         RelNode tableScan = relBuilder.scan("t_order_item").build();
         SSScan scan = SSScan.create(relBuilder.getCluster(), tableScan.getTraitSet(), tableScan);
         RelNode relNode = relBuilder.scan("t_order_item")
-                .filter(relBuilder.call(SqlStdOperatorTable.EQUALS, relBuilder.field("user_id"), relBuilder.literal(1000)))
+                .filter(relBuilder.call(SqlStdOperatorTable.EQUALS, relBuilder.field("user_id"), relBuilder.literal(10)))
                 .project(relBuilder.field("order_item_id"), relBuilder.field("order_id"), relBuilder.field("user_id"))
                 .build();
         Assert.assertTrue(relNode instanceof LogicalProject);
@@ -56,6 +56,7 @@ public class CalcExecutorTest extends BaseExecutorTest {
         Executor executor = buildExecutor(calc);
         while (executor.moveNext()) {
             Row row = executor.current();
+            print(row);
             Assert.assertNotNull(row);
         }
         executor.close();

@@ -55,6 +55,7 @@ public class ScanExecutorTest extends BaseExecutorTest {
         int rowCount = 0;
         while (executor.moveNext()) {
             Row row = executor.current();
+            print(row);
             Assert.assertNotNull(row);
             rowCount++;
         }
@@ -79,6 +80,7 @@ public class ScanExecutorTest extends BaseExecutorTest {
         int rowCount = 0;
         while (executor.moveNext()) {
             Row row = executor.current();
+            print(row);
             Assert.assertNotNull(row);
             int userId = row.getColumnValue(columnNameIdxMap.get("user_id"));
             Assert.assertEquals(10, userId);
@@ -108,6 +110,7 @@ public class ScanExecutorTest extends BaseExecutorTest {
         Executor executor = buildExecutor(scan);
         while (executor.moveNext()) {
             Row row = executor.current();
+            print(row);
             Assert.assertNotNull(row);
         }
         executor.close();

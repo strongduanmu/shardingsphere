@@ -18,13 +18,12 @@
 package org.apache.shardingsphere.infra.optimizer.util;
 
 import org.apache.shardingsphere.infra.config.algorithm.ShardingSphereAlgorithmConfiguration;
-import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.sharding.algorithm.sharding.inline.InlineShardingAlgorithm;
+import org.apache.shardingsphere.infra.optimizer.sharding.InlineShardingAlgorithm;
+import org.apache.shardingsphere.infra.optimizer.sharding.ShardingRule;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.keygen.KeyGenerateStrategyConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.sharding.StandardShardingStrategyConfiguration;
-import org.apache.shardingsphere.sharding.rule.ShardingRule;
 
 import javax.sql.DataSource;
 import java.util.HashMap;
@@ -70,7 +69,7 @@ public class ShardingRuleConfigUtil {
         shardingRuleConfig.getShardingAlgorithms().put("standard", new ShardingSphereAlgorithmConfiguration("HASH_MOD", properties));
         shardingRuleConfig.getKeyGenerators().put("increment", new ShardingSphereAlgorithmConfiguration("SNOWFLAKE", new Properties()));
         shardingRuleConfig.getKeyGenerators().put("default", new ShardingSphereAlgorithmConfiguration("SNOWFLAKE", new Properties()));
-        return new ShardingRule(shardingRuleConfig, mock(DatabaseType.class), createDataSourceMap());
+        return new ShardingRule(shardingRuleConfig, createDataSourceMap());
     }
     
     private static ShardingTableRuleConfiguration createTableRuleConfiguration(final String logicTableName, final String actualDataNodes) {

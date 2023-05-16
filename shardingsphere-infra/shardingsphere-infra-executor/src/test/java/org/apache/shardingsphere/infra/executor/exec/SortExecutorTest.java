@@ -52,6 +52,7 @@ public class SortExecutorTest extends BaseExecutorTest {
         Executor executor = buildExecutor(sort);
         while (executor.moveNext()) {
             Row row = executor.current();
+            print(row);
             Assert.assertNotNull(row);
         }
         executor.close();

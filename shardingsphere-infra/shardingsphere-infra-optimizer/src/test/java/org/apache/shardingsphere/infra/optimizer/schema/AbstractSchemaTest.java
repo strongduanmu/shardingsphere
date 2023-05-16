@@ -31,16 +31,16 @@ public class AbstractSchemaTest {
 
     protected ShardingSphereSchema buildSchema() {
         Map<String, TableMetaData> tableMetaDataMap = new HashMap<>(3, 1);
-        tableMetaDataMap.put("t_order", new TableMetaData(
+        tableMetaDataMap.put("t_order", new TableMetaData("t_order", 
                 Arrays.asList(new ColumnMetaData("order_id", Types.INTEGER, true, false, false),
                         new ColumnMetaData("user_id", Types.INTEGER, false, false, false),
                         new ColumnMetaData("status", Types.VARCHAR, false, false, false)), Collections.emptySet()));
-        tableMetaDataMap.put("t_order_item", new TableMetaData(Arrays.asList(new ColumnMetaData("order_item_id", Types.INTEGER, true, false, false),
+        tableMetaDataMap.put("t_order_item", new TableMetaData("t_order_item", Arrays.asList(new ColumnMetaData("order_item_id", Types.INTEGER, true, false, false),
                 new ColumnMetaData("order_id", Types.INTEGER, false, false, false),
                 new ColumnMetaData("user_id", Types.INTEGER, false, false, false),
                 new ColumnMetaData("status", Types.VARCHAR, false, false, false),
                 new ColumnMetaData("c_date", Types.TIMESTAMP, false, false, false)), Collections.emptySet()));
-        tableMetaDataMap.put("t_user", new TableMetaData(Arrays.asList(new ColumnMetaData("user_id", Types.INTEGER, true, false, false),
+        tableMetaDataMap.put("t_user", new TableMetaData("t_user", Arrays.asList(new ColumnMetaData("user_id", Types.INTEGER, true, false, false),
                 new ColumnMetaData("user_name", Types.VARCHAR, false, false, false)), Collections.emptySet()));
         return new ShardingSphereSchema(tableMetaDataMap);
     }

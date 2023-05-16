@@ -27,13 +27,14 @@ import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.rules.TransformationRule;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.shardingsphere.infra.optimizer.rel.logical.LogicalScan;
+import org.apache.shardingsphere.infra.optimizer.sharding.BindingTableRule;
+import org.apache.shardingsphere.infra.optimizer.sharding.ShardingRule;
 import org.apache.shardingsphere.infra.optimizer.tools.OptimizerContext;
-import org.apache.shardingsphere.sharding.rule.BindingTableRule;
-import org.apache.shardingsphere.sharding.rule.ShardingRule;
-import org.apache.shardingsphere.sharding.rule.single.SingleTableRule;
+import org.apache.shardingsphere.infra.rule.single.SingleTableRule;
 
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -115,12 +116,12 @@ public final class PushJoinToScanRule extends RelRule<PushJoinToScanRule.Config>
             return true;
         }
     
-        return allSingleTableInSameDataNode(tablesWithoutBroadcast, shardingRule.getSingleTableRules());
+        return allSingleTableInSameDataNode(tablesWithoutBroadcast, Collections.emptyMap());
     }
     
     private boolean allBindingTables(final List<String> tablesNotBroadcase, final Collection<BindingTableRule> bindingTableRules) {
         for (BindingTableRule bindingTableRule : bindingTableRules) {
-            List<String> bindingTableNames = bindingTableRule.getTableRules().stream().map(input -> input.getLogicTable().toLowerCase()).collect(Collectors.toList());
+            Set<String> bindingTableNames = bindingTableRule.getTableRules().keySet();
             boolean allBindings = bindingTableNames.containsAll(tablesNotBroadcase);
             if (allBindings) {
                 return true;
@@ -133,9 +134,9 @@ public final class PushJoinToScanRule extends RelRule<PushJoinToScanRule.Config>
         if (!singleTableRuleMap.keySet().containsAll(tablesWithoutBroadcast)) {
             return false;
         }
-        
-        long dataSourceCount = tablesWithoutBroadcast.stream().map(singleTableRuleMap::get)
-                                .map(SingleTableRule::getDataSourceName).distinct().count();
+        long dataSourceCount = 0;
+//        long dataSourceCount = tablesWithoutBroadcast.stream().map(singleTableRuleMap::get)
+//                                .map(SingleTableRule::getDataSourceName).distinct().count();
         return dataSourceCount == 1;
     }
     
