@@ -27,45 +27,54 @@ import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.Sho
 import org.apache.shardingsphere.infra.database.DefaultDatabase;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.exception.SchemaNotFoundException;
-import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereSchema;
-import org.apache.shardingsphere.sql.parser.sql.common.constant.AggregationType;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereSchema;
+import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
+import org.apache.shardingsphere.sql.parser.sql.common.enums.AggregationType;
+import org.apache.shardingsphere.sql.parser.sql.common.enums.JoinType;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.complex.CommonExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.subquery.SubquerySegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.AggregationDistinctProjectionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.AggregationProjectionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ColumnProjectionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ExpressionProjectionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ProjectionsSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ShorthandProjectionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.AliasSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.OwnerSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.JoinTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SubqueryTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableNameSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.dml.OracleSelectStatement;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class ProjectionEngineTest {
+@ExtendWith(MockitoExtension.class)
+class ProjectionEngineTest {
     
     @Mock
     private ShardingSphereSchema schema;
@@ -74,13 +83,13 @@ public final class ProjectionEngineTest {
     private DatabaseType databaseType;
     
     @Test
-    public void assertCreateProjectionWhenProjectionSegmentNotMatched() {
+    void assertCreateProjectionWhenProjectionSegmentNotMatched() {
         assertFalse(new ProjectionEngine(DefaultDatabase.LOGIC_NAME,
                 Collections.singletonMap(DefaultDatabase.LOGIC_NAME, schema), databaseType).createProjection(mock(TableSegment.class), null).isPresent());
     }
     
     @Test
-    public void assertCreateProjectionWhenProjectionSegmentInstanceOfShorthandProjectionSegment() {
+    void assertCreateProjectionWhenProjectionSegmentInstanceOfShorthandProjectionSegment() {
         ShorthandProjectionSegment shorthandProjectionSegment = new ShorthandProjectionSegment(0, 0);
         shorthandProjectionSegment.setOwner(new OwnerSegment(0, 0, new IdentifierValue("tbl")));
         Optional<Projection> actual = new ProjectionEngine(DefaultDatabase.LOGIC_NAME,
@@ -90,22 +99,22 @@ public final class ProjectionEngineTest {
     }
     
     @Test
-    public void assertCreateProjectionWhenProjectionSegmentInstanceOfShorthandProjectionSegmentAndDuplicateTableSegment() {
+    void assertCreateProjectionWhenProjectionSegmentInstanceOfShorthandProjectionSegmentAndDuplicateTableSegment() {
         SimpleTableSegment table = new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("t_order")));
         when(schema.getVisibleColumnNames("t_order")).thenReturn(Arrays.asList("order_id", "content"));
         Optional<Projection> actual = new ProjectionEngine(DefaultDatabase.LOGIC_NAME,
                 Collections.singletonMap(DefaultDatabase.LOGIC_NAME, schema), databaseType).createProjection(table, new ShorthandProjectionSegment(0, 0));
         assertTrue(actual.isPresent());
         assertThat(actual.get(), instanceOf(ShorthandProjection.class));
-        assertThat(((ShorthandProjection) actual.get()).getActualColumns().size(), is(2));
-        Map<String, ColumnProjection> actualColumns = new LinkedHashMap<>();
-        actualColumns.put("t_order.order_id", new ColumnProjection("t_order", "order_id", null));
-        actualColumns.put("t_order.content", new ColumnProjection("t_order", "content", null));
-        assertThat(((ShorthandProjection) actual.get()).getActualColumns(), is(actualColumns));
+        assertThat(((ShorthandProjection) actual.get()).getColumnProjections().size(), is(2));
+        Collection<ColumnProjection> columnProjections = new LinkedList<>();
+        columnProjections.add(new ColumnProjection("t_order", "order_id", null));
+        columnProjections.add(new ColumnProjection("t_order", "content", null));
+        assertThat(((ShorthandProjection) actual.get()).getColumnProjections(), is(columnProjections));
     }
     
     @Test
-    public void assertCreateProjectionWhenProjectionSegmentInstanceOfColumnProjectionSegment() {
+    void assertCreateProjectionWhenProjectionSegmentInstanceOfColumnProjectionSegment() {
         ColumnProjectionSegment columnProjectionSegment = new ColumnProjectionSegment(new ColumnSegment(0, 10, new IdentifierValue("name")));
         columnProjectionSegment.setAlias(new AliasSegment(0, 0, new IdentifierValue("alias")));
         Optional<Projection> actual = new ProjectionEngine(DefaultDatabase.LOGIC_NAME,
@@ -115,7 +124,7 @@ public final class ProjectionEngineTest {
     }
     
     @Test
-    public void assertCreateProjectionWhenProjectionSegmentInstanceOfExpressionProjectionSegment() {
+    void assertCreateProjectionWhenProjectionSegmentInstanceOfExpressionProjectionSegment() {
         ExpressionProjectionSegment expressionProjectionSegment = new ExpressionProjectionSegment(0, 10, "text");
         Optional<Projection> actual = new ProjectionEngine(DefaultDatabase.LOGIC_NAME,
                 Collections.singletonMap(DefaultDatabase.LOGIC_NAME, schema), databaseType).createProjection(mock(TableSegment.class), expressionProjectionSegment);
@@ -124,7 +133,7 @@ public final class ProjectionEngineTest {
     }
     
     @Test
-    public void assertCreateProjectionWhenProjectionSegmentInstanceOfAggregationDistinctProjectionSegment() {
+    void assertCreateProjectionWhenProjectionSegmentInstanceOfAggregationDistinctProjectionSegment() {
         AggregationDistinctProjectionSegment aggregationDistinctProjectionSegment = new AggregationDistinctProjectionSegment(0, 10, AggregationType.COUNT, "(1)", "distinctExpression");
         Optional<Projection> actual = new ProjectionEngine(DefaultDatabase.LOGIC_NAME,
                 Collections.singletonMap(DefaultDatabase.LOGIC_NAME, schema), databaseType).createProjection(mock(TableSegment.class), aggregationDistinctProjectionSegment);
@@ -133,7 +142,7 @@ public final class ProjectionEngineTest {
     }
     
     @Test
-    public void assertCreateProjectionWhenProjectionSegmentInstanceOfAggregationProjectionSegment() {
+    void assertCreateProjectionWhenProjectionSegmentInstanceOfAggregationProjectionSegment() {
         AggregationProjectionSegment aggregationProjectionSegment = new AggregationProjectionSegment(0, 10, AggregationType.COUNT, "(1)");
         Optional<Projection> actual = new ProjectionEngine(DefaultDatabase.LOGIC_NAME,
                 Collections.singletonMap(DefaultDatabase.LOGIC_NAME, schema), databaseType).createProjection(mock(TableSegment.class), aggregationProjectionSegment);
@@ -142,7 +151,7 @@ public final class ProjectionEngineTest {
     }
     
     @Test
-    public void assertCreateProjectionWhenProjectionSegmentInstanceOfAggregationDistinctProjectionSegmentAndAggregationTypeIsAvg() {
+    void assertCreateProjectionWhenProjectionSegmentInstanceOfAggregationDistinctProjectionSegmentAndAggregationTypeIsAvg() {
         AggregationDistinctProjectionSegment aggregationDistinctProjectionSegment = new AggregationDistinctProjectionSegment(0, 10, AggregationType.AVG, "(1)", "distinctExpression");
         Optional<Projection> actual = new ProjectionEngine(DefaultDatabase.LOGIC_NAME,
                 Collections.singletonMap(DefaultDatabase.LOGIC_NAME, schema), databaseType).createProjection(mock(TableSegment.class), aggregationDistinctProjectionSegment);
@@ -151,7 +160,7 @@ public final class ProjectionEngineTest {
     }
     
     @Test
-    public void assertCreateProjectionWhenProjectionSegmentInstanceOfAggregationProjectionSegmentAndAggregationTypeIsAvg() {
+    void assertCreateProjectionWhenProjectionSegmentInstanceOfAggregationProjectionSegmentAndAggregationTypeIsAvg() {
         AggregationProjectionSegment aggregationProjectionSegment = new AggregationProjectionSegment(0, 10, AggregationType.AVG, "(1)");
         Optional<Projection> actual = new ProjectionEngine(DefaultDatabase.LOGIC_NAME,
                 Collections.singletonMap(DefaultDatabase.LOGIC_NAME, schema), databaseType).createProjection(mock(TableSegment.class), aggregationProjectionSegment);
@@ -160,7 +169,7 @@ public final class ProjectionEngineTest {
     }
     
     @Test
-    public void assertCreateProjectionWhenProjectionSegmentInstanceOfParameterMarkerExpressionSegment() {
+    void assertCreateProjectionWhenProjectionSegmentInstanceOfParameterMarkerExpressionSegment() {
         ParameterMarkerExpressionSegment parameterMarkerExpressionSegment = new ParameterMarkerExpressionSegment(7, 7, 0);
         parameterMarkerExpressionSegment.setAlias(new AliasSegment(0, 0, new IdentifierValue("alias")));
         Optional<Projection> actual = new ProjectionEngine(DefaultDatabase.LOGIC_NAME,
@@ -171,7 +180,7 @@ public final class ProjectionEngineTest {
     }
     
     @Test
-    public void assertCreateProjectionWhenProjectionSegmentInstanceOfShorthandProjectionSegmentAndJoinTableSegment() {
+    void assertCreateProjectionWhenProjectionSegmentInstanceOfShorthandProjectionSegmentAndJoinTableSegment() {
         SimpleTableSegment ordersTableSegment = new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("t_order")));
         when(schema.getVisibleColumnNames("t_order")).thenReturn(Arrays.asList("order_id", "customer_id"));
         SimpleTableSegment customersTableSegment = new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("t_customer")));
@@ -185,20 +194,219 @@ public final class ProjectionEngineTest {
                 DefaultDatabase.LOGIC_NAME, Collections.singletonMap(DefaultDatabase.LOGIC_NAME, schema), databaseType).createProjection(table, shorthandProjectionSegment);
         assertTrue(actual.isPresent());
         assertThat(actual.get(), instanceOf(ShorthandProjection.class));
-        Map<String, ColumnProjection> actualColumns = ((ShorthandProjection) actual.get()).getActualColumns();
-        assertThat(actualColumns.size(), is(3));
-        assertThat(actualColumns.get("t_order.order_id"), is(new ColumnProjection("t_order", "order_id", null)));
-        assertThat(actualColumns.get("t_order.customer_id"), is(new ColumnProjection("t_order", "customer_id", null)));
-        assertThat(actualColumns.get("t_customer.customer_id"), is(new ColumnProjection("t_customer", "customer_id", null)));
+        Collection<ColumnProjection> columnProjections = ((ShorthandProjection) actual.get()).getColumnProjections();
+        assertThat(columnProjections.size(), is(3));
+        Iterator<ColumnProjection> iterator = columnProjections.iterator();
+        assertThat(iterator.next(), is(new ColumnProjection("t_order", "order_id", null)));
+        assertThat(iterator.next(), is(new ColumnProjection("t_order", "customer_id", null)));
+        assertThat(iterator.next(), is(new ColumnProjection("t_customer", "customer_id", null)));
     }
     
-    @Test(expected = SchemaNotFoundException.class)
-    public void assertCreateProjectionWithNotExistedSchema() {
+    @Test
+    void assertCreateProjectionWithNotExistedSchema() {
         SimpleTableSegment tableSegment = mock(SimpleTableSegment.class, RETURNS_DEEP_STUBS);
         OwnerSegment ownerSegment = mock(OwnerSegment.class, RETURNS_DEEP_STUBS);
         when(tableSegment.getOwner()).thenReturn(Optional.of(ownerSegment));
         when(ownerSegment.getIdentifier().getValue()).thenReturn("public");
         ShorthandProjectionSegment shorthandProjectionSegment = new ShorthandProjectionSegment(0, 0);
-        new ProjectionEngine(DefaultDatabase.LOGIC_NAME, Collections.singletonMap(DefaultDatabase.LOGIC_NAME, schema), databaseType).createProjection(tableSegment, shorthandProjectionSegment);
+        assertThrows(SchemaNotFoundException.class, () -> new ProjectionEngine(
+                DefaultDatabase.LOGIC_NAME, Collections.singletonMap(DefaultDatabase.LOGIC_NAME, schema), databaseType).createProjection(tableSegment, shorthandProjectionSegment));
+    }
+    
+    @Test
+    void assertCreateProjectionWhenShorthandProjectionContainsColumnProjectionAndExpressionProjection() {
+        ProjectionsSegment subQuerySegment = new ProjectionsSegment(0, 0);
+        ColumnSegment columnSegment = new ColumnSegment(0, 0, new IdentifierValue("name"));
+        subQuerySegment.getProjections().add(new ColumnProjectionSegment(columnSegment));
+        ExpressionProjectionSegment expressionProjectionSegment = new ExpressionProjectionSegment(0, 0, "nvl(leave_date, '20991231')");
+        expressionProjectionSegment.setAlias(new AliasSegment(0, 0, new IdentifierValue("leave_date")));
+        subQuerySegment.getProjections().add(expressionProjectionSegment);
+        OracleSelectStatement subSelectStatement = new OracleSelectStatement();
+        subSelectStatement.setProjections(subQuerySegment);
+        subSelectStatement.setFrom(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("staff_info"))));
+        ShorthandProjectionSegment shorthandProjectionSegment = new ShorthandProjectionSegment(0, 0);
+        SubqueryTableSegment subqueryTableSegment = new SubqueryTableSegment(new SubquerySegment(0, 0, subSelectStatement));
+        Optional<Projection> actual = new ProjectionEngine(DefaultDatabase.LOGIC_NAME, Collections.singletonMap(DefaultDatabase.LOGIC_NAME, schema), databaseType)
+                .createProjection(subqueryTableSegment, shorthandProjectionSegment);
+        assertTrue(actual.isPresent());
+        assertThat(actual.get(), instanceOf(ShorthandProjection.class));
+        assertThat(((ShorthandProjection) actual.get()).getColumnProjections().size(), is(1));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns().size(), is(2));
+        Collection<ColumnProjection> columnProjections = new LinkedList<>();
+        columnProjections.add(new ColumnProjection(null, "name", null));
+        assertThat(((ShorthandProjection) actual.get()).getColumnProjections(), is(columnProjections));
+        Collection<Projection> expectedColumnProjections = new LinkedHashSet<>();
+        expectedColumnProjections.add(new ColumnProjection(null, "name", null));
+        expectedColumnProjections.add(new ExpressionProjection("nvl(leave_date, '20991231')", "leave_date"));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns(), is(expectedColumnProjections));
+    }
+    
+    @Test
+    void assertCreateProjectionWhenShorthandProjectionContainsJoinUsingColumnForPostgreSQL() {
+        when(schema.getVisibleColumnNames("t_order")).thenReturn(Arrays.asList("order_id", "user_id", "status", "merchant_id", "remark", "creation_date"));
+        when(schema.getVisibleColumnNames("t_order_item")).thenReturn(Arrays.asList("item_id", "order_id", "user_id", "product_id", "quantity", "creation_date"));
+        Optional<Projection> actual = new ProjectionEngine("public", Collections.singletonMap("public", schema), TypedSPILoader.getService(DatabaseType.class, "PostgreSQL"))
+                .createProjection(createJoinTableSegmentWithUsingColumn(), new ShorthandProjectionSegment(0, 0));
+        assertTrue(actual.isPresent());
+        assertThat(actual.get(), instanceOf(ShorthandProjection.class));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns().size(), is(9));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns(), is(crateExpectedColumnsWithoutOwnerForPostgreSQL()));
+    }
+    
+    @Test
+    void assertCreateProjectionWhenShorthandProjectionContainsJoinUsingColumnForMySQL() {
+        when(schema.getVisibleColumnNames("t_order")).thenReturn(Arrays.asList("order_id", "user_id", "status", "merchant_id", "remark", "creation_date"));
+        when(schema.getVisibleColumnNames("t_order_item")).thenReturn(Arrays.asList("item_id", "order_id", "user_id", "product_id", "quantity", "creation_date"));
+        Optional<Projection> actual = new ProjectionEngine(DefaultDatabase.LOGIC_NAME,
+                Collections.singletonMap(DefaultDatabase.LOGIC_NAME, schema),
+                TypedSPILoader.getService(DatabaseType.class, "MySQL")).createProjection(createJoinTableSegmentWithUsingColumn(), new ShorthandProjectionSegment(0, 0));
+        assertTrue(actual.isPresent());
+        assertThat(actual.get(), instanceOf(ShorthandProjection.class));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns().size(), is(9));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns(), is(crateExpectedColumnsWithoutOwnerForMySQL()));
+    }
+    
+    @Test
+    void assertCreateProjectionWhenShorthandProjectionContainsJoinUsingColumnAndOwnerForPostgreSQL() {
+        when(schema.getVisibleColumnNames("t_order")).thenReturn(Arrays.asList("order_id", "user_id", "status", "merchant_id", "remark", "creation_date"));
+        ShorthandProjectionSegment projectionSegment = new ShorthandProjectionSegment(0, 0);
+        projectionSegment.setOwner(new OwnerSegment(0, 0, new IdentifierValue("o")));
+        Optional<Projection> actual =
+                new ProjectionEngine("public", Collections.singletonMap("public", schema),
+                        TypedSPILoader.getService(DatabaseType.class, "PostgreSQL")).createProjection(createJoinTableSegmentWithUsingColumn(), projectionSegment);
+        assertTrue(actual.isPresent());
+        assertThat(actual.get(), instanceOf(ShorthandProjection.class));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns().size(), is(6));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns(), is(crateExpectedColumnsWithOwner()));
+    }
+    
+    @Test
+    void assertCreateProjectionWhenShorthandProjectionContainsJoinUsingColumnAndOwnerForMySQL() {
+        when(schema.getVisibleColumnNames("t_order")).thenReturn(Arrays.asList("order_id", "user_id", "status", "merchant_id", "remark", "creation_date"));
+        ShorthandProjectionSegment projectionSegment = new ShorthandProjectionSegment(0, 0);
+        projectionSegment.setOwner(new OwnerSegment(0, 0, new IdentifierValue("o")));
+        Optional<Projection> actual = new ProjectionEngine(DefaultDatabase.LOGIC_NAME, Collections.singletonMap(DefaultDatabase.LOGIC_NAME, schema),
+                TypedSPILoader.getService(DatabaseType.class, "MySQL")).createProjection(createJoinTableSegmentWithUsingColumn(), projectionSegment);
+        assertTrue(actual.isPresent());
+        assertThat(actual.get(), instanceOf(ShorthandProjection.class));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns().size(), is(6));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns(), is(crateExpectedColumnsWithOwner()));
+    }
+    
+    private JoinTableSegment createJoinTableSegmentWithUsingColumn() {
+        SimpleTableSegment left = new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("t_order")));
+        left.setAlias(new AliasSegment(0, 0, new IdentifierValue("o")));
+        SimpleTableSegment right = new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("t_order_item")));
+        right.setAlias(new AliasSegment(0, 0, new IdentifierValue("i")));
+        JoinTableSegment result = new JoinTableSegment();
+        result.setLeft(left);
+        result.setRight(right);
+        result.setJoinType(JoinType.RIGHT.name());
+        result.setUsing(Arrays.asList(new ColumnSegment(0, 0, new IdentifierValue("user_id")), new ColumnSegment(0, 0, new IdentifierValue("order_id")),
+                new ColumnSegment(0, 0, new IdentifierValue("creation_date"))));
+        return result;
+    }
+    
+    private Collection<Projection> crateExpectedColumnsWithoutOwnerForPostgreSQL() {
+        Collection<Projection> result = new LinkedHashSet<>();
+        result.add(new ColumnProjection("o", "user_id", null));
+        result.add(new ColumnProjection("o", "order_id", null));
+        result.add(new ColumnProjection("o", "creation_date", null));
+        result.add(new ColumnProjection("o", "status", null));
+        result.add(new ColumnProjection("o", "merchant_id", null));
+        result.add(new ColumnProjection("o", "remark", null));
+        result.add(new ColumnProjection("i", "item_id", null));
+        result.add(new ColumnProjection("i", "product_id", null));
+        result.add(new ColumnProjection("i", "quantity", null));
+        return result;
+    }
+    
+    private Collection<Projection> crateExpectedColumnsWithoutOwnerForMySQL() {
+        Collection<Projection> result = new LinkedHashSet<>();
+        result.add(new ColumnProjection("i", "order_id", null));
+        result.add(new ColumnProjection("i", "user_id", null));
+        result.add(new ColumnProjection("i", "creation_date", null));
+        result.add(new ColumnProjection("i", "item_id", null));
+        result.add(new ColumnProjection("i", "product_id", null));
+        result.add(new ColumnProjection("i", "quantity", null));
+        result.add(new ColumnProjection("o", "status", null));
+        result.add(new ColumnProjection("o", "merchant_id", null));
+        result.add(new ColumnProjection("o", "remark", null));
+        return result;
+    }
+    
+    private Collection<Projection> crateExpectedColumnsWithOwner() {
+        Collection<Projection> result = new LinkedHashSet<>();
+        result.add(new ColumnProjection("o", "order_id", null));
+        result.add(new ColumnProjection("o", "user_id", null));
+        result.add(new ColumnProjection("o", "status", null));
+        result.add(new ColumnProjection("o", "merchant_id", null));
+        result.add(new ColumnProjection("o", "remark", null));
+        result.add(new ColumnProjection("o", "creation_date", null));
+        return result;
+    }
+    
+    @Test
+    void assertCreateProjectionWhenShorthandProjectionContainsNaturalJoinForPostgreSQL() {
+        when(schema.getVisibleColumnNames("t_order")).thenReturn(Arrays.asList("order_id", "user_id", "status", "merchant_id", "remark", "creation_date"));
+        when(schema.getVisibleColumnNames("t_order_item")).thenReturn(Arrays.asList("item_id", "order_id", "user_id", "product_id", "quantity", "creation_date"));
+        Optional<Projection> actual = new ProjectionEngine("public", Collections.singletonMap("public", schema), TypedSPILoader.getService(DatabaseType.class, "PostgreSQL"))
+                .createProjection(createJoinTableSegmentWithNaturalJoin(), new ShorthandProjectionSegment(0, 0));
+        assertTrue(actual.isPresent());
+        assertThat(actual.get(), instanceOf(ShorthandProjection.class));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns().size(), is(9));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns(), is(crateExpectedColumnsWithoutOwnerForPostgreSQL()));
+    }
+    
+    @Test
+    void assertCreateProjectionWhenShorthandProjectionContainsNaturalJoinForMySQL() {
+        when(schema.getVisibleColumnNames("t_order")).thenReturn(Arrays.asList("order_id", "user_id", "status", "merchant_id", "remark", "creation_date"));
+        when(schema.getVisibleColumnNames("t_order_item")).thenReturn(Arrays.asList("item_id", "order_id", "user_id", "product_id", "quantity", "creation_date"));
+        Optional<Projection> actual = new ProjectionEngine(DefaultDatabase.LOGIC_NAME, Collections.singletonMap(DefaultDatabase.LOGIC_NAME, schema),
+                TypedSPILoader.getService(DatabaseType.class, "MySQL")).createProjection(createJoinTableSegmentWithNaturalJoin(), new ShorthandProjectionSegment(0, 0));
+        assertTrue(actual.isPresent());
+        assertThat(actual.get(), instanceOf(ShorthandProjection.class));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns().size(), is(9));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns(), is(crateExpectedColumnsWithoutOwnerForMySQL()));
+    }
+    
+    @Test
+    void assertCreateProjectionWhenShorthandProjectionContainsNaturalJoinAndOwnerForPostgreSQL() {
+        when(schema.getVisibleColumnNames("t_order")).thenReturn(Arrays.asList("order_id", "user_id", "status", "merchant_id", "remark", "creation_date"));
+        ShorthandProjectionSegment projectionSegment = new ShorthandProjectionSegment(0, 0);
+        projectionSegment.setOwner(new OwnerSegment(0, 0, new IdentifierValue("o")));
+        Optional<Projection> actual =
+                new ProjectionEngine("public", Collections.singletonMap("public", schema),
+                        TypedSPILoader.getService(DatabaseType.class, "PostgreSQL")).createProjection(createJoinTableSegmentWithNaturalJoin(), projectionSegment);
+        assertTrue(actual.isPresent());
+        assertThat(actual.get(), instanceOf(ShorthandProjection.class));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns().size(), is(6));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns(), is(crateExpectedColumnsWithOwner()));
+    }
+    
+    @Test
+    void assertCreateProjectionWhenShorthandProjectionContainsNaturalJoinAndOwnerForMySQL() {
+        when(schema.getVisibleColumnNames("t_order")).thenReturn(Arrays.asList("order_id", "user_id", "status", "merchant_id", "remark", "creation_date"));
+        ShorthandProjectionSegment projectionSegment = new ShorthandProjectionSegment(0, 0);
+        projectionSegment.setOwner(new OwnerSegment(0, 0, new IdentifierValue("o")));
+        Optional<Projection> actual = new ProjectionEngine(DefaultDatabase.LOGIC_NAME, Collections.singletonMap(DefaultDatabase.LOGIC_NAME, schema),
+                TypedSPILoader.getService(DatabaseType.class, "MySQL")).createProjection(createJoinTableSegmentWithNaturalJoin(), projectionSegment);
+        assertTrue(actual.isPresent());
+        assertThat(actual.get(), instanceOf(ShorthandProjection.class));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns().size(), is(6));
+        assertThat(((ShorthandProjection) actual.get()).getActualColumns(), is(crateExpectedColumnsWithOwner()));
+    }
+    
+    private JoinTableSegment createJoinTableSegmentWithNaturalJoin() {
+        SimpleTableSegment left = new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("t_order")));
+        left.setAlias(new AliasSegment(0, 0, new IdentifierValue("o")));
+        SimpleTableSegment right = new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("t_order_item")));
+        right.setAlias(new AliasSegment(0, 0, new IdentifierValue("i")));
+        JoinTableSegment result = new JoinTableSegment();
+        result.setLeft(left);
+        result.setRight(right);
+        result.setNatural(true);
+        result.setJoinType(JoinType.RIGHT.name());
+        return result;
     }
 }

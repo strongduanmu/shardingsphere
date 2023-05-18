@@ -21,7 +21,7 @@ import org.apache.shardingsphere.infra.binder.segment.insert.keygen.GeneratedKey
 import org.apache.shardingsphere.infra.binder.statement.dml.InsertStatementContext;
 import org.apache.shardingsphere.sharding.rewrite.token.generator.impl.keygen.GeneratedKeyForUseDefaultInsertColumnsTokenGenerator;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.InsertColumnsSegment;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Optional;
@@ -32,10 +32,10 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class GeneratedKeyForUseDefaultInsertColumnsTokenGeneratorTest {
+class GeneratedKeyForUseDefaultInsertColumnsTokenGeneratorTest {
     
     @Test
-    public void assertGenerateSQLToken() {
+    void assertGenerateSQLToken() {
         InsertColumnsSegment insertColumnsSegment = mock(InsertColumnsSegment.class);
         final int testStopIndex = 4;
         when(insertColumnsSegment.getStopIndex()).thenReturn(testStopIndex);

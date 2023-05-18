@@ -15,8 +15,8 @@ weight = 1
 
 可配置属性：
 
-| *名称*                                | *数据类型*                                        | *说明*         | *默认值* |
-|-------------------------------------| ------------------------------------------------ |--------------|-------|
+| *名称*                                | *数据类型*                                           | *说明*         | *默认值* |
+|-------------------------------------|--------------------------------------------------|--------------|-------|
 | tables (+)                          | Collection\<ShardingTableRuleConfiguration\>     | 分片表规则列表      | -     |
 | autoTables (+)                      | Collection\<ShardingAutoTableRuleConfiguration\> | 自动分片表规则列表    | -     |
 | bindingTableGroups (*)              | Collection\<String\>                             | 绑定表规则列表      | 无     |
@@ -51,13 +51,13 @@ weight = 1
 
 可配置属性：
 
-| *名称*                   | *数据类型*                             | *说明*                | *默认值*            |
-| ----------------------- |------------------------------------|---------------------| ------------------ |
-| logicTable              | String                             | 分片逻辑表名称             | -                  |
-| actualDataSources (?)   | String                             | 数据源名称，多个数据源以逗号分隔    | 使用全部配置的数据源   |
-| shardingStrategy (?)    | ShardingStrategyConfiguration      | 分片策略                | 使用默认分片策略      |
-| keyGenerateStrategy (?) | KeyGeneratorConfiguration          | 自增列生成器              | 使用默认自增主键生成器 |
-| auditStrategy (?)       | ShardingAuditStrategyConfiguration | 分片审计策略              | 使用默认分片审计策略                                      |
+| *名称*                    | *数据类型*                             | *说明*             | *默认值*       |
+|-------------------------|------------------------------------|------------------|-------------|
+| logicTable              | String                             | 分片逻辑表名称          | -           |
+| actualDataSources (?)   | String                             | 数据源名称，多个数据源以逗号分隔 | 使用全部配置的数据源  |
+| shardingStrategy (?)    | ShardingStrategyConfiguration      | 分片策略             | 使用默认分片策略    |
+| keyGenerateStrategy (?) | KeyGeneratorConfiguration          | 自增列生成器           | 使用默认自增主键生成器 |
+| auditStrategy (?)       | ShardingAuditStrategyConfiguration | 分片审计策略           | 使用默认分片审计策略  |
 
 ### 分片策略配置
 
@@ -67,10 +67,10 @@ weight = 1
 
 可配置属性：
 
-| *名称*                 | *数据类型* | *说明*     |
-| --------------------- | -------- | ---------- |
-| shardingColumn        | String   | 分片列名称   |
-| shardingAlgorithmName | String   | 分片算法名称 |
+| *名称*                  | *数据类型* | *说明*   |
+|-----------------------|--------|--------|
+| shardingColumn        | String | 分片列名称  |
+| shardingAlgorithmName | String | 分片算法名称 |
 
 #### 复合分片策略配置
 
@@ -78,10 +78,10 @@ weight = 1
 
 可配置属性：
 
-| *名称*                 | *数据类型* | *说明*                    |
-| --------------------- | ---------- | ----------------------- |
-| shardingColumns       | String     | 分片列名称，多个列以逗号分隔 |
-| shardingAlgorithmName | String     | 分片算法名称              |
+| *名称*                  | *数据类型* | *说明*           |
+|-----------------------|--------|----------------|
+| shardingColumns       | String | 分片列名称，多个列以逗号分隔 |
+| shardingAlgorithmName | String | 分片算法名称         |
 
 #### Hint 分片策略配置
 
@@ -89,9 +89,9 @@ weight = 1
 
 可配置属性：
 
-| *名称*                 | *数据类型* | *说明*      |
-| --------------------- | --------- | ---------- |
-| shardingAlgorithmName | String    | 分片算法名称 |
+| *名称*                  | *数据类型* | *说明*   |
+|-----------------------|--------|--------|
+| shardingAlgorithmName | String | 分片算法名称 |
 
 #### 不分片策略配置
 
@@ -107,10 +107,10 @@ weight = 1
 
 可配置属性：
 
-| *名称*           | *数据类型* | *说明*           |
-| ---------------- | -------- | --------------- |
-| column           | String   | 分布式序列列名称   |
-| keyGeneratorName | String   | 分布式序列算法名称 |
+| *名称*             | *数据类型* | *说明*      |
+|------------------|--------|-----------|
+| column           | String | 分布式序列列名称  |
+| keyGeneratorName | String | 分布式序列算法名称 |
 
 算法类型的详情，请参见[内置分布式序列算法列表](/cn/user-manual/common-config/builtin-algorithm/keygen)。
 
@@ -120,23 +120,23 @@ weight = 1
 
 可配置属性：
 
-| *名称*              | *数据类型*               | *说明*      |
-|-------------------|----------------------|-----------|
-| auditorNames      | Collection\<String\> | 分片审计算法名称  |
-| allowHintDisable  | Boolean              | 是否禁用分片审计hint |
+| *名称*             | *数据类型*               | *说明*         |
+|------------------|----------------------|--------------|
+| auditorNames     | Collection\<String\> | 分片审计算法名称     |
+| allowHintDisable | Boolean              | 是否禁用分片审计hint |
 
 算法类型的详情，请参见[内置分片审计列算法列表](/cn/user-manual/common-config/builtin-algorithm/audit)。
 
 ## 操作步骤
 
 1. 创建真实数据源映射关系，key 为数据源逻辑名称，value 为 DataSource 对象；
-1. 创建分片规则对象 ShardingRuleConfiguration，并初始化对象中的分片表对象 ShardingTableRuleConfiguration、绑定表集合、广播表集合，以及数据分片所依赖的分库策略和分表策略等参数；
-1. 调用 ShardingSphereDataSourceFactory 对象的 createDataSource 方法，创建 ShardingSphereDataSource。
+2. 创建分片规则对象 ShardingRuleConfiguration，并初始化对象中的分片表对象 ShardingTableRuleConfiguration、绑定表集合、广播表集合，以及数据分片所依赖的分库策略和分表策略等参数；
+3. 调用 ShardingSphereDataSourceFactory 对象的 createDataSource 方法，创建 ShardingSphereDataSource。
 
 ## 配置示例
 
 ```java
-public final class ShardingDatabasesAndTablesConfigurationPrecise implements ExampleConfiguration {
+public final class ShardingDatabasesAndTablesConfigurationPrecise {
     
     @Override
     public DataSource getDataSource() throws SQLException {
@@ -147,7 +147,7 @@ public final class ShardingDatabasesAndTablesConfigurationPrecise implements Exa
         ShardingRuleConfiguration result = new ShardingRuleConfiguration();
         result.getTables().add(getOrderTableRuleConfiguration());
         result.getTables().add(getOrderItemTableRuleConfiguration());
-        result.getBindingTableGroups().add("t_order, t_order_item");
+        result.getBindingTableGroups().add(new ShardingTableReferenceRuleConfiguration("foo", "t_order, t_order_item"));
         result.getBroadcastTables().add("t_address");
         result.setDefaultDatabaseShardingStrategy(new StandardShardingStrategyConfiguration("user_id", "inline"));
         result.setDefaultTableShardingStrategy(new StandardShardingStrategyConfiguration("order_id", "standard_test_tbl"));

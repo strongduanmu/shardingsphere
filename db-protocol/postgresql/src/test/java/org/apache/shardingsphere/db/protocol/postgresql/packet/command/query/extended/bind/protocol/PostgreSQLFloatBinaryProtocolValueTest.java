@@ -19,10 +19,10 @@ package org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.ex
 
 import io.netty.buffer.ByteBuf;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
 
@@ -31,25 +31,25 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class PostgreSQLFloatBinaryProtocolValueTest {
+@ExtendWith(MockitoExtension.class)
+class PostgreSQLFloatBinaryProtocolValueTest {
     
     @Mock
     private ByteBuf byteBuf;
     
     @Test
-    public void assertGetColumnLength() {
+    void assertGetColumnLength() {
         assertThat(new PostgreSQLFloatBinaryProtocolValue().getColumnLength(""), is(4));
     }
     
     @Test
-    public void assertRead() {
+    void assertRead() {
         when(byteBuf.readFloat()).thenReturn(1F);
         assertThat(new PostgreSQLFloatBinaryProtocolValue().read(new PostgreSQLPacketPayload(byteBuf, StandardCharsets.UTF_8), 4), is(1.0F));
     }
     
     @Test
-    public void assertWrite() {
+    void assertWrite() {
         new PostgreSQLFloatBinaryProtocolValue().write(new PostgreSQLPacketPayload(byteBuf, StandardCharsets.UTF_8), 1F);
         verify(byteBuf).writeFloat(1.0f);
     }

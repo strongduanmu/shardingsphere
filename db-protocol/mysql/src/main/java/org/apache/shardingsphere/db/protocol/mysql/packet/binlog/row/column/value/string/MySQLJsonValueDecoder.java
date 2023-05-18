@@ -105,7 +105,7 @@ public final class MySQLJsonValueDecoder {
     private static void decodeJsonObject(final boolean isSmall, final ByteBuf byteBuf, final StringBuilder result) {
         result.append('{');
         int count = getIntBasedObjectSize(byteBuf, isSmall);
-        int size = getIntBasedObjectSize(byteBuf, isSmall);
+        getIntBasedObjectSize(byteBuf, isSmall);
         String[] keys = new String[count];
         for (int i = 0; i < count; i++) {
             keys[i] = decodeKeyEntry(isSmall, byteBuf);
@@ -123,7 +123,7 @@ public final class MySQLJsonValueDecoder {
     private static void decodeJsonArray(final boolean isSmall, final ByteBuf byteBuf, final StringBuilder result) {
         result.append('[');
         int count = getIntBasedObjectSize(byteBuf, isSmall);
-        int size = getIntBasedObjectSize(byteBuf, isSmall);
+        getIntBasedObjectSize(byteBuf, isSmall);
         for (int i = 0; i < count; i++) {
             if (0 < i) {
                 result.append(',');
@@ -228,9 +228,7 @@ public final class MySQLJsonValueDecoder {
         out.append('"');
         for (int i = 0; i < str.length(); ++i) {
             char c = str.charAt(i);
-            if (c == '"') {
-                out.append('\\');
-            } else if (c == '\\') {
+            if (c == '"' || c == '\\') {
                 out.append('\\');
             }
             out.append(c);
@@ -238,8 +236,11 @@ public final class MySQLJsonValueDecoder {
         out.append('"');
     }
     
+    /**
+     * Json value types.
+     */
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    static final class JsonValueTypes {
+    public static final class JsonValueTypes {
         
         public static final byte SMALL_JSON_OBJECT = 0x00;
         

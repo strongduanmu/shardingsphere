@@ -20,15 +20,17 @@ package org.apache.shardingsphere.data.pipeline.api.datasource.config.impl;
 import org.apache.shardingsphere.data.pipeline.api.datasource.config.yaml.YamlJdbcConfiguration;
 import org.apache.shardingsphere.infra.datasource.props.DataSourceProperties;
 import org.apache.shardingsphere.infra.yaml.config.swapper.resource.YamlDataSourceConfigurationSwapper;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public final class StandardPipelineDataSourceConfigurationTest {
+class StandardPipelineDataSourceConfigurationTest {
     
     private static final String JDBC_URL = "jdbc:mysql://127.0.0.1:3306/demo_ds?serverTimezone=UTC&useSSL=false";
     
@@ -37,7 +39,7 @@ public final class StandardPipelineDataSourceConfigurationTest {
     private static final String PASSWORD = "password";
     
     @Test
-    public void assertCreateWithSimpleParameters() {
+    void assertCreateWithSimpleParameters() {
         StandardPipelineDataSourceConfiguration actual = new StandardPipelineDataSourceConfiguration(JDBC_URL, USERNAME, PASSWORD);
         assertGetConfig(actual);
         actual = new StandardPipelineDataSourceConfiguration(actual.getParameter());
@@ -45,19 +47,30 @@ public final class StandardPipelineDataSourceConfigurationTest {
     }
     
     @Test
-    public void assertCreateWithYamlDataSourceConfiguration() {
+    void assertCreateWithYamlDataSourceConfiguration() {
         Map<String, Object> yamlDataSourceConfig = new HashMap<>();
         yamlDataSourceConfig.put("url", JDBC_URL);
         yamlDataSourceConfig.put("username", USERNAME);
         yamlDataSourceConfig.put("password", PASSWORD);
         yamlDataSourceConfig.put("dataSourceClassName", "com.zaxxer.hikari.HikariDataSource");
         yamlDataSourceConfig.put("minPoolSize", "20");
+        Map<String, Object> backup = new HashMap<>(yamlDataSourceConfig);
         StandardPipelineDataSourceConfiguration actual = new StandardPipelineDataSourceConfiguration(yamlDataSourceConfig);
+        assertParameterUnchanged(backup, yamlDataSourceConfig);
         assertGetConfig(actual);
         yamlDataSourceConfig.remove("url");
         yamlDataSourceConfig.put("jdbcUrl", JDBC_URL);
         actual = new StandardPipelineDataSourceConfiguration(yamlDataSourceConfig);
         assertGetConfig(actual);
+    }
+    
+    private void assertParameterUnchanged(final Map<String, Object> backup, final Map<String, Object> handled) {
+        assertThat(handled.size(), is(backup.size()));
+        for (Entry<String, Object> entry : backup.entrySet()) {
+            Object actual = handled.get(entry.getKey());
+            assertNotNull(actual, "value of '" + entry.getKey() + "' doesn't exist");
+            assertThat("value of '" + entry.getKey() + "' doesn't match", actual, is(entry.getValue()));
+        }
     }
     
     private void assertGetConfig(final StandardPipelineDataSourceConfiguration actual) {

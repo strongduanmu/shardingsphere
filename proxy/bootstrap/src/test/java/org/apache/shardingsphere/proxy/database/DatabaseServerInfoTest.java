@@ -18,11 +18,11 @@
 package org.apache.shardingsphere.proxy.database;
 
 import org.apache.shardingsphere.proxy.exception.DatabaseServerLoadingServerException;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.sql.DataSource;
 import java.sql.DatabaseMetaData;
@@ -30,23 +30,24 @@ import java.sql.SQLException;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class DatabaseServerInfoTest {
+@ExtendWith(MockitoExtension.class)
+class DatabaseServerInfoTest {
     
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private DataSource dataSource;
     
-    @Test(expected = DatabaseServerLoadingServerException.class)
-    public void assertNewInstanceFailure() throws SQLException {
+    @Test
+    void assertNewInstanceFailure() throws SQLException {
         when(dataSource.getConnection()).thenThrow(SQLException.class);
-        new DatabaseServerInfo(dataSource);
+        assertThrows(DatabaseServerLoadingServerException.class, () -> new DatabaseServerInfo(dataSource));
     }
     
     @Test
-    public void assertToString() throws SQLException {
+    void assertToString() throws SQLException {
         DatabaseMetaData databaseMetaData = mock(DatabaseMetaData.class);
         when(databaseMetaData.getDatabaseProductName()).thenReturn("fixtureDB");
         when(databaseMetaData.getDatabaseProductVersion()).thenReturn("1.0.0");

@@ -20,7 +20,7 @@ package org.apache.shardingsphere.sharding.algorithm.sharding.classbased;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.shardingsphere.sharding.exception.algorithm.ShardingAlgorithmClassImplementationException;
+import org.apache.shardingsphere.sharding.exception.algorithm.sharding.ShardingAlgorithmClassImplementationException;
 import org.apache.shardingsphere.sharding.spi.ShardingAlgorithm;
 
 import java.util.Properties;
@@ -39,6 +39,7 @@ public final class ClassBasedShardingAlgorithmFactory {
      * @param props properties
      * @param <T> class generic type
      * @return sharding algorithm instance
+     * @throws ShardingAlgorithmClassImplementationException sharding algorithm class implementation exception
      */
     @SuppressWarnings("unchecked")
     @SneakyThrows(ReflectiveOperationException.class)

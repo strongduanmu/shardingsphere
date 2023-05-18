@@ -2,21 +2,22 @@
 
 **官方网站: https://shardingsphere.apache.org/**
 
-[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![GitHub release](https://img.shields.io/github/release/apache/shardingsphere.svg)](https://github.com/apache/shardingsphere/releases)
-[![Build Status](https://api.travis-ci.org/apache/shardingsphere.svg?branch=master&status=created)](https://travis-ci.org/apache/shardingsphere)
-[![codecov](https://codecov.io/gh/apache/shardingsphere/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/shardingsphere)
-[![snyk](https://snyk.io/test/github/apache/shardingsphere/badge.svg?targetFile=pom.xml)](https://snyk.io/test/github/apache/shardingsphere?targetFile=pom.xml)
-[![Maintainability](https://cloud.quality-gate.com/dashboard/api/badge?projectName=apache_shardingsphere&branchName=master)](https://cloud.quality-gate.com/dashboard/branches/30#overview)
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5394/badge)](https://bestpractices.coreinfrastructure.org/projects/5394)
-[![OpenTracing-1.0 Badge](https://img.shields.io/badge/OpenTracing--1.0-enabled-blue.svg)](http://opentracing.io)
-[![Skywalking Tracing](https://img.shields.io/badge/Skywalking%20Tracing-enable-brightgreen.svg)](https://github.com/apache/skywalking)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=apache_shardingsphere&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=apache_shardingsphere)
 
-[![Twitter](https://img.shields.io/twitter/url/https/twitter.com/ShardingSphere.svg?style=social&label=Follow%20%40ShardingSphere)](https://twitter.com/ShardingSphere)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=apache_shardingsphere&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=apache_shardingsphere)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=apache_shardingsphere&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=apache_shardingsphere)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=apache_shardingsphere&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=apache_shardingsphere)
+[![codecov](https://codecov.io/gh/apache/shardingsphere/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/shardingsphere)
+
+[![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/5394/badge)](https://bestpractices.coreinfrastructure.org/projects/5394)
+
 [![Slack](https://img.shields.io/badge/%20Slack-ShardingSphere%20Channel-blueviolet)](https://join.slack.com/t/apacheshardingsphere/shared_invite/zt-sbdde7ie-SjDqo9~I4rYcR18bq0SYTg)
 [![Gitter](https://badges.gitter.im/shardingsphere/shardingsphere.svg)](https://gitter.im/shardingsphere/Lobby)
 
-| **星评增长时间线**                                                                                                       | **贡献者增长时间线**                                                                                                                                                                                                                                |
+[![Twitter](https://img.shields.io/twitter/url/https/twitter.com/ShardingSphere.svg?style=social&label=Follow%20%40ShardingSphere)](https://twitter.com/ShardingSphere)
+
+|                                                      **星评增长时间线**                                                      |                                                                                                                   **贡献者增长时间线**                                                                                                                   |
 |:---------------------------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
 | [![Stargazers over time](https://starchart.cc/apache/shardingsphere.svg)](https://starchart.cc/apache/shardingsphere) | [![Contributor over time](https://contributor-graph-api.apiseven.com/contributors-svg?chart=contributorOverTime&repo=apache/shardingsphere)](https://www.apiseven.com/en/contributor-graph?chart=contributorOverTime&repo=apache/shardingsphere) |
 
@@ -34,6 +35,8 @@ Apache ShardingSphere 产品定位为 `Database Plus`，旨在构建异构数据
 - `可插拔：`项目采用微内核 + 三层可插拔模型，使内核、功能组件以及生态对接完全能够灵活的方式进行插拔式扩展，开发者能够像使用积木一样定制属于自己的独特系统。
 
 ShardingSphere 已于 2020 年 4 月 16 日成为 [Apache 软件基金会](https://apache.org/index.html#projects-list)的顶级项目。
+
+迄今为止，已有超过 [10,000 个 GitHub 项目](https://github.com/search?l=Maven+POM&q=shardingsphere+language%3A%22Maven+POM%22&type=Code)采用了 ShardingSphere。
 
 ### 文档📜
 
@@ -78,13 +81,13 @@ ShardingSphere 已于 2020 年 4 月 16 日成为 [Apache 软件基金会](https
 
 <hr>
 
-:white_check_mark: Version 5.2.1: 已发布 :tada:
+:white_check_mark: Version 5.3.1: 已发布 :tada:
 
 🔗 请访问 [发布说明](https://github.com/apache/shardingsphere/blob/master/RELEASE-NOTES.md) 获得更详细的信息.
 
-:soon: Version 5.2.2
+:soon: Version 5.3.2
 
-我们目前正在开发 5.2.2 里程碑。
+我们目前正在开发 5.3.2 里程碑。
 请访问[里程碑](https://github.com/apache/shardingsphere/milestones) 获取最新信息。
 
 ##
@@ -112,7 +115,7 @@ Apache ShardingSphere 由 JDBC、Proxy 这 2 款既能够独立部署，又支�
 <hr>
 
 [![Nightly-Download](https://img.shields.io/static/v1?label=nightly-builds&message=download&color=orange)](https://nightlies.apache.org/shardingsphere/)
-[![Download](https://img.shields.io/badge/release-download-orange.svg)](https://www.apache.org/dyn/closer.lua/shardingsphere/5.2.1/apache-shardingsphere-5.2.1-shardingsphere-proxy-bin.tar.gz)
+[![Download](https://img.shields.io/badge/release-download-orange.svg)](https://www.apache.org/dyn/closer.lua/shardingsphere/5.3.1/apache-shardingsphere-5.3.1-shardingsphere-proxy-bin.tar.gz)
 [![Docker Pulls](https://img.shields.io/docker/pulls/apache/shardingsphere-proxy.svg)](https://store.docker.com/community/images/apache/shardingsphere-proxy)
 
 定位为透明化的数据库代理端，提供封装了数据库二进制协议的服务端版本，用于完成对异构语言的支持。
@@ -120,14 +123,14 @@ Apache ShardingSphere 由 JDBC、Proxy 这 2 款既能够独立部署，又支�
 
 :link: 更多信息请参考[官方网站](https://shardingsphere.apache.org/document/current/en/overview/#shardingsphere-proxy)。
 
-|           | *ShardingSphere-JDBC* | *ShardingSphere-Proxy* |
-| --------- | --------------------- | ---------------------- |
-| 数据库     | 任意                   | MySQL/PostgreSQL       |
-| 连接消耗数  | 高                    | 低                     |
-| 异构语言    | 仅 Java               | 任意                   |
-| 性能       | 损耗低                 | 损耗略高                |
-| 无中心化    | 是                    | 否                     |
-| 静态入口    | 无                    | 有                     |
+|       | *ShardingSphere-JDBC* | *ShardingSphere-Proxy* |
+|-------|-----------------------|------------------------|
+| 数据库   | 任意                    | MySQL/PostgreSQL       |
+| 连接消耗数 | 高                     | 低                      |
+| 异构语言  | 仅 Java                | 任意                     |
+| 性能    | 损耗低                   | 损耗略高                   |
+| 无中心化  | 是                     | 否                      |
+| 静态入口  | 无                     | 有                      |
 
 ### 混合架构
 
@@ -147,13 +150,13 @@ Apache ShardingSphere 是多接入端共同组成的生态圈。
 
 <hr>
 
-| *解决方案/功能* |  *分布式数据库* | *数据安全*        | *数据库网关*        | *全链路压测* |
-| ------------- | ------------- | ----------------| ----------------- | ---------- |
-|               | 数据分片       | 数据加密          | 异构数据库支持       | 影子库     |
-|               | 读写分离       | 行级权限（TODO）   | SQL 方言转换（TODO）| 可观测性    |
-|               | 分布式事务     | SQL 审计（TODO）   |                   |           |
-|               | 弹性伸缩       | SQL 防火墙（TODO） |                   |           |
-|               | 高可用        |                   |                   |           |
+| *解决方案/功能* | *分布式数据库* | *数据安全*        | *数据库网关*        | *全链路压测* |
+|-----------|----------|---------------|----------------|---------|
+|           | 数据分片     | 数据加密          | 异构数据库支持        | 影子库     |
+|           | 读写分离     | 行级权限（TODO）    | SQL 方言转换（TODO） | 可观测性    |
+|           | 分布式事务    | SQL 审计（TODO）  |                |         |
+|           | 弹性伸缩     | SQL 防火墙（TODO） |                |         |
+|           | 高可用      |               |                |         |
 
 ##
 
@@ -161,7 +164,7 @@ Apache ShardingSphere 是多接入端共同组成的生态圈。
 
 <hr>
 
-![Roadmap](https://shardingsphere.apache.org/document/current/img/roadmap_v2.png)
+![Roadmap](https://shardingsphere.apache.org/document/current/img/roadmap_cn.png)
 
 ##
 

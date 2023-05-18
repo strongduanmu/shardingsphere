@@ -21,11 +21,11 @@ import io.netty.buffer.ByteBuf;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLBinaryColumnType;
 import org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.column.MySQLBinlogColumnDef;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.sql.Timestamp;
 
@@ -33,8 +33,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLTimestamp2BinlogProtocolValueTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLTimestamp2BinlogProtocolValueTest {
     
     @Mock
     private MySQLPacketPayload payload;
@@ -44,34 +44,33 @@ public final class MySQLTimestamp2BinlogProtocolValueTest {
     
     private MySQLBinlogColumnDef columnDef;
     
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         columnDef = new MySQLBinlogColumnDef(MySQLBinaryColumnType.MYSQL_TYPE_TIMESTAMP2);
         when(payload.getByteBuf()).thenReturn(byteBuf);
     }
     
     @Test
-    public void assertReadWithoutFraction() {
+    void assertReadWithoutFraction() {
         int currentSeconds = Long.valueOf(System.currentTimeMillis() / 1000).intValue();
         when(byteBuf.readInt()).thenReturn(currentSeconds);
-        assertThat(new MySQLTimestamp2BinlogProtocolValue().read(columnDef, payload), is(MySQLTimeValueUtil.getSimpleDateFormat().format(new Timestamp(currentSeconds * 1000L))));
+        assertThat(new MySQLTimestamp2BinlogProtocolValue().read(columnDef, payload), is(new Timestamp(currentSeconds * 1000L)));
     }
     
     @Test
-    public void assertReadWithFraction() {
+    void assertReadWithFraction() {
         columnDef.setColumnMeta(1);
-        long currentTimeMillis = System.currentTimeMillis();
+        long currentTimeMillis = 1678795614082L;
         int currentSeconds = Long.valueOf(currentTimeMillis / 1000).intValue();
-        int currentMilliseconds = Long.valueOf(currentTimeMillis % 10).intValue();
+        int currentMilliseconds = Long.valueOf(currentTimeMillis % 100).intValue();
         when(payload.readInt1()).thenReturn(currentMilliseconds);
         when(byteBuf.readInt()).thenReturn(currentSeconds);
-        assertThat(new MySQLTimestamp2BinlogProtocolValue().read(columnDef, payload),
-                is(MySQLTimeValueUtil.getSimpleDateFormat().format(new Timestamp(currentSeconds * 1000L)) + "." + currentMilliseconds));
+        assertThat("currentTimeMillis:" + currentTimeMillis, new MySQLTimestamp2BinlogProtocolValue().read(columnDef, payload), is(new Timestamp(currentSeconds * 1000L + currentMilliseconds * 10L)));
     }
     
     @Test
-    public void assertReadNullTime() {
+    void assertReadNullTime() {
         when(byteBuf.readInt()).thenReturn(0);
-        assertThat(new MySQLTimestamp2BinlogProtocolValue().read(columnDef, payload), is(MySQLTimeValueUtil.DATETIME_OF_ZERO));
+        assertThat(new MySQLTimestamp2BinlogProtocolValue().read(columnDef, payload), is(MySQLTimeValueUtils.DATETIME_OF_ZERO));
     }
 }

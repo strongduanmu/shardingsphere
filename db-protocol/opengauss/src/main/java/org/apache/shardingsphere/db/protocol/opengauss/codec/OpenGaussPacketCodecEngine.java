@@ -20,7 +20,7 @@ package org.apache.shardingsphere.db.protocol.opengauss.codec;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import org.apache.shardingsphere.db.protocol.CommonConstants;
+import org.apache.shardingsphere.db.protocol.constant.CommonConstants;
 import org.apache.shardingsphere.db.protocol.codec.DatabasePacketCodecEngine;
 import org.apache.shardingsphere.db.protocol.opengauss.packet.command.OpenGaussCommandPacketType;
 import org.apache.shardingsphere.db.protocol.opengauss.packet.command.generic.OpenGaussErrorResponsePacket;
@@ -73,10 +73,10 @@ public final class OpenGaussPacketCodecEngine implements DatabasePacketCodecEngi
             CommandPacketType commandPacketType = OpenGaussCommandPacketType.valueOf(type);
             if (requireAggregation(commandPacketType)) {
                 pendingMessages.add(in.readRetainedSlice(MESSAGE_TYPE_LENGTH + payloadLength));
-            } else if (!pendingMessages.isEmpty()) {
-                handlePendingMessages(context, in, out, payloadLength);
-            } else {
+            } else if (pendingMessages.isEmpty()) {
                 out.add(in.readRetainedSlice(MESSAGE_TYPE_LENGTH + payloadLength));
+            } else {
+                handlePendingMessages(context, in, out, payloadLength);
             }
         }
     }

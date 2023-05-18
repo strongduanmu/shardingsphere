@@ -24,9 +24,8 @@ import lombok.Setter;
 import lombok.ToString;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.Projection;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.infra.database.type.dialect.OpenGaussDatabaseType;
-import org.apache.shardingsphere.infra.database.type.dialect.PostgreSQLDatabaseType;
-import org.apache.shardingsphere.sql.parser.sql.common.constant.AggregationType;
+import org.apache.shardingsphere.infra.database.type.SchemaSupportedDatabaseType;
+import org.apache.shardingsphere.sql.parser.sql.common.enums.AggregationType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +70,15 @@ public class AggregationProjection implements Projection {
      */
     @Override
     public String getColumnLabel() {
-        boolean isPostgreSQLOpenGaussStatement = databaseType instanceof PostgreSQLDatabaseType || databaseType instanceof OpenGaussDatabaseType;
-        return getAlias().orElseGet(() -> isPostgreSQLOpenGaussStatement ? type.name().toLowerCase() : getExpression());
+        return getAlias().orElseGet(() -> databaseType instanceof SchemaSupportedDatabaseType ? type.name().toLowerCase() : getExpression());
+    }
+    
+    @Override
+    public Projection cloneWithOwner(final String ownerName) {
+        // TODO replace column owner when AggregationProjection contains owner
+        AggregationProjection result = new AggregationProjection(type, innerExpression, alias, databaseType);
+        result.setIndex(index);
+        result.getDerivedAggregationProjections().addAll(derivedAggregationProjections);
+        return result;
     }
 }

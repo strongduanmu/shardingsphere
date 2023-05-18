@@ -17,11 +17,11 @@
 
 package org.apache.shardingsphere.proxy.frontend.spi;
 
+import io.netty.channel.Channel;
 import org.apache.shardingsphere.db.protocol.codec.DatabasePacketCodecEngine;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.frontend.authentication.AuthenticationEngine;
 import org.apache.shardingsphere.proxy.frontend.command.CommandExecuteEngine;
-import org.apache.shardingsphere.proxy.frontend.context.FrontendContext;
 import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPI;
 
 /**
@@ -30,20 +30,12 @@ import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPI;
 public interface DatabaseProtocolFrontendEngine extends TypedSPI {
     
     /**
-     * Set database version.
+     * Initialize channel.
      * 
-     * @param databaseName database name
-     * @param databaseVersion database version
+     * @param channel channel
      */
-    default void setDatabaseVersion(String databaseName, String databaseVersion) {
+    default void initChannel(Channel channel) {
     }
-    
-    /**
-     * Get frontend context.
-     *
-     * @return frontend context
-     */
-    FrontendContext getFrontendContext();
     
     /**
      * Get database packet codec engine.

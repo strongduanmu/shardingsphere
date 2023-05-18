@@ -30,8 +30,8 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.Sim
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableNameSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLUpdateStatement;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -40,16 +40,16 @@ import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class ShadowUpdateStatementRoutingEngineTest {
+class ShadowUpdateStatementRoutingEngineTest {
     
     private ShadowUpdateStatementRoutingEngine shadowRouteEngine;
     
-    @Before
-    public void init() {
+    @BeforeEach
+    void init() {
         shadowRouteEngine = new ShadowUpdateStatementRoutingEngine(createUpdateStatementContext(), Collections.emptyList());
     }
     
@@ -68,7 +68,7 @@ public final class ShadowUpdateStatementRoutingEngineTest {
     }
     
     @Test
-    public void assertRouteAndParseShadowColumnConditions() {
+    void assertRouteAndParseShadowColumnConditions() {
         RouteContext routeContext = mock(RouteContext.class);
         when(routeContext.getRouteUnits()).thenReturn(Collections.singleton(new RouteUnit(new RouteMapper("ds", "ds_shadow"), Collections.emptyList())));
         Optional<Collection<String>> sqlNotes = shadowRouteEngine.parseSQLComments();
@@ -80,7 +80,7 @@ public final class ShadowUpdateStatementRoutingEngineTest {
     }
     
     @Test
-    public void assertGetAllTables() {
+    void assertGetAllTables() {
         Collection<SimpleTableSegment> actual = shadowRouteEngine.getAllTables();
         assertThat(actual.size(), is(1));
         assertThat(actual.iterator().next().getTableName().getIdentifier().getValue(), is("t_order"));

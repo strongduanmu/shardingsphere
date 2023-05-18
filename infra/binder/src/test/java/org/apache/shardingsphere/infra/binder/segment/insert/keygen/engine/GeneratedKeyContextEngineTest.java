@@ -18,9 +18,9 @@
 package org.apache.shardingsphere.infra.binder.segment.insert.keygen.engine;
 
 import org.apache.shardingsphere.infra.binder.segment.insert.keygen.GeneratedKeyContext;
-import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereColumn;
-import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereSchema;
-import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereTable;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereColumn;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereSchema;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereTable;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.InsertValuesSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.InsertColumnsSegment;
@@ -37,8 +37,8 @@ import org.apache.shardingsphere.sql.parser.sql.dialect.statement.oracle.dml.Ora
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.dml.PostgreSQLInsertStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.sql92.dml.SQL92InsertStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.sqlserver.dml.SQLServerInsertStatement;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.sql.Types;
 import java.util.Collections;
@@ -48,43 +48,43 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class GeneratedKeyContextEngineTest {
+class GeneratedKeyContextEngineTest {
     
     private ShardingSphereSchema schema;
     
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         ShardingSphereTable table = new ShardingSphereTable(
                 "tbl", Collections.singletonList(new ShardingSphereColumn("id", Types.INTEGER, true, true, false, true, false)), Collections.emptyList(), Collections.emptyList());
         schema = new ShardingSphereSchema(Collections.singletonMap("tbl", table), Collections.emptyMap());
     }
     
     @Test
-    public void assertCreateGenerateKeyContextWithoutGenerateKeyColumnConfigurationForMySQL() {
+    void assertCreateGenerateKeyContextWithoutGenerateKeyColumnConfigurationForMySQL() {
         assertCreateGenerateKeyContextWithoutGenerateKeyColumnConfiguration(new MySQLInsertStatement());
     }
     
     @Test
-    public void assertCreateGenerateKeyContextWithoutGenerateKeyColumnConfigurationForOracle() {
+    void assertCreateGenerateKeyContextWithoutGenerateKeyColumnConfigurationForOracle() {
         assertCreateGenerateKeyContextWithoutGenerateKeyColumnConfiguration(new OracleInsertStatement());
     }
     
     @Test
-    public void assertCreateGenerateKeyContextWithoutGenerateKeyColumnConfigurationForPostgreSQL() {
+    void assertCreateGenerateKeyContextWithoutGenerateKeyColumnConfigurationForPostgreSQL() {
         assertCreateGenerateKeyContextWithoutGenerateKeyColumnConfiguration(new PostgreSQLInsertStatement());
     }
     
     @Test
-    public void assertCreateGenerateKeyContextWithoutGenerateKeyColumnConfigurationForSQL92() {
+    void assertCreateGenerateKeyContextWithoutGenerateKeyColumnConfigurationForSQL92() {
         assertCreateGenerateKeyContextWithoutGenerateKeyColumnConfiguration(new SQL92InsertStatement());
     }
     
     @Test
-    public void assertCreateGenerateKeyContextWithoutGenerateKeyColumnConfigurationForSQLServer() {
+    void assertCreateGenerateKeyContextWithoutGenerateKeyColumnConfigurationForSQLServer() {
         assertCreateGenerateKeyContextWithoutGenerateKeyColumnConfiguration(new SQLServerInsertStatement());
     }
     
@@ -96,27 +96,27 @@ public final class GeneratedKeyContextEngineTest {
     }
     
     @Test
-    public void assertCreateGenerateKeyContextWhenCreateWithGenerateKeyColumnConfigurationForMySQL() {
+    void assertCreateGenerateKeyContextWhenCreateWithGenerateKeyColumnConfigurationForMySQL() {
         assertCreateGenerateKeyContextWhenCreateWithGenerateKeyColumnConfiguration(new MySQLInsertStatement());
     }
     
     @Test
-    public void assertCreateGenerateKeyContextWhenCreateWithGenerateKeyColumnConfigurationForOracle() {
+    void assertCreateGenerateKeyContextWhenCreateWithGenerateKeyColumnConfigurationForOracle() {
         assertCreateGenerateKeyContextWhenCreateWithGenerateKeyColumnConfiguration(new OracleInsertStatement());
     }
     
     @Test
-    public void assertCreateGenerateKeyContextWhenCreateWithGenerateKeyColumnConfigurationForPostgreSQL() {
+    void assertCreateGenerateKeyContextWhenCreateWithGenerateKeyColumnConfigurationForPostgreSQL() {
         assertCreateGenerateKeyContextWhenCreateWithGenerateKeyColumnConfiguration(new PostgreSQLInsertStatement());
     }
     
     @Test
-    public void assertCreateGenerateKeyContextWhenCreateWithGenerateKeyColumnConfigurationForSQL92() {
+    void assertCreateGenerateKeyContextWhenCreateWithGenerateKeyColumnConfigurationForSQL92() {
         assertCreateGenerateKeyContextWhenCreateWithGenerateKeyColumnConfiguration(new SQL92InsertStatement());
     }
     
     @Test
-    public void assertCreateGenerateKeyContextWhenCreateWithGenerateKeyColumnConfigurationForSQLServer() {
+    void assertCreateGenerateKeyContextWhenCreateWithGenerateKeyColumnConfigurationForSQLServer() {
         assertCreateGenerateKeyContextWhenCreateWithGenerateKeyColumnConfiguration(new SQLServerInsertStatement());
     }
     
@@ -132,27 +132,27 @@ public final class GeneratedKeyContextEngineTest {
     }
     
     @Test
-    public void assertCreateGenerateKeyContextWhenFindForMySQL() {
+    void assertCreateGenerateKeyContextWhenFindForMySQL() {
         assertCreateGenerateKeyContextWhenFind(new MySQLInsertStatement());
     }
     
     @Test
-    public void assertCreateGenerateKeyContextWhenFindForOracle() {
+    void assertCreateGenerateKeyContextWhenFindForOracle() {
         assertCreateGenerateKeyContextWhenFind(new OracleInsertStatement());
     }
     
     @Test
-    public void assertCreateGenerateKeyContextWhenFindForPostgreSQL() {
+    void assertCreateGenerateKeyContextWhenFindForPostgreSQL() {
         assertCreateGenerateKeyContextWhenFind(new PostgreSQLInsertStatement());
     }
     
     @Test
-    public void assertCreateGenerateKeyContextWhenFindForSQL92() {
+    void assertCreateGenerateKeyContextWhenFindForSQL92() {
         assertCreateGenerateKeyContextWhenFind(new SQL92InsertStatement());
     }
     
     @Test
-    public void assertCreateGenerateKeyContextWhenFindForSQLServer() {
+    void assertCreateGenerateKeyContextWhenFindForSQLServer() {
         assertCreateGenerateKeyContextWhenFind(new SQLServerInsertStatement());
     }
     

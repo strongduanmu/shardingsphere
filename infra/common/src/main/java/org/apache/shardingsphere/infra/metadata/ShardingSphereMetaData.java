@@ -19,11 +19,12 @@ package org.apache.shardingsphere.infra.metadata;
 
 import lombok.Getter;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
+import org.apache.shardingsphere.infra.config.props.temporary.TemporaryConfigurationProperties;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
-import org.apache.shardingsphere.infra.rule.identifier.type.DynamicDataSourceContainedRule;
 import org.apache.shardingsphere.infra.rule.identifier.type.ResourceHeldRule;
+import org.apache.shardingsphere.infra.rule.identifier.type.StaticDataSourceContainedRule;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -33,7 +34,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Meta data contexts.
+ * ShardingSphere meta data.
  */
 @Getter
 public final class ShardingSphereMetaData {
@@ -44,6 +45,8 @@ public final class ShardingSphereMetaData {
     
     private final ConfigurationProperties props;
     
+    private final TemporaryConfigurationProperties temporaryProps;
+    
     public ShardingSphereMetaData() {
         this(new LinkedHashMap<>(), new ShardingSphereRuleMetaData(Collections.emptyList()), new ConfigurationProperties(new Properties()));
     }
@@ -53,6 +56,7 @@ public final class ShardingSphereMetaData {
         databases.forEach((key, value) -> this.databases.put(key.toLowerCase(), value));
         this.globalRuleMetaData = globalRuleMetaData;
         this.props = props;
+        temporaryProps = new TemporaryConfigurationProperties(props.getProps());
     }
     
     /**
@@ -74,7 +78,7 @@ public final class ShardingSphereMetaData {
      * @return contains database from meta data or not
      */
     public boolean containsDatabase(final String databaseName) {
-        return databases.containsKey(databaseName.toLowerCase());
+        return null != databaseName && databases.containsKey(databaseName.toLowerCase());
     }
     
     /**
@@ -84,7 +88,7 @@ public final class ShardingSphereMetaData {
      * @return meta data database
      */
     public ShardingSphereDatabase getDatabase(final String databaseName) {
-        return databases.get(databaseName.toLowerCase());
+        return null != databaseName ? databases.get(databaseName.toLowerCase()) : null;
     }
     
     /**
@@ -120,7 +124,7 @@ public final class ShardingSphereMetaData {
         String databaseName = database.getName();
         globalRuleMetaData.findRules(ResourceHeldRule.class).forEach(each -> each.closeStaleResource(databaseName));
         database.getRuleMetaData().findRules(ResourceHeldRule.class).forEach(each -> each.closeStaleResource(databaseName));
-        database.getRuleMetaData().findSingleRule(DynamicDataSourceContainedRule.class).ifPresent(DynamicDataSourceContainedRule::closeHeartBeatJob);
+        database.getRuleMetaData().findSingleRule(StaticDataSourceContainedRule.class).ifPresent(StaticDataSourceContainedRule::cleanStorageNodeDataSources);
         Optional.ofNullable(database.getResourceMetaData()).ifPresent(optional -> optional.getDataSources().values().forEach(each -> database.getResourceMetaData().close(each)));
     }
 }

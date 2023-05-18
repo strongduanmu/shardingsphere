@@ -19,10 +19,10 @@ package org.apache.shardingsphere.db.protocol.mysql.packet.command.binlog;
 
 import org.apache.shardingsphere.db.protocol.mysql.packet.command.MySQLCommandPacketType;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -30,14 +30,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLComRegisterSlaveCommandPacketTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLComRegisterSlaveCommandPacketTest {
     
     @Mock
     private MySQLPacketPayload payload;
     
     @Test
-    public void assertNew() {
+    void assertNew() {
         when(payload.readInt4()).thenReturn(123456, 654321);
         when(payload.readInt1()).thenReturn(4, 4, 8);
         when(payload.readStringFix(4)).thenReturn("host", "user");
@@ -53,7 +53,7 @@ public final class MySQLComRegisterSlaveCommandPacketTest {
     }
     
     @Test
-    public void assertWrite() {
+    void assertWrite() {
         new MySQLComRegisterSlaveCommandPacket(123456, "host", "user", "password", 3307).write(payload);
         verify(payload).writeInt1(MySQLCommandPacketType.COM_REGISTER_SLAVE.getValue());
         verify(payload).writeInt4(123456);

@@ -22,52 +22,52 @@ import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementConte
 import org.apache.shardingsphere.sharding.route.engine.condition.value.ListShardingConditionValue;
 import org.apache.shardingsphere.sharding.route.engine.condition.value.ShardingConditionValue;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 
-public final class ShardingConditionsTest {
+class ShardingConditionsTest {
     
     @Test
-    public void assertIsAlwaysFalse() {
+    void assertIsAlwaysFalse() {
         ShardingConditions shardingConditions = new ShardingConditions(Collections.emptyList(), mock(SQLStatementContext.class), mock(ShardingRule.class));
         assertFalse(shardingConditions.isAlwaysFalse());
     }
     
     @Test
-    public void assertIsAlwaysFalseTrue() {
+    void assertIsAlwaysFalseTrue() {
         ShardingConditions shardingConditions = createSingleShardingConditions();
         assertTrue(shardingConditions.isAlwaysFalse());
     }
     
     @Test
-    public void assertIsNeedMerge() {
+    void assertIsNeedMerge() {
         assertFalse(createSingleShardingConditions().isNeedMerge());
     }
     
     @Test
-    public void isSameShardingConditionTrue() {
+    void isSameShardingConditionTrue() {
         ShardingConditions shardingConditions = createSingleShardingConditions();
         assertTrue(shardingConditions.isSameShardingCondition());
     }
     
     @Test
-    public void isSameShardingConditionFalse() {
+    void isSameShardingConditionFalse() {
         ShardingConditions shardingConditions = createMultipleShardingConditions();
         assertFalse(shardingConditions.isSameShardingCondition());
     }
     
     @Test
-    public void assertMerge() {
+    void assertMerge() {
         ShardingConditions multipleShardingConditions = createMultipleShardingConditions();
         multipleShardingConditions.merge();
         assertThat(multipleShardingConditions.getConditions().size(), is(2));

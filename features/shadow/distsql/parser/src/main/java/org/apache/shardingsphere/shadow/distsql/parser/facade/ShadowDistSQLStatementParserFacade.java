@@ -21,12 +21,13 @@ import org.apache.shardingsphere.distsql.parser.engine.spi.FeaturedDistSQLStatem
 import org.apache.shardingsphere.shadow.distsql.parser.core.ShadowDistSQLLexer;
 import org.apache.shardingsphere.shadow.distsql.parser.core.ShadowDistSQLParser;
 import org.apache.shardingsphere.shadow.distsql.parser.core.ShadowDistSQLStatementVisitor;
+import org.apache.shardingsphere.sql.parser.api.ASTNode;
 import org.apache.shardingsphere.sql.parser.api.parser.SQLLexer;
 import org.apache.shardingsphere.sql.parser.api.parser.SQLParser;
 import org.apache.shardingsphere.sql.parser.api.visitor.SQLVisitor;
 
 /**
- * SQL parser facade for shadow dist SQL statement.
+ * SQL parser facade for shadow DistSQL statement.
  */
 public final class ShadowDistSQLStatementParserFacade implements FeaturedDistSQLStatementParserFacade {
     
@@ -41,7 +42,7 @@ public final class ShadowDistSQLStatementParserFacade implements FeaturedDistSQL
     }
     
     @Override
-    public Class<? extends SQLVisitor> getVisitorClass() {
+    public Class<? extends SQLVisitor<ASTNode>> getVisitorClass() {
         return ShadowDistSQLStatementVisitor.class;
     }
     

@@ -19,10 +19,10 @@ package org.apache.shardingsphere.db.protocol.mysql.packet.command.query.binary.
 
 import io.netty.buffer.ByteBuf;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
 
@@ -31,20 +31,20 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLFloatBinaryProtocolValueTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLFloatBinaryProtocolValueTest {
     
     @Mock
     private ByteBuf byteBuf;
     
     @Test
-    public void assertRead() {
+    void assertRead() {
         when(byteBuf.readFloatLE()).thenReturn(1.0f);
-        assertThat(new MySQLFloatBinaryProtocolValue().read(new MySQLPacketPayload(byteBuf, StandardCharsets.UTF_8)), is(1.0f));
+        assertThat(new MySQLFloatBinaryProtocolValue().read(new MySQLPacketPayload(byteBuf, StandardCharsets.UTF_8), false), is(1.0f));
     }
     
     @Test
-    public void assertWrite() {
+    void assertWrite() {
         new MySQLFloatBinaryProtocolValue().write(new MySQLPacketPayload(byteBuf, StandardCharsets.UTF_8), 1.0f);
         verify(byteBuf).writeFloatLE(1.0f);
     }

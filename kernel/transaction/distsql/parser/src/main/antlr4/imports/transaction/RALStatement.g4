@@ -17,7 +17,7 @@
 
 grammar RALStatement;
 
-import Keyword, Literals;
+import BaseRule;
 
 showTransactionRule
     : SHOW TRANSACTION RULE
@@ -28,29 +28,25 @@ alterTransactionRule
     ;
 
 transactionRuleDefinition
-    : LP DEFAULT EQ defaultType (COMMA providerDefinition)?
+    : LP_ DEFAULT EQ_ defaultType (COMMA_ providerDefinition)?
     ;
 
 providerDefinition
-    : TYPE LP NAME EQ providerName (COMMA propertiesDefinition)? RP
+    : TYPE LP_ NAME EQ_ providerName (COMMA_ propertiesDefinition)? RP_
     ;
 
 defaultType
-    : STRING
+    : STRING_ | buildInDefaultTransactionType
+    ;
+
+buildInDefaultTransactionType
+    : LOCAL | XA | BASE
     ;
 
 providerName
-    : STRING
+    : STRING_ | buildInProviderTypeName
     ;
 
-propertiesDefinition
-    : PROPERTIES LP properties? RP
-    ;
-
-properties
-    : property (COMMA property)*
-    ;
-
-property
-    : key=STRING EQ value=STRING
+buildInProviderTypeName
+    : ATOMIKOS | NARAYANA | BITRONIX
     ;

@@ -28,10 +28,10 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.Tab
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.UpdateStatement;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLUpdateStatement;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,8 +43,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class UpdateStatementContextTest {
+@ExtendWith(MockitoExtension.class)
+class UpdateStatementContextTest {
     
     @Mock
     private WhereSegment whereSegment;
@@ -53,7 +53,7 @@ public final class UpdateStatementContextTest {
     private ColumnSegment columnSegment;
     
     @Test
-    public void assertNewInstance() {
+    void assertNewInstance() {
         when(columnSegment.getOwner()).thenReturn(Optional.of(new OwnerSegment(0, 0, new IdentifierValue("tbl_2"))));
         BinaryOperationExpression expression = new BinaryOperationExpression(0, 0, columnSegment, null, null, null);
         when(whereSegment.getExpr()).thenReturn(expression);

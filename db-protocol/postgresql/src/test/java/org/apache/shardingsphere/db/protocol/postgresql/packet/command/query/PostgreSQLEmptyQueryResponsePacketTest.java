@@ -19,15 +19,15 @@ package org.apache.shardingsphere.db.protocol.postgresql.packet.command.query;
 
 import org.apache.shardingsphere.db.protocol.postgresql.packet.identifier.PostgreSQLIdentifierTag;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.identifier.PostgreSQLMessagePacketType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class PostgreSQLEmptyQueryResponsePacketTest {
+class PostgreSQLEmptyQueryResponsePacketTest {
     
     @Test
-    public void assertIdentifier() {
+    void assertIdentifier() {
         PostgreSQLIdentifierTag actual = new PostgreSQLEmptyQueryResponsePacket().getIdentifier();
         assertThat(actual, is(PostgreSQLMessagePacketType.EMPTY_QUERY_RESPONSE));
     }

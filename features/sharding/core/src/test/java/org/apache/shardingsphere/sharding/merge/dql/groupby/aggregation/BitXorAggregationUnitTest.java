@@ -17,7 +17,7 @@
 
 package org.apache.shardingsphere.sharding.merge.dql.groupby.aggregation;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
 import java.util.Collections;
@@ -25,10 +25,10 @@ import java.util.Collections;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class BitXorAggregationUnitTest {
+class BitXorAggregationUnitTest {
     
     @Test
-    public void assertBitXorAggregation() {
+    void assertBitXorAggregation() {
         BitXorAggregationUnit bitXorAggregationUnit = new BitXorAggregationUnit();
         bitXorAggregationUnit.merge(null);
         bitXorAggregationUnit.merge(Collections.singletonList(null));

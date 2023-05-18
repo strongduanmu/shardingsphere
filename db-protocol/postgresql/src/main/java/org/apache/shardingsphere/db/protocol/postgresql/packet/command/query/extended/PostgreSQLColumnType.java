@@ -159,6 +159,7 @@ public enum PostgreSQLColumnType implements BinaryColumnType {
     private final int value;
     
     static {
+        JDBC_TYPE_AND_COLUMN_TYPE_MAP.put(Types.TINYINT, POSTGRESQL_TYPE_INT2);
         JDBC_TYPE_AND_COLUMN_TYPE_MAP.put(Types.SMALLINT, POSTGRESQL_TYPE_INT2);
         JDBC_TYPE_AND_COLUMN_TYPE_MAP.put(Types.INTEGER, POSTGRESQL_TYPE_INT4);
         JDBC_TYPE_AND_COLUMN_TYPE_MAP.put(Types.BIGINT, POSTGRESQL_TYPE_INT8);
@@ -176,6 +177,8 @@ public enum PostgreSQLColumnType implements BinaryColumnType {
         JDBC_TYPE_AND_COLUMN_TYPE_MAP.put(Types.OTHER, POSTGRESQL_TYPE_JSON);
         JDBC_TYPE_AND_COLUMN_TYPE_MAP.put(Types.SQLXML, POSTGRESQL_TYPE_XML);
         JDBC_TYPE_AND_COLUMN_TYPE_MAP.put(Types.BOOLEAN, POSTGRESQL_TYPE_BOOL);
+        // TODO Temporary solution for https://github.com/apache/shardingsphere/issues/22522
+        JDBC_TYPE_AND_COLUMN_TYPE_MAP.put(Types.STRUCT, POSTGRESQL_TYPE_VARCHAR);
     }
     
     /**
@@ -194,6 +197,7 @@ public enum PostgreSQLColumnType implements BinaryColumnType {
      * 
      * @param value value
      * @return PostgreSQL column type
+     * @throws PostgreSQLProtocolException PostgreSQL protocol exception
      */
     public static PostgreSQLColumnType valueOf(final int value) {
         for (PostgreSQLColumnType each : values()) {

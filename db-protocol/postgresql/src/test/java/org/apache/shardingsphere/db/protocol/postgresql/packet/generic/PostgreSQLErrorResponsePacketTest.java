@@ -17,27 +17,27 @@
 
 package org.apache.shardingsphere.db.protocol.postgresql.packet.generic;
 
-import org.apache.shardingsphere.dialect.postgresql.vendor.PostgreSQLVendorError;
 import org.apache.shardingsphere.db.protocol.postgresql.constant.PostgreSQLMessageSeverityLevel;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.apache.shardingsphere.dialect.postgresql.vendor.PostgreSQLVendorError;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class PostgreSQLErrorResponsePacketTest {
+@ExtendWith(MockitoExtension.class)
+class PostgreSQLErrorResponsePacketTest {
     
     @Mock
     private PostgreSQLPacketPayload payload;
     
     @Test
-    public void assertToServerErrorMessage() {
+    void assertToServerErrorMessage() {
         PostgreSQLErrorResponsePacket responsePacket = createErrorResponsePacket();
         String expectedMessage = "SFATAL\0VFATAL\0C3D000\0Mdatabase \"test\" does not exist\0Ddetail\0Hhint\0P1\0p2\0qinternal query\0"
                 + "Wwhere\0stest\0ttable\0ccolumn\0ddata type\0nconstraint\0Ffile\0L3\0Rroutine";
@@ -45,7 +45,7 @@ public final class PostgreSQLErrorResponsePacketTest {
     }
     
     @Test
-    public void assertWrite() {
+    void assertWrite() {
         PostgreSQLErrorResponsePacket responsePacket = createErrorResponsePacket();
         responsePacket.write(payload);
         verify(payload).writeInt1(PostgreSQLErrorResponsePacket.FIELD_TYPE_SEVERITY);

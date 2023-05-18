@@ -20,11 +20,11 @@ package org.apache.shardingsphere.data.pipeline.mysql.check.datasource;
 import org.apache.shardingsphere.data.pipeline.core.exception.job.PrepareJobWithCheckPrivilegeFailedException;
 import org.apache.shardingsphere.data.pipeline.core.exception.job.PrepareJobWithInvalidSourceDataSourceException;
 import org.apache.shardingsphere.data.pipeline.core.exception.job.PrepareJobWithoutEnoughPrivilegeException;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.sql.DataSource;
 import java.sql.PreparedStatement;
@@ -33,6 +33,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -40,8 +41,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLDataSourceCheckerTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLDataSourceCheckerTest {
     
     @Mock
     private PreparedStatement preparedStatement;
@@ -51,8 +52,8 @@ public final class MySQLDataSourceCheckerTest {
     
     private Collection<DataSource> dataSources;
     
-    @Before
-    public void setUp() throws SQLException {
+    @BeforeEach
+    void setUp() throws SQLException {
         DataSource dataSource = mock(DataSource.class, RETURNS_DEEP_STUBS);
         when(dataSource.getConnection().prepareStatement(anyString())).thenReturn(preparedStatement);
         dataSources = Collections.singleton(dataSource);
@@ -60,7 +61,7 @@ public final class MySQLDataSourceCheckerTest {
     }
     
     @Test
-    public void assertCheckPrivilegeWithParticularSuccess() throws SQLException {
+    void assertCheckPrivilegeWithParticularSuccess() throws SQLException {
         when(resultSet.next()).thenReturn(true);
         when(resultSet.getString(1)).thenReturn("GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '%'@'%'");
         new MySQLDataSourceChecker().checkPrivilege(dataSources);
@@ -68,42 +69,44 @@ public final class MySQLDataSourceCheckerTest {
     }
     
     @Test
-    public void assertCheckPrivilegeWithAllSuccess() throws SQLException {
+    void assertCheckPrivilegeWithAllSuccess() throws SQLException {
         when(resultSet.next()).thenReturn(true);
         when(resultSet.getString(1)).thenReturn("GRANT ALL PRIVILEGES CLIENT ON *.* TO '%'@'%'");
         new MySQLDataSourceChecker().checkPrivilege(dataSources);
         verify(preparedStatement).executeQuery();
     }
     
-    @Test(expected = PrepareJobWithoutEnoughPrivilegeException.class)
-    public void assertCheckPrivilegeLackPrivileges() {
-        new MySQLDataSourceChecker().checkPrivilege(dataSources);
-    }
-    
-    @Test(expected = PrepareJobWithCheckPrivilegeFailedException.class)
-    public void assertCheckPrivilegeFailure() throws SQLException {
-        when(resultSet.next()).thenThrow(new SQLException(""));
-        new MySQLDataSourceChecker().checkPrivilege(dataSources);
+    @Test
+    void assertCheckPrivilegeLackPrivileges() {
+        assertThrows(PrepareJobWithoutEnoughPrivilegeException.class, () -> new MySQLDataSourceChecker().checkPrivilege(dataSources));
     }
     
     @Test
-    public void assertCheckVariableSuccess() throws SQLException {
+    void assertCheckPrivilegeFailure() throws SQLException {
+        when(resultSet.next()).thenThrow(new SQLException(""));
+        assertThrows(PrepareJobWithCheckPrivilegeFailedException.class, () -> new MySQLDataSourceChecker().checkPrivilege(dataSources));
+    }
+    
+    @Test
+    void assertCheckVariableSuccess() throws SQLException {
         when(resultSet.next()).thenReturn(true, true);
+        when(resultSet.getString(1)).thenReturn("LOG_BIN", "BINLOG_FORMAT", "BINLOG_ROW_IMAGE");
         when(resultSet.getString(2)).thenReturn("ON", "ROW", "FULL");
         new MySQLDataSourceChecker().checkVariable(dataSources);
-        verify(preparedStatement, times(3)).executeQuery();
+        verify(preparedStatement, times(1)).executeQuery();
     }
     
-    @Test(expected = PrepareJobWithInvalidSourceDataSourceException.class)
-    public void assertCheckVariableWithWrongVariable() throws SQLException {
+    @Test
+    void assertCheckVariableWithWrongVariable() throws SQLException {
         when(resultSet.next()).thenReturn(true, true);
+        when(resultSet.getString(1)).thenReturn("LOG_BIN", "BINLOG_FORMAT");
         when(resultSet.getString(2)).thenReturn("OFF", "ROW");
-        new MySQLDataSourceChecker().checkVariable(dataSources);
+        assertThrows(PrepareJobWithInvalidSourceDataSourceException.class, () -> new MySQLDataSourceChecker().checkVariable(dataSources));
     }
     
-    @Test(expected = PrepareJobWithCheckPrivilegeFailedException.class)
-    public void assertCheckVariableFailure() throws SQLException {
+    @Test
+    void assertCheckVariableFailure() throws SQLException {
         when(resultSet.next()).thenThrow(new SQLException(""));
-        new MySQLDataSourceChecker().checkVariable(dataSources);
+        assertThrows(PrepareJobWithCheckPrivilegeFailedException.class, () -> new MySQLDataSourceChecker().checkVariable(dataSources));
     }
 }

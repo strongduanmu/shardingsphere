@@ -17,7 +17,7 @@
 
 package org.apache.shardingsphere.traffic.rule;
 
-import org.apache.shardingsphere.infra.binder.QueryContext;
+import org.apache.shardingsphere.infra.session.query.QueryContext;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
 import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
@@ -29,31 +29,32 @@ import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRule
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ProjectionsSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.CommentSegment;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLSelectStatement;
+import org.apache.shardingsphere.test.util.PropertiesBuilder;
+import org.apache.shardingsphere.test.util.PropertiesBuilder.Property;
 import org.apache.shardingsphere.traffic.algorithm.loadbalance.RandomTrafficLoadBalanceAlgorithm;
 import org.apache.shardingsphere.traffic.algorithm.traffic.hint.SQLHintTrafficAlgorithm;
 import org.apache.shardingsphere.traffic.algorithm.traffic.transaction.ProxyTrafficAlgorithm;
 import org.apache.shardingsphere.traffic.api.config.TrafficRuleConfiguration;
 import org.apache.shardingsphere.traffic.api.config.TrafficStrategyConfiguration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
-import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class TrafficRuleTest {
+class TrafficRuleTest {
     
     @Test
-    public void assertFindMatchedStrategyRuleWhenSQLHintMatch() {
+    void assertFindMatchedStrategyRuleWhenSQLHintMatch() {
         TrafficRule trafficRule = new TrafficRule(createTrafficRuleConfig());
         Optional<TrafficStrategyRule> actual = trafficRule.findMatchedStrategyRule(createQueryContext(true), false);
         assertTrue(actual.isPresent());
@@ -64,12 +65,12 @@ public final class TrafficRuleTest {
     }
     
     @Test
-    public void assertFindMatchedStrategyRuleWhenSQLHintNotMatch() {
+    void assertFindMatchedStrategyRuleWhenSQLHintNotMatch() {
         assertFalse(new TrafficRule(createTrafficRuleConfig()).findMatchedStrategyRule(createQueryContext(false), false).isPresent());
     }
     
     @Test
-    public void assertFindMatchedStrategyRuleWhenInTransaction() {
+    void assertFindMatchedStrategyRuleWhenInTransaction() {
         TrafficRule trafficRule = new TrafficRule(createTrafficRuleConfig());
         Optional<TrafficStrategyRule> actual = trafficRule.findMatchedStrategyRule(createQueryContext(false), true);
         assertTrue(actual.isPresent());
@@ -80,7 +81,7 @@ public final class TrafficRuleTest {
     }
     
     @Test
-    public void assertGetLabels() {
+    void assertGetLabels() {
         assertThat(new TrafficRule(createTrafficRuleConfig()).getLabels(), is(new HashSet<>(Arrays.asList("OLAP", "OLTP"))));
     }
     
@@ -113,9 +114,7 @@ public final class TrafficRuleTest {
     private AlgorithmConfiguration createSQLHintTrafficAlgorithm() {
         AlgorithmConfiguration result = mock(AlgorithmConfiguration.class);
         when(result.getType()).thenReturn("SQL_HINT");
-        Properties props = new Properties();
-        props.put("traffic", true);
-        when(result.getProps()).thenReturn(props);
+        when(result.getProps()).thenReturn(PropertiesBuilder.build(new Property("traffic", Boolean.TRUE.toString())));
         return result;
     }
     

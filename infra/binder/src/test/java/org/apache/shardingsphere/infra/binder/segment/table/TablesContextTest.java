@@ -19,50 +19,55 @@ package org.apache.shardingsphere.infra.binder.segment.table;
 
 import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.ColumnProjection;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeEngine;
-import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereColumn;
-import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereSchema;
-import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereTable;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereColumn;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereSchema;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereTable;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.AliasSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.OwnerSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableNameSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class TablesContextTest {
+class TablesContextTest {
     
     @Test
-    public void assertGetTableNames() {
+    void assertGetTableNames() {
         TablesContext tablesContext = new TablesContext(Arrays.asList(createTableSegment("table_1", "tbl_1"),
                 createTableSegment("table_2", "tbl_2")), DatabaseTypeEngine.getDatabaseType("MySQL"));
         assertThat(tablesContext.getTableNames(), is(new HashSet<>(Arrays.asList("table_1", "table_2"))));
     }
     
     @Test
-    public void assertInstanceCreatedWhenNoExceptionThrown() {
+    void assertInstanceCreatedWhenNoExceptionThrown() {
         SimpleTableSegment tableSegment = new SimpleTableSegment(new TableNameSegment(0, 10, new IdentifierValue("tbl")));
         tableSegment.setOwner(new OwnerSegment(0, 0, new IdentifierValue("schema")));
-        new TablesContext(Collections.singleton(tableSegment), DatabaseTypeEngine.getDatabaseType("MySQL"));
-        // TODO add assertion
+        TablesContext tablesContext = new TablesContext(Collections.singleton(tableSegment), DatabaseTypeEngine.getDatabaseType("MySQL"));
+        assertThat(tablesContext.getDatabaseName(), is(Optional.of("schema")));
+        assertThat(tablesContext.getSchemaName(), is(Optional.of("schema")));
+        assertThat(tablesContext.getTableNames(), is(Collections.singleton("tbl")));
+        assertTrue(tablesContext.getSubqueryTables().isEmpty());
     }
     
     @Test
-    public void assertFindTableNameWhenSingleTable() {
+    void assertFindTableNameWhenSingleTable() {
         SimpleTableSegment tableSegment = createTableSegment("table_1", "tbl_1");
         ColumnSegment columnSegment = createColumnSegment(null, "col");
         Map<String, String> actual = new TablesContext(Collections.singletonList(tableSegment), DatabaseTypeEngine.getDatabaseType("MySQL"))
@@ -72,7 +77,7 @@ public final class TablesContextTest {
     }
     
     @Test
-    public void assertFindTableNameWhenColumnSegmentOwnerPresent() {
+    void assertFindTableNameWhenColumnSegmentOwnerPresent() {
         SimpleTableSegment tableSegment1 = createTableSegment("table_1", "tbl_1");
         SimpleTableSegment tableSegment2 = createTableSegment("table_2", "tbl_2");
         ColumnSegment columnSegment = createColumnSegment("table_1", "col");
@@ -83,7 +88,7 @@ public final class TablesContextTest {
     }
     
     @Test
-    public void assertFindTableNameWhenColumnSegmentOwnerAbsent() {
+    void assertFindTableNameWhenColumnSegmentOwnerAbsent() {
         SimpleTableSegment tableSegment1 = createTableSegment("table_1", "tbl_1");
         SimpleTableSegment tableSegment2 = createTableSegment("table_2", "tbl_2");
         ColumnSegment columnSegment = createColumnSegment(null, "col");
@@ -93,7 +98,7 @@ public final class TablesContextTest {
     }
     
     @Test
-    public void assertFindTableNameWhenColumnSegmentOwnerAbsentAndSchemaMetaDataContainsColumn() {
+    void assertFindTableNameWhenColumnSegmentOwnerAbsentAndSchemaMetaDataContainsColumn() {
         SimpleTableSegment tableSegment1 = createTableSegment("table_1", "tbl_1");
         SimpleTableSegment tableSegment2 = createTableSegment("table_2", "tbl_2");
         ShardingSphereSchema schema = mock(ShardingSphereSchema.class);
@@ -106,7 +111,7 @@ public final class TablesContextTest {
     }
     
     @Test
-    public void assertFindTableNameWhenColumnSegmentOwnerAbsentAndSchemaMetaDataContainsColumnInUpperCase() {
+    void assertFindTableNameWhenColumnSegmentOwnerAbsentAndSchemaMetaDataContainsColumnInUpperCase() {
         SimpleTableSegment tableSegment1 = createTableSegment("TABLE_1", "TBL_1");
         SimpleTableSegment tableSegment2 = createTableSegment("TABLE_2", "TBL_2");
         ShardingSphereTable table = new ShardingSphereTable("TABLE_1",
@@ -120,7 +125,7 @@ public final class TablesContextTest {
     }
     
     @Test
-    public void assertFindTableNameWhenColumnProjectionWhenSingleTable() {
+    void assertFindTableNameWhenColumnProjectionWhenSingleTable() {
         SimpleTableSegment tableSegment = createTableSegment("table_1", "tbl_1");
         ColumnProjection columnProjection = new ColumnProjection(null, "col", "cl");
         Map<String, String> actual = new TablesContext(Collections.singletonList(tableSegment), DatabaseTypeEngine.getDatabaseType("MySQL"))
@@ -130,7 +135,7 @@ public final class TablesContextTest {
     }
     
     @Test
-    public void assertFindTableNameWhenColumnProjectionOwnerPresent() {
+    void assertFindTableNameWhenColumnProjectionOwnerPresent() {
         SimpleTableSegment tableSegment1 = createTableSegment("table_1", "tbl_1");
         SimpleTableSegment tableSegment2 = createTableSegment("table_2", "tbl_2");
         ColumnProjection columnProjection = new ColumnProjection("table_1", "col", "cl");
@@ -141,7 +146,7 @@ public final class TablesContextTest {
     }
     
     @Test
-    public void assertFindTableNameWhenColumnProjectionOwnerAbsent() {
+    void assertFindTableNameWhenColumnProjectionOwnerAbsent() {
         SimpleTableSegment tableSegment1 = createTableSegment("table_1", "tbl_1");
         SimpleTableSegment tableSegment2 = createTableSegment("table_2", "tbl_2");
         ColumnProjection columnProjection = new ColumnProjection(null, "col", "cl");
@@ -151,7 +156,7 @@ public final class TablesContextTest {
     }
     
     @Test
-    public void assertFindTableNameWhenColumnProjectionOwnerAbsentAndSchemaMetaDataContainsColumn() {
+    void assertFindTableNameWhenColumnProjectionOwnerAbsentAndSchemaMetaDataContainsColumn() {
         SimpleTableSegment tableSegment1 = createTableSegment("table_1", "tbl_1");
         SimpleTableSegment tableSegment2 = createTableSegment("table_2", "tbl_2");
         ShardingSphereSchema schema = mock(ShardingSphereSchema.class);
@@ -164,7 +169,7 @@ public final class TablesContextTest {
     }
     
     @Test
-    public void assertFindTableNameWhenColumnProjectionOwnerAbsentAndSchemaMetaDataContainsColumnInUpperCase() {
+    void assertFindTableNameWhenColumnProjectionOwnerAbsentAndSchemaMetaDataContainsColumnInUpperCase() {
         SimpleTableSegment tableSegment1 = createTableSegment("TABLE_1", "TBL_1");
         SimpleTableSegment tableSegment2 = createTableSegment("TABLE_2", "TBL_2");
         ShardingSphereTable table = new ShardingSphereTable("TABLE_1", Collections.singletonList(
@@ -193,7 +198,7 @@ public final class TablesContextTest {
     }
     
     @Test
-    public void assertGetSchemaNameWithSameSchemaAndSameTable() {
+    void assertGetSchemaNameWithSameSchemaAndSameTable() {
         SimpleTableSegment tableSegment1 = createTableSegment("table_1", "tbl_1");
         tableSegment1.setOwner(new OwnerSegment(0, 0, new IdentifierValue("sharding_db_1")));
         SimpleTableSegment tableSegment2 = createTableSegment("table_1", "tbl_1");
@@ -204,7 +209,7 @@ public final class TablesContextTest {
     }
     
     @Test
-    public void assertGetSchemaNameWithSameSchemaAndDifferentTable() {
+    void assertGetSchemaNameWithSameSchemaAndDifferentTable() {
         SimpleTableSegment tableSegment1 = createTableSegment("table_1", "tbl_1");
         tableSegment1.setOwner(new OwnerSegment(0, 0, new IdentifierValue("sharding_db_1")));
         SimpleTableSegment tableSegment2 = createTableSegment("table_2", "tbl_2");
@@ -214,26 +219,26 @@ public final class TablesContextTest {
         assertThat(tablesContext.getDatabaseName().get(), is("sharding_db_1"));
     }
     
-    @Test(expected = IllegalStateException.class)
-    public void assertGetSchemaNameWithDifferentSchemaAndSameTable() {
+    @Test
+    void assertGetSchemaNameWithDifferentSchemaAndSameTable() {
         SimpleTableSegment tableSegment1 = createTableSegment("table_1", "tbl_1");
         tableSegment1.setOwner(new OwnerSegment(0, 0, new IdentifierValue("sharding_db_1")));
         SimpleTableSegment tableSegment2 = createTableSegment("table_1", "tbl_1");
         tableSegment2.setOwner(new OwnerSegment(0, 0, new IdentifierValue("sharding_db_2")));
-        new TablesContext(Arrays.asList(tableSegment1, tableSegment2), DatabaseTypeEngine.getDatabaseType("MySQL")).getDatabaseName();
+        assertThrows(IllegalStateException.class, () -> new TablesContext(Arrays.asList(tableSegment1, tableSegment2), DatabaseTypeEngine.getDatabaseType("MySQL")).getDatabaseName());
     }
     
-    @Test(expected = IllegalStateException.class)
-    public void assertGetSchemaNameWithDifferentSchemaAndDifferentTable() {
+    @Test
+    void assertGetSchemaNameWithDifferentSchemaAndDifferentTable() {
         SimpleTableSegment tableSegment1 = createTableSegment("table_1", "tbl_1");
         tableSegment1.setOwner(new OwnerSegment(0, 0, new IdentifierValue("sharding_db_1")));
         SimpleTableSegment tableSegment2 = createTableSegment("table_2", "tbl_2");
         tableSegment2.setOwner(new OwnerSegment(0, 0, new IdentifierValue("sharding_db_2")));
-        new TablesContext(Arrays.asList(tableSegment1, tableSegment2), DatabaseTypeEngine.getDatabaseType("MySQL")).getDatabaseName();
+        assertThrows(IllegalStateException.class, () -> new TablesContext(Arrays.asList(tableSegment1, tableSegment2), DatabaseTypeEngine.getDatabaseType("MySQL")).getDatabaseName());
     }
     
     @Test
-    public void assertGetSchemaName() {
+    void assertGetSchemaName() {
         SimpleTableSegment tableSegment1 = createTableSegment("table_1", "tbl_1");
         tableSegment1.setOwner(new OwnerSegment(0, 0, new IdentifierValue("sharding_db_1")));
         SimpleTableSegment tableSegment2 = createTableSegment("table_2", "tbl_2");

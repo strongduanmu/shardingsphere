@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.data.pipeline.api.metadata.model;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
@@ -27,13 +28,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
  * Pipeline table meta data.
  */
 @Slf4j
+@EqualsAndHashCode(of = "name")
 @ToString
 public final class PipelineTableMetaData {
     
@@ -63,42 +64,27 @@ public final class PipelineTableMetaData {
     }
     
     /**
-     * Get column metadata.
+     * Get column meta data.
      *
      * @param columnIndex the first column is 1, the second is 2, ...
-     * @return column metadata
+     * @return column meta data
      */
+    // TODO Remove it. Get column meta data by column name for incremental dumper, since columns ordering might be changed.
     public PipelineColumnMetaData getColumnMetaData(final int columnIndex) {
         return getColumnMetaData(columnNames.get(columnIndex - 1));
     }
     
     /**
-     * Get column metadata.
+     * Get column meta data.
      *
      * @param columnName column name
-     * @return column metadata
+     * @return column meta data
      */
     public PipelineColumnMetaData getColumnMetaData(final String columnName) {
         PipelineColumnMetaData result = columnMetaDataMap.get(columnName);
         if (null == result) {
-            log.warn("getColumnMetaData, can not get column metadata for column name '{}', columnNames={}", columnName, columnNames);
+            log.warn("Can not get column meta data for column name '{}', columnNames={}", columnName, columnNames);
         }
         return result;
-    }
-    
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (null == o || getClass() != o.getClass()) {
-            return false;
-        }
-        return name.equals(((PipelineTableMetaData) o).name);
-    }
-    
-    @Override
-    public int hashCode() {
-        return Objects.hash(name);
     }
 }

@@ -21,7 +21,7 @@ import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
 import org.apache.shardingsphere.infra.merge.result.impl.memory.MemoryMergedResult;
 import org.apache.shardingsphere.infra.merge.result.impl.memory.MemoryQueryResultRow;
-import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereSchema;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereSchema;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sharding.rule.TableRule;
 
@@ -38,14 +38,14 @@ import java.util.Optional;
  */
 public final class ShowTableStatusMergedResult extends MemoryMergedResult<ShardingRule> {
     
-    public ShowTableStatusMergedResult(final ShardingRule shardingRule, final SQLStatementContext<?> sqlStatementContext,
+    public ShowTableStatusMergedResult(final ShardingRule shardingRule, final SQLStatementContext sqlStatementContext,
                                        final ShardingSphereSchema schema, final List<QueryResult> queryResults) throws SQLException {
         super(shardingRule, schema, sqlStatementContext, queryResults);
     }
     
     @Override
     protected List<MemoryQueryResultRow> init(final ShardingRule shardingRule, final ShardingSphereSchema schema,
-                                              final SQLStatementContext<?> sqlStatementContext, final List<QueryResult> queryResults) throws SQLException {
+                                              final SQLStatementContext sqlStatementContext, final List<QueryResult> queryResults) throws SQLException {
         Map<String, MemoryQueryResultRow> memoryQueryResultRows = new LinkedHashMap<>();
         for (QueryResult each : queryResults) {
             while (each.next()) {

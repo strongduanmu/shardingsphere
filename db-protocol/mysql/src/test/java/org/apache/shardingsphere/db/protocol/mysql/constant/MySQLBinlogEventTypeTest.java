@@ -17,20 +17,33 @@
 
 package org.apache.shardingsphere.db.protocol.mysql.constant;
 
+import org.junit.jupiter.api.Test;
+
+import java.util.Optional;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Test;
-
-public final class MySQLBinlogEventTypeTest {
+class MySQLBinlogEventTypeTest {
     
     @Test
-    public void assertGetValue() {
-        assertThat(MySQLBinlogEventType.WRITE_ROWS_EVENTv2.getValue(), is(0x1e));
+    void assertGetValue() {
+        assertThat(MySQLBinlogEventType.WRITE_ROWS_EVENT_V2.getValue(), is(0x1e));
     }
     
     @Test
-    public void assertValueOfByInt() {
-        assertThat(MySQLBinlogEventType.valueOf(0x01), is(MySQLBinlogEventType.START_EVENT_V3));
+    void assertValueOfValidType() {
+        for (MySQLBinlogEventType each : MySQLBinlogEventType.values()) {
+            Optional<MySQLBinlogEventType> eventType = MySQLBinlogEventType.valueOf(each.getValue());
+            assertTrue(eventType.isPresent());
+            assertThat(eventType.get().getValue(), is(each.getValue()));
+        }
+    }
+    
+    @Test
+    void assertValueOfInvalidType() {
+        assertFalse(MySQLBinlogEventType.valueOf(-1).isPresent());
     }
 }

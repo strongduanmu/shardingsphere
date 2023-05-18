@@ -18,40 +18,40 @@
 package org.apache.shardingsphere.infra.database.type.dialect;
 
 import org.apache.shardingsphere.infra.database.metadata.dialect.SQL92DataSourceMetaData;
-import org.apache.shardingsphere.sql.parser.sql.common.constant.QuoteCharacter;
-import org.junit.Test;
+import org.apache.shardingsphere.sql.parser.sql.common.enums.QuoteCharacter;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class SQL92DatabaseTypeTest {
+class SQL92DatabaseTypeTest {
     
     @Test
-    public void assertGetQuoteCharacter() {
+    void assertGetQuoteCharacter() {
         assertThat(new SQL92DatabaseType().getQuoteCharacter(), is(QuoteCharacter.QUOTE));
     }
     
     @Test
-    public void assertGetJdbcUrlPrefixes() {
+    void assertGetJdbcUrlPrefixes() {
         assertThat(new SQL92DatabaseType().getJdbcUrlPrefixes(), is(Collections.emptyList()));
     }
     
     @Test
-    public void assertGetDataSourceMetaData() {
+    void assertGetDataSourceMetaData() {
         assertThat(new SQL92DatabaseType().getDataSourceMetaData("jdbc:xxx", "root"), instanceOf(SQL92DataSourceMetaData.class));
     }
     
     @Test
-    public void assertGetSystemDatabases() {
+    void assertGetSystemDatabases() {
         assertTrue(new SQL92DatabaseType().getSystemDatabaseSchemaMap().isEmpty());
     }
     
     @Test
-    public void assertGetSystemSchemas() {
+    void assertGetSystemSchemas() {
         assertTrue(new SQL92DatabaseType().getSystemSchemas().isEmpty());
     }
 }

@@ -21,7 +21,7 @@ import com.google.common.base.Preconditions;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.authority.model.ShardingSpherePrivileges;
-import org.apache.shardingsphere.authority.provider.database.DatabasePermittedPrivilegesProviderAlgorithm;
+import org.apache.shardingsphere.authority.provider.database.DatabasePermittedPrivilegesProvider;
 import org.apache.shardingsphere.authority.provider.database.model.privilege.DatabasePermittedPrivileges;
 import org.apache.shardingsphere.infra.metadata.user.Grantee;
 import org.apache.shardingsphere.infra.metadata.user.ShardingSphereUser;
@@ -49,7 +49,7 @@ public final class DatabasePrivilegeBuilder {
      * @return privileges
      */
     public static Map<ShardingSphereUser, ShardingSpherePrivileges> build(final Collection<ShardingSphereUser> users, final Properties props) {
-        String mappingProp = props.getProperty(DatabasePermittedPrivilegesProviderAlgorithm.PROP_USER_DATABASE_MAPPINGS, "");
+        String mappingProp = props.getProperty(DatabasePermittedPrivilegesProvider.PROP_USER_DATABASE_MAPPINGS, "");
         checkDatabases(mappingProp);
         return buildPrivileges(users, mappingProp);
     }
@@ -61,7 +61,7 @@ public final class DatabasePrivilegeBuilder {
      */
     private static void checkDatabases(final String mappingProp) {
         Preconditions.checkArgument(!"".equals(mappingProp), "user-database-mappings configuration `%s` can not be null", mappingProp);
-        Arrays.stream(mappingProp.split(",")).forEach(each -> Preconditions.checkArgument(0 < each.indexOf("@") && 0 < each.indexOf("="),
+        Arrays.stream(mappingProp.split(",")).forEach(each -> Preconditions.checkArgument(each.contains("@") && each.contains("="),
                 "user-database-mappings configuration `%s` is invalid, the configuration format should be like `username@hostname=database`", each));
     }
     
@@ -84,8 +84,8 @@ public final class DatabasePrivilegeBuilder {
         Arrays.asList(mappings).forEach(each -> {
             String[] userDatabasePair = each.trim().split("=");
             String yamlUser = userDatabasePair[0];
-            String username = yamlUser.substring(0, yamlUser.indexOf("@"));
-            String hostname = yamlUser.substring(yamlUser.indexOf("@") + 1);
+            String username = yamlUser.substring(0, yamlUser.indexOf('@'));
+            String hostname = yamlUser.substring(yamlUser.indexOf('@') + 1);
             ShardingSphereUser shardingSphereUser = new ShardingSphereUser(username, "", hostname);
             Collection<String> databases = result.getOrDefault(shardingSphereUser, new HashSet<>());
             databases.add(userDatabasePair[1]);
@@ -98,7 +98,7 @@ public final class DatabasePrivilegeBuilder {
         Set<String> result = new HashSet<>();
         for (Entry<ShardingSphereUser, Collection<String>> entry : userDatabaseMappings.entrySet()) {
             boolean isAnyOtherHost = checkAnyOtherHost(entry.getKey().getGrantee(), shardingSphereUser);
-            if (isAnyOtherHost || shardingSphereUser == entry.getKey() || shardingSphereUser.equals(entry.getKey())) {
+            if (isAnyOtherHost || shardingSphereUser.equals(entry.getKey())) {
                 result.addAll(entry.getValue());
             }
         }

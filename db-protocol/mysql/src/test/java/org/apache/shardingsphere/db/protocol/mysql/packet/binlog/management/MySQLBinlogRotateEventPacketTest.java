@@ -20,10 +20,10 @@ package org.apache.shardingsphere.db.protocol.mysql.packet.binlog.management;
 import io.netty.buffer.Unpooled;
 import org.apache.shardingsphere.db.protocol.mysql.packet.binlog.MySQLBinlogEventHeader;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -31,8 +31,8 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLBinlogRotateEventPacketTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLBinlogRotateEventPacketTest {
     
     @Mock
     private MySQLPacketPayload payload;
@@ -41,19 +41,18 @@ public final class MySQLBinlogRotateEventPacketTest {
     private MySQLBinlogEventHeader binlogEventHeader;
     
     @Test
-    public void assertNew() {
+    void assertNew() {
         when(payload.readInt8()).thenReturn(4L);
         when(payload.readStringFix(anyInt())).thenReturn("binlog-000001");
         when(payload.getByteBuf()).thenReturn(Unpooled.buffer());
         MySQLBinlogRotateEventPacket actual = new MySQLBinlogRotateEventPacket(binlogEventHeader, payload);
-        assertThat(actual.getSequenceId(), is(0));
         assertThat(actual.getBinlogEventHeader(), is(binlogEventHeader));
         assertThat(actual.getPosition(), is(4L));
         assertThat(actual.getNextBinlogName(), is("binlog-000001"));
     }
     
     @Test
-    public void assertWrite() {
+    void assertWrite() {
         new MySQLBinlogRotateEventPacket(binlogEventHeader, 4L, "binlog-000001").write(payload);
         verify(binlogEventHeader).write(payload);
         verify(payload).writeInt8(4L);

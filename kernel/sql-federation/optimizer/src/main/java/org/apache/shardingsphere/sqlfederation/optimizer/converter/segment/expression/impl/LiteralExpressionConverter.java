@@ -17,12 +17,18 @@
 
 package org.apache.shardingsphere.sqlfederation.optimizer.converter.segment.expression.impl;
 
+import org.apache.calcite.avatica.util.TimeUnit;
+import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.fun.SqlTrimFunction.Flag;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.shardingsphere.sqlfederation.optimizer.converter.segment.SQLSegmentConverter;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
+import org.apache.shardingsphere.sqlfederation.optimizer.converter.segment.SQLSegmentConverter;
 
+import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Optional;
 
 /**
@@ -30,13 +36,39 @@ import java.util.Optional;
  */
 public final class LiteralExpressionConverter implements SQLSegmentConverter<LiteralExpressionSegment, SqlNode> {
     
+    private static final Collection<String> TRIM_FUNCTION_FLAGS = new HashSet<>(3, 1);
+    
+    private static final Collection<String> TIME_UNIT_NAMES = new HashSet<>(6, 1);
+    
+    static {
+        TRIM_FUNCTION_FLAGS.add("BOTH");
+        TRIM_FUNCTION_FLAGS.add("LEADING");
+        TRIM_FUNCTION_FLAGS.add("TRAILING");
+        TIME_UNIT_NAMES.add("YEAR");
+        TIME_UNIT_NAMES.add("MONTH");
+        TIME_UNIT_NAMES.add("DAY");
+        TIME_UNIT_NAMES.add("HOUR");
+        TIME_UNIT_NAMES.add("MINUTE");
+        TIME_UNIT_NAMES.add("SECOND");
+    }
+    
     @Override
     public Optional<SqlNode> convert(final LiteralExpressionSegment segment) {
-        if (Integer.class == segment.getLiterals().getClass()) {
-            return Optional.of(SqlLiteral.createExactNumeric(String.valueOf(segment.getLiterals()), SqlParserPos.ZERO));
+        if (null == segment.getLiterals()) {
+            return Optional.of(SqlLiteral.createNull(SqlParserPos.ZERO));
         }
-        if (String.class == segment.getLiterals().getClass()) {
-            return Optional.of(SqlLiteral.createCharString((String) segment.getLiterals(), SqlParserPos.ZERO));
+        String literalValue = String.valueOf(segment.getLiterals());
+        if (TRIM_FUNCTION_FLAGS.contains(literalValue)) {
+            return Optional.of(SqlLiteral.createSymbol(Flag.valueOf(literalValue), SqlParserPos.ZERO));
+        }
+        if (TIME_UNIT_NAMES.contains(literalValue)) {
+            return Optional.of(new SqlIntervalQualifier(TimeUnit.valueOf(literalValue), null, SqlParserPos.ZERO));
+        }
+        if (segment.getLiterals() instanceof Integer || segment.getLiterals() instanceof BigDecimal) {
+            return Optional.of(SqlLiteral.createExactNumeric(literalValue, SqlParserPos.ZERO));
+        }
+        if (segment.getLiterals() instanceof String) {
+            return Optional.of(SqlLiteral.createCharString(literalValue, SqlParserPos.ZERO));
         }
         return Optional.empty();
     }

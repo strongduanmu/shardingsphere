@@ -52,17 +52,18 @@ chapter = true
  - 类和方法的访问权限控制为最小。
  - 方法所用到的私有方法应紧跟该方法，如果有多个私有方法，书写私有方法应与私有方法在原方法的出现顺序相同。
  - 方法入参和返回值不允许为 `null`。
- - 优先使用三目运算符代替 if else 的返回和赋值语句。
  - 优先使用 lombok 代替构造器，getter, setter 方法和 log 变量。
  - 优先考虑使用 `LinkedList`，只有在需要通过下标获取集合中元素值时再使用 `ArrayList`。
  - `ArrayList`，`HashMap` 等可能产生扩容的集合类型必须指定集合初始大小，避免扩容。
  - 日志与注释一律使用英文。
  - 注释只能包含 javadoc，todo 和 fixme。
- - 公开的类和方法必须有 javadoc，其他类和方法以及覆盖自父类的方法无需 javadoc。
+ - 公开的类和方法必须有 javadoc，对用户的 API 和 SPI 的 javadoc 需要写的清晰全面，其他类和方法以及覆盖自父类的方法无需 javadoc。
+ - 优先使用三目运算符代替 if else 的返回和赋值语句。
  - 禁止嵌套使用三目运算符。
  - 条件表达式中，优先使用正向语义，以便于理解代码逻辑。例如：`if (null == param) {} else {}`。
  - 使用具体的 `@SuppressWarnings("xxx")` 代替 `@SuppressWarnings("all")`。
  - 热点方法内应避免使用 Java Stream，除非该场景下使用 Stream 的性能优于普通循环。
+ - 工具类名称命名为 `xxUtils`。
 
 ## 单元测试规范
 
@@ -77,17 +78,22 @@ chapter = true
    - 合理性设计（Design）：与生产代码设计相结合，设计高质量的单元测试。
    - 容错性测试（Error）：通过非法数据、异常流程等错误的输入，得到预期结果。
  - 除去简单的 `getter /setter` 方法，以及声明 SPI 的静态代码，如：`getType / getOrder`，单元测试需全覆盖。
- - 每个测试用例需精确断言。
+ - 每个测试用例需精确断言，尽量不使用 `not`、`containsString` 断言。
  - 准备环境的代码和测试代码分离。
- - 只有 Mockito，junit `Assert`，hamcrest `CoreMatchers` 和 `MatcherAssert` 相关可以使用 static import。
- - 单数据断言，应使用 `assertTrue`，`assertFalse`，`assertNull` 和 `assertNotNull`。
- - 多数据断言，应使用 `assertThat`。
- - 精确断言，尽量不使用 `not`，`containsString` 断言。
+ - 只有 Mockito，junit `Assertions`，hamcrest `CoreMatchers` 和 `MatcherAssert` 相关可以使用 static import。
+ - 数据断言规范应遵循：
+    - 布尔类型断言应使用 `assertTrue` 和 `assertFalse`；
+    - 空值断言应使用 `assertNull` 和 `assertNotNull`；
+    - 其他类型应使用 `assertThat`。
  - 测试用例的真实值应名为为 actual XXX，期望值应命名为 expected XXX。
  - 测试类和 `@Test` 标注的方法无需 javadoc。
- - 使用 Mockito mockStatic 和 mockConstruction 方法必须搭配 try-with-resource 或在清理方法中关闭，避免泄漏。
+ - 使用 `mock` 应遵循如下规范：
+   - 单元测试需要连接某个环境时，应使用 `mock`；
+   - 单元测试包含不容易构建的对象时，例如：超过两层嵌套并且和测试无关的对象，应使用 `mock`。
+   - 模拟静态方法或构造器，应优先考虑使用测试框架提供的 `AutoMockExtension` 和 `StaticMockSettings` 自动释放资源；若使用 Mockito `mockStatic` 和 `mockConstruction` 方法，必须搭配 `try-with-resource` 或在清理方法中关闭，避免泄漏。
+   - 校验仅有一次调用时，无需使用 `times(1)` 参数，使用 `verify` 的单参数方法即可。
 
-## G4 编码规范
+## G4 规范
 
  - 公共规范
    - 每行长度不超过 `200` 个字符，保证每一行语义完整以便于理解。
@@ -102,4 +108,14 @@ chapter = true
    - 如果一个规则的分支超过 `5` 个，则每个分支一行。
    - 规则命名采用 java 变量的驼峰形式。
    - 为每种 SQL 语句类型定义一个独立的语法文件，文件名称由 `数据库名称` + `语句类型名称` + `Statement`。例如：`MySQLDQLStatement.g4`。
-   - 每个 `SQLStatement` 和 `SQLSegment` 实现类，必须添加 lombok `@ToString` 注解，如果实现类继承了某个父类，则需要添加 `callSuper = true` 参数。
+
+## GitHub Action 规范
+
+- Workflow 文件名以 `.yml` 结尾。
+- Workflow 文件名由 `触发方式-执行操作` 的小写字母组成，例如 `nightly-check.yml`。pull_request 触发的任务省略触发方式，例如 `check.yml`。
+- 触发方式包括：pull_request（不加前缀）、nightly。
+- 执行操作包括： check、ci、e2e 、build。
+- Workflow 文件内的 `name` 属性命名与文件名一致，单词以 `-` 作为分隔符，分隔符两侧要加空格，每个单词首字母大写，例如 `Nightly - Check`。
+- Workflow 中的 `job` 属性命名，须在 Workflow 中保持唯一。
+- 使用 `matrix` 的时候，必须添加作业并行度限制为 5：`max-parallel: 5`。
+- 必须为作业设置超时时间，最大不超过 1 小时。例如 `timeout-minutes: 10`。

@@ -17,28 +17,25 @@
 
 package org.apache.shardingsphere.mode.repository.cluster.consul.props;
 
-import org.junit.Test;
+import org.apache.shardingsphere.test.util.PropertiesBuilder;
+import org.apache.shardingsphere.test.util.PropertiesBuilder.Property;
+import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class ConsulPropertiesTest {
+class ConsulPropertiesTest {
     
     @Test
-    public void assertGetValue() {
-        assertThat(new ConsulProperties(createProperties()).getValue(ConsulPropertyKey.BLOCK_QUERY_TIME_TO_SECONDS), is(60L));
-    }
-    
-    private Properties createProperties() {
-        Properties result = new Properties();
-        result.setProperty(ConsulPropertyKey.TIME_TO_LIVE_SECONDS.getKey(), "50");
-        return result;
+    void assertGetValue() {
+        assertThat(new ConsulProperties(PropertiesBuilder.build(new Property(ConsulPropertyKey.TIME_TO_LIVE_SECONDS.getKey(), "50"))).getValue(ConsulPropertyKey.BLOCK_QUERY_TIME_TO_SECONDS),
+                is(60L));
     }
     
     @Test
-    public void assertGetDefaultValue() {
+    void assertGetDefaultValue() {
         assertThat(new ConsulProperties(new Properties()).getValue(ConsulPropertyKey.TIME_TO_LIVE_SECONDS), is("30s"));
     }
 }

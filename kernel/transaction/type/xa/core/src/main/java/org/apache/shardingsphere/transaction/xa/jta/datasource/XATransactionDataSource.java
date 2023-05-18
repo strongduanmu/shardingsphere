@@ -18,7 +18,11 @@
 package org.apache.shardingsphere.transaction.xa.jta.datasource;
 
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.transaction.xa.jta.connection.XAConnectionWrapperFactory;
+import org.apache.shardingsphere.infra.util.reflection.ReflectionUtils;
+import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
+import org.apache.shardingsphere.transaction.xa.jta.connection.XAConnectionWrapper;
+import org.apache.shardingsphere.transaction.xa.jta.datasource.properties.XADataSourceDefinition;
+import org.apache.shardingsphere.transaction.xa.jta.datasource.swapper.DataSourceSwapper;
 import org.apache.shardingsphere.transaction.xa.spi.SingleXAResource;
 import org.apache.shardingsphere.transaction.xa.spi.XATransactionManagerProvider;
 
@@ -29,7 +33,6 @@ import javax.transaction.RollbackException;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
-import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -47,22 +50,22 @@ public final class XATransactionDataSource implements AutoCloseable {
     
     private final ThreadLocal<Map<Transaction, Connection>> enlistedTransactions = ThreadLocal.withInitial(HashMap::new);
     
-    private final DatabaseType databaseType;
-    
     private final String resourceName;
     
     private final DataSource dataSource;
     
     private XADataSource xaDataSource;
     
+    private XAConnectionWrapper xaConnectionWrapper;
+    
     private XATransactionManagerProvider xaTransactionManagerProvider;
     
     public XATransactionDataSource(final DatabaseType databaseType, final String resourceName, final DataSource dataSource, final XATransactionManagerProvider xaTransactionManagerProvider) {
-        this.databaseType = databaseType;
         this.resourceName = resourceName;
         this.dataSource = dataSource;
         if (!CONTAINER_DATASOURCE_NAMES.contains(dataSource.getClass().getSimpleName())) {
-            xaDataSource = XADataSourceFactory.build(databaseType, dataSource);
+            xaDataSource = new DataSourceSwapper(TypedSPILoader.getService(XADataSourceDefinition.class, databaseType.getType())).swap(dataSource);
+            xaConnectionWrapper = TypedSPILoader.getService(XAConnectionWrapper.class, databaseType.getType());
             this.xaTransactionManagerProvider = xaTransactionManagerProvider;
             xaTransactionManagerProvider.registerRecoveryResource(resourceName, xaDataSource);
         }
@@ -83,7 +86,7 @@ public final class XATransactionDataSource implements AutoCloseable {
         Transaction transaction = xaTransactionManagerProvider.getTransactionManager().getTransaction();
         if (!enlistedTransactions.get().containsKey(transaction)) {
             Connection connection = dataSource.getConnection();
-            XAConnection xaConnection = XAConnectionWrapperFactory.getInstance(databaseType).wrap(xaDataSource, connection);
+            XAConnection xaConnection = xaConnectionWrapper.wrap(xaDataSource, connection);
             transaction.enlistResource(new SingleXAResource(resourceName, xaConnection.getXAResource()));
             transaction.registerSynchronization(new Synchronization() {
                 
@@ -113,9 +116,7 @@ public final class XATransactionDataSource implements AutoCloseable {
     
     private void close(final DataSource dataSource) {
         try {
-            Method method = dataSource.getClass().getDeclaredMethod("close");
-            method.setAccessible(true);
-            method.invoke(dataSource);
+            ReflectionUtils.invokeMethod(dataSource.getClass().getDeclaredMethod("close"), dataSource);
         } catch (final ReflectiveOperationException ignored) {
         }
     }

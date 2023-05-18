@@ -19,11 +19,11 @@ package org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.ex
 
 import io.netty.buffer.ByteBuf;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 import java.nio.charset.StandardCharsets;
@@ -34,21 +34,21 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class PostgreSQLStringBinaryProtocolValueTest {
+@ExtendWith(MockitoExtension.class)
+class PostgreSQLStringBinaryProtocolValueTest {
     
     @Mock
     private ByteBuf byteBuf;
     
     private PostgreSQLPacketPayload payload;
     
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         payload = new PostgreSQLPacketPayload(byteBuf, StandardCharsets.UTF_8);
     }
     
     @Test
-    public void assertNewInstance() {
+    void assertNewInstance() {
         doAnswer((Answer<ByteBuf>) invocation -> {
             ((byte[]) invocation.getArguments()[0])[0] = 'a';
             return byteBuf;

@@ -22,14 +22,13 @@ import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
 import org.apache.shardingsphere.infra.config.rule.RuleConfiguration;
 import org.apache.shardingsphere.infra.rule.identifier.scope.DatabaseRule;
 import org.apache.shardingsphere.infra.rule.identifier.type.DataSourceContainedRule;
-import org.apache.shardingsphere.shadow.algorithm.config.AlgorithmProvidedShadowRuleConfiguration;
+import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
 import org.apache.shardingsphere.shadow.api.config.ShadowRuleConfiguration;
 import org.apache.shardingsphere.shadow.api.config.datasource.ShadowDataSourceConfiguration;
 import org.apache.shardingsphere.shadow.api.config.table.ShadowTableConfiguration;
 import org.apache.shardingsphere.shadow.api.shadow.ShadowOperationType;
 import org.apache.shardingsphere.shadow.api.shadow.column.ColumnShadowAlgorithm;
 import org.apache.shardingsphere.shadow.api.shadow.hint.HintShadowAlgorithm;
-import org.apache.shardingsphere.shadow.factory.ShadowAlgorithmFactory;
 import org.apache.shardingsphere.shadow.spi.ShadowAlgorithm;
 
 import java.util.Collection;
@@ -69,37 +68,17 @@ public final class ShadowRule implements DatabaseRule, DataSourceContainedRule {
         initShadowTableRules(ruleConfig.getTables());
     }
     
-    public ShadowRule(final AlgorithmProvidedShadowRuleConfiguration ruleConfig) {
-        configuration = ruleConfig;
-        initShadowDataSourceMappings(ruleConfig.getDataSources());
-        initShadowAlgorithms(ruleConfig.getShadowAlgorithms());
-        defaultShadowAlgorithm = shadowAlgorithms.get(ruleConfig.getDefaultShadowAlgorithmName());
-        if (defaultShadowAlgorithm instanceof HintShadowAlgorithm<?>) {
-            hintShadowAlgorithmNames.add(ruleConfig.getDefaultShadowAlgorithmName());
-        }
-        initShadowTableRules(ruleConfig.getTables());
-    }
-    
-    private void initShadowDataSourceMappings(final Map<String, ShadowDataSourceConfiguration> dataSources) {
-        dataSources.forEach((key, value) -> shadowDataSourceMappings.put(key, new ShadowDataSourceRule(value.getProductionDataSourceName(), value.getShadowDataSourceName())));
+    private void initShadowDataSourceMappings(final Collection<ShadowDataSourceConfiguration> dataSources) {
+        dataSources.forEach(each -> shadowDataSourceMappings.put(each.getName(), new ShadowDataSourceRule(each.getProductionDataSourceName(), each.getShadowDataSourceName())));
     }
     
     private void initShadowAlgorithmConfigurations(final Map<String, AlgorithmConfiguration> shadowAlgorithmConfigs) {
         shadowAlgorithmConfigs.forEach((key, value) -> {
-            ShadowAlgorithm algorithm = ShadowAlgorithmFactory.newInstance(value);
+            ShadowAlgorithm algorithm = TypedSPILoader.getService(ShadowAlgorithm.class, value.getType(), value.getProps());
             if (algorithm instanceof HintShadowAlgorithm<?>) {
                 hintShadowAlgorithmNames.add(key);
             }
             shadowAlgorithms.put(key, algorithm);
-        });
-    }
-    
-    private void initShadowAlgorithms(final Map<String, ShadowAlgorithm> shadowAlgorithms) {
-        shadowAlgorithms.forEach((key, value) -> {
-            if (value instanceof HintShadowAlgorithm<?>) {
-                hintShadowAlgorithmNames.add(key);
-            }
-            this.shadowAlgorithms.put(key, value);
         });
     }
     

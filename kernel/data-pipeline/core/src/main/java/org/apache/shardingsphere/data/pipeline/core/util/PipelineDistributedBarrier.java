@@ -18,17 +18,17 @@
 package org.apache.shardingsphere.data.pipeline.core.util;
 
 import com.google.common.base.Strings;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.ConcurrentException;
 import org.apache.commons.lang3.concurrent.LazyInitializer;
-import org.apache.shardingsphere.data.pipeline.core.context.PipelineContext;
+import org.apache.shardingsphere.data.pipeline.core.context.PipelineContextKey;
+import org.apache.shardingsphere.data.pipeline.core.context.PipelineContextManager;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepository;
-import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEvent;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -37,44 +37,47 @@ import java.util.concurrent.TimeUnit;
 /**
  * Pipeline distributed barrier.
  */
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
 public final class PipelineDistributedBarrier {
     
-    private static final PipelineDistributedBarrier INSTANCE = new PipelineDistributedBarrier();
+    private static final Map<PipelineContextKey, PipelineDistributedBarrier> INSTANCE_MAP = new ConcurrentHashMap<>();
     
-    private static final LazyInitializer<ClusterPersistRepository> REPOSITORY_LAZY_INITIALIZER = new LazyInitializer<ClusterPersistRepository>() {
-        
-        @Override
-        protected ClusterPersistRepository initialize() {
-            return (ClusterPersistRepository) PipelineContext.getContextManager().getMetaDataContexts().getPersistService().getRepository();
-        }
-    };
+    private final PipelineContextKey contextKey;
     
-    private final Map<String, InnerCountDownLatchHolder> countDownLatchMap = new ConcurrentHashMap<>();
+    private final LazyInitializer<ClusterPersistRepository> repositoryLazyInitializer = new PersistRepositoryLazyInitializer();
     
-    @SneakyThrows(ConcurrentException.class)
-    private static ClusterPersistRepository getRepository() {
-        return REPOSITORY_LAZY_INITIALIZER.get();
-    }
+    private final Map<String, InnerCountDownLatchHolder> countDownLatchHolders = new ConcurrentHashMap<>();
     
     /**
      * Get instance.
      *
+     * @param contextKey context key
      * @return instance
      */
-    public static PipelineDistributedBarrier getInstance() {
-        return INSTANCE;
+    public static PipelineDistributedBarrier getInstance(final PipelineContextKey contextKey) {
+        PipelineDistributedBarrier result = INSTANCE_MAP.get(contextKey);
+        if (null != result) {
+            return result;
+        }
+        INSTANCE_MAP.computeIfAbsent(contextKey, PipelineDistributedBarrier::new);
+        return INSTANCE_MAP.get(contextKey);
+    }
+    
+    @SneakyThrows(ConcurrentException.class)
+    private ClusterPersistRepository getRepository() {
+        return repositoryLazyInitializer.get();
     }
     
     /**
-     * Register count down latch.
+     * Register distributed barrier.
      *
      * @param barrierPath barrier path
      * @param totalCount total count
      */
     public void register(final String barrierPath, final int totalCount) {
         getRepository().persist(barrierPath, "");
-        countDownLatchMap.computeIfAbsent(barrierPath, k -> new InnerCountDownLatchHolder(totalCount, new CountDownLatch(1)));
+        countDownLatchHolders.computeIfAbsent(barrierPath, key -> new InnerCountDownLatchHolder(totalCount, new CountDownLatch(1)));
     }
     
     /**
@@ -98,8 +101,8 @@ public final class PipelineDistributedBarrier {
      * @param barrierPath barrier path
      */
     public void unregister(final String barrierPath) {
-        getRepository().delete(String.join("/", barrierPath));
-        InnerCountDownLatchHolder holder = countDownLatchMap.remove(barrierPath);
+        getRepository().delete(barrierPath);
+        InnerCountDownLatchHolder holder = countDownLatchHolders.remove(barrierPath);
         if (null != holder) {
             holder.getCountDownLatch().countDown();
         }
@@ -114,7 +117,7 @@ public final class PipelineDistributedBarrier {
      * @return true if the count reached zero and false if the waiting time elapsed before the count reached zero
      */
     public boolean await(final String barrierPath, final long timeout, final TimeUnit timeUnit) {
-        InnerCountDownLatchHolder holder = countDownLatchMap.get(barrierPath);
+        InnerCountDownLatchHolder holder = countDownLatchHolders.get(barrierPath);
         if (null == holder) {
             return false;
         }
@@ -125,26 +128,23 @@ public final class PipelineDistributedBarrier {
             }
             return result;
         } catch (final InterruptedException ignored) {
+            Thread.currentThread().interrupt();
         }
         return false;
     }
     
     /**
-     * Check child node count equal sharding count.
+     * notify children node count check.
      *
-     * @param event event
+     * @param nodePath node path
      */
-    public void checkChildrenNodeCount(final DataChangedEvent event) {
-        if (Strings.isNullOrEmpty(event.getKey())) {
+    public void notifyChildrenNodeCountCheck(final String nodePath) {
+        if (Strings.isNullOrEmpty(nodePath)) {
             return;
         }
-        String barrierPath = event.getKey().substring(0, event.getKey().lastIndexOf("/"));
-        InnerCountDownLatchHolder holder = countDownLatchMap.get(barrierPath);
-        if (null == holder) {
-            return;
-        }
-        List<String> childrenKeys = getRepository().getChildrenKeys(barrierPath);
-        if (childrenKeys.size() == holder.getTotalCount()) {
+        String barrierPath = nodePath.substring(0, nodePath.lastIndexOf('/'));
+        InnerCountDownLatchHolder holder = countDownLatchHolders.get(barrierPath);
+        if (null != holder && getRepository().getChildrenKeys(barrierPath).size() == holder.getTotalCount()) {
             holder.getCountDownLatch().countDown();
         }
     }
@@ -156,5 +156,14 @@ public final class PipelineDistributedBarrier {
         private final int totalCount;
         
         private final CountDownLatch countDownLatch;
+    }
+    
+    @RequiredArgsConstructor
+    private final class PersistRepositoryLazyInitializer extends LazyInitializer<ClusterPersistRepository> {
+        
+        @Override
+        protected ClusterPersistRepository initialize() {
+            return (ClusterPersistRepository) PipelineContextManager.getContext(contextKey).getContextManager().getMetaDataContexts().getPersistService().getRepository();
+        }
     }
 }

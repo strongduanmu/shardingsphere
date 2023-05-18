@@ -19,17 +19,20 @@ package org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.column.val
 
 import org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.column.MySQLBinlogColumnDef;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLDatetimeBinlogProtocolValueTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLDatetimeBinlogProtocolValueTest {
     
     @Mock
     private MySQLPacketPayload payload;
@@ -38,14 +41,15 @@ public final class MySQLDatetimeBinlogProtocolValueTest {
     private MySQLBinlogColumnDef columnDef;
     
     @Test
-    public void assertRead() {
+    void assertRead() {
         when(payload.readInt8()).thenReturn(99991231235959L);
-        assertThat(new MySQLDatetimeBinlogProtocolValue().read(columnDef, payload), is("9999-12-31 23:59:59"));
+        LocalDateTime expected = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+        assertThat(new MySQLDatetimeBinlogProtocolValue().read(columnDef, payload), is(Timestamp.valueOf(expected)));
     }
     
     @Test
-    public void assertReadNullTime() {
+    void assertReadNullTime() {
         when(payload.readInt8()).thenReturn(0L);
-        assertThat(new MySQLDatetimeBinlogProtocolValue().read(columnDef, payload), is(MySQLTimeValueUtil.DATETIME_OF_ZERO));
+        assertThat(new MySQLDatetimeBinlogProtocolValue().read(columnDef, payload), is(MySQLTimeValueUtils.DATETIME_OF_ZERO));
     }
 }

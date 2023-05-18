@@ -18,32 +18,31 @@
 package org.apache.shardingsphere.db.protocol.mysql.packet.command.query.binary.prepare;
 
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLComStmtPreparePacketTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLComStmtPreparePacketTest {
     
     @Mock
     private MySQLPacketPayload payload;
     
     @Test
-    public void assertNew() {
+    void assertNew() {
         when(payload.readStringEOF()).thenReturn("SELECT id FROM tbl WHERE id=?");
         MySQLComStmtPreparePacket actual = new MySQLComStmtPreparePacket(payload);
-        assertThat(actual.getSequenceId(), is(0));
         assertThat(actual.getSql(), is("SELECT id FROM tbl WHERE id=?"));
     }
     
     @Test
-    public void assertWrite() {
+    void assertWrite() {
         when(payload.readStringEOF()).thenReturn("SELECT id FROM tbl WHERE id=?");
         MySQLComStmtPreparePacket actual = new MySQLComStmtPreparePacket(payload);
         actual.write(payload);

@@ -23,6 +23,14 @@ WS
     : [ \t\r\n] + ->skip
     ;
 
+TRUE
+    : T R U E
+    ;
+
+FALSE
+    : F A L S E
+    ;
+
 CREATE
     : C R E A T E
     ;
@@ -33,10 +41,6 @@ ALTER
 
 DROP
     : D R O P
-    ;
-
-SET
-    : S E T
     ;
 
 SHOW
@@ -63,10 +67,6 @@ READ_STORAGE_UNITS
     : R E A D UL_ S T O R A G E UL_ U N I T S
     ;
 
-AUTO_AWARE_RESOURCE
-    : A U T O UL_ A W A R E UL_ R E S O U R C E
-    ;
-
 TYPE
     : T Y P E
     ;
@@ -83,24 +83,12 @@ RULES
     : R U L E S
     ;
 
-SOURCE
-    : S O U R C E
-    ;
-
 RESOURCES
     : R E S O U R C E S
     ;
 
 STATUS
     : S T A T U S
-    ;
-
-HINT
-    : H I N T
-    ;
-
-CLEAR
-    : C L E A R
     ;
 
 ENABLE
@@ -123,19 +111,22 @@ EXISTS
     : E X I S T S
     ;  
 
-
 COUNT
     : C O U N T
     ;
 
-WRITE_DATA_SOURCE_QUERY_ENABLED
-    : W R I T E UL_ D A T A UL_ S O U R C E UL_ Q U E R Y UL_ E N A B L E D
+ROUND_ROBIN
+    : R O U N D UL_ R O B I N
     ;
 
-TRUE
-    : T R U E
+RANDOM
+    : R A N D O M
     ;
 
-FALSE
-    : F A L S E
+WEIGHT
+    : W E I G H T
+    ;
+
+NOT
+    : N O T
     ;

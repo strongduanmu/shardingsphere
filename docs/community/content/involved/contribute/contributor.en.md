@@ -31,6 +31,7 @@ git clone https://github.com/(your_github_name)/shardingsphere.git
 Add ShardingSphere remote repository.
 
 ```shell
+cd shardingsphere
 git remote add apache https://github.com/apache/shardingsphere.git
 git remote -v
 ```
@@ -39,7 +40,7 @@ Build and install all modules, it'll install modules into Maven local repository
 
 ```shell
 cd shardingsphere
-mvn clean install -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true -Drat.skip=true -Djacoco.skip=true -DskipITs -DskipTests -Prelease
+mvn clean install -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true -Dspotbugs.skip=true -Drat.skip=true -Djacoco.skip=true -DskipITs -DskipTests -Prelease
 ```
 
 When you pull the latest code from ShardingSphere and create new branch later, you might get similar compile error of parser again, then you could run this command again.

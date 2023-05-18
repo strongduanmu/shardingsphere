@@ -22,18 +22,19 @@ import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLBinaryColumnTyp
 import org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.column.MySQLBinlogColumnDef;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
 import org.apache.shardingsphere.infra.util.exception.external.sql.type.generic.UnsupportedSQLOperationException;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLBlobBinlogProtocolValueTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLBlobBinlogProtocolValueTest {
     
     @Mock
     private MySQLPacketPayload payload;
@@ -43,13 +44,13 @@ public final class MySQLBlobBinlogProtocolValueTest {
     
     private MySQLBinlogColumnDef columnDef;
     
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         columnDef = new MySQLBinlogColumnDef(MySQLBinaryColumnType.MYSQL_TYPE_STRING);
     }
     
     @Test
-    public void assertReadWithMeta1() {
+    void assertReadWithMeta1() {
         columnDef.setColumnMeta(1);
         when(payload.getByteBuf()).thenReturn(byteBuf);
         when(byteBuf.readUnsignedByte()).thenReturn((short) 0xff);
@@ -58,7 +59,7 @@ public final class MySQLBlobBinlogProtocolValueTest {
     }
     
     @Test
-    public void assertReadWithMeta2() {
+    void assertReadWithMeta2() {
         columnDef.setColumnMeta(2);
         when(payload.getByteBuf()).thenReturn(byteBuf);
         when(byteBuf.readUnsignedShortLE()).thenReturn(0xffff);
@@ -67,7 +68,7 @@ public final class MySQLBlobBinlogProtocolValueTest {
     }
     
     @Test
-    public void assertReadWithMeta3() {
+    void assertReadWithMeta3() {
         columnDef.setColumnMeta(3);
         when(payload.getByteBuf()).thenReturn(byteBuf);
         when(byteBuf.readUnsignedMediumLE()).thenReturn(0xffffff);
@@ -76,16 +77,16 @@ public final class MySQLBlobBinlogProtocolValueTest {
     }
     
     @Test
-    public void assertReadWithMeta4() {
+    void assertReadWithMeta4() {
         columnDef.setColumnMeta(4);
         when(payload.readInt4()).thenReturn(Integer.MAX_VALUE);
         when(payload.readStringFixByBytes(Integer.MAX_VALUE)).thenReturn(new byte[255]);
         assertThat(new MySQLBlobBinlogProtocolValue().read(columnDef, payload), is(new byte[255]));
     }
     
-    @Test(expected = UnsupportedSQLOperationException.class)
-    public void assertReadWithUnknownMetaValue() {
+    @Test
+    void assertReadWithUnknownMetaValue() {
         columnDef.setColumnMeta(5);
-        new MySQLBlobBinlogProtocolValue().read(columnDef, payload);
+        assertThrows(UnsupportedSQLOperationException.class, () -> new MySQLBlobBinlogProtocolValue().read(columnDef, payload));
     }
 }

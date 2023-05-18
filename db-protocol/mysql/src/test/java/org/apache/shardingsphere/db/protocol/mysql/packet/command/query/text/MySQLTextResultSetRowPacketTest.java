@@ -18,10 +18,10 @@
 package org.apache.shardingsphere.db.protocol.mysql.packet.command.query.text;
 
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -30,32 +30,28 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLTextResultSetRowPacketTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLTextResultSetRowPacketTest {
     
     @Mock
     private MySQLPacketPayload payload;
     
     @Test
-    public void assertNew() {
-        when(payload.readInt1()).thenReturn(1);
+    void assertNew() {
         when(payload.readStringLenenc()).thenReturn("value_a", null, "value_c");
-        MySQLTextResultSetRowPacket actual = new MySQLTextResultSetRowPacket(payload, 3);
-        assertThat(actual.getSequenceId(), is(1));
+        new MySQLTextResultSetRowPacket(payload, 3);
         verify(payload, times(3)).readStringLenenc();
     }
     
     @Test
-    public void assertWrite() {
+    void assertWrite() {
         long now = System.currentTimeMillis();
         Timestamp timestamp = new Timestamp(now);
-        MySQLTextResultSetRowPacket actual = new MySQLTextResultSetRowPacket(1, Arrays.asList(null, "value", BigDecimal.ONE, new byte[]{}, timestamp));
+        MySQLTextResultSetRowPacket actual = new MySQLTextResultSetRowPacket(Arrays.asList(null, "value", BigDecimal.ONE, new byte[]{}, timestamp, Boolean.TRUE));
         actual.write(payload);
         verify(payload).writeInt1(0xfb);
         verify(payload).writeStringLenenc("value");
@@ -65,13 +61,14 @@ public final class MySQLTextResultSetRowPacketTest {
         } else {
             verify(payload).writeStringLenenc(timestamp.toString());
         }
+        verify(payload).writeBytesLenenc(new byte[]{1});
     }
     
     @Test
-    public void assertTimestampWithoutNanos() {
+    void assertTimestampWithoutNanos() {
         long now = System.currentTimeMillis() / 1000 * 1000;
         Timestamp timestamp = new Timestamp(now);
-        MySQLTextResultSetRowPacket actual = new MySQLTextResultSetRowPacket(1, Arrays.asList(null, "value", BigDecimal.ONE, new byte[]{}, timestamp));
+        MySQLTextResultSetRowPacket actual = new MySQLTextResultSetRowPacket(Arrays.asList(null, "value", BigDecimal.ONE, new byte[]{}, timestamp));
         actual.write(payload);
         verify(payload).writeInt1(0xfb);
         verify(payload).writeStringLenenc("value");
@@ -80,10 +77,10 @@ public final class MySQLTextResultSetRowPacketTest {
     }
     
     @Test
-    public void assertLocalDateTime() {
+    void assertLocalDateTime() {
         String localDateTimeStr = "2021-08-23T17:30:30";
-        LocalDateTime time = LocalDateTime.parse(localDateTimeStr, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
-        MySQLTextResultSetRowPacket actual = new MySQLTextResultSetRowPacket(1, Collections.singletonList(time));
+        LocalDateTime dateTime = LocalDateTime.parse(localDateTimeStr, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+        MySQLTextResultSetRowPacket actual = new MySQLTextResultSetRowPacket(Collections.singletonList(dateTime));
         actual.write(payload);
         verify(payload).writeStringLenenc(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.parse(localDateTimeStr, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))));
     }

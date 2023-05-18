@@ -18,36 +18,35 @@
 package org.apache.shardingsphere.mode.manager.standalone.workerid.generator;
 
 import org.apache.shardingsphere.infra.instance.workerid.WorkerIdGenerator;
-import org.junit.Test;
+import org.apache.shardingsphere.test.util.PropertiesBuilder;
+import org.apache.shardingsphere.test.util.PropertiesBuilder.Property;
+import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public final class StandaloneWorkerIdGeneratorTest {
+class StandaloneWorkerIdGeneratorTest {
     
     @Test
-    public void assertGenerateWithNullProperties() {
+    void assertGenerateWithNullProperties() {
         assertThat(new StandaloneWorkerIdGenerator().generate(null), is(WorkerIdGenerator.DEFAULT_WORKER_ID));
     }
     
     @Test
-    public void assertGenerateWithEmptyProperties() {
+    void assertGenerateWithEmptyProperties() {
         assertThat(new StandaloneWorkerIdGenerator().generate(new Properties()), is(WorkerIdGenerator.DEFAULT_WORKER_ID));
     }
     
     @Test
-    public void assertGenerateWithProperties() {
-        Properties props = new Properties();
-        props.setProperty(WorkerIdGenerator.WORKER_ID_KEY, "1");
-        assertThat(new StandaloneWorkerIdGenerator().generate(props), is(1));
+    void assertGenerateWithProperties() {
+        assertThat(new StandaloneWorkerIdGenerator().generate(PropertiesBuilder.build(new Property(WorkerIdGenerator.WORKER_ID_KEY, "1"))), is(1));
     }
     
-    @Test(expected = IllegalStateException.class)
-    public void assertGenerateWithInvalidProperties() {
-        Properties props = new Properties();
-        props.setProperty(WorkerIdGenerator.WORKER_ID_KEY, "1024");
-        new StandaloneWorkerIdGenerator().generate(props);
+    @Test
+    void assertGenerateWithInvalidProperties() {
+        assertThrows(IllegalStateException.class, () -> new StandaloneWorkerIdGenerator().generate(PropertiesBuilder.build(new Property(WorkerIdGenerator.WORKER_ID_KEY, "1024"))));
     }
 }

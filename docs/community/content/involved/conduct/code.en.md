@@ -49,17 +49,18 @@ The following code of conduct is based on full compliance with [ASF CODE OF COND
  - Minimize the access permission for classes and methods.
  - Private method should be just next to the method in which it is used; Multiple private methods should be in the same as the appearance order of original methods.
  - No `null` parameters or return values.
- - Replace if else return and assign statement with ternary operator in priority.
  - Replace constructors, getters, setter methods and log variable with lombok in priority.
  - Use `LinkedList`  in priority. Use `ArrayList` for use index to get element only.
  - Use capacity based `Collection` such as `ArrayList`, `HashMap` must indicate initial capacity to avoid recalculate capacity.
  - Use English in all the logs and javadoc.
  - Include Javadoc, todo and fixme only in the comments.
- - Only `public` classes and methods need javadoc, other methods, classes and override methods do not need javadoc.
- - Nested using conditional operator is forbidden.
+ - Only `public` classes and methods need javadoc, the Javadoc for the user API and SPI needs to be written clearly and comprehensively, other methods, classes and override methods do not need javadoc.
+ - Replace if else return and assign statement with ternary operator in priority.
+ - Nested using ternary operator is forbidden.
  - Use forward semantics in priority for better understanding code logic in conditional expressions. For example: `if (null == param) {} else {}`.
  - Use concentrate `@SuppressWarnings("xxx")` instead of `@SuppressWarnings("all")`.
  - Avoid using Java Stream in hot methods, unless the performance of using Stream is better than using loop in that situation.
+ - Utility class should be named in the form of `xxUtils`.
 
 ## Contributor Covenant Unit Test of Conduct
 
@@ -75,17 +76,24 @@ The following code of conduct is based on full compliance with [ASF CODE OF COND
    - Error: Error value test, test for error input, exception to get expect result.
  - Without particular reasons, test cases should be fully covered.
  - Test cases should be fully covered expect simply `getter /setter` methods, and declared static codes of SPI, such as: `getType / getOrder`.
- - Every test case need precised assertion.
+ - Every test case need precised assertion, try not to use `not`, `containsString` to make assertions.
  - Environment preparation codes should be separate from test codes.
- - Only those that relate to `Mockito`, junit `Assert`, hamcrest `CoreMatchers` and `MatcherAssert` can use static import.
- - For single parameter asserts, `assertTrue`, `assertFalse`, `assertNull` and `assertNotNull` should be used.
- - For multiple parameter asserts, `assertThat` should be used.
- - For accurate asserts, try not to use `not`, `containsString` to make assertions.
+ - Only those that relate to `Mockito`, junit `Assertions`, hamcrest `CoreMatchers` and `MatcherAssert` can use static import.
+ - Usage of assertion methods: for boolean type asserts, `assertTrue` and `assertFalse` should be used, `assertNull` and `assertNotNull` should be used to assert whether the assertion is null, and `assertThat` should be used for other scenarios.
+ - Usage of assertion methods:
+   - Use `assertTrue` and `assertFalse` for boolean value;
+   - Use `assertNull` and `assertNotNull` for null value;
+   - Use `assertThat` for other values.
  - Actual values of test cases should be named `actualXXX`, expected values `expectedXXX`.
  - Class for test case and `@Test` annotation do not need javadoc.
- - Mockito mockStatic and mockConstruction methods must be used with try-with-resource or closed in the teardown method to avoid leaks.
+ - Mockito `mockStatic` and `mockConstruction` methods must be used with try-with-resource or closed in the teardown method to avoid leaks.
+ - Using `mock` should follow following specifications:
+   - Using `mock` when unit tests need to connect to an environment;
+   - Using `mock` when unit tests contain objects that are not easy to build, for example, objects that are more than two layers nested and unrelated to the test.
+   - When mocking static methods or constructors, it is recommended to use the testing framework's `AutoMockExtension` and `StaticMockSettings` to release resources automatically; If using Mockito's `mockStatic` and `mockConstruction` methods, please use `try-with-resource` or close them in the cleanup method to avoid resource leaks.
+   - When verifying only one invocation, there is no need to use `times(1)` parameter, please use the single-argument method of `verify`.
 
-## Contributor Covenant G4 Code of Conduct
+## Contributor Covenant G4 of Conduct
 
  - Common Conduct
    - Every line cannot over `200` chars, guarantee every line have complete semantics.
@@ -93,11 +101,21 @@ The following code of conduct is based on full compliance with [ASF CODE OF COND
    - Every rule should be in single line, no empty line between rules.
    - Rule of lexer name should capitalization. If name composite with more than one word, use `underline` to separate. Rule name of `DataType` and `Symbol` should end with `underline`. If rule name is conflicted with ANTLR's keyword, should take an `underline` behind rule name.
    - For private rule in lexer should use `fragment`, rule with `fragment` should define behind of public rule which they served.
-   - Common rule of lexer should put in file `Keyword.g4`, every database may has customized rule file by themselves. For example: `MySQLKeyword.g4`.
+   - Common rule of lexer should put in file `Keyword.g4`, every database may have customized rule file by themselves. For example: `MySQLKeyword.g4`.
  - Parser Conduct
    - After every rule finish, blank line should no indents.
    - No space before rule name definition. One space between `colon` and rule, `semicolon` should take a new line and keep indents (including blank lines) consistent with the previous one.
    - If a rule's branch is over than `5`, every branch take a new line.
    - Rule name of parser should same with java variable's camel case.
    - Define separate files for every SQL type, file name should consist of `database` + `SQL type` + `Statement`. For example: `MySQLDQLStatement.g4`.
-   - Each `SQLStatement` and `SQLSegment` implementation class must add lombok `@ToString` annotation, if the implementation class inherits a parent class, you need to add `callSuper = true` parameter.
+
+## GitHub Action of Conduct
+
+- Workflow file name must end with `.yml`.
+- Workflow file name must consist with the lowercase of `triggerType-actionType`, for example: `nightly-check.yml`. Omit trigger type for pull_request, for example: `check.yml`.
+- Trigger type includes: pull_request (without prefix), nightly.
+- Action type includes: check, ci, e2e, build.
+- `name` property in workflow file should be same with file name, Words separated by `-`, add space between `-` and words, first letter of every word should be capital, for example: `Nightly - Check`.
+- `job` property in workflow should be unique in that workflow file.
+- When using `matrix` property, must add job parallelism limit to 5: `max-parallel: 5`.
+- Must set timeout for job, max timeout is 1 hour. For example: `timeout-minutes: 10`.

@@ -18,13 +18,15 @@
 package org.apache.shardingsphere.sharding.algorithm.sharding.range;
 
 import com.google.common.collect.Range;
-import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
 import org.apache.shardingsphere.infra.datanode.DataNodeInfo;
+import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
 import org.apache.shardingsphere.sharding.api.sharding.standard.PreciseShardingValue;
 import org.apache.shardingsphere.sharding.api.sharding.standard.RangeShardingValue;
-import org.apache.shardingsphere.sharding.factory.ShardingAlgorithmFactory;
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.shardingsphere.sharding.spi.ShardingAlgorithm;
+import org.apache.shardingsphere.test.util.PropertiesBuilder;
+import org.apache.shardingsphere.test.util.PropertiesBuilder.Property;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,29 +35,25 @@ import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class VolumeBasedRangeShardingAlgorithmTest {
+class VolumeBasedRangeShardingAlgorithmTest {
     
     private static final DataNodeInfo DATA_NODE_INFO = new DataNodeInfo("t_order_", 1, '0');
     
     private VolumeBasedRangeShardingAlgorithm shardingAlgorithm;
     
-    @Before
-    public void setUp() {
-        shardingAlgorithm = (VolumeBasedRangeShardingAlgorithm) ShardingAlgorithmFactory.newInstance(new AlgorithmConfiguration("VOLUME_RANGE", createProperties()));
+    @BeforeEach
+    void setUp() {
+        shardingAlgorithm = (VolumeBasedRangeShardingAlgorithm) TypedSPILoader.getService(ShardingAlgorithm.class, "VOLUME_RANGE", createProperties());
     }
     
     private Properties createProperties() {
-        Properties result = new Properties();
-        result.put("range-lower", 10);
-        result.put("range-upper", 45);
-        result.put("sharding-volume", 10);
-        return result;
+        return PropertiesBuilder.build(new Property("range-lower", "10"), new Property("range-upper", "45"), new Property("sharding-volume", "10"));
     }
     
     @Test
-    public void assertPreciseDoSharding() {
+    void assertPreciseDoSharding() {
         assertPreciseDoSharding(new PreciseShardingValue<>("t_order", "order_id", DATA_NODE_INFO, 0L));
     }
     
@@ -65,12 +63,12 @@ public final class VolumeBasedRangeShardingAlgorithmTest {
     }
     
     @Test
-    public void assertPreciseDoShardingWithIntShardingValue() {
+    void assertPreciseDoShardingWithIntShardingValue() {
         assertPreciseDoSharding(new PreciseShardingValue<>("t_order", "order_id", DATA_NODE_INFO, 0));
     }
     
     @Test
-    public void assertRangeDoShardingWithoutLowerBound() {
+    void assertRangeDoShardingWithoutLowerBound() {
         assertRangeDoShardingWithoutLowerBound(new RangeShardingValue<>("t_order", "order_id", DATA_NODE_INFO, Range.lessThan(12L)));
     }
     
@@ -83,12 +81,12 @@ public final class VolumeBasedRangeShardingAlgorithmTest {
     }
     
     @Test
-    public void assertRangeDoShardingWithoutLowerBoundWithIntShardingValue() {
+    void assertRangeDoShardingWithoutLowerBoundWithIntShardingValue() {
         assertRangeDoShardingWithoutLowerBound(new RangeShardingValue<>("t_order", "order_id", DATA_NODE_INFO, Range.lessThan(12)));
     }
     
     @Test
-    public void assertRangeDoShardingWithoutUpperBound() {
+    void assertRangeDoShardingWithoutUpperBound() {
         assertRangeDoShardingWithoutUpperBound(new RangeShardingValue<>("t_order", "order_id", DATA_NODE_INFO, Range.greaterThan(40L)));
     }
     
@@ -101,12 +99,12 @@ public final class VolumeBasedRangeShardingAlgorithmTest {
     }
     
     @Test
-    public void assertRangeDoShardingWithoutUpperBoundWithIntShardingValue() {
+    void assertRangeDoShardingWithoutUpperBoundWithIntShardingValue() {
         assertRangeDoShardingWithoutUpperBound(new RangeShardingValue<>("t_order", "order_id", DATA_NODE_INFO, Range.greaterThan(40)));
     }
     
     @Test
-    public void assertRangeDoSharding() {
+    void assertRangeDoSharding() {
         assertRangeDoSharding(new RangeShardingValue<>("t_order", "order_id", DATA_NODE_INFO, Range.closed(12L, 55L)));
     }
     
@@ -122,22 +120,14 @@ public final class VolumeBasedRangeShardingAlgorithmTest {
     }
     
     @Test
-    public void assertRangeDoShardingWithIntegerShardingValue() {
+    void assertRangeDoShardingWithIntegerShardingValue() {
         assertRangeDoSharding(new RangeShardingValue<>("t_order", "order_id", DATA_NODE_INFO, Range.closed(12, 55)));
     }
     
     @Test
-    public void assertGetAutoTablesAmount() {
+    void assertGetAutoTablesAmount() {
         VolumeBasedRangeShardingAlgorithm shardingAlgorithm = new VolumeBasedRangeShardingAlgorithm();
-        shardingAlgorithm.init(createPropertiesForStringValue());
+        shardingAlgorithm.init(PropertiesBuilder.build(new Property("range-lower", "10"), new Property("range-upper", "45"), new Property("sharding-volume", "10")));
         assertThat(shardingAlgorithm.getAutoTablesAmount(), is(6));
-    }
-    
-    private Properties createPropertiesForStringValue() {
-        Properties result = new Properties();
-        result.setProperty("range-lower", "10");
-        result.setProperty("range-upper", "45");
-        result.setProperty("sharding-volume", "10");
-        return result;
     }
 }

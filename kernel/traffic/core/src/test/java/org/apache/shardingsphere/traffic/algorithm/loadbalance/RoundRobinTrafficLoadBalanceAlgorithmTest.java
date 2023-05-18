@@ -19,7 +19,7 @@ package org.apache.shardingsphere.traffic.algorithm.loadbalance;
 
 import org.apache.shardingsphere.infra.instance.metadata.InstanceMetaData;
 import org.apache.shardingsphere.infra.instance.metadata.proxy.ProxyInstanceMetaData;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -27,12 +27,12 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class RoundRobinTrafficLoadBalanceAlgorithmTest {
+class RoundRobinTrafficLoadBalanceAlgorithmTest {
     
     @Test
-    public void assertGetInstanceId() {
-        InstanceMetaData instance1 = new ProxyInstanceMetaData("127.0.0.1@3307", "127.0.0.1@3307");
-        InstanceMetaData instance2 = new ProxyInstanceMetaData("127.0.0.1@3308", "127.0.0.1@3308");
+    void assertGetInstanceId() {
+        InstanceMetaData instance1 = new ProxyInstanceMetaData("127.0.0.1@3307", "127.0.0.1@3307", "foo_version");
+        InstanceMetaData instance2 = new ProxyInstanceMetaData("127.0.0.1@3308", "127.0.0.1@3308", "foo_version");
         List<InstanceMetaData> instances = Arrays.asList(instance1, instance2);
         RoundRobinTrafficLoadBalanceAlgorithm roundRobinAlgorithm = new RoundRobinTrafficLoadBalanceAlgorithm();
         assertThat(roundRobinAlgorithm.getInstanceId("simple_traffic", instances), is(instance1));

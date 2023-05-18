@@ -26,10 +26,10 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.L
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.SimpleExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.mockito.internal.configuration.plugins.Plugins;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,33 +38,24 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class OnDuplicateUpdateContextTest {
+class OnDuplicateUpdateContextTest {
     
-    @SuppressWarnings("unchecked")
     @Test
-    public void assertInstanceConstructedOk() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        Collection<AssignmentSegment> assignments = Collections.emptyList();
-        List<Object> params = Collections.emptyList();
-        int parametersOffset = 0;
-        OnDuplicateUpdateContext onDuplicateUpdateContext = new OnDuplicateUpdateContext(assignments, params, parametersOffset);
-        Method getValueExpressionsMethod = OnDuplicateUpdateContext.class.getDeclaredMethod("getValueExpressions", Collection.class);
-        getValueExpressionsMethod.setAccessible(true);
-        List<ExpressionSegment> getValueExpressionsResult = (List<ExpressionSegment>) getValueExpressionsMethod.invoke(onDuplicateUpdateContext, new Object[]{assignments});
-        assertThat(onDuplicateUpdateContext.getValueExpressions(), is(getValueExpressionsResult));
-        Method getParametersMethod = OnDuplicateUpdateContext.class.getDeclaredMethod("getParameters", List.class, int.class);
-        getParametersMethod.setAccessible(true);
-        List<Object> getParametersResult = (List<Object>) getParametersMethod.invoke(onDuplicateUpdateContext, new Object[]{params, parametersOffset});
-        assertThat(onDuplicateUpdateContext.getParameters(), is(getParametersResult));
+    void assertInstanceConstructedOk() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        OnDuplicateUpdateContext onDuplicateUpdateContext = new OnDuplicateUpdateContext(Collections.emptyList(), Collections.emptyList(), 0);
+        assertThat(onDuplicateUpdateContext.getValueExpressions(), is(Plugins.getMemberAccessor()
+                .invoke(OnDuplicateUpdateContext.class.getDeclaredMethod("getValueExpressions", Collection.class), onDuplicateUpdateContext, Collections.emptyList())));
+        assertThat(onDuplicateUpdateContext.getParameters(), is(Plugins.getMemberAccessor()
+                .invoke(OnDuplicateUpdateContext.class.getDeclaredMethod("getParameters", List.class, int.class), onDuplicateUpdateContext, Collections.emptyList(), 0)));
     }
     
     @Test
-    public void assertGetValueWhenParameterMarker() {
+    void assertGetValueWhenParameterMarker() {
         Collection<AssignmentSegment> assignments = createParameterMarkerExpressionAssignmentSegment();
         String parameterValue1 = "test1";
         String parameterValue2 = "test2";
         List<Object> params = Arrays.asList(parameterValue1, parameterValue2);
-        int parametersOffset = 0;
-        OnDuplicateUpdateContext onDuplicateUpdateContext = new OnDuplicateUpdateContext(assignments, params, parametersOffset);
+        OnDuplicateUpdateContext onDuplicateUpdateContext = new OnDuplicateUpdateContext(assignments, params, 0);
         Object valueFromInsertValueContext1 = onDuplicateUpdateContext.getValue(0);
         assertThat(valueFromInsertValueContext1, is(parameterValue1));
         Object valueFromInsertValueContext2 = onDuplicateUpdateContext.getValue(1);
@@ -80,11 +71,10 @@ public final class OnDuplicateUpdateContextTest {
     }
     
     @Test
-    public void assertGetValueWhenLiteralExpressionSegment() {
+    void assertGetValueWhenLiteralExpressionSegment() {
         Object literalObject = new Object();
         Collection<AssignmentSegment> assignments = createLiteralExpressionSegment(literalObject);
-        List<Object> params = Collections.emptyList();
-        OnDuplicateUpdateContext onDuplicateUpdateContext = new OnDuplicateUpdateContext(assignments, params, 0);
+        OnDuplicateUpdateContext onDuplicateUpdateContext = new OnDuplicateUpdateContext(assignments, Collections.emptyList(), 0);
         Object valueFromInsertValueContext = onDuplicateUpdateContext.getValue(0);
         assertThat(valueFromInsertValueContext, is(literalObject));
     }
@@ -112,17 +102,16 @@ public final class OnDuplicateUpdateContextTest {
     }
     
     @Test
-    public void assertGetColumn() {
+    void assertGetColumn() {
         Object literalObject = new Object();
         Collection<AssignmentSegment> assignments = createLiteralExpressionSegment(literalObject);
-        List<Object> params = Collections.emptyList();
-        OnDuplicateUpdateContext onDuplicateUpdateContext = new OnDuplicateUpdateContext(assignments, params, 0);
+        OnDuplicateUpdateContext onDuplicateUpdateContext = new OnDuplicateUpdateContext(assignments, Collections.emptyList(), 0);
         ColumnSegment column = onDuplicateUpdateContext.getColumn(0);
         assertThat(column, is(assignments.iterator().next().getColumns().get(0)));
     }
     
     @Test
-    public void assertParameterCount() {
+    void assertParameterCount() {
         List<AssignmentSegment> assignments = Arrays.asList(
                 createAssignmentSegment(createBinaryOperationExpression()),
                 createAssignmentSegment(new ParameterMarkerExpressionSegment(0, 10, 5)),

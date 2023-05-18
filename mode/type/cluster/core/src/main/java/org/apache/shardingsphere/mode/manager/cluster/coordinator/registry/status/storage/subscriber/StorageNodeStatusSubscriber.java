@@ -18,15 +18,13 @@
 package org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.status.storage.subscriber;
 
 import com.google.common.eventbus.Subscribe;
-import org.apache.shardingsphere.infra.util.eventbus.EventBusContext;
 import org.apache.shardingsphere.infra.metadata.database.schema.QualifiedDatabase;
+import org.apache.shardingsphere.infra.util.eventbus.EventBusContext;
 import org.apache.shardingsphere.infra.util.yaml.YamlEngine;
 import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.status.storage.node.StorageNode;
-import org.apache.shardingsphere.mode.metadata.storage.StorageNodeDataSource;
-import org.apache.shardingsphere.mode.metadata.storage.StorageNodeRole;
-import org.apache.shardingsphere.mode.metadata.storage.StorageNodeStatus;
-import org.apache.shardingsphere.mode.metadata.storage.event.DataSourceDisabledEvent;
-import org.apache.shardingsphere.mode.metadata.storage.event.PrimaryDataSourceChangedEvent;
+import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.status.storage.yaml.YamlStorageNodeDataSourceSwapper;
+import org.apache.shardingsphere.mode.event.storage.DataSourceDisabledEvent;
+import org.apache.shardingsphere.mode.event.storage.StorageNodeDataSourceDeletedEvent;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepository;
 
 /**
@@ -49,17 +47,17 @@ public final class StorageNodeStatusSubscriber {
      */
     @Subscribe
     public void update(final DataSourceDisabledEvent event) {
-        repository.persist(StorageNode.getStatusPath(new QualifiedDatabase(event.getDatabaseName(), event.getGroupName(), event.getDataSourceName())),
-                YamlEngine.marshal(event.getStorageNodeDataSource()));
+        repository.persist(StorageNode.getStorageNodeDataSourcePath(new QualifiedDatabase(event.getDatabaseName(), event.getGroupName(), event.getDataSourceName())),
+                YamlEngine.marshal(new YamlStorageNodeDataSourceSwapper().swapToYamlConfiguration(event.getStorageNodeDataSource())));
     }
     
     /**
-     * Update primary data source state.
+     * Delete storage node data source.
      *
-     * @param event primary data source event
+     * @param event storage node data source deleted event
      */
     @Subscribe
-    public void update(final PrimaryDataSourceChangedEvent event) {
-        repository.persist(StorageNode.getStatusPath(event.getQualifiedDatabase()), YamlEngine.marshal(new StorageNodeDataSource(StorageNodeRole.PRIMARY, StorageNodeStatus.ENABLED)));
+    public void delete(final StorageNodeDataSourceDeletedEvent event) {
+        repository.delete(StorageNode.getStorageNodeDataSourcePath(event.getQualifiedDatabase()));
     }
 }

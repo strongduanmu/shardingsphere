@@ -17,25 +17,24 @@
 
 package org.apache.shardingsphere.infra.util.props;
 
-import org.junit.Test;
+import org.apache.shardingsphere.test.util.PropertiesBuilder;
+import org.apache.shardingsphere.test.util.PropertiesBuilder.Property;
+import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class PropertiesConverterTest {
+class PropertiesConverterTest {
     
     @Test
-    public void assertConvert() {
-        Properties actual = new Properties();
-        actual.setProperty("foo", "foo_value");
-        actual.setProperty("bar", "bar_value");
-        assertThat(PropertiesConverter.convert(actual), is("bar=bar_value,foo=foo_value"));
+    void assertConvert() {
+        assertThat(PropertiesConverter.convert(PropertiesBuilder.build(new Property("foo", "foo_value"), new Property("bar", "bar_value"))), is("bar=bar_value,foo=foo_value"));
     }
     
     @Test
-    public void assertConvertEmptyProperties() {
+    void assertConvertEmptyProperties() {
         assertThat(PropertiesConverter.convert(new Properties()), is(""));
     }
 }

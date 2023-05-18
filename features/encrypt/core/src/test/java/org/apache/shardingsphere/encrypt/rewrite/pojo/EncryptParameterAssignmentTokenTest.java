@@ -18,15 +18,15 @@
 package org.apache.shardingsphere.encrypt.rewrite.pojo;
 
 import org.apache.shardingsphere.encrypt.rewrite.token.pojo.EncryptParameterAssignmentToken;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class EncryptParameterAssignmentTokenTest {
+class EncryptParameterAssignmentTokenTest {
     
     @Test
-    public void assertToString() {
+    void assertToString() {
         EncryptParameterAssignmentToken actual = new EncryptParameterAssignmentToken(0, 1);
         actual.addColumnName("c1");
         actual.addColumnName("c2");

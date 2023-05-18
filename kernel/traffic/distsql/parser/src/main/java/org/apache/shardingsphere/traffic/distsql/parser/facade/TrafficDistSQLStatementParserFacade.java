@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.traffic.distsql.parser.facade;
 
 import org.apache.shardingsphere.distsql.parser.engine.spi.FeaturedDistSQLStatementParserFacade;
+import org.apache.shardingsphere.sql.parser.api.ASTNode;
 import org.apache.shardingsphere.sql.parser.api.parser.SQLLexer;
 import org.apache.shardingsphere.sql.parser.api.parser.SQLParser;
 import org.apache.shardingsphere.sql.parser.api.visitor.SQLVisitor;
@@ -26,7 +27,7 @@ import org.apache.shardingsphere.traffic.distsql.parser.core.TrafficDistSQLParse
 import org.apache.shardingsphere.traffic.distsql.parser.core.TrafficDistSQLStatementVisitor;
 
 /**
- * SQL parser facade for traffic dist SQL statement.
+ * SQL parser facade for traffic DistSQL statement.
  */
 public final class TrafficDistSQLStatementParserFacade implements FeaturedDistSQLStatementParserFacade {
     
@@ -41,7 +42,7 @@ public final class TrafficDistSQLStatementParserFacade implements FeaturedDistSQ
     }
     
     @Override
-    public Class<? extends SQLVisitor> getVisitorClass() {
+    public Class<? extends SQLVisitor<ASTNode>> getVisitorClass() {
         return TrafficDistSQLStatementVisitor.class;
     }
     

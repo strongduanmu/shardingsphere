@@ -20,17 +20,17 @@ package org.apache.shardingsphere.db.protocol.postgresql.packet.generic;
 import io.netty.buffer.ByteBuf;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.ByteBufTestUtils;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class PostgreSQLReadyForQueryPacketTest {
+class PostgreSQLReadyForQueryPacketTest {
     
     @Test
-    public void assertReadWriteWithInTransaction() {
+    void assertReadWriteWithInTransaction() {
         ByteBuf byteBuf = ByteBufTestUtils.createByteBuf(6);
         PostgreSQLPacketPayload payload = new PostgreSQLPacketPayload(byteBuf, StandardCharsets.UTF_8);
         PostgreSQLReadyForQueryPacket packet = PostgreSQLReadyForQueryPacket.IN_TRANSACTION;
@@ -40,7 +40,7 @@ public final class PostgreSQLReadyForQueryPacketTest {
     }
     
     @Test
-    public void assertReadWriteWithNotInTransaction() {
+    void assertReadWriteWithNotInTransaction() {
         ByteBuf byteBuf = ByteBufTestUtils.createByteBuf(6);
         PostgreSQLPacketPayload payload = new PostgreSQLPacketPayload(byteBuf, StandardCharsets.UTF_8);
         PostgreSQLReadyForQueryPacket packet = PostgreSQLReadyForQueryPacket.NOT_IN_TRANSACTION;
@@ -50,7 +50,7 @@ public final class PostgreSQLReadyForQueryPacketTest {
     }
     
     @Test
-    public void assertReadWriteWithTransactionFailed() {
+    void assertReadWriteWithTransactionFailed() {
         ByteBuf byteBuf = ByteBufTestUtils.createByteBuf(6);
         PostgreSQLPacketPayload payload = new PostgreSQLPacketPayload(byteBuf, StandardCharsets.UTF_8);
         PostgreSQLReadyForQueryPacket packet = PostgreSQLReadyForQueryPacket.TRANSACTION_FAILED;

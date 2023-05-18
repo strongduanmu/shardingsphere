@@ -18,16 +18,16 @@
 package org.apache.shardingsphere.sqlfederation.optimizer.converter.type;
 
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.shardingsphere.sql.parser.sql.common.constant.CombineType;
-import org.junit.Test;
+import org.apache.shardingsphere.sql.parser.sql.common.enums.CombineType;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class CombineOperatorConverterTest {
+class CombineOperatorConverterTest {
     
     @Test
-    public void assertConvertSuccess() {
+    void assertConvertSuccess() {
         assertThat(CombineOperatorConverter.convert(CombineType.UNION_ALL), is(SqlStdOperatorTable.UNION_ALL));
         assertThat(CombineOperatorConverter.convert(CombineType.UNION), is(SqlStdOperatorTable.UNION));
         assertThat(CombineOperatorConverter.convert(CombineType.INTERSECT_ALL), is(SqlStdOperatorTable.INTERSECT_ALL));

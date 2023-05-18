@@ -18,7 +18,7 @@
 package org.apache.shardingsphere.infra.rewrite.sql.token.pojo.generic;
 
 import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.SQLToken;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -26,10 +26,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class ComposableSQLTokenTest {
+class ComposableSQLTokenTest {
     
     @Test
-    public void assertComposableSQLToken() {
+    void assertComposableSQLToken() {
         ComposableSQLToken composableSQLToken = new ComposableSQLToken(0, 1);
         SQLToken sqlToken = mock(SQLToken.class);
         when(sqlToken.getStartIndex()).thenReturn(2);

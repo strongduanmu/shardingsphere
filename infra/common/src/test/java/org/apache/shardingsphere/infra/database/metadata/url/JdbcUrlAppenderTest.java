@@ -17,38 +17,33 @@
 
 package org.apache.shardingsphere.infra.database.metadata.url;
 
-import org.junit.Test;
-
-import java.util.Properties;
+import org.apache.shardingsphere.test.util.PropertiesBuilder;
+import org.apache.shardingsphere.test.util.PropertiesBuilder.Property;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class JdbcUrlAppenderTest {
+class JdbcUrlAppenderTest {
     
     @Test
-    public void assertAppendQueryPropertiesWithoutOriginalQueryProperties() {
-        String actual = new JdbcUrlAppender().appendQueryProperties("jdbc:mysql://192.168.0.1:3306/foo_ds", createQueryProperties());
+    void assertAppendQueryPropertiesWithoutOriginalQueryProperties() {
+        String actual = new JdbcUrlAppender().appendQueryProperties("jdbc:mysql://192.168.0.1:3306/foo_ds",
+                PropertiesBuilder.build(new Property("useSSL", Boolean.FALSE.toString()), new Property("rewriteBatchedStatements", Boolean.TRUE.toString())));
         assertThat(actual, startsWith("jdbc:mysql://192.168.0.1:3306/foo_ds?"));
         assertThat(actual, containsString("rewriteBatchedStatements=true"));
         assertThat(actual, containsString("useSSL=false"));
     }
     
     @Test
-    public void assertAppendQueryPropertiesWithOriginalQueryProperties() {
+    void assertAppendQueryPropertiesWithOriginalQueryProperties() {
         String actual = new JdbcUrlAppender().appendQueryProperties(
-                "jdbc:mysql://192.168.0.1:3306/foo_ds?serverTimezone=UTC&useSSL=false&rewriteBatchedStatements=true", createQueryProperties());
+                "jdbc:mysql://192.168.0.1:3306/foo_ds?serverTimezone=UTC&useSSL=false&rewriteBatchedStatements=true",
+                PropertiesBuilder.build(new Property("useSSL", Boolean.FALSE.toString()), new Property("rewriteBatchedStatements", Boolean.TRUE.toString())));
         assertThat(actual, startsWith("jdbc:mysql://192.168.0.1:3306/foo_ds?"));
         assertThat(actual, containsString("serverTimezone=UTC"));
         assertThat(actual, containsString("rewriteBatchedStatements=true"));
         assertThat(actual, containsString("useSSL=false"));
-    }
-    
-    private Properties createQueryProperties() {
-        Properties result = new Properties();
-        result.put("useSSL", Boolean.FALSE.toString());
-        result.put("rewriteBatchedStatements", Boolean.TRUE.toString());
-        return result;
     }
 }

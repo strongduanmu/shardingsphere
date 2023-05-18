@@ -17,7 +17,7 @@
 
 package org.apache.shardingsphere.infra.hint;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -25,24 +25,24 @@ import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class SQLHintUtilsTest {
+class SQLHintUtilsTest {
     
     @Test
-    public void assertGetSQLHintPropsWithNoProp() {
+    void assertGetSQLHintPropsWithNoProp() {
         assertTrue(SQLHintUtils.getSQLHintProps("/* */").isEmpty());
     }
     
     @Test
-    public void assertGetSQLHintPropsWithSingleProp() {
+    void assertGetSQLHintPropsWithSingleProp() {
         Properties actual = SQLHintUtils.getSQLHintProps("/* SHARDINGSPHERE_HINT: TABLE_NAME=t_order */");
         assertThat(actual.size(), is(1));
         assertThat(actual.get("TABLE_NAME"), is("t_order"));
     }
     
     @Test
-    public void assertGetSQLHintPropsWithMultiProps() {
+    void assertGetSQLHintPropsWithMultiProps() {
         Properties actual = SQLHintUtils.getSQLHintProps("/* SHARDINGSPHERE_HINT: TABLE_NAME=t_order, COLUMN_NAME=order_id */");
         assertThat(actual.size(), is(2));
         assertThat(actual.get("TABLE_NAME"), is("t_order"));
@@ -50,7 +50,7 @@ public final class SQLHintUtilsTest {
     }
     
     @Test
-    public void assertGetSQLHintPropsWithWrongFormat() {
+    void assertGetSQLHintPropsWithWrongFormat() {
         Properties actual = SQLHintUtils.getSQLHintProps("/* SHARDINGSPHERE_HINT: TABLE_NAME=t_order, , DATABASE_NAME:sharding_db, COLUMN_NAME=order_id */");
         assertThat(actual.size(), is(2));
         assertThat(actual.get("TABLE_NAME"), is("t_order"));
@@ -58,9 +58,23 @@ public final class SQLHintUtilsTest {
     }
     
     @Test
-    public void assertGetSplitterSQLHintValue() {
+    void assertGetSplitterSQLHintValue() {
         Collection<String> actual = SQLHintUtils.getSplitterSQLHintValue("  sharding_audit1    sharding_audit2 ");
         assertThat(actual.size(), is(2));
         assertTrue(actual.containsAll(Arrays.asList("sharding_audit1", "sharding_audit2")));
+    }
+    
+    @Test
+    void assertGetSQLHintPropsWithDataSourceName() {
+        Properties actual = SQLHintUtils.getSQLHintProps("/* SHARDINGSPHERE_HINT: DATA_SOURCE_NAME=ds_0 */");
+        assertThat(actual.size(), is(1));
+        assertThat(actual.get("DATA_SOURCE_NAME"), is("ds_0"));
+    }
+    
+    @Test
+    void assertGetSQLHintPropsWithDataSourceNameAlias() {
+        Properties actual = SQLHintUtils.getSQLHintProps("/* ShardingSphere hint: dataSourceName=ds_0 */");
+        assertThat(actual.size(), is(1));
+        assertThat(actual.get("dataSourceName"), is("ds_0"));
     }
 }

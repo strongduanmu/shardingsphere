@@ -17,39 +17,34 @@
 
 package org.apache.shardingsphere.readwritesplitting.algorithm.loadbalance;
 
-import org.apache.shardingsphere.infra.context.transaction.TransactionConnectionContext;
-import org.junit.Test;
+import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
+import org.apache.shardingsphere.readwritesplitting.spi.ReadQueryLoadBalanceAlgorithm;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class RoundRobinReadQueryLoadBalanceAlgorithmTest {
+class RoundRobinReadQueryLoadBalanceAlgorithmTest {
     
     @Test
-    public void assertGetDataSource() {
+    void assertGetDataSourceWithDefaultStrategy() {
+        ReadQueryLoadBalanceAlgorithm loadBalanceAlgorithm = TypedSPILoader.getService(ReadQueryLoadBalanceAlgorithm.class, "ROUND_ROBIN", new Properties());
         String writeDataSourceName = "test_write_ds";
         String readDataSourceName1 = "test_read_ds_1";
         String readDataSourceName2 = "test_read_ds_2";
-        RoundRobinReadQueryLoadBalanceAlgorithm loadBalanceAlgorithm = new RoundRobinReadQueryLoadBalanceAlgorithm();
         List<String> readDataSourceNames = Arrays.asList(readDataSourceName1, readDataSourceName2);
-        TransactionConnectionContext context = new TransactionConnectionContext();
-        assertThat(loadBalanceAlgorithm.getDataSource("ds", writeDataSourceName, readDataSourceNames, context), is(readDataSourceName1));
-        assertThat(loadBalanceAlgorithm.getDataSource("ds", writeDataSourceName, readDataSourceNames, context), is(readDataSourceName2));
-        assertThat(loadBalanceAlgorithm.getDataSource("ds", writeDataSourceName, readDataSourceNames, context), is(readDataSourceName1));
+        assertRoundRobinReadQueryLoadBalance(writeDataSourceName, readDataSourceName1, readDataSourceName2, loadBalanceAlgorithm, readDataSourceNames);
     }
     
-    @Test
-    public void assertGetDataSourceInTransaction() {
-        String writeDataSourceName = "test_write_ds";
-        String readDataSourceName1 = "test_read_ds_1";
-        String readDataSourceName2 = "test_read_ds_2";
-        RoundRobinReadQueryLoadBalanceAlgorithm loadBalanceAlgorithm = new RoundRobinReadQueryLoadBalanceAlgorithm();
-        List<String> readDataSourceNames = Arrays.asList(readDataSourceName1, readDataSourceName2);
-        TransactionConnectionContext context = new TransactionConnectionContext();
-        context.setInTransaction(true);
-        assertThat(loadBalanceAlgorithm.getDataSource("ds", writeDataSourceName, readDataSourceNames, context), is(writeDataSourceName));
+    private void assertRoundRobinReadQueryLoadBalance(final String writeDataSourceName, final String readDataSourceName1, final String readDataSourceName2,
+                                                      final ReadQueryLoadBalanceAlgorithm loadBalanceAlgorithm, final List<String> readDataSourceNames) {
+        assertThat(loadBalanceAlgorithm.getDataSource("ds", writeDataSourceName, readDataSourceNames), is(readDataSourceName1));
+        assertThat(loadBalanceAlgorithm.getDataSource("ds", writeDataSourceName, readDataSourceNames), is(readDataSourceName2));
+        assertThat(loadBalanceAlgorithm.getDataSource("ds", writeDataSourceName, readDataSourceNames), is(readDataSourceName1));
+        assertThat(loadBalanceAlgorithm.getDataSource("ds", writeDataSourceName, readDataSourceNames), is(readDataSourceName2));
     }
 }

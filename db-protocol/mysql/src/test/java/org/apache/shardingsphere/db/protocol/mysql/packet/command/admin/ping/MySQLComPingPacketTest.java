@@ -19,21 +19,21 @@ package org.apache.shardingsphere.db.protocol.mysql.packet.command.admin.ping;
 
 import org.apache.shardingsphere.db.protocol.mysql.packet.command.MySQLCommandPacketType;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.mockito.Mockito.verify;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLComPingPacketTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLComPingPacketTest {
     
     @Mock
     private MySQLPacketPayload payload;
     
     @Test
-    public void assertWrite() {
+    void assertWrite() {
         MySQLComPingPacket actual = new MySQLComPingPacket();
         actual.write(payload);
         verify(payload).writeInt1(MySQLCommandPacketType.COM_PING.getValue());

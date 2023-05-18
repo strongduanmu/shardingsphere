@@ -17,23 +17,23 @@
 
 package org.apache.shardingsphere.sharding.rewrite.token.pojo;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class GeneratedKeyInsertColumnTokenTest {
+class GeneratedKeyInsertColumnTokenTest {
     
     private GeneratedKeyInsertColumnToken generatedKeyInsertColumnToken;
     
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         generatedKeyInsertColumnToken = new GeneratedKeyInsertColumnToken(0, "id");
     }
     
     @Test
-    public void assertGeneratedKeyInsertColumnTokenTest() {
+    void assertGeneratedKeyInsertColumnTokenTest() {
         assertThat(generatedKeyInsertColumnToken.toString(), is(", id"));
     }
 }

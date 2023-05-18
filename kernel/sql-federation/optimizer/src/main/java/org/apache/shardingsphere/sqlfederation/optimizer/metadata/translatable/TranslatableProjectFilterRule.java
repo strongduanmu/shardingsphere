@@ -22,12 +22,14 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.tools.RelBuilderFactory;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Planner rule for pushing projections and filters into table scan.
@@ -36,6 +38,12 @@ public class TranslatableProjectFilterRule extends RelOptRule {
     
     public static final TranslatableProjectFilterRule INSTANCE = new TranslatableProjectFilterRule(RelFactories.LOGICAL_BUILDER);
     
+    private static final Pattern CONDITION_PATTERN = Pattern.compile("\\$[A-Za-z]");
+    
+    private static final Pattern CONDITION_FUNCTION_PATTERN = Pattern.compile("[A-Za-z_]+\\.[A-Za-z_]+\\(.*\\)");
+    
+    private static final Pattern CONDITION_COMPLEX_PATTERN = Pattern.compile("NEGATED POSIX REGEX CASE SENSITIVE");
+    
     public TranslatableProjectFilterRule(final RelBuilderFactory relBuilderFactory) {
         super(operand(LogicalProject.class, operand(LogicalFilter.class, operand(TranslatableTableScan.class, none()))), relBuilderFactory, "TranslatableProjectFilterRule");
     }
@@ -43,12 +51,12 @@ public class TranslatableProjectFilterRule extends RelOptRule {
     @Override
     public void onMatch(final RelOptRuleCall call) {
         LogicalProject project = call.rel(0);
-        LogicalFilter filter = call.rel(1);
-        TranslatableTableScan scan = call.rel(2);
         int[] fields = getProjectFields(project.getProjects());
-        if (null == fields) {
+        if (0 == fields.length) {
             return;
         }
+        LogicalFilter filter = call.rel(1);
+        TranslatableTableScan scan = call.rel(2);
         call.transformTo(new TranslatableTableScan(scan.getCluster(), scan.getTable(), scan.getTranslatableTable(), Collections.singletonList(filter.getCondition()), fields));
     }
     
@@ -59,9 +67,23 @@ public class TranslatableProjectFilterRule extends RelOptRule {
             if (exp instanceof RexInputRef) {
                 result[index] = ((RexInputRef) exp).getIndex();
             } else {
-                return null;
+                return new int[0];
             }
         }
         return result;
+    }
+    
+    @Override
+    public boolean matches(final RelOptRuleCall call) {
+        LogicalFilter filter = call.rel(1);
+        RexCall condition = (RexCall) filter.getCondition();
+        for (RexNode each : condition.getOperands()) {
+            if (CONDITION_PATTERN.matcher(each.toString()).find()
+                    || CONDITION_FUNCTION_PATTERN.matcher(each.toString()).find()
+                    || CONDITION_COMPLEX_PATTERN.matcher(each.toString()).find()) {
+                return false;
+            }
+        }
+        return true;
     }
 }

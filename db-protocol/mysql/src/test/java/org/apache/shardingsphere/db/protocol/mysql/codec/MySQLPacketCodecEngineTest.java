@@ -23,14 +23,17 @@ import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.AttributeKey;
+import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLConstants;
 import org.apache.shardingsphere.db.protocol.mysql.packet.MySQLPacket;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -38,11 +41,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doThrow;
@@ -50,8 +54,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLPacketCodecEngineTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class MySQLPacketCodecEngineTest {
     
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private ChannelHandlerContext context;
@@ -59,34 +64,34 @@ public final class MySQLPacketCodecEngineTest {
     @Mock
     private ByteBuf byteBuf;
     
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         when(context.channel().attr(AttributeKey.<Charset>valueOf(Charset.class.getName())).get()).thenReturn(StandardCharsets.UTF_8);
+        when(context.channel().attr(MySQLConstants.MYSQL_SEQUENCE_ID).get()).thenReturn(new AtomicInteger());
     }
     
     @Test
-    public void assertIsValidHeader() {
+    void assertIsValidHeader() {
         assertTrue(new MySQLPacketCodecEngine().isValidHeader(50));
     }
     
     @Test
-    public void assertIsInvalidHeader() {
+    void assertIsInvalidHeader() {
         assertFalse(new MySQLPacketCodecEngine().isValidHeader(3));
     }
     
     @Test
-    public void assertDecode() {
+    void assertDecode() {
         when(byteBuf.markReaderIndex()).thenReturn(byteBuf);
         when(byteBuf.readUnsignedMediumLE()).thenReturn(50);
         when(byteBuf.readableBytes()).thenReturn(51);
-        when(byteBuf.readRetainedSlice(51)).thenReturn(byteBuf);
         List<Object> out = new LinkedList<>();
         new MySQLPacketCodecEngine().decode(context, byteBuf, out);
         assertThat(out.size(), is(1));
     }
     
     @Test
-    public void assertDecodeWithEmptyPacket() {
+    void assertDecodeWithEmptyPacket() {
         when(byteBuf.markReaderIndex()).thenReturn(byteBuf);
         when(byteBuf.readableBytes()).thenReturn(1);
         when(byteBuf.readUnsignedMediumLE()).thenReturn(0);
@@ -96,7 +101,7 @@ public final class MySQLPacketCodecEngineTest {
     }
     
     @Test
-    public void assertDecodeWithStickyPacket() {
+    void assertDecodeWithStickyPacket() {
         when(byteBuf.markReaderIndex()).thenReturn(byteBuf);
         when(byteBuf.readUnsignedMediumLE()).thenReturn(50);
         List<Object> out = new LinkedList<>();
@@ -105,9 +110,9 @@ public final class MySQLPacketCodecEngineTest {
     }
     
     @Test
-    public void assertDecodePacketMoreThan16MB() {
+    void assertDecodePacketMoreThan16MB() {
         MySQLPacketCodecEngine engine = new MySQLPacketCodecEngine();
-        when(context.alloc().compositeBuffer(2)).thenReturn(new CompositeByteBuf(UnpooledByteBufAllocator.DEFAULT, false, 2));
+        when(context.alloc().compositeBuffer(3)).thenReturn(new CompositeByteBuf(UnpooledByteBufAllocator.DEFAULT, false, 3));
         List<Object> actual = new ArrayList<>(1);
         for (ByteBuf each : preparePacketMoreThan16MB()) {
             engine.decode(context, each, actual);
@@ -125,12 +130,12 @@ public final class MySQLPacketCodecEngineTest {
     }
     
     @Test
-    public void assertEncode() {
+    void assertEncode() {
         when(byteBuf.writeInt(anyInt())).thenReturn(byteBuf);
         when(byteBuf.markWriterIndex()).thenReturn(byteBuf);
         when(byteBuf.readableBytes()).thenReturn(8);
         MySQLPacket actualMessage = mock(MySQLPacket.class);
-        when(actualMessage.getSequenceId()).thenReturn(1);
+        context.channel().attr(MySQLConstants.MYSQL_SEQUENCE_ID).get().set(1);
         new MySQLPacketCodecEngine().encode(context, actualMessage, byteBuf);
         verify(byteBuf).writeInt(0);
         verify(byteBuf).markWriterIndex();
@@ -140,7 +145,7 @@ public final class MySQLPacketCodecEngineTest {
     }
     
     @Test
-    public void assertEncodePacketMoreThan16MB() {
+    void assertEncodePacketMoreThan16MB() {
         CompositeByteBuf expected = new CompositeByteBuf(UnpooledByteBufAllocator.DEFAULT, false, 6);
         when(context.alloc().compositeBuffer(6)).thenReturn(expected);
         when(context.alloc().ioBuffer(4, 4)).thenReturn(Unpooled.buffer(4, 4), Unpooled.buffer(4, 4), Unpooled.buffer(4, 4));
@@ -163,14 +168,14 @@ public final class MySQLPacketCodecEngineTest {
     }
     
     @Test
-    public void assertEncodeOccursException() {
+    void assertEncodeOccursException() {
         when(byteBuf.writeInt(anyInt())).thenReturn(byteBuf);
         when(byteBuf.markWriterIndex()).thenReturn(byteBuf);
         when(byteBuf.readableBytes()).thenReturn(12);
         RuntimeException ex = mock(RuntimeException.class);
         MySQLPacket actualMessage = mock(MySQLPacket.class);
         doThrow(ex).when(actualMessage).write(any(MySQLPacketPayload.class));
-        when(actualMessage.getSequenceId()).thenReturn(2);
+        context.channel().attr(MySQLConstants.MYSQL_SEQUENCE_ID).get().set(2);
         new MySQLPacketCodecEngine().encode(context, actualMessage, byteBuf);
         verify(byteBuf).writeInt(0);
         verify(byteBuf).markWriterIndex();
@@ -180,7 +185,7 @@ public final class MySQLPacketCodecEngineTest {
     }
     
     @Test
-    public void assertCreatePacketPayload() {
+    void assertCreatePacketPayload() {
         assertThat(new MySQLPacketCodecEngine().createPacketPayload(byteBuf, StandardCharsets.UTF_8).getByteBuf(), is(byteBuf));
     }
 }

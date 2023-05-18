@@ -18,45 +18,45 @@
 package org.apache.shardingsphere.infra.database.type.dialect;
 
 import org.apache.shardingsphere.infra.database.metadata.dialect.MariaDBDataSourceMetaData;
-import org.apache.shardingsphere.sql.parser.sql.common.constant.QuoteCharacter;
-import org.junit.Test;
+import org.apache.shardingsphere.sql.parser.sql.common.enums.QuoteCharacter;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class MariaDBDatabaseTypeTest {
+class MariaDBDatabaseTypeTest {
     
     @Test
-    public void assertGetQuoteCharacter() {
+    void assertGetQuoteCharacter() {
         assertThat(new MariaDBDatabaseType().getQuoteCharacter(), is(QuoteCharacter.BACK_QUOTE));
     }
     
     @Test
-    public void assertGetJdbcUrlPrefixes() {
+    void assertGetJdbcUrlPrefixes() {
         assertThat(new MariaDBDatabaseType().getJdbcUrlPrefixes(), is(Collections.singleton("jdbc:mariadb:")));
     }
     
     @Test
-    public void assertGetDataSourceMetaData() {
+    void assertGetDataSourceMetaData() {
         assertThat(new MariaDBDatabaseType().getDataSourceMetaData("jdbc:mariadb://localhost:3306/foo_ds", "root"), instanceOf(MariaDBDataSourceMetaData.class));
     }
     
     @Test
-    public void assertGetTrunkDatabaseType() {
+    void assertGetTrunkDatabaseType() {
         assertThat(new MariaDBDatabaseType().getTrunkDatabaseType().getType(), is("MySQL"));
     }
     
     @Test
-    public void assertGetSystemDatabaseSchemaMap() {
+    void assertGetSystemDatabaseSchemaMap() {
         assertTrue(new MariaDBDatabaseType().getSystemDatabaseSchemaMap().isEmpty());
     }
     
     @Test
-    public void assertGetSystemSchemas() {
+    void assertGetSystemSchemas() {
         assertTrue(new MariaDBDatabaseType().getSystemSchemas().isEmpty());
     }
 }

@@ -23,13 +23,14 @@ import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementConte
 import org.apache.shardingsphere.infra.rewrite.parameter.builder.impl.StandardParameterBuilder;
 import org.apache.shardingsphere.infra.route.context.RouteContext;
 import org.apache.shardingsphere.sharding.rewrite.parameter.impl.ShardingPaginationParameterRewriter;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.Optional;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -37,7 +38,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class ShardingPaginationParameterRewriterTest {
+class ShardingPaginationParameterRewriterTest {
     
     private static final int TEST_OFFSET_PARAMETER_INDEX = 3;
     
@@ -52,7 +53,7 @@ public final class ShardingPaginationParameterRewriterTest {
     private static boolean addRowCountParameterFlag = Boolean.FALSE;
     
     @Test
-    public void assertIsNeedRewrite() {
+    void assertIsNeedRewrite() {
         ShardingPaginationParameterRewriter paramRewriter = new ShardingPaginationParameterRewriter();
         RouteContext routeContext = mock(RouteContext.class);
         paramRewriter.setRouteContext(routeContext);
@@ -69,21 +70,11 @@ public final class ShardingPaginationParameterRewriterTest {
     }
     
     @Test
-    public void assertRewrite() {
+    void assertRewrite() {
         addOffsetParametersFlag = false;
         addRowCountParameterFlag = false;
         StandardParameterBuilder standardParamBuilder = mock(StandardParameterBuilder.class);
-        doAnswer((Answer<Void>) invocation -> {
-            int index = invocation.getArgument(0);
-            long param = invocation.getArgument(1);
-            if (index == TEST_OFFSET_PARAMETER_INDEX && param == TEST_REVISED_OFFSET) {
-                addOffsetParametersFlag = true;
-            }
-            if (index == TEST_ROW_COUNT_PARAMETER_INDEX && param == TEST_REVISED_ROW_COUNT) {
-                addRowCountParameterFlag = true;
-            }
-            return null;
-        }).when(standardParamBuilder).addReplacedParameters(anyInt(), anyLong());
+        doAnswer((Answer<Void>) this::mockAddReplacedParameters).when(standardParamBuilder).addReplacedParameters(anyInt(), anyLong());
         SelectStatementContext selectStatementContext = mock(SelectStatementContext.class);
         PaginationContext pagination = mock(PaginationContext.class);
         when(pagination.getOffsetParameterIndex()).thenReturn(Optional.of(TEST_OFFSET_PARAMETER_INDEX));
@@ -94,5 +85,17 @@ public final class ShardingPaginationParameterRewriterTest {
         new ShardingPaginationParameterRewriter().rewrite(standardParamBuilder, selectStatementContext, null);
         assertTrue(addOffsetParametersFlag);
         assertTrue(addRowCountParameterFlag);
+    }
+    
+    private Void mockAddReplacedParameters(final InvocationOnMock invocation) {
+        int index = invocation.getArgument(0);
+        long param = invocation.getArgument(1);
+        if (index == TEST_OFFSET_PARAMETER_INDEX && param == TEST_REVISED_OFFSET) {
+            addOffsetParametersFlag = true;
+        }
+        if (index == TEST_ROW_COUNT_PARAMETER_INDEX && param == TEST_REVISED_ROW_COUNT) {
+            addRowCountParameterFlag = true;
+        }
+        return null;
     }
 }

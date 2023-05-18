@@ -19,24 +19,24 @@ package org.apache.shardingsphere.db.protocol.mysql.packet.command.binlog;
 
 import org.apache.shardingsphere.db.protocol.mysql.packet.command.MySQLCommandPacketType;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLComBinlogDumpCommandPacketTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLComBinlogDumpCommandPacketTest {
     
     @Mock
     private MySQLPacketPayload payload;
     
     @Test
-    public void assertNew() {
+    void assertNew() {
         when(payload.readInt2()).thenReturn(0);
         when(payload.readStringEOF()).thenReturn("binlog-000001");
         when(payload.readInt4()).thenReturn(4, 123456);
@@ -48,7 +48,7 @@ public final class MySQLComBinlogDumpCommandPacketTest {
     }
     
     @Test
-    public void assertWrite() {
+    void assertWrite() {
         new MySQLComBinlogDumpCommandPacket(4, 123456, "binlog-000001").write(payload);
         verify(payload).writeInt1(MySQLCommandPacketType.COM_BINLOG_DUMP.getValue());
         verify(payload).writeInt4(4);

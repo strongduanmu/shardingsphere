@@ -18,14 +18,12 @@
 package org.apache.shardingsphere.data.pipeline.api.datasource.config.impl;
 
 import com.google.common.base.Preconditions;
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.shardingsphere.data.pipeline.api.datasource.config.PipelineDataSourceConfiguration;
 import org.apache.shardingsphere.data.pipeline.spi.datasource.JdbcQueryPropertiesExtension;
-import org.apache.shardingsphere.data.pipeline.spi.datasource.JdbcQueryPropertiesExtensionFactory;
+import org.apache.shardingsphere.data.pipeline.util.spi.PipelineTypedSPILoader;
 import org.apache.shardingsphere.infra.database.metadata.url.JdbcUrlAppender;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeEngine;
@@ -58,8 +56,12 @@ public final class ShardingSpherePipelineDataSourceConfiguration implements Pipe
     private final DatabaseType databaseType;
     
     public ShardingSpherePipelineDataSourceConfiguration(final String param) {
-        parameter = param;
         rootConfig = YamlEngine.unmarshal(param, YamlRootConfiguration.class, true);
+        // Need remove dataSourceProperties, because if the parameter at dataSourceProperties will override parameter at jdbcUrl
+        for (Map<String, Object> each : rootConfig.getDataSources().values()) {
+            each.remove("dataSourceProperties");
+        }
+        parameter = YamlEngine.marshal(rootConfig);
         Map<String, Object> props = rootConfig.getDataSources().values().iterator().next();
         databaseType = DatabaseTypeEngine.getDatabaseType(getJdbcUrl(props));
         appendJdbcQueryProperties(databaseType.getType());
@@ -67,12 +69,15 @@ public final class ShardingSpherePipelineDataSourceConfiguration implements Pipe
     }
     
     public ShardingSpherePipelineDataSourceConfiguration(final YamlRootConfiguration rootConfig) {
-        parameter = YamlEngine.marshal(new YamlParameterConfiguration(rootConfig.getDataSources(), rootConfig.getRules()));
-        this.rootConfig = rootConfig;
-        Map<String, Object> props = rootConfig.getDataSources().values().iterator().next();
-        databaseType = DatabaseTypeEngine.getDatabaseType(getJdbcUrl(props));
-        appendJdbcQueryProperties(databaseType.getType());
-        adjustDataSourceProperties(rootConfig.getDataSources());
+        this(YamlEngine.marshal(getYamlParameterConfiguration(rootConfig)));
+    }
+    
+    private static YamlParameterConfiguration getYamlParameterConfiguration(final YamlRootConfiguration rootConfig) {
+        YamlParameterConfiguration result = new YamlParameterConfiguration();
+        result.setDatabaseName(rootConfig.getDatabaseName());
+        result.setDataSources(rootConfig.getDataSources());
+        result.setRules(rootConfig.getRules());
+        return result;
     }
     
     private String getJdbcUrl(final Map<String, Object> props) {
@@ -82,7 +87,7 @@ public final class ShardingSpherePipelineDataSourceConfiguration implements Pipe
     }
     
     private void appendJdbcQueryProperties(final String databaseType) {
-        Optional<JdbcQueryPropertiesExtension> extension = JdbcQueryPropertiesExtensionFactory.getInstance(databaseType);
+        Optional<JdbcQueryPropertiesExtension> extension = PipelineTypedSPILoader.findDatabaseTypedService(JdbcQueryPropertiesExtension.class, databaseType);
         if (!extension.isPresent()) {
             return;
         }
@@ -116,13 +121,25 @@ public final class ShardingSpherePipelineDataSourceConfiguration implements Pipe
     }
     
     /**
+     * Get actual data source configuration.
+     *
+     * @param actualDataSourceName actual data source name
+     * @return actual data source configuration
+     */
+    public StandardPipelineDataSourceConfiguration getActualDataSourceConfiguration(final String actualDataSourceName) {
+        Map<String, Object> yamlDataSourceConfig = rootConfig.getDataSources().get(actualDataSourceName);
+        Preconditions.checkNotNull(yamlDataSourceConfig, "actualDataSourceName '{}' does not exist", actualDataSourceName);
+        return new StandardPipelineDataSourceConfiguration(yamlDataSourceConfig);
+    }
+    
+    /**
      * YAML parameter configuration.
      */
-    @AllArgsConstructor
-    @NoArgsConstructor
     @Getter
     @Setter
     private static class YamlParameterConfiguration implements YamlConfiguration {
+        
+        private String databaseName;
         
         private Map<String, Map<String, Object>> dataSources = new HashMap<>();
         

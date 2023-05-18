@@ -17,19 +17,19 @@
 
 package org.apache.shardingsphere.data.pipeline.opengauss.ingest.wal.decode;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import lombok.AllArgsConstructor;
 import org.apache.shardingsphere.data.pipeline.core.ingest.IngestDataChangeType;
 import org.apache.shardingsphere.data.pipeline.core.ingest.exception.IngestException;
+import org.apache.shardingsphere.data.pipeline.core.util.JsonUtils;
 import org.apache.shardingsphere.data.pipeline.postgresql.ingest.wal.decode.BaseLogSequenceNumber;
 import org.apache.shardingsphere.data.pipeline.postgresql.ingest.wal.decode.BaseTimestampUtils;
 import org.apache.shardingsphere.data.pipeline.postgresql.ingest.wal.decode.DecodingException;
 import org.apache.shardingsphere.data.pipeline.postgresql.ingest.wal.decode.DecodingPlugin;
 import org.apache.shardingsphere.data.pipeline.postgresql.ingest.wal.event.AbstractRowEvent;
 import org.apache.shardingsphere.data.pipeline.postgresql.ingest.wal.event.AbstractWALEvent;
+import org.apache.shardingsphere.data.pipeline.postgresql.ingest.wal.event.BeginTXEvent;
+import org.apache.shardingsphere.data.pipeline.postgresql.ingest.wal.event.CommitTXEvent;
 import org.apache.shardingsphere.data.pipeline.postgresql.ingest.wal.event.DeleteRowEvent;
 import org.apache.shardingsphere.data.pipeline.postgresql.ingest.wal.event.PlaceholderEvent;
 import org.apache.shardingsphere.data.pipeline.postgresql.ingest.wal.event.UpdateRowEvent;
@@ -39,6 +39,7 @@ import org.opengauss.util.PGobject;
 
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -50,48 +51,52 @@ import java.util.List;
 @AllArgsConstructor
 public final class MppdbDecodingPlugin implements DecodingPlugin {
     
-    private static final ObjectMapper OBJECT_MAPPER;
-    
-    static {
-        OBJECT_MAPPER = new ObjectMapper();
-        OBJECT_MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    }
-    
     private final BaseTimestampUtils timestampUtils;
+    
+    private final boolean decodeWithTX;
+    
+    public MppdbDecodingPlugin(final BaseTimestampUtils timestampUtils) {
+        this.timestampUtils = timestampUtils;
+        decodeWithTX = false;
+    }
     
     @Override
     public AbstractWALEvent decode(final ByteBuffer data, final BaseLogSequenceNumber logSequenceNumber) {
         AbstractWALEvent result;
-        char eventType = readOneChar(data);
-        result = '{' == eventType ? readTableEvent(readMppData(data)) : new PlaceholderEvent();
+        byte[] bytes = new byte[data.remaining()];
+        data.get(bytes);
+        String dataText = new String(bytes, StandardCharsets.UTF_8);
+        if (decodeWithTX) {
+            result = decodeDataWithTX(dataText);
+        } else {
+            result = decodeDataIgnoreTX(dataText);
+        }
         result.setLogSequenceNumber(logSequenceNumber);
         return result;
     }
     
-    private char readOneChar(final ByteBuffer data) {
-        return (char) data.get();
+    private AbstractWALEvent decodeDataWithTX(final String dataText) {
+        AbstractWALEvent result = new PlaceholderEvent();
+        if (dataText.startsWith("BEGIN")) {
+            int beginIndex = dataText.indexOf("BEGIN") + "BEGIN".length() + 1;
+            result = new BeginTXEvent(Long.parseLong(dataText.substring(beginIndex)));
+        } else if (dataText.startsWith("COMMIT")) {
+            int commitBeginIndex = dataText.indexOf("COMMIT") + "COMMIT".length() + 1;
+            int csnBeginIndex = dataText.indexOf("CSN") + "CSN".length() + 1;
+            result = new CommitTXEvent(Long.parseLong(dataText.substring(commitBeginIndex, dataText.indexOf(' ', commitBeginIndex))), Long.parseLong(dataText.substring(csnBeginIndex)));
+        } else if (dataText.startsWith("{")) {
+            result = readTableEvent(dataText);
+        }
+        return result;
     }
     
-    private String readMppData(final ByteBuffer data) {
-        StringBuilder mppData = new StringBuilder();
-        mppData.append('{');
-        int depth = 1;
-        while (0 != depth && data.hasRemaining()) {
-            char next = (char) data.get();
-            mppData.append(next);
-            int optDepth = '{' == next ? 1 : ('}' == next ? -1 : 0);
-            depth += optDepth;
-        }
-        return mppData.toString();
+    private AbstractWALEvent decodeDataIgnoreTX(final String dataText) {
+        return dataText.startsWith("{") ? readTableEvent(dataText) : new PlaceholderEvent();
     }
     
     private AbstractRowEvent readTableEvent(final String mppData) {
         MppTableData mppTableData;
-        try {
-            mppTableData = OBJECT_MAPPER.readValue(mppData, MppTableData.class);
-        } catch (final JsonProcessingException ex) {
-            throw new RuntimeException(ex);
-        }
+        mppTableData = JsonUtils.readJson(mppData, MppTableData.class);
         AbstractRowEvent result;
         String rowEventType = mppTableData.getOpType();
         switch (rowEventType) {
@@ -205,7 +210,7 @@ public final class MppdbDecodingPlugin implements DecodingPlugin {
         }
     }
     
-    private static PGobject decodeInterval(final String data) {
+    private PGobject decodeInterval(final String data) {
         try {
             return new PGInterval(decodeString(data));
         } catch (final SQLException ignored) {
@@ -213,7 +218,7 @@ public final class MppdbDecodingPlugin implements DecodingPlugin {
         }
     }
     
-    private static PGobject decodePgObject(final String data, final String type) {
+    private PGobject decodePgObject(final String data, final String type) {
         try {
             PGobject result = new PGobject();
             result.setType(type);
@@ -224,7 +229,7 @@ public final class MppdbDecodingPlugin implements DecodingPlugin {
         }
     }
     
-    private static PGobject decodeBytea(final String data) {
+    private PGobject decodeBytea(final String data) {
         try {
             PGobject result = new PGobject();
             result.setType("bytea");
@@ -236,12 +241,12 @@ public final class MppdbDecodingPlugin implements DecodingPlugin {
         }
     }
     
-    private static String decodeMoney(final String data) {
+    private String decodeMoney(final String data) {
         String result = decodeString(data);
         return '$' == result.charAt(0) ? result.substring(1) : result;
     }
     
-    private static String decodeString(final String data) {
+    private String decodeString(final String data) {
         if (data.length() > 1) {
             int begin = '\'' == data.charAt(0) ? 1 : 0;
             int end = data.length() + (data.charAt(data.length() - 1) == '\'' ? -1 : 0);
@@ -250,7 +255,7 @@ public final class MppdbDecodingPlugin implements DecodingPlugin {
         return data;
     }
     
-    private static byte[] decodeHex(final String hexString) {
+    private byte[] decodeHex(final String hexString) {
         int dataLength = hexString.length();
         Preconditions.checkArgument(0 == (dataLength & 1), "Illegal hex data `%s`", hexString);
         if (0 == dataLength) {
@@ -263,7 +268,7 @@ public final class MppdbDecodingPlugin implements DecodingPlugin {
         return result;
     }
     
-    private static byte decodeHexByte(final String hexString, final int index) {
+    private byte decodeHexByte(final String hexString, final int index) {
         int firstHexChar = Character.digit(hexString.charAt(index), 16);
         int secondHexChar = Character.digit(hexString.charAt(index + 1), 16);
         Preconditions.checkArgument(-1 != firstHexChar && -1 != secondHexChar, "Illegal hex byte `%s` in index `%d`", hexString, index);

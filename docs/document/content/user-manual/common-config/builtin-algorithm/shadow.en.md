@@ -16,7 +16,7 @@ The shadow DB feature carries out shadow measurement to SQL statements executed.
 Type：VALUE_MATCH
 
 | *Attribute Name* | *Data Type* | *Description*                                       |
-| ---------------- | ----------- | --------------------------------------------------- |
+|------------------|-------------|-----------------------------------------------------|
 | column           | String      | shadow column                                       |
 | operation        | String      | SQL operation type (INSERT, UPDATE, DELETE, SELECT) |
 | value            | String      | value matched by shadow column                      |
@@ -26,20 +26,19 @@ Type：VALUE_MATCH
 Type：REGEX_MATCH
 
 | *Attribute Name* | *Data Type* | *Description*                                      |
-| ---------------- | ----------- | -------------------------------------------------- |
+|------------------|-------------|----------------------------------------------------|
 | column           | String      | match a column                                     |
-| operation        | String      | SQL operation type（INSERT, UPDATE, DELETE, SELECT）|
+| operation        | String      | SQL operation type（INSERT, UPDATE, DELETE, SELECT） |
 | regex            | String      | shadow column matching Regex                       |
 
 ### Hint-based shadow algorithm
 
-#### Simple Hint matching shadow algorithm
+#### SQL HINT shadow algorithm
 
-Type：SIMPLE_HINT
-
-| *Attribute Name* | *Data Type* | *Description* |
-| ---------------- | ----------- | ------------- |
-| foo              | String      | bar           |
+Type：SQL_HINT
+```sql
+/* SHARDINGSPHERE_HINT: SHADOW=true */
+```
 
 ## Configuration sample
 
@@ -71,25 +70,4 @@ shadowAlgorithms:
       column: user_id
       operation: insert
       value: 1
-```
-
-- Spring Boot Starter:
-
-```properties
-spring.shardingsphere.rules.shadow.shadow-algorithms.user-id-insert-algorithm.type=VALUE_MATCH
-spring.shardingsphere.rules.shadow.shadow-algorithms.user-id-insert-algorithm.props.operation=insert
-spring.shardingsphere.rules.shadow.shadow-algorithms.user-id-insert-algorithm.props.column=user_id
-spring.shardingsphere.rules.shadow.shadow-algorithms.user-id-insert-algorithm.props.value=1
-```
-
-- Spring Namespace:
-
-```xml
-<shadow:shadow-algorithm id="user-id-insert-algorithm" type="VALUE_MATCH">
-    <props>
-        <prop key="operation">insert</prop>
-        <prop key="column">user_id</prop>
-        <prop key="value">1</prop>
-    </props>
-</shadow:shadow-algorithm>
 ```

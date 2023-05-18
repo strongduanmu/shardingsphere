@@ -19,15 +19,15 @@ package org.apache.shardingsphere.sharding.route.engine.type.ignore;
 
 import org.apache.shardingsphere.infra.route.context.RouteContext;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-public final class ShardingIgnoreRoutingEngineTest {
+class ShardingIgnoreRoutingEngineTest {
     
     @Test
-    public void assertRoute() {
+    void assertRoute() {
         ShardingIgnoreRoutingEngine ignoreRoutingEngine = new ShardingIgnoreRoutingEngine();
         RouteContext routeContext = ignoreRoutingEngine.route(mock(ShardingRule.class));
         assertTrue(routeContext.getRouteUnits().isEmpty());

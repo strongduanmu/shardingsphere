@@ -17,130 +17,116 @@
 
 package org.apache.shardingsphere.shadow.distsql.handler.checker;
 
-import org.apache.shardingsphere.infra.config.rule.scope.DatabaseRuleConfiguration;
-import org.apache.shardingsphere.infra.distsql.exception.DistSQLException;
-import org.apache.shardingsphere.infra.distsql.exception.resource.MissingRequiredResourcesException;
-import org.apache.shardingsphere.infra.distsql.exception.rule.InvalidAlgorithmConfigurationException;
-import org.apache.shardingsphere.infra.distsql.exception.rule.MissingRequiredRuleException;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import org.apache.shardingsphere.distsql.handler.exception.DistSQLException;
+import org.apache.shardingsphere.distsql.handler.exception.rule.InvalidRuleConfigurationException;
+import org.apache.shardingsphere.distsql.handler.exception.rule.MissingRequiredRuleException;
+import org.apache.shardingsphere.distsql.handler.exception.storageunit.MissingRequiredStorageUnitsException;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
+import org.apache.shardingsphere.infra.rule.identifier.type.DataSourceContainedRule;
 import org.apache.shardingsphere.infra.util.exception.ShardingSpherePreconditions;
-import org.apache.shardingsphere.shadow.distsql.parser.segment.ShadowAlgorithmSegment;
+import org.apache.shardingsphere.shadow.api.config.ShadowRuleConfiguration;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
  * Shadow rule statement checker.
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ShadowRuleStatementChecker {
     
-    public static final String SHADOW = "shadow";
-    
     /**
-     * Check if the configuration exists.
+     * Check if the rule configuration exists.
      *
      * @param databaseName database name
-     * @param config configuration
+     * @param ruleConfig rule configuration
      */
-    public static void checkConfigurationExist(final String databaseName, final DatabaseRuleConfiguration config) {
-        ShardingSpherePreconditions.checkNotNull(config, () -> new MissingRequiredRuleException(SHADOW, databaseName));
+    public static void checkRuleConfigurationExists(final String databaseName, final ShadowRuleConfiguration ruleConfig) {
+        ShardingSpherePreconditions.checkNotNull(ruleConfig, () -> new MissingRequiredRuleException("shadow", databaseName));
     }
     
     /**
-     * Check if resources exist in meta data.
+     * Check if storage units exist in meta data.
      *
-     * @param resources resource being checked
+     * @param requiredStorageUnits required storage units
      * @param database database
      */
-    public static void checkResourceExist(final Collection<String> resources, final ShardingSphereDatabase database) {
-        Collection<String> notExistedResources = database.getResourceMetaData().getNotExistedResources(resources);
-        ShardingSpherePreconditions.checkState(notExistedResources.isEmpty(), () -> new MissingRequiredResourcesException(database.getName(), notExistedResources));
+    public static void checkStorageUnitsExist(final Collection<String> requiredStorageUnits, final ShardingSphereDatabase database) {
+        Collection<String> notExistedStorageUnits = database.getResourceMetaData().getNotExistedDataSources(requiredStorageUnits);
+        ShardingSpherePreconditions.checkState(notExistedStorageUnits.isEmpty(), () -> new MissingRequiredStorageUnitsException(database.getName(), notExistedStorageUnits));
     }
     
     /**
-     * Check the completeness of the algorithm.
-     *
-     * @param algorithmSegments algorithmSegments to be checked
-     */
-    public static void checkAlgorithmCompleteness(final Collection<ShadowAlgorithmSegment> algorithmSegments) {
-        Set<ShadowAlgorithmSegment> incompleteAlgorithms = algorithmSegments.stream().filter(each -> !each.isComplete()).collect(Collectors.toSet());
-        ShardingSpherePreconditions.checkState(incompleteAlgorithms.isEmpty(), () -> new InvalidAlgorithmConfigurationException(SHADOW));
-    }
-    
-    /**
-     * Check if the rules exist.
-     * 
-     * @param requireRules require rules
-     * @param currentRules current rules
-     * @param thrower thrower
-     */
-    public static void checkRulesExist(final Collection<String> requireRules,
-                                       final Collection<String> currentRules, final Function<Collection<String>, DistSQLException> thrower) {
-        ShadowRuleStatementChecker.checkAnyDifferent(requireRules, currentRules, thrower);
-    }
-    
-    /**
-     * Check if the algorithms exist.
-     * 
-     * @param requireAlgorithms require algorithms
-     * @param currentAlgorithms current algorithms
-     * @param thrower thrower
-     */
-    public static void checkAlgorithmExist(final Collection<String> requireAlgorithms,
-                                           final Collection<String> currentAlgorithms, final Function<Collection<String>, DistSQLException> thrower) {
-        ShadowRuleStatementChecker.checkAnyDifferent(requireAlgorithms, currentAlgorithms, thrower);
-    }
-    
-    /**
-     * Check for any duplicate data in the rules, and throw the specified exception.
+     * Check if there are duplicated rules.
      * 
      * @param rules rules to be checked
      * @param thrower exception thrower
      */
-    public static void checkAnyDuplicate(final Collection<String> rules, final Function<Collection<String>, DistSQLException> thrower) {
-        Collection<String> duplicateRequire = getDuplicate(rules);
-        ShardingSpherePreconditions.checkState(duplicateRequire.isEmpty(), () -> thrower.apply(duplicateRequire));
+    public static void checkDuplicated(final Collection<String> rules, final Function<Collection<String>, DistSQLException> thrower) {
+        Collection<String> duplicated = getDuplicated(rules);
+        ShardingSpherePreconditions.checkState(duplicated.isEmpty(), () -> thrower.apply(duplicated));
     }
     
     /**
-     * Check if there are duplicates in the rules, and throw the specified exception.
+     * Check if there are duplicated rules.
      *
-     * @param requireRules rules to be checked
-     * @param currentRules rules to be checked
+     * @param requiredRules required rules
+     * @param currentRules current rules
      * @param thrower exception thrower
      */
-    public static void checkAnyDuplicate(final Collection<String> requireRules,
-                                         final Collection<String> currentRules, final Function<Collection<String>, DistSQLException> thrower) {
-        Collection<String> identical = getIdentical(requireRules, currentRules);
-        ShardingSpherePreconditions.checkState(identical.isEmpty(), () -> thrower.apply(identical));
+    public static void checkDuplicated(final Collection<String> requiredRules, final Collection<String> currentRules, final Function<Collection<String>, DistSQLException> thrower) {
+        Collection<String> duplicated = getDuplicated(requiredRules, currentRules);
+        ShardingSpherePreconditions.checkState(duplicated.isEmpty(), () -> thrower.apply(duplicated));
     }
     
     /**
-     * Check for any different data in the rules, and throw the specified exception.
+     * Check the required rules existed.
      *
-     * @param requireRules rules to be checked
-     * @param currentRules rules to be checked
+     * @param requiredRules required rules
+     * @param currentRules current rules
      * @param thrower exception thrower
      */
-    public static void checkAnyDifferent(final Collection<String> requireRules,
-                                         final Collection<String> currentRules, final Function<Collection<String>, DistSQLException> thrower) {
-        Collection<String> different = getDifferent(requireRules, currentRules);
-        ShardingSpherePreconditions.checkState(different.isEmpty(), () -> thrower.apply(different));
+    public static void checkExisted(final Collection<String> requiredRules, final Collection<String> currentRules, final Function<Collection<String>, DistSQLException> thrower) {
+        Collection<String> notExisted = getNotExisted(requiredRules, currentRules);
+        ShardingSpherePreconditions.checkState(notExisted.isEmpty(), () -> thrower.apply(notExisted));
     }
     
-    private static Collection<String> getDuplicate(final Collection<String> require) {
-        return require.stream().collect(Collectors.groupingBy(each -> each, Collectors.counting())).entrySet().stream()
+    private static Collection<String> getDuplicated(final Collection<String> names) {
+        return names.stream().collect(Collectors.groupingBy(each -> each, Collectors.counting())).entrySet().stream()
                 .filter(each -> each.getValue() > 1).map(Map.Entry::getKey).collect(Collectors.toSet());
     }
     
-    private static Collection<String> getDifferent(final Collection<String> require, final Collection<String> current) {
-        return require.stream().filter(each -> !current.contains(each)).collect(Collectors.toSet());
+    private static Collection<String> getDuplicated(final Collection<String> required, final Collection<String> current) {
+        return required.stream().filter(current::contains).collect(Collectors.toSet());
     }
     
-    private static Collection<String> getIdentical(final Collection<String> require, final Collection<String> current) {
-        return require.stream().filter(current::contains).collect(Collectors.toSet());
+    private static Collection<String> getNotExisted(final Collection<String> required, final Collection<String> current) {
+        return required.stream().filter(each -> !current.contains(each)).collect(Collectors.toSet());
+    }
+    
+    /**
+     * Check if there are duplicated names with logical data sources.
+     * 
+     * @param toBeCreatedRuleNames rule names
+     * @param database ShardingSphere database
+     */
+    public static void checkDuplicatedWithLogicDataSource(final Collection<String> toBeCreatedRuleNames, final ShardingSphereDatabase database) {
+        Collection<String> logicDataSources = getLogicDataSources(database);
+        if (!logicDataSources.isEmpty()) {
+            Collection<String> duplicatedNames = toBeCreatedRuleNames.stream().filter(logicDataSources::contains).collect(Collectors.toList());
+            ShardingSpherePreconditions.checkState(duplicatedNames.isEmpty(), () -> new InvalidRuleConfigurationException("shadow", duplicatedNames,
+                    Collections.singleton(String.format("%s already exists in storage unit", duplicatedNames))));
+        }
+    }
+    
+    private static Collection<String> getLogicDataSources(final ShardingSphereDatabase database) {
+        return database.getRuleMetaData().findRules(DataSourceContainedRule.class).stream()
+                .map(each -> each.getDataSourceMapper().keySet()).flatMap(Collection::stream).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 }

@@ -19,23 +19,23 @@ package org.apache.shardingsphere.infra.metadata.database.schema.loader.adapter;
 
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeEngine;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNull;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MetaDataLoaderConnectionAdapterTest {
+@ExtendWith(MockitoExtension.class)
+class MetaDataLoaderConnectionAdapterTest {
     
     private static final String TEST_CATALOG = "catalog";
     
@@ -49,28 +49,28 @@ public final class MetaDataLoaderConnectionAdapterTest {
     private Connection connection;
     
     @Test
-    public void assertGetCatalog() throws SQLException {
+    void assertGetCatalog() throws SQLException {
         when(connection.getCatalog()).thenReturn(TEST_CATALOG);
         MetaDataLoaderConnectionAdapter connectionAdapter = new MetaDataLoaderConnectionAdapter(databaseType, connection);
         assertThat(connectionAdapter.getCatalog(), is(TEST_CATALOG));
     }
     
     @Test
-    public void assertGetCatalogReturnNullWhenThrowsSQLException() throws SQLException {
+    void assertGetCatalogReturnNullWhenThrowsSQLException() throws SQLException {
         when(connection.getCatalog()).thenThrow(SQLException.class);
         MetaDataLoaderConnectionAdapter connectionAdapter = new MetaDataLoaderConnectionAdapter(databaseType, connection);
         assertNull(connectionAdapter.getCatalog());
     }
     
     @Test
-    public void assertGetSchema() throws SQLException {
+    void assertGetSchema() throws SQLException {
         when(connection.getSchema()).thenReturn(TEST_SCHEMA);
         MetaDataLoaderConnectionAdapter connectionAdapter = new MetaDataLoaderConnectionAdapter(databaseType, connection);
         assertThat(connectionAdapter.getSchema(), is(TEST_SCHEMA));
     }
     
     @Test
-    public void assertGetSchemaByOracleSPI() throws SQLException {
+    void assertGetSchemaByOracleSPI() throws SQLException {
         DatabaseMetaData databaseMetaData = mock(DatabaseMetaData.class);
         when(connection.getMetaData()).thenReturn(databaseMetaData);
         when(databaseMetaData.getUserName()).thenReturn(TEST_SCHEMA);
@@ -79,14 +79,14 @@ public final class MetaDataLoaderConnectionAdapterTest {
     }
     
     @Test
-    public void assertGetSchemaByMySQLSPI() throws SQLException {
+    void assertGetSchemaByMySQLSPI() throws SQLException {
         when(connection.getSchema()).thenReturn(TEST_SCHEMA);
         MetaDataLoaderConnectionAdapter connectionAdapter = new MetaDataLoaderConnectionAdapter(databaseType, connection);
         assertThat(connectionAdapter.getSchema(), is(TEST_SCHEMA));
     }
     
     @Test
-    public void assertGetSchemaReturnNullWhenThrowsSQLException() throws SQLException {
+    void assertGetSchemaReturnNullWhenThrowsSQLException() throws SQLException {
         when(connection.getSchema()).thenThrow(SQLException.class);
         MetaDataLoaderConnectionAdapter connectionAdapter = new MetaDataLoaderConnectionAdapter(databaseType, connection);
         assertNull(connectionAdapter.getSchema());

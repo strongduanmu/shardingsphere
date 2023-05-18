@@ -21,21 +21,21 @@ import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.data.ShardingSphereData;
 import org.apache.shardingsphere.infra.metadata.data.builder.dialect.PostgreSQLShardingSphereDataBuilder;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereSchema;
-import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereTable;
-import org.junit.Test;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereSchema;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereTable;
+import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class PostgreSQLShardingSphereDataBuilderTest {
+class PostgreSQLShardingSphereDataBuilderTest {
     
     @Test
-    public void assertBuild() {
+    void assertBuild() {
         ShardingSphereMetaData metaData = mockMetaData();
         ShardingSphereData shardingSphereData = new PostgreSQLShardingSphereDataBuilder().build(metaData);
         assertTrue(shardingSphereData.getDatabaseData().containsKey("logic_db"));

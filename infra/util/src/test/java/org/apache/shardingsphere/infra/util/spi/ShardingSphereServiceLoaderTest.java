@@ -17,12 +17,12 @@
 
 package org.apache.shardingsphere.infra.util.spi;
 
-import org.apache.shardingsphere.infra.util.spi.fixture.EmptySPIFixture;
-import org.apache.shardingsphere.infra.util.spi.fixture.MultitonSPIFixture;
-import org.apache.shardingsphere.infra.util.spi.fixture.MultitonSPIFixtureImpl;
-import org.apache.shardingsphere.infra.util.spi.fixture.SingletonSPIFixture;
-import org.apache.shardingsphere.infra.util.spi.fixture.SingletonSPIFixtureImpl;
-import org.junit.Test;
+import org.apache.shardingsphere.infra.util.spi.fixture.empty.EmptySPIFixture;
+import org.apache.shardingsphere.infra.util.spi.fixture.multiton.MultitonSPIFixture;
+import org.apache.shardingsphere.infra.util.spi.fixture.multiton.impl.MultitonSPIFixtureImpl;
+import org.apache.shardingsphere.infra.util.spi.fixture.singleton.SingletonSPIFixture;
+import org.apache.shardingsphere.infra.util.spi.fixture.singleton.impl.SingletonSPIFixtureImpl;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 
@@ -30,28 +30,28 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class ShardingSphereServiceLoaderTest {
+class ShardingSphereServiceLoaderTest {
     
-    static {
-        ShardingSphereServiceLoader.register(EmptySPIFixture.class);
-        ShardingSphereServiceLoader.register(SingletonSPIFixture.class);
-        ShardingSphereServiceLoader.register(MultitonSPIFixture.class);
+    @Test
+    void assertGetServiceInstancesWithNullValue() {
+        assertThrows(NullPointerException.class, () -> ShardingSphereServiceLoader.getServiceInstances(null));
     }
     
     @Test
-    public void assertGetServiceInstancesWithUnregisteredSPI() {
-        assertTrue(ShardingSphereServiceLoader.getServiceInstances(Object.class).isEmpty());
+    void assertGetServiceInstancesWithNoInterface() {
+        assertThrows(IllegalArgumentException.class, () -> ShardingSphereServiceLoader.getServiceInstances(Object.class));
     }
     
     @Test
-    public void assertGetServiceInstancesWithEmptyInstances() {
+    void assertGetServiceInstancesWithEmptyInstances() {
         assertTrue(ShardingSphereServiceLoader.getServiceInstances(EmptySPIFixture.class).isEmpty());
     }
     
     @Test
-    public void assertGetServiceInstancesWithSingletonSPI() {
+    void assertGetServiceInstancesWithSingletonSPI() {
         Collection<SingletonSPIFixture> actual = ShardingSphereServiceLoader.getServiceInstances(SingletonSPIFixture.class);
         assertThat(actual.size(), is(1));
         SingletonSPIFixture actualInstance = actual.iterator().next();
@@ -60,7 +60,7 @@ public final class ShardingSphereServiceLoaderTest {
     }
     
     @Test
-    public void assertGetServiceInstancesWithMultitonSPI() {
+    void assertGetServiceInstancesWithMultitonSPI() {
         Collection<MultitonSPIFixture> actual = ShardingSphereServiceLoader.getServiceInstances(MultitonSPIFixture.class);
         assertThat(actual.size(), is(1));
         MultitonSPIFixture actualInstance = actual.iterator().next();

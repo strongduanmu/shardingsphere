@@ -35,8 +35,6 @@ import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
 @Setter
 public final class MySQLHandshakeResponse41Packet implements MySQLPacket {
     
-    private final int sequenceId;
-    
     private final int maxPacketSize;
     
     private final int characterSet;
@@ -52,7 +50,6 @@ public final class MySQLHandshakeResponse41Packet implements MySQLPacket {
     private String authPluginName;
     
     public MySQLHandshakeResponse41Packet(final MySQLPacketPayload payload) {
-        sequenceId = payload.readInt1();
         capabilityFlags = payload.readInt4();
         maxPacketSize = payload.readInt4();
         characterSet = payload.readInt1();
@@ -75,11 +72,11 @@ public final class MySQLHandshakeResponse41Packet implements MySQLPacket {
     }
     
     private String readDatabase(final MySQLPacketPayload payload) {
-        return 0 != (capabilityFlags & MySQLCapabilityFlag.CLIENT_CONNECT_WITH_DB.getValue()) ? payload.readStringNul() : null;
+        return 0 == (capabilityFlags & MySQLCapabilityFlag.CLIENT_CONNECT_WITH_DB.getValue()) ? null : payload.readStringNul();
     }
     
     private String readAuthPluginName(final MySQLPacketPayload payload) {
-        return 0 != (capabilityFlags & MySQLCapabilityFlag.CLIENT_PLUGIN_AUTH.getValue()) ? payload.readStringNul() : null;
+        return 0 == (capabilityFlags & MySQLCapabilityFlag.CLIENT_PLUGIN_AUTH.getValue()) ? null : payload.readStringNul();
     }
     
     /**
@@ -95,10 +92,10 @@ public final class MySQLHandshakeResponse41Packet implements MySQLPacket {
     /**
      * Set authentication plugin name.
      *
-     * @param mysqlAuthenticationMethod MySQL authentication method
+     * @param authenticationMethod authentication method of MySQL
      */
-    public void setAuthPluginName(final MySQLAuthenticationMethod mysqlAuthenticationMethod) {
-        authPluginName = mysqlAuthenticationMethod.getMethodName();
+    public void setAuthPluginName(final MySQLAuthenticationMethod authenticationMethod) {
+        authPluginName = authenticationMethod.getMethodName();
         capabilityFlags |= MySQLCapabilityFlag.CLIENT_PLUGIN_AUTH.getValue();
     }
     

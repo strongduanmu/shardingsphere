@@ -24,7 +24,7 @@ import org.apache.shardingsphere.sharding.rewrite.token.pojo.LiteralGeneratedKey
 import org.apache.shardingsphere.sharding.rewrite.token.pojo.ParameterMarkerGeneratedKeyAssignmentToken;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.SetAssignmentSegment;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLInsertStatement;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Optional;
@@ -34,10 +34,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class GeneratedKeyAssignmentTokenGeneratorTest {
+class GeneratedKeyAssignmentTokenGeneratorTest {
     
     @Test
-    public void assertGenerateSQLTokenWithLiteralValue() {
+    void assertGenerateSQLTokenWithLiteralValue() {
         InsertStatementContext insertStatementContext = mockInsertStatementContext();
         GeneratedKeyAssignmentTokenGenerator generator = new GeneratedKeyAssignmentTokenGenerator();
         generator.setParameters(Collections.emptyList());
@@ -45,7 +45,7 @@ public final class GeneratedKeyAssignmentTokenGeneratorTest {
     }
     
     @Test
-    public void assertGenerateSQLTokenWithPlaceholder() {
+    void assertGenerateSQLTokenWithPlaceholder() {
         InsertStatementContext insertStatementContext = mockInsertStatementContext();
         GeneratedKeyAssignmentTokenGenerator generator = new GeneratedKeyAssignmentTokenGenerator();
         generator.setParameters(Collections.singletonList("testObject"));

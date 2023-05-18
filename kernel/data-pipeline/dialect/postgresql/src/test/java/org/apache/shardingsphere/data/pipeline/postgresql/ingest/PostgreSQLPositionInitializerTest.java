@@ -19,11 +19,13 @@ package org.apache.shardingsphere.data.pipeline.postgresql.ingest;
 
 import lombok.SneakyThrows;
 import org.apache.shardingsphere.data.pipeline.postgresql.ingest.wal.WALPosition;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.postgresql.replication.LogSequenceNumber;
 
 import javax.sql.DataSource;
@@ -35,12 +37,14 @@ import java.sql.SQLException;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class PostgreSQLPositionInitializerTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class PostgreSQLPositionInitializerTest {
     
     private static final String POSTGRESQL_96_LSN = "0/14EFDB8";
     
@@ -55,8 +59,8 @@ public final class PostgreSQLPositionInitializerTest {
     @Mock
     private DatabaseMetaData databaseMetaData;
     
-    @Before
-    public void setUp() throws SQLException {
+    @BeforeEach
+    void setUp() throws SQLException {
         when(dataSource.getConnection()).thenReturn(connection);
         when(connection.getCatalog()).thenReturn("sharding_db");
         when(connection.getMetaData()).thenReturn(databaseMetaData);
@@ -69,7 +73,7 @@ public final class PostgreSQLPositionInitializerTest {
     }
     
     @Test
-    public void assertGetCurrentPositionOnPostgreSQL96() throws SQLException {
+    void assertGetCurrentPositionOnPostgreSQL96() throws SQLException {
         mockSlotExistsOrNot(false);
         when(databaseMetaData.getDatabaseMajorVersion()).thenReturn(9);
         when(databaseMetaData.getDatabaseMinorVersion()).thenReturn(6);
@@ -78,19 +82,19 @@ public final class PostgreSQLPositionInitializerTest {
     }
     
     @Test
-    public void assertGetCurrentPositionOnPostgreSQL10() throws SQLException {
+    void assertGetCurrentPositionOnPostgreSQL10() throws SQLException {
         mockSlotExistsOrNot(false);
         when(databaseMetaData.getDatabaseMajorVersion()).thenReturn(10);
         WALPosition actual = new PostgreSQLPositionInitializer().init(dataSource, "");
         assertThat(actual.getLogSequenceNumber().get(), is(LogSequenceNumber.valueOf(POSTGRESQL_10_LSN)));
     }
     
-    @Test(expected = RuntimeException.class)
-    public void assertGetCurrentPositionThrowException() throws SQLException {
+    @Test
+    void assertGetCurrentPositionThrowException() throws SQLException {
         mockSlotExistsOrNot(false);
         when(databaseMetaData.getDatabaseMajorVersion()).thenReturn(9);
         when(databaseMetaData.getDatabaseMinorVersion()).thenReturn(4);
-        new PostgreSQLPositionInitializer().init(dataSource, "");
+        assertThrows(RuntimeException.class, () -> new PostgreSQLPositionInitializer().init(dataSource, ""));
     }
     
     @SneakyThrows(SQLException.class)
@@ -123,7 +127,7 @@ public final class PostgreSQLPositionInitializerTest {
     }
     
     @Test
-    public void assertDestroyWhenSlotExists() throws SQLException {
+    void assertDestroyWhenSlotExists() throws SQLException {
         mockSlotExistsOrNot(true);
         PreparedStatement preparedStatement = mock(PreparedStatement.class);
         when(connection.prepareStatement("SELECT pg_drop_replication_slot(?)")).thenReturn(preparedStatement);

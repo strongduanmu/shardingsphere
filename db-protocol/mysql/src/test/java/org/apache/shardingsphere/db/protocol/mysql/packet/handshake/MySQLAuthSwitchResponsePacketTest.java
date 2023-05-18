@@ -18,17 +18,17 @@
 package org.apache.shardingsphere.db.protocol.mysql.packet.handshake;
 
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLAuthSwitchResponsePacketTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLAuthSwitchResponsePacketTest {
     
     @Mock
     private MySQLPacketPayload payload;
@@ -36,11 +36,9 @@ public final class MySQLAuthSwitchResponsePacketTest {
     private final byte[] authPluginResponse = {0x22, 0x33};
     
     @Test
-    public void assertMySQLAuthSwitchResponsePacket() {
-        when(payload.readInt1()).thenReturn(0x11);
+    void assertMySQLAuthSwitchResponsePacket() {
         when(payload.readStringEOFByBytes()).thenReturn(authPluginResponse);
         MySQLAuthSwitchResponsePacket authSwitchResponsePacket = new MySQLAuthSwitchResponsePacket(payload);
-        assertThat(authSwitchResponsePacket.getSequenceId(), is(0x11));
         assertThat(authSwitchResponsePacket.getAuthPluginResponse(), is(authPluginResponse));
     }
 }

@@ -20,11 +20,13 @@ package org.apache.shardingsphere.data.pipeline.mysql.ingest.binlog;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLBinaryColumnType;
 import org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.MySQLBinlogTableMapEventPacket;
 import org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.column.MySQLBinlogColumnDef;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,8 +36,9 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class BinlogContextTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class BinlogContextTest {
     
     private static final String TEST_SCHEMA = "test_schema";
     
@@ -48,27 +51,27 @@ public final class BinlogContextTest {
     
     private BinlogContext binlogContext;
     
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         binlogContext = new BinlogContext(4, new HashMap<>());
         when(tableMapEventPacket.getSchemaName()).thenReturn(TEST_SCHEMA);
         when(tableMapEventPacket.getTableName()).thenReturn(TEST_TABLE);
     }
     
     @Test
-    public void assertGetTableName() {
+    void assertGetTableName() {
         binlogContext.putTableMapEvent(TEST_TABLE_ID, tableMapEventPacket);
         assertThat(binlogContext.getTableName(TEST_TABLE_ID), is(TEST_TABLE));
     }
     
     @Test
-    public void assertGetDatabaseName() {
+    void assertGetDatabaseName() {
         binlogContext.putTableMapEvent(TEST_TABLE_ID, tableMapEventPacket);
         assertThat(binlogContext.getDatabaseName(TEST_TABLE_ID), is(TEST_SCHEMA));
     }
     
     @Test
-    public void assertGetColumnDefs() {
+    void assertGetColumnDefs() {
         binlogContext.putTableMapEvent(TEST_TABLE_ID, tableMapEventPacket);
         List<MySQLBinlogColumnDef> columnDefs = new ArrayList<>(1);
         columnDefs.add(new MySQLBinlogColumnDef(MySQLBinaryColumnType.MYSQL_TYPE_LONG));
@@ -77,7 +80,7 @@ public final class BinlogContextTest {
     }
     
     @Test
-    public void assertGetTableMapEvent() {
+    void assertGetTableMapEvent() {
         binlogContext.putTableMapEvent(TEST_TABLE_ID, tableMapEventPacket);
         assertThat(binlogContext.getTableMapEvent(TEST_TABLE_ID), is(tableMapEventPacket));
     }

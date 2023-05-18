@@ -17,17 +17,19 @@
 
 package org.apache.shardingsphere.mode.repository.cluster.zookeeper.props;
 
-import org.junit.Test;
+import org.apache.shardingsphere.test.util.PropertiesBuilder;
+import org.apache.shardingsphere.test.util.PropertiesBuilder.Property;
+import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class ZookeeperPropertiesTest {
+class ZookeeperPropertiesTest {
     
     @Test
-    public void assertGetValue() {
+    void assertGetValue() {
         ZookeeperProperties actual = new ZookeeperProperties(createProperties());
         assertThat(actual.getValue(ZookeeperPropertyKey.RETRY_INTERVAL_MILLISECONDS), is(3000));
         assertThat(actual.getValue(ZookeeperPropertyKey.MAX_RETRIES), is(2));
@@ -37,17 +39,16 @@ public final class ZookeeperPropertiesTest {
     }
     
     private Properties createProperties() {
-        Properties result = new Properties();
-        result.setProperty(ZookeeperPropertyKey.RETRY_INTERVAL_MILLISECONDS.getKey(), "3000");
-        result.setProperty(ZookeeperPropertyKey.MAX_RETRIES.getKey(), "2");
-        result.setProperty(ZookeeperPropertyKey.TIME_TO_LIVE_SECONDS.getKey(), "600");
-        result.setProperty(ZookeeperPropertyKey.OPERATION_TIMEOUT_MILLISECONDS.getKey(), "6000");
-        result.setProperty(ZookeeperPropertyKey.DIGEST.getKey(), "any");
-        return result;
+        return PropertiesBuilder.build(
+                new Property(ZookeeperPropertyKey.RETRY_INTERVAL_MILLISECONDS.getKey(), "3000"),
+                new Property(ZookeeperPropertyKey.MAX_RETRIES.getKey(), "2"),
+                new Property(ZookeeperPropertyKey.TIME_TO_LIVE_SECONDS.getKey(), "600"),
+                new Property(ZookeeperPropertyKey.OPERATION_TIMEOUT_MILLISECONDS.getKey(), "6000"),
+                new Property(ZookeeperPropertyKey.DIGEST.getKey(), "any"));
     }
     
     @Test
-    public void assertGetDefaultValue() {
+    void assertGetDefaultValue() {
         ZookeeperProperties actual = new ZookeeperProperties(new Properties());
         assertThat(actual.getValue(ZookeeperPropertyKey.RETRY_INTERVAL_MILLISECONDS), is(500));
         assertThat(actual.getValue(ZookeeperPropertyKey.MAX_RETRIES), is(3));

@@ -19,17 +19,17 @@ package org.apache.shardingsphere.db.protocol.postgresql.payload;
 
 import io.netty.buffer.ByteBuf;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.ByteBufTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class PostgreSQLPacketPayloadTest {
+class PostgreSQLPacketPayloadTest {
     
     @Test
-    public void assertReadWrite() {
+    void assertReadWrite() {
         ByteBuf byteBuf = ByteBufTestUtils.createByteBuf(16, 128);
         PostgreSQLPacketPayload payload = new PostgreSQLPacketPayload(byteBuf, StandardCharsets.UTF_8);
         byte expectedInt1 = (byte) 'i';

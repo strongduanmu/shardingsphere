@@ -18,20 +18,21 @@
 package org.apache.shardingsphere.db.protocol.postgresql.packet.identifier;
 
 import org.apache.shardingsphere.db.protocol.postgresql.exception.PostgreSQLProtocolException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public final class PostgreSQLMessagePacketTypeTest {
+class PostgreSQLMessagePacketTypeTest {
     
     @Test
-    public void assertValueOf() {
+    void assertValueOf() {
         assertThat(PostgreSQLMessagePacketType.valueOf(PostgreSQLMessagePacketType.AUTHENTICATION_REQUEST.getValue()), is(PostgreSQLMessagePacketType.AUTHENTICATION_REQUEST));
     }
     
-    @Test(expected = PostgreSQLProtocolException.class)
-    public void assertGetValueWithIllegalArgument() {
-        PostgreSQLMessagePacketType.valueOf(-1);
+    @Test
+    void assertGetValueWithIllegalArgument() {
+        assertThrows(PostgreSQLProtocolException.class, () -> PostgreSQLMessagePacketType.valueOf(-1));
     }
 }

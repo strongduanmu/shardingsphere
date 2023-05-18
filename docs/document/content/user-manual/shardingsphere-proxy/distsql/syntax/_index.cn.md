@@ -23,7 +23,6 @@ chapter = true
 - 算法名称
 
 2. 标识符中允许使用的字符有：[`a-z,A-Z,0-9,_`]（字母、数字、下划线），且应以字母开头。
-
 3. 当标识符中出现关键字或特殊字符时，使用反引号 (`) 。
 
 ### 字面量
@@ -36,3 +35,8 @@ chapter = true
 说明：部分 DistSQL 语法允许负值，此时可在数字前加负号（-），如 -1。
 
 - 布尔值：TRUE 或 FALSE，大小写不敏感。
+
+### 特别说明
+
+- 当指定用户自定义算法类型名称时必须使用 `""` 对算法类型名称进行标注，例如 `NAME="AlgorithmTypeName"` ；
+- 当指定 ShardingSphere [内置算法](/cn/user-manual/common-config/builtin-algorithm/)类型名称时可以不使用 `""` 对算法类型名称进行标注,例如 `NAME=HASH_MODE` ；

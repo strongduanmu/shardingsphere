@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
  */
 public final class StandardJdbcUrlParser {
     
-    private static final String SCHEMA_PATTERN = "(?<schema>[\\w+:%]+)\\s*";
+    private static final String SCHEMA_PATTERN = "(?<schema>[\\w-.+:%]+)\\s*";
     
     private static final String AUTHORITY_PATTERN = "(?://(?<authority>[^/?#]*))?\\s*";
     
@@ -52,6 +52,7 @@ public final class StandardJdbcUrlParser {
      * 
      * @param jdbcUrl JDBC URL to be parsed
      * @return parsed JDBC URL
+     * @throws UnrecognizedDatabaseURLException unrecognized database URL exception
      */
     public JdbcUrl parse(final String jdbcUrl) {
         Matcher matcher = CONNECTION_URL_PATTERN.matcher(jdbcUrl);

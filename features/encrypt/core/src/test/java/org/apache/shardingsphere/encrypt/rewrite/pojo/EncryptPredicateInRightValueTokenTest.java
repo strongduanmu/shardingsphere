@@ -18,7 +18,7 @@
 package org.apache.shardingsphere.encrypt.rewrite.pojo;
 
 import org.apache.shardingsphere.encrypt.rewrite.token.pojo.EncryptPredicateInRightValueToken;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -27,10 +27,10 @@ import java.util.Map;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class EncryptPredicateInRightValueTokenTest {
+class EncryptPredicateInRightValueTokenTest {
     
     @Test
-    public void assertToStringWithoutPlaceholderWithoutTableOwnerWithIn() {
+    void assertToStringWithoutPlaceholderWithoutTableOwnerWithIn() {
         Map<Integer, Object> indexValues = new LinkedHashMap<>();
         indexValues.put(0, "a");
         indexValues.put(1, "b");
@@ -39,7 +39,7 @@ public final class EncryptPredicateInRightValueTokenTest {
     }
     
     @Test
-    public void assertToStringWithPlaceholderWithoutTableOwnerWithIn() {
+    void assertToStringWithPlaceholderWithoutTableOwnerWithIn() {
         EncryptPredicateInRightValueToken actual = new EncryptPredicateInRightValueToken(0, 0, Collections.emptyMap(), Collections.singletonList(0));
         assertThat(actual.toString(), is("(?)"));
     }

@@ -18,26 +18,26 @@
 package org.apache.shardingsphere.infra.rewrite.sql.token.pojo;
 
 import org.apache.shardingsphere.infra.rewrite.sql.fixture.SQLTokenFixture;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class SQLTokenTest {
+class SQLTokenTest {
     
     @Test
-    public void assertCompareToEqual() {
+    void assertCompareToEqual() {
         assertThat(new SQLTokenFixture(0, 10).compareTo(new SQLTokenFixture(0, 10)), is(0));
     }
     
     @Test
-    public void assertCompareToGreater() {
+    void assertCompareToGreater() {
         assertTrue(new SQLTokenFixture(11, 20).compareTo(new SQLTokenFixture(0, 10)) > 0);
     }
     
     @Test
-    public void assertCompareToLess() {
+    void assertCompareToLess() {
         assertTrue(new SQLTokenFixture(0, 10).compareTo(new SQLTokenFixture(11, 20)) < 0);
     }
 }

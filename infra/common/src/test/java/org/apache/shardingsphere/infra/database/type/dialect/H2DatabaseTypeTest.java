@@ -18,46 +18,46 @@
 package org.apache.shardingsphere.infra.database.type.dialect;
 
 import org.apache.shardingsphere.infra.database.metadata.dialect.H2DataSourceMetaData;
-import org.apache.shardingsphere.sql.parser.sql.common.constant.QuoteCharacter;
-import org.junit.Test;
+import org.apache.shardingsphere.sql.parser.sql.common.enums.QuoteCharacter;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class H2DatabaseTypeTest {
+class H2DatabaseTypeTest {
     
     @Test
-    public void assertGetQuoteCharacter() {
+    void assertGetQuoteCharacter() {
         assertThat(new H2DatabaseType().getQuoteCharacter(), is(QuoteCharacter.QUOTE));
     }
     
     @Test
-    public void assertGetJdbcUrlPrefixes() {
+    void assertGetJdbcUrlPrefixes() {
         assertThat(new H2DatabaseType().getJdbcUrlPrefixes(), is(Collections.singleton("jdbc:h2:")));
     }
     
     @Test
-    public void assertGetDataSourceMetaData() {
+    void assertGetDataSourceMetaData() {
         assertThat(new H2DatabaseType().getDataSourceMetaData("jdbc:h2:~:foo_ds", "sa"), instanceOf(H2DataSourceMetaData.class));
         assertThat(new H2DatabaseType().getDataSourceMetaData("jdbc:h2:mem:foo_ds", "sa"), instanceOf(H2DataSourceMetaData.class));
     }
     
     @Test
-    public void assertGetTrunkDatabaseType() {
+    void assertGetTrunkDatabaseType() {
         assertThat(new H2DatabaseType().getTrunkDatabaseType().getType(), is("MySQL"));
     }
     
     @Test
-    public void assertGetSystemDatabaseSchemaMap() {
+    void assertGetSystemDatabaseSchemaMap() {
         assertTrue(new H2DatabaseType().getSystemDatabaseSchemaMap().isEmpty());
     }
     
     @Test
-    public void assertGetSystemSchemas() {
+    void assertGetSystemSchemas() {
         assertTrue(new H2DatabaseType().getSystemSchemas().isEmpty());
     }
 }

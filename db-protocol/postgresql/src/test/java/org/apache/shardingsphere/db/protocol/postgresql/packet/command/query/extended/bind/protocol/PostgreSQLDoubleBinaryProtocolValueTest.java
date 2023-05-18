@@ -19,10 +19,10 @@ package org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.ex
 
 import io.netty.buffer.ByteBuf;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
 
@@ -31,25 +31,25 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class PostgreSQLDoubleBinaryProtocolValueTest {
+@ExtendWith(MockitoExtension.class)
+class PostgreSQLDoubleBinaryProtocolValueTest {
     
     @Mock
     private ByteBuf byteBuf;
     
     @Test
-    public void assertGetColumnLength() {
+    void assertGetColumnLength() {
         assertThat(new PostgreSQLDoubleBinaryProtocolValue().getColumnLength(""), is(8));
     }
     
     @Test
-    public void assertRead() {
+    void assertRead() {
         when(byteBuf.readDouble()).thenReturn(1D);
         assertThat(new PostgreSQLDoubleBinaryProtocolValue().read(new PostgreSQLPacketPayload(byteBuf, StandardCharsets.UTF_8), 8), is(1D));
     }
     
     @Test
-    public void assertWrite() {
+    void assertWrite() {
         new PostgreSQLDoubleBinaryProtocolValue().write(new PostgreSQLPacketPayload(byteBuf, StandardCharsets.UTF_8), 1D);
         verify(byteBuf).writeDouble(1.0d);
     }

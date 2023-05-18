@@ -17,31 +17,33 @@
 
 package org.apache.shardingsphere.db.protocol.mysql.packet.command.query.binary.execute.protocol;
 
+import io.netty.buffer.Unpooled;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLInt1BinaryProtocolValueTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLInt1BinaryProtocolValueTest {
     
     @Mock
     private MySQLPacketPayload payload;
     
     @Test
-    public void assertRead() {
-        when(payload.readInt1()).thenReturn(1);
-        assertThat(new MySQLInt1BinaryProtocolValue().read(payload), is(1));
+    void assertRead() {
+        when(payload.getByteBuf()).thenReturn(Unpooled.wrappedBuffer(new byte[]{1, 1}));
+        assertThat(new MySQLInt1BinaryProtocolValue().read(payload, false), is((byte) 1));
+        assertThat(new MySQLInt1BinaryProtocolValue().read(payload, true), is((short) 1));
     }
     
     @Test
-    public void assertWrite() {
+    void assertWrite() {
         new MySQLInt1BinaryProtocolValue().write(payload, 1);
         verify(payload).writeInt1(1);
     }

@@ -22,7 +22,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.Sim
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableNameSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLOptimizeTableStatement;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -34,10 +34,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class OptimizeTableStatementContextTest {
+class OptimizeTableStatementContextTest {
     
     @Test
-    public void assertNewInstance() {
+    void assertNewInstance() {
         MySQLOptimizeTableStatement optimizeTableStatement = mock(MySQLOptimizeTableStatement.class);
         Collection<SimpleTableSegment> tables = Collections.singletonList(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("tbl_1"))));
         when(optimizeTableStatement.getTables()).thenReturn(tables);

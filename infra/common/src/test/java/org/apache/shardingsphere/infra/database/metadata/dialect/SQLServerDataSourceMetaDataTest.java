@@ -18,16 +18,17 @@
 package org.apache.shardingsphere.infra.database.metadata.dialect;
 
 import org.apache.shardingsphere.infra.database.metadata.UnrecognizedDatabaseURLException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public final class SQLServerDataSourceMetaDataTest {
+class SQLServerDataSourceMetaDataTest {
     
     @Test
-    public void assertNewConstructorWithPortAndMicrosoft() {
+    void assertNewConstructorWithPortAndMicrosoft() {
         SQLServerDataSourceMetaData actual = new SQLServerDataSourceMetaData("jdbc:microsoft:sqlserver://127.0.0.1:9999;DatabaseName=ds_0");
         assertThat(actual.getHostname(), is("127.0.0.1"));
         assertThat(actual.getPort(), is(9999));
@@ -36,7 +37,7 @@ public final class SQLServerDataSourceMetaDataTest {
     }
     
     @Test
-    public void assertNewConstructorWithPortAndWithoutMicrosoft() {
+    void assertNewConstructorWithPortAndWithoutMicrosoft() {
         SQLServerDataSourceMetaData actual = new SQLServerDataSourceMetaData("jdbc:sqlserver://127.0.0.1:9999;DatabaseName=ds_0");
         assertThat(actual.getHostname(), is("127.0.0.1"));
         assertThat(actual.getPort(), is(9999));
@@ -44,7 +45,7 @@ public final class SQLServerDataSourceMetaDataTest {
     }
     
     @Test
-    public void assertNewConstructorWithDefaultPortAndMicrosoft() {
+    void assertNewConstructorWithDefaultPortAndMicrosoft() {
         SQLServerDataSourceMetaData actual = new SQLServerDataSourceMetaData("jdbc:microsoft:sqlserver://127.0.0.1;DatabaseName=ds_0");
         assertThat(actual.getHostname(), is("127.0.0.1"));
         assertThat(actual.getPort(), is(1433));
@@ -52,7 +53,7 @@ public final class SQLServerDataSourceMetaDataTest {
     }
     
     @Test
-    public void assertNewConstructorWithDefaultPortWithoutMicrosoft() {
+    void assertNewConstructorWithDefaultPortWithoutMicrosoft() {
         SQLServerDataSourceMetaData actual = new SQLServerDataSourceMetaData("jdbc:sqlserver://127.0.0.1;DatabaseName=ds_0");
         assertThat(actual.getHostname(), is("127.0.0.1"));
         assertThat(actual.getPort(), is(1433));
@@ -60,7 +61,7 @@ public final class SQLServerDataSourceMetaDataTest {
     }
     
     @Test
-    public void assertNewConstructorWithDataBaseNameContainDotAndMicrosoft() {
+    void assertNewConstructorWithDataBaseNameContainDotAndMicrosoft() {
         SQLServerDataSourceMetaData actual = new SQLServerDataSourceMetaData("jdbc:microsoft:sqlserver://127.0.0.1:9999;DatabaseName=ds_0.0.0");
         assertThat(actual.getHostname(), is("127.0.0.1"));
         assertThat(actual.getPort(), is(9999));
@@ -69,7 +70,7 @@ public final class SQLServerDataSourceMetaDataTest {
     }
     
     @Test
-    public void assertNewConstructorWithDataBaseNameContainDotAndWithoutMicrosoft() {
+    void assertNewConstructorWithDataBaseNameContainDotAndWithoutMicrosoft() {
         SQLServerDataSourceMetaData actual = new SQLServerDataSourceMetaData("jdbc:sqlserver://127.0.0.1:9999;DatabaseName=ds_0.0.0");
         assertThat(actual.getHostname(), is("127.0.0.1"));
         assertThat(actual.getPort(), is(9999));
@@ -77,8 +78,8 @@ public final class SQLServerDataSourceMetaDataTest {
         assertNull(actual.getSchema());
     }
     
-    @Test(expected = UnrecognizedDatabaseURLException.class)
-    public void assertNewConstructorFailure() {
-        new SQLServerDataSourceMetaData("jdbc:sqlserver:xxxxxxxx");
+    @Test
+    void assertNewConstructorFailure() {
+        assertThrows(UnrecognizedDatabaseURLException.class, () -> new SQLServerDataSourceMetaData("jdbc:sqlserver:xxxxxxxx"));
     }
 }

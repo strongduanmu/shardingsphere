@@ -32,6 +32,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.constraint.al
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.constraint.alter.ValidateConstraintDefinitionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.index.DropIndexDefinitionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.index.IndexSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.index.RenameIndexDefinitionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterTableStatement;
@@ -43,13 +44,18 @@ import java.util.LinkedList;
  * Alter table statement context.
  */
 @Getter
-public final class AlterTableStatementContext extends CommonSQLStatementContext<AlterTableStatement> implements TableAvailable, IndexAvailable, ConstraintAvailable {
+public final class AlterTableStatementContext extends CommonSQLStatementContext implements TableAvailable, IndexAvailable, ConstraintAvailable {
     
     private final TablesContext tablesContext;
     
     public AlterTableStatementContext(final AlterTableStatement sqlStatement) {
         super(sqlStatement);
         tablesContext = new TablesContext(sqlStatement.getTable(), getDatabaseType());
+    }
+    
+    @Override
+    public AlterTableStatement getSqlStatement() {
+        return (AlterTableStatement) super.getSqlStatement();
     }
     
     @Override
@@ -80,6 +86,10 @@ public final class AlterTableStatementContext extends CommonSQLStatementContext<
             each.getConstraintDefinition().getIndexName().ifPresent(result::add);
         }
         getSqlStatement().getDropIndexDefinitions().stream().map(DropIndexDefinitionSegment::getIndexSegment).forEach(result::add);
+        for (RenameIndexDefinitionSegment each : getSqlStatement().getRenameIndexDefinitions()) {
+            result.add(each.getIndexSegment());
+            result.add(each.getRenameIndexSegment());
+        }
         return result;
     }
     

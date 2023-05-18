@@ -20,7 +20,7 @@ package org.apache.shardingsphere.encrypt.rewrite.impl;
 import org.apache.shardingsphere.encrypt.rewrite.condition.impl.EncryptInCondition;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,10 +29,10 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class EncryptInConditionTest {
+class EncryptInConditionTest {
     
     @Test
-    public void assertGetConditionValues() {
+    void assertGetConditionValues() {
         List<ExpressionSegment> expressions = Arrays.asList(new LiteralExpressionSegment(0, 0, 1), new LiteralExpressionSegment(0, 0, 2));
         List<Object> actual = new EncryptInCondition("col", null, 0, 0, expressions).getValues(Collections.emptyList());
         assertThat(actual.size(), is(2));

@@ -17,7 +17,6 @@
 
 package org.apache.shardingsphere.sharding.rewrite.parameter.impl;
 
-import com.google.common.base.Preconditions;
 import lombok.Setter;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.binder.statement.dml.InsertStatementContext;
@@ -34,10 +33,10 @@ import java.util.List;
  * Sharding generated key insert value parameter rewriter.
  */
 @Setter
-public final class ShardingGeneratedKeyInsertValueParameterRewriter implements ParameterRewriter<InsertStatementContext> {
+public final class ShardingGeneratedKeyInsertValueParameterRewriter implements ParameterRewriter {
     
     @Override
-    public boolean isNeedRewrite(final SQLStatementContext<?> sqlStatementContext) {
+    public boolean isNeedRewrite(final SQLStatementContext sqlStatementContext) {
         return sqlStatementContext instanceof InsertStatementContext
                 && ((InsertStatementContext) sqlStatementContext).getGeneratedKeyContext().isPresent()
                 && ((InsertStatementContext) sqlStatementContext).getGeneratedKeyContext().get().isGenerated()
@@ -45,8 +44,11 @@ public final class ShardingGeneratedKeyInsertValueParameterRewriter implements P
     }
     
     @Override
-    public void rewrite(final ParameterBuilder paramBuilder, final InsertStatementContext insertStatementContext, final List<Object> params) {
-        Preconditions.checkState(insertStatementContext.getGeneratedKeyContext().isPresent());
+    public void rewrite(final ParameterBuilder paramBuilder, final SQLStatementContext sqlStatementContext, final List<Object> params) {
+        InsertStatementContext insertStatementContext = (InsertStatementContext) sqlStatementContext;
+        if (!insertStatementContext.getGeneratedKeyContext().isPresent()) {
+            return;
+        }
         ((GroupedParameterBuilder) paramBuilder).setDerivedColumnName(insertStatementContext.getGeneratedKeyContext().get().getColumnName());
         Iterator<Comparable<?>> generatedValues = insertStatementContext.getGeneratedKeyContext().get().getGeneratedValues().iterator();
         int count = 0;

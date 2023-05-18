@@ -22,9 +22,9 @@ import lombok.SneakyThrows;
 import org.apache.shardingsphere.infra.database.metadata.DataSourceMetaData;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeEngine;
 import org.apache.shardingsphere.infra.datasource.pool.metadata.DataSourcePoolMetaData;
-import org.apache.shardingsphere.infra.datasource.pool.metadata.DataSourcePoolMetaDataFactory;
 import org.apache.shardingsphere.infra.datasource.pool.metadata.DataSourcePoolMetaDataReflection;
 import org.apache.shardingsphere.infra.datasource.pool.metadata.type.DefaultDataSourcePoolFieldMetaData;
+import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Method;
@@ -43,12 +43,6 @@ import java.util.Properties;
  */
 public final class DataSourceReflection {
     
-    static {
-        GENERAL_CLASS_TYPES = new HashSet<>(
-                Arrays.asList(boolean.class, Boolean.class, int.class, Integer.class, long.class, Long.class, String.class, Collection.class, List.class, Properties.class));
-        SKIPPED_PROPERTY_KEYS = new HashSet<>(Arrays.asList("loginTimeout", "driverClassName"));
-    }
-    
     private static final Collection<Class<?>> GENERAL_CLASS_TYPES;
     
     private static final Collection<String> SKIPPED_PROPERTY_KEYS;
@@ -62,6 +56,12 @@ public final class DataSourceReflection {
     private final DataSource dataSource;
     
     private final Method[] dataSourceMethods;
+    
+    static {
+        GENERAL_CLASS_TYPES = new HashSet<>(
+                Arrays.asList(boolean.class, Boolean.class, int.class, Integer.class, long.class, Long.class, String.class, Collection.class, List.class, Properties.class));
+        SKIPPED_PROPERTY_KEYS = new HashSet<>(Arrays.asList("loginTimeout", "driverClassName"));
+    }
     
     public DataSourceReflection(final DataSource dataSource) {
         this.dataSource = dataSource;
@@ -108,7 +108,7 @@ public final class DataSourceReflection {
         return result;
     }
     
-    private static String getGetterFieldName(final Method method, final String methodPrefix) {
+    private String getGetterFieldName(final Method method, final String methodPrefix) {
         return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, method.getName().substring(methodPrefix.length()));
     }
     
@@ -159,19 +159,20 @@ public final class DataSourceReflection {
      */
     public void addDefaultDataSourceProperties() {
         DataSourcePoolMetaDataReflection dataSourcePoolMetaDataReflection = new DataSourcePoolMetaDataReflection(dataSource,
-                DataSourcePoolMetaDataFactory.findInstance(dataSource.getClass().getName()).map(DataSourcePoolMetaData::getFieldMetaData).orElseGet(DefaultDataSourcePoolFieldMetaData::new));
-        String jdbcUrl = dataSourcePoolMetaDataReflection.getJdbcUrl();
-        Properties jdbcConnectionProps = dataSourcePoolMetaDataReflection.getJdbcConnectionProperties();
-        if (null == jdbcUrl || null == jdbcConnectionProps) {
+                TypedSPILoader.findService(DataSourcePoolMetaData.class, dataSource.getClass().getName())
+                        .map(DataSourcePoolMetaData::getFieldMetaData).orElseGet(DefaultDataSourcePoolFieldMetaData::new));
+        Optional<String> jdbcUrl = dataSourcePoolMetaDataReflection.getJdbcUrl();
+        Optional<Properties> jdbcConnectionProps = dataSourcePoolMetaDataReflection.getJdbcConnectionProperties();
+        if (!jdbcUrl.isPresent() || !jdbcConnectionProps.isPresent()) {
             return;
         }
-        DataSourceMetaData dataSourceMetaData = DatabaseTypeEngine.getDatabaseType(jdbcUrl).getDataSourceMetaData(jdbcUrl, null);
+        DataSourceMetaData dataSourceMetaData = DatabaseTypeEngine.getDatabaseType(jdbcUrl.get()).getDataSourceMetaData(jdbcUrl.get(), null);
         Properties queryProps = dataSourceMetaData.getQueryProperties();
         for (Entry<Object, Object> entry : dataSourceMetaData.getDefaultQueryProperties().entrySet()) {
             String defaultPropertyKey = entry.getKey().toString();
             String defaultPropertyValue = entry.getValue().toString();
-            if (!containsDefaultProperty(defaultPropertyKey, jdbcConnectionProps, queryProps)) {
-                jdbcConnectionProps.setProperty(defaultPropertyKey, defaultPropertyValue);
+            if (!containsDefaultProperty(defaultPropertyKey, jdbcConnectionProps.get(), queryProps)) {
+                jdbcConnectionProps.get().setProperty(defaultPropertyKey, defaultPropertyValue);
             }
         }
     }

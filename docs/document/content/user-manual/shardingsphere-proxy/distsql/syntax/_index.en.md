@@ -23,7 +23,6 @@ In DistSQL statement, except for keywords, the input format of other elements sh
 - algorithm name
 
 2. The allowed characters in the identifier are: [`A-Z, A-Z, 0-9, _`] (letters, numbers, underscores) and should start with a letter.
-
 3. When keywords or special characters appear in the identifier, use the backticks (`).
 
 ### Literal
@@ -36,3 +35,9 @@ Types of literals include:
 Note: some DistSQL syntax allows negative values. In this case, a negative sign (-) can be added before the number, such as -1.
 
 - boolean, containing only true & false. Case insensitive.
+
+### Special Instructions
+
+- The `""` must be used to mark the algorithm type name when specifying a user-defined algorithm type name, for example, `NAME="AlgorithmTypeName"`
+
+- The `""` is not necessary when specifying a ShardingSphere [Built-in algorithm](/en/user-manual/common-config/builtin-algorithm/) type name, for example, `NAME=HASH_MOD`

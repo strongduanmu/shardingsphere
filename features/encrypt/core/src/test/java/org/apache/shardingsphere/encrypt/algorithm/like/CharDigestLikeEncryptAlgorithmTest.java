@@ -17,64 +17,56 @@
 
 package org.apache.shardingsphere.encrypt.algorithm.like;
 
-import org.apache.shardingsphere.encrypt.factory.EncryptAlgorithmFactory;
+import org.apache.shardingsphere.encrypt.api.encrypt.like.LikeEncryptAlgorithm;
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithm;
-import org.apache.shardingsphere.encrypt.spi.context.EncryptContext;
-import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.util.Properties;
+import org.apache.shardingsphere.encrypt.api.context.EncryptContext;
+import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
+import org.apache.shardingsphere.test.util.PropertiesBuilder;
+import org.apache.shardingsphere.test.util.PropertiesBuilder.Property;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 
-public final class CharDigestLikeEncryptAlgorithmTest {
+class CharDigestLikeEncryptAlgorithmTest {
     
-    private EncryptAlgorithm<Object, String> encryptAlgorithm;
+    private LikeEncryptAlgorithm<Object, String> englishLikeEncryptAlgorithm;
     
-    private EncryptAlgorithm<Object, String> chineseLikeEncryptAlgorithm;
+    private LikeEncryptAlgorithm<Object, String> chineseLikeEncryptAlgorithm;
     
-    private EncryptAlgorithm<Object, String> koreanLikeEncryptAlgorithm;
+    private LikeEncryptAlgorithm<Object, String> koreanLikeEncryptAlgorithm;
     
-    @Before
-    public void setUp() {
-        encryptAlgorithm = EncryptAlgorithmFactory.newInstance(new AlgorithmConfiguration("CHAR_DIGEST_LIKE", new Properties()));
-        chineseLikeEncryptAlgorithm = EncryptAlgorithmFactory.newInstance(new AlgorithmConfiguration("CHAR_DIGEST_LIKE", new Properties()));
-        koreanLikeEncryptAlgorithm = EncryptAlgorithmFactory.newInstance(new AlgorithmConfiguration("CHAR_DIGEST_LIKE", createProperties()));
-    }
-    
-    private Properties createProperties() {
-        Properties result = new Properties();
-        result.setProperty("dict", "한국어시험");
-        result.setProperty("start", "44032");
-        return result;
+    @SuppressWarnings("unchecked")
+    @BeforeEach
+    void setUp() {
+        englishLikeEncryptAlgorithm = (LikeEncryptAlgorithm<Object, String>) TypedSPILoader.getService(EncryptAlgorithm.class, "CHAR_DIGEST_LIKE");
+        chineseLikeEncryptAlgorithm = (LikeEncryptAlgorithm<Object, String>) TypedSPILoader.getService(EncryptAlgorithm.class, "CHAR_DIGEST_LIKE");
+        koreanLikeEncryptAlgorithm = (LikeEncryptAlgorithm<Object, String>) TypedSPILoader.getService(EncryptAlgorithm.class,
+                "CHAR_DIGEST_LIKE", PropertiesBuilder.build(new Property("dict", "한국어시험"), new Property("start", "44032")));
     }
     
     @Test
-    public void assertEncrypt() {
-        assertThat(encryptAlgorithm.encrypt("test", mock(EncryptContext.class)), is("5$45"));
+    void assertEncrypt() {
+        assertThat(englishLikeEncryptAlgorithm.encrypt("1234567890%abcdefghijklmnopqrstuvwxyz%ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                mock(EncryptContext.class)), is("0145458981%`adedehihilmlmpqpqtutuxyxy%@ADEDEHIHILMLMPQPQTUTUXYXY"));
+        assertThat(englishLikeEncryptAlgorithm.encrypt("_1234__5678__", mock(EncryptContext.class)), is("_0145__4589__"));
     }
     
     @Test
-    public void assertEncryptWithChineseChar() {
-        assertThat(chineseLikeEncryptAlgorithm.encrypt("中国", mock(EncryptContext.class)), is("娝侰"));
+    void assertEncryptWithChineseChar() {
+        assertThat(chineseLikeEncryptAlgorithm.encrypt("中国", mock(EncryptContext.class)), is("婝估"));
     }
     
     @Test
-    public void assertEncryptWithKoreanChar() {
+    void assertEncryptWithKoreanChar() {
         assertThat(koreanLikeEncryptAlgorithm.encrypt("한국", mock(EncryptContext.class)), is("각가"));
     }
     
     @Test
-    public void assertEncryptWithNullPlaintext() {
-        assertNull(encryptAlgorithm.encrypt(null, mock(EncryptContext.class)));
-    }
-    
-    @Test
-    public void assertDecrypt() {
-        assertThat(encryptAlgorithm.decrypt("test", mock(EncryptContext.class)).toString(), is("test"));
+    void assertEncryptWithNullPlaintext() {
+        assertNull(englishLikeEncryptAlgorithm.encrypt(null, mock(EncryptContext.class)));
     }
 }

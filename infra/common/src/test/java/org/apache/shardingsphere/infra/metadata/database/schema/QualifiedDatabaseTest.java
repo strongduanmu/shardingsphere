@@ -17,15 +17,15 @@
 
 package org.apache.shardingsphere.infra.metadata.database.schema;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class QualifiedDatabaseTest {
+class QualifiedDatabaseTest {
     
     @Test
-    public void assertNewQualifiedDatabaseWithDatabaseNameAndDataSourceName() {
+    void assertNewQualifiedDatabaseWithDatabaseNameAndDataSourceName() {
         QualifiedDatabase actual = new QualifiedDatabase("test_db.test_group_name.test_ds");
         assertThat(actual.getDatabaseName(), is("test_db"));
         assertThat(actual.getGroupName(), is("test_group_name"));

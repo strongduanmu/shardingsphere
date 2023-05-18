@@ -23,15 +23,15 @@ import org.apache.shardingsphere.distsql.parser.statement.rdl.drop.DropRuleState
 import java.util.Collection;
 
 /**
- * Drop readwrite splitting rule statement.
+ * Drop readwrite-splitting rule statement.
  */
 @Getter
 public final class DropReadwriteSplittingRuleStatement extends DropRuleStatement {
     
-    private final Collection<String> ruleNames;
+    private final Collection<String> names;
     
-    public DropReadwriteSplittingRuleStatement(final boolean ifExists, final Collection<String> ruleNames) {
+    public DropReadwriteSplittingRuleStatement(final boolean ifExists, final Collection<String> names) {
         super(ifExists);
-        this.ruleNames = ruleNames;
+        this.names = names;
     }
 }

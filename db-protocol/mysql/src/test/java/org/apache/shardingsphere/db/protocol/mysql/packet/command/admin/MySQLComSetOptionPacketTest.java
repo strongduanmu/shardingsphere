@@ -19,23 +19,23 @@ package org.apache.shardingsphere.db.protocol.mysql.packet.command.admin;
 
 import io.netty.buffer.Unpooled;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class MySQLComSetOptionPacketTest {
+class MySQLComSetOptionPacketTest {
     
     @Test
-    public void assertMultiStatementsOn() {
+    void assertMultiStatementsOn() {
         MySQLComSetOptionPacket actual = new MySQLComSetOptionPacket(new MySQLPacketPayload(Unpooled.wrappedBuffer(new byte[]{0x00, 0x00}), StandardCharsets.UTF_8));
         assertThat(actual.getValue(), is(MySQLComSetOptionPacket.MYSQL_OPTION_MULTI_STATEMENTS_ON));
     }
     
     @Test
-    public void assertMultiStatementsOff() {
+    void assertMultiStatementsOff() {
         MySQLComSetOptionPacket actual = new MySQLComSetOptionPacket(new MySQLPacketPayload(Unpooled.wrappedBuffer(new byte[]{0x01, 0x00}), StandardCharsets.UTF_8));
         assertThat(actual.getValue(), is(MySQLComSetOptionPacket.MYSQL_OPTION_MULTI_STATEMENTS_OFF));
     }

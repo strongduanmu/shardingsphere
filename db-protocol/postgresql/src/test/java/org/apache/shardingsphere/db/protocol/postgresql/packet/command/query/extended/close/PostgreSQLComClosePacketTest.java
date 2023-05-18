@@ -21,23 +21,24 @@ import org.apache.shardingsphere.db.protocol.postgresql.exception.PostgreSQLProt
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQLCommandPacketType;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.identifier.PostgreSQLIdentifierTag;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class PostgreSQLComClosePacketTest {
+@ExtendWith(MockitoExtension.class)
+class PostgreSQLComClosePacketTest {
     
     @Mock
     private PostgreSQLPacketPayload payload;
     
     @Test
-    public void assertClosePreparedStatement() {
+    void assertClosePreparedStatement() {
         when(payload.readInt1()).thenReturn((int) 'S');
         when(payload.readStringNul()).thenReturn("S_1");
         PostgreSQLComClosePacket actual = new PostgreSQLComClosePacket(payload);
@@ -46,7 +47,7 @@ public final class PostgreSQLComClosePacketTest {
     }
     
     @Test
-    public void assertClosePortal() {
+    void assertClosePortal() {
         when(payload.readInt1()).thenReturn((int) 'P');
         when(payload.readStringNul()).thenReturn("P_1");
         PostgreSQLComClosePacket actual = new PostgreSQLComClosePacket(payload);
@@ -55,14 +56,14 @@ public final class PostgreSQLComClosePacketTest {
     }
     
     @Test
-    public void assertIdentifier() {
+    void assertIdentifier() {
         when(payload.readInt1()).thenReturn((int) 'S');
         PostgreSQLIdentifierTag actual = new PostgreSQLComClosePacket(payload).getIdentifier();
         assertThat(actual, is(PostgreSQLCommandPacketType.CLOSE_COMMAND));
     }
     
-    @Test(expected = PostgreSQLProtocolException.class)
-    public void assertInvalidType() {
-        new PostgreSQLComClosePacket(payload);
+    @Test
+    void assertInvalidType() {
+        assertThrows(PostgreSQLProtocolException.class, () -> new PostgreSQLComClosePacket(payload));
     }
 }

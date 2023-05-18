@@ -19,19 +19,19 @@ package org.apache.shardingsphere.shadow.route.engine.util;
 
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.SimpleExpressionSegment;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.LinkedList;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class ShadowExtractorTest {
+class ShadowExtractorTest {
     
     @Test
-    public void assertExtractValuesSimpleExpressionSegment() {
+    void assertExtractValuesSimpleExpressionSegment() {
         SimpleExpressionSegment simpleExpressionSegment = new LiteralExpressionSegment(1, 2, "expected");
         List<Object> params = new LinkedList<>();
         assertTrue(ShadowExtractor.extractValues(simpleExpressionSegment, params).isPresent());

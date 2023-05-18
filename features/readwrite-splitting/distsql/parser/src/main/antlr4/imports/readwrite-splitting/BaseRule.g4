@@ -20,41 +20,47 @@ grammar BaseRule;
 import Symbol, Keyword, Literals;
 
 literal
-    : STRING | (MINUS)? INT | TRUE | FALSE
+    : STRING_ | (MINUS_)? INT_ | TRUE | FALSE
     ;
 
 algorithmDefinition
-    : TYPE LP NAME EQ algorithmTypeName (COMMA propertiesDefinition)? RP
+    : TYPE LP_ NAME EQ_ algorithmTypeName (COMMA_ propertiesDefinition)? RP_
     ;
 
 algorithmTypeName
-    : STRING
+    : STRING_ | buildInReadQueryLoadBalanceAlgorithmType
+    ;
+
+buildInReadQueryLoadBalanceAlgorithmType
+    : ROUND_ROBIN
+    | RANDOM
+    | WEIGHT
     ;
 
 propertiesDefinition
-    : PROPERTIES LP properties? RP
+    : PROPERTIES LP_ properties? RP_
     ;
 
 properties
-    : property (COMMA property)*
+    : property (COMMA_ property)*
     ;
 
 property
-    : key=STRING EQ value=literal
+    : key=STRING_ EQ_ value=literal
     ;
 
 databaseName
-    : IDENTIFIER
+    : IDENTIFIER_
     ;
     
 resourceName
-    : IDENTIFIER
+    : IDENTIFIER_
     ;
 
 groupName
-    : IDENTIFIER
+    : IDENTIFIER_
     ;
 
 storageUnitName
-    : IDENTIFIER
+    : IDENTIFIER_
     ;

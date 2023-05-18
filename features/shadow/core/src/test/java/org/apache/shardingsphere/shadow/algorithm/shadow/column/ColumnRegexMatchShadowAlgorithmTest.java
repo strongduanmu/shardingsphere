@@ -17,40 +17,49 @@
 
 package org.apache.shardingsphere.shadow.algorithm.shadow.column;
 
-import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
+import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
+import org.apache.shardingsphere.shadow.exception.algorithm.ShadowAlgorithmInitializationException;
 import org.apache.shardingsphere.shadow.exception.data.UnsupportedShadowColumnTypeException;
-import org.apache.shardingsphere.shadow.factory.ShadowAlgorithmFactory;
-import org.junit.Test;
+import org.apache.shardingsphere.shadow.spi.ShadowAlgorithm;
+import org.apache.shardingsphere.test.util.PropertiesBuilder;
+import org.apache.shardingsphere.test.util.PropertiesBuilder.Property;
+import org.junit.jupiter.api.Test;
 
-import java.util.Properties;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-public final class ColumnRegexMatchShadowAlgorithmTest extends AbstractColumnShadowAlgorithmTest {
+class ColumnRegexMatchShadowAlgorithmTest {
+    
+    private static final String SHADOW_TABLE = "t_user";
+    
+    private static final String SHADOW_COLUMN = "shadow";
     
     @Test
-    public void assertIsShadow() {
-        ColumnRegexMatchedShadowAlgorithm shadowAlgorithm = createShadowAlgorithm();
-        createPreciseColumnShadowValuesFalseCase().forEach(each -> assertFalse(shadowAlgorithm.isShadow(each)));
-        createPreciseColumnShadowValuesTrueCase().forEach(each -> assertTrue(shadowAlgorithm.isShadow(each)));
+    void assertIsShadow() {
+        ColumnRegexMatchedShadowAlgorithm shadowAlgorithm = (ColumnRegexMatchedShadowAlgorithm) TypedSPILoader.getService(ShadowAlgorithm.class, "REGEX_MATCH",
+                PropertiesBuilder.build(new Property("column", SHADOW_COLUMN), new Property("operation", "insert"), new Property("regex", "[1]")));
+        PreciseColumnShadowValueFixtureBuilder.createFalseCase(SHADOW_TABLE, SHADOW_COLUMN).forEach(each -> assertFalse(shadowAlgorithm.isShadow(each)));
+        PreciseColumnShadowValueFixtureBuilder.createTrueCase(SHADOW_TABLE, SHADOW_COLUMN).forEach(each -> assertTrue(shadowAlgorithm.isShadow(each)));
     }
     
-    @Test(expected = UnsupportedShadowColumnTypeException.class)
-    public void assertExceptionCase() {
-        ColumnRegexMatchedShadowAlgorithm shadowAlgorithm = createShadowAlgorithm();
-        createPreciseColumnShadowValuesExceptionCase().forEach(each -> assertFalse(shadowAlgorithm.isShadow(each)));
+    @Test
+    void assertExceptionCase() {
+        ColumnRegexMatchedShadowAlgorithm shadowAlgorithm = (ColumnRegexMatchedShadowAlgorithm) TypedSPILoader.getService(ShadowAlgorithm.class, "REGEX_MATCH",
+                PropertiesBuilder.build(new Property("column", SHADOW_COLUMN), new Property("operation", "insert"), new Property("regex", "[1]")));
+        assertThrows(UnsupportedShadowColumnTypeException.class,
+                () -> PreciseColumnShadowValueFixtureBuilder.createExceptionCase(SHADOW_TABLE, SHADOW_COLUMN).forEach(each -> assertFalse(shadowAlgorithm.isShadow(each))));
     }
     
-    private ColumnRegexMatchedShadowAlgorithm createShadowAlgorithm() {
-        return (ColumnRegexMatchedShadowAlgorithm) ShadowAlgorithmFactory.newInstance(new AlgorithmConfiguration("REGEX_MATCH", createProperties()));
+    @Test
+    void assertPropertiesWithoutColumn() {
+        assertThrows(ShadowAlgorithmInitializationException.class,
+                () -> TypedSPILoader.getService(ShadowAlgorithm.class, "REGEX_MATCH", PropertiesBuilder.build(new Property("operation", "insert"), new Property("value", "[1]"))));
     }
     
-    private Properties createProperties() {
-        Properties result = new Properties();
-        result.setProperty("column", SHADOW_COLUMN);
-        result.setProperty("operation", "insert");
-        result.setProperty("regex", "[1]");
-        return result;
+    @Test
+    void assertPropertiesWithWrongOperation() {
+        assertThrows(ShadowAlgorithmInitializationException.class, () -> TypedSPILoader.getService(ShadowAlgorithm.class, "REGEX_MATCH",
+                PropertiesBuilder.build(new Property("column", SHADOW_COLUMN), new Property("operation", "wrong"), new Property("value", "[1]"))));
     }
 }

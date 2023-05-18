@@ -17,16 +17,16 @@
 
 package org.apache.shardingsphere.sharding.cosid.algorithm.keygen;
 
-import com.google.common.base.Preconditions;
-import lombok.Getter;
 import me.ahoo.cosid.converter.Radix62IdConverter;
 import me.ahoo.cosid.snowflake.ClockSyncSnowflakeId;
 import me.ahoo.cosid.snowflake.MillisecondSnowflakeId;
 import me.ahoo.cosid.snowflake.SnowflakeId;
 import me.ahoo.cosid.snowflake.StringSnowflakeId;
-import org.apache.shardingsphere.infra.instance.InstanceContextAware;
 import org.apache.shardingsphere.infra.instance.InstanceContext;
+import org.apache.shardingsphere.infra.instance.InstanceContextAware;
+import org.apache.shardingsphere.infra.util.exception.ShardingSpherePreconditions;
 import org.apache.shardingsphere.sharding.cosid.algorithm.CosIdAlgorithmConstants;
+import org.apache.shardingsphere.sharding.exception.ShardingPluginException;
 import org.apache.shardingsphere.sharding.spi.KeyGenerateAlgorithm;
 
 import java.util.Calendar;
@@ -43,7 +43,6 @@ public final class CosIdSnowflakeKeyGenerateAlgorithm implements KeyGenerateAlgo
     
     public static final String EPOCH_KEY = "epoch";
     
-    @Getter
     private Properties props;
     
     private SnowflakeId snowflakeId;
@@ -74,7 +73,10 @@ public final class CosIdSnowflakeKeyGenerateAlgorithm implements KeyGenerateAlgo
     }
     
     private long getEpoch(final Properties props) {
-        return Long.parseLong(props.getProperty(EPOCH_KEY, DEFAULT_EPOCH + ""));
+        long result = Long.parseLong(props.getProperty(EPOCH_KEY, String.valueOf(DEFAULT_EPOCH)));
+        ShardingSpherePreconditions.checkState(result > 0L,
+                () -> new ShardingPluginException("Key generate algorithm `%s` initialization failed, reason is: %s.", getType(), "Epoch must be positive."));
+        return result;
     }
     
     @Override
@@ -94,7 +96,7 @@ public final class CosIdSnowflakeKeyGenerateAlgorithm implements KeyGenerateAlgo
     }
     
     private SnowflakeId getSnowflakeId() {
-        Preconditions.checkNotNull(snowflakeId, "Instance context not set yet.");
+        ShardingSpherePreconditions.checkNotNull(snowflakeId, () -> new ShardingPluginException("Instance context not set yet."));
         return snowflakeId;
     }
     

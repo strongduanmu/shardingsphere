@@ -19,55 +19,55 @@ package org.apache.shardingsphere.infra.merge.result.impl.decorator;
 
 import org.apache.shardingsphere.infra.merge.result.MergedResult;
 import org.apache.shardingsphere.infra.merge.result.impl.decorator.fixture.TestDecoratorMergedResult;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.Date;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNull;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class DecoratorMergedResultTest {
+@ExtendWith(MockitoExtension.class)
+class DecoratorMergedResultTest {
     
     @Mock
     private MergedResult mergedResult;
     
     private TestDecoratorMergedResult decoratorMergedResult;
     
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         decoratorMergedResult = new TestDecoratorMergedResult(mergedResult);
     }
     
     @Test
-    public void assertGetValueWithColumnIndex() throws SQLException {
+    void assertGetValueWithColumnIndex() throws SQLException {
         when(mergedResult.getValue(1, Object.class)).thenReturn("1");
         assertThat(decoratorMergedResult.getValue(1, Object.class).toString(), is("1"));
     }
     
     @Test
-    public void assertGetCalenderValueWithColumnIndex() throws SQLException {
+    void assertGetCalenderValueWithColumnIndex() throws SQLException {
         Calendar calendar = Calendar.getInstance();
         when(mergedResult.getCalendarValue(1, Date.class, calendar)).thenReturn(new Date(0L));
         assertThat(decoratorMergedResult.getCalendarValue(1, Date.class, calendar), is(new Date(0L)));
     }
     
     @Test
-    public void assertGetInputStreamWithColumnIndex() throws SQLException {
+    void assertGetInputStreamWithColumnIndex() throws SQLException {
         assertNull(decoratorMergedResult.getInputStream(1, "ascii"));
     }
     
     @Test
-    public void assertWasNull() throws SQLException {
+    void assertWasNull() throws SQLException {
         when(mergedResult.wasNull()).thenReturn(true);
         assertTrue(decoratorMergedResult.wasNull());
     }

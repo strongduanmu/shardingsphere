@@ -19,17 +19,17 @@ package org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.column.val
 
 import org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.column.MySQLBinlogColumnDef;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLYearBinlogProtocolValueTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLYearBinlogProtocolValueTest {
     
     @Mock
     private MySQLPacketPayload payload;
@@ -38,14 +38,14 @@ public final class MySQLYearBinlogProtocolValueTest {
     private MySQLBinlogColumnDef columnDef;
     
     @Test
-    public void assertRead() {
+    void assertRead() {
         when(payload.readInt1()).thenReturn(1);
         assertThat(new MySQLYearBinlogProtocolValue().read(columnDef, payload), is("1901"));
     }
     
     @Test
-    public void assertReadNullYear() {
+    void assertReadNullYear() {
         when(payload.readInt1()).thenReturn(0);
-        assertThat(new MySQLYearBinlogProtocolValue().read(columnDef, payload), is(MySQLTimeValueUtil.YEAR_OF_ZERO));
+        assertThat(new MySQLYearBinlogProtocolValue().read(columnDef, payload), is(MySQLTimeValueUtils.YEAR_OF_ZERO));
     }
 }

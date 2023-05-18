@@ -41,17 +41,21 @@ import org.apache.shardingsphere.mode.repository.cluster.lock.holder.Distributed
 import org.apache.shardingsphere.mode.repository.cluster.zookeeper.lock.ZookeeperDistributedLock;
 import org.apache.shardingsphere.mode.repository.cluster.zookeeper.props.ZookeeperProperties;
 import org.apache.shardingsphere.mode.repository.cluster.zookeeper.props.ZookeeperPropertyKey;
+import org.apache.shardingsphere.test.util.PropertiesBuilder;
+import org.apache.shardingsphere.test.util.PropertiesBuilder.Property;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.AdditionalAnswers;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.internal.configuration.plugins.Plugins;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.mockito.stubbing.VoidAnswer1;
 
-import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
@@ -64,7 +68,9 @@ import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -74,8 +80,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class ZookeeperRepositoryTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class ZookeeperRepositoryTest {
     
     private static final ZookeeperRepository REPOSITORY = new ZookeeperRepository();
     
@@ -114,8 +121,8 @@ public final class ZookeeperRepositoryTest {
     @Mock
     private Builder builder;
     
-    @Before
-    public void init() {
+    @BeforeEach
+    void init() {
         mockClient();
         mockBuilder();
         ClusterPersistRepositoryConfiguration config = new ClusterPersistRepositoryConfiguration(REPOSITORY.getType(), "governance", SERVER_LISTS, new Properties());
@@ -125,11 +132,10 @@ public final class ZookeeperRepositoryTest {
     
     @SneakyThrows({ReflectiveOperationException.class, InterruptedException.class})
     private void mockClient() {
-        Field builderFiled = ZookeeperRepository.class.getDeclaredField("builder");
-        builderFiled.setAccessible(true);
-        builderFiled.set(REPOSITORY, builder);
+        Plugins.getMemberAccessor().set(ZookeeperRepository.class.getDeclaredField("builder"), REPOSITORY, builder);
         when(builder.connectString(anyString())).thenReturn(builder);
         when(builder.retryPolicy(any(RetryPolicy.class))).thenReturn(builder);
+        when(builder.ensembleTracker(anyBoolean())).thenReturn(builder);
         when(builder.namespace(anyString())).thenReturn(builder);
         when(builder.sessionTimeoutMs(anyInt())).thenReturn(builder);
         when(builder.connectionTimeoutMs(anyInt())).thenReturn(builder);
@@ -141,13 +147,9 @@ public final class ZookeeperRepositoryTest {
     
     @SneakyThrows(ReflectiveOperationException.class)
     private void mockDistributedLockHolder() {
-        Field distributedLockHolderField = ZookeeperRepository.class.getDeclaredField("distributedLockHolder");
-        distributedLockHolderField.setAccessible(true);
         DistributedLockHolder distributedLockHolder = new DistributedLockHolder("Zookeeper", client, new ZookeeperProperties(new Properties()));
-        Field locksFiled = DistributedLockHolder.class.getDeclaredField("locks");
-        locksFiled.setAccessible(true);
-        locksFiled.set(distributedLockHolder, Collections.singletonMap("/locks/glock", mock(ZookeeperDistributedLock.class)));
-        distributedLockHolderField.set(REPOSITORY, distributedLockHolder);
+        Plugins.getMemberAccessor().set(DistributedLockHolder.class.getDeclaredField("locks"), distributedLockHolder, Collections.singletonMap("/locks/glock", mock(ZookeeperDistributedLock.class)));
+        Plugins.getMemberAccessor().set(ZookeeperRepository.class.getDeclaredField("distributedLockHolder"), REPOSITORY, distributedLockHolder);
     }
     
     private void mockBuilder() {
@@ -161,28 +163,28 @@ public final class ZookeeperRepositoryTest {
     }
     
     @Test
-    public void assertPersist() throws Exception {
+    void assertPersist() throws Exception {
         when(protect.withMode(CreateMode.PERSISTENT)).thenReturn(protect);
         REPOSITORY.persist("/test", "value1");
         verify(protect).forPath("/test", "value1".getBytes(StandardCharsets.UTF_8));
     }
     
     @Test
-    public void assertUpdate() throws Exception {
+    void assertUpdate() throws Exception {
         when(existsBuilder.forPath("/test")).thenReturn(new Stat());
         REPOSITORY.persist("/test", "value2");
         verify(setDataBuilder).forPath("/test", "value2".getBytes(StandardCharsets.UTF_8));
     }
     
     @Test
-    public void assertPersistEphemeralNotExist() throws Exception {
+    void assertPersistEphemeralNotExist() throws Exception {
         when(protect.withMode(CreateMode.EPHEMERAL)).thenReturn(protect);
         REPOSITORY.persistEphemeral("/test/ephemeral", "value3");
         verify(protect).forPath("/test/ephemeral", "value3".getBytes(StandardCharsets.UTF_8));
     }
     
     @Test
-    public void assertPersistEphemeralExist() throws Exception {
+    void assertPersistEphemeralExist() throws Exception {
         when(existsBuilder.forPath("/test/ephemeral")).thenReturn(new Stat());
         when(protect.withMode(CreateMode.EPHEMERAL)).thenReturn(protect);
         REPOSITORY.persistEphemeral("/test/ephemeral", "value4");
@@ -191,7 +193,7 @@ public final class ZookeeperRepositoryTest {
     }
     
     @Test
-    public void assertGetChildrenKeys() throws Exception {
+    void assertGetChildrenKeys() throws Exception {
         List<String> keys = Arrays.asList("/test/children/keys/1", "/test/children/keys/2");
         when(getChildrenBuilder.forPath("/test/children/keys")).thenReturn(keys);
         List<String> childrenKeys = REPOSITORY.getChildrenKeys("/test/children/keys");
@@ -199,7 +201,7 @@ public final class ZookeeperRepositoryTest {
     }
     
     @Test
-    public void assertWatchUpdatedChangedType() throws ExecutionException, InterruptedException {
+    void assertWatchUpdatedChangedType() throws ExecutionException, InterruptedException {
         mockCache("/test/children_updated/1");
         ChildData oldData = new ChildData("/test/children_updated/1", null, "value1".getBytes());
         ChildData data = new ChildData("/test/children_updated/1", null, "value2".getBytes());
@@ -213,7 +215,7 @@ public final class ZookeeperRepositoryTest {
     }
     
     @Test
-    public void assertWatchDeletedChangedType() throws ExecutionException, InterruptedException {
+    void assertWatchDeletedChangedType() throws ExecutionException, InterruptedException {
         mockCache("/test/children_deleted/5");
         ChildData oldData = new ChildData("/test/children_deleted/5", null, "value5".getBytes());
         ChildData data = new ChildData("/test/children_deleted/5", null, "value5".getBytes());
@@ -227,7 +229,7 @@ public final class ZookeeperRepositoryTest {
     }
     
     @Test
-    public void assertWatchAddedChangedType() throws ExecutionException, InterruptedException {
+    void assertWatchAddedChangedType() throws ExecutionException, InterruptedException {
         mockCache("/test/children_added/4");
         ChildData data = new ChildData("/test/children_added/4", null, "value4".getBytes());
         doAnswer(AdditionalAnswers.answerVoid(getListenerAnswer(CuratorCacheListener.Type.NODE_CREATED, null, data))).when(listenable).addListener(any(CuratorCacheListener.class));
@@ -241,11 +243,9 @@ public final class ZookeeperRepositoryTest {
     
     @SneakyThrows(ReflectiveOperationException.class)
     private void mockCache(final String key) {
-        Field cachesFiled = ZookeeperRepository.class.getDeclaredField("caches");
-        cachesFiled.setAccessible(true);
         Map<String, CuratorCache> caches = new HashMap<>();
         caches.put(key, curatorCache);
-        cachesFiled.set(REPOSITORY, caches);
+        Plugins.getMemberAccessor().set(ZookeeperRepository.class.getDeclaredField("caches"), REPOSITORY, caches);
         when(curatorCache.listenable()).thenReturn(listenable);
     }
     
@@ -254,49 +254,42 @@ public final class ZookeeperRepositoryTest {
     }
     
     @Test
-    public void assertBuildCuratorClientWithCustomConfig() {
-        Properties props = new Properties();
-        props.setProperty(ZookeeperPropertyKey.RETRY_INTERVAL_MILLISECONDS.getKey(), "1000");
-        props.setProperty(ZookeeperPropertyKey.MAX_RETRIES.getKey(), "1");
-        props.setProperty(ZookeeperPropertyKey.TIME_TO_LIVE_SECONDS.getKey(), "1000");
-        props.setProperty(ZookeeperPropertyKey.OPERATION_TIMEOUT_MILLISECONDS.getKey(), "2000");
-        ClusterPersistRepositoryConfiguration config = new ClusterPersistRepositoryConfiguration(REPOSITORY.getType(), "governance", SERVER_LISTS, props);
-        REPOSITORY.init(config);
+    void assertBuildCuratorClientWithCustomConfig() {
+        Properties props = PropertiesBuilder.build(
+                new Property(ZookeeperPropertyKey.RETRY_INTERVAL_MILLISECONDS.getKey(), "1000"),
+                new Property(ZookeeperPropertyKey.MAX_RETRIES.getKey(), "1"),
+                new Property(ZookeeperPropertyKey.TIME_TO_LIVE_SECONDS.getKey(), "1000"),
+                new Property(ZookeeperPropertyKey.OPERATION_TIMEOUT_MILLISECONDS.getKey(), "2000"));
+        assertDoesNotThrow(() -> REPOSITORY.init(new ClusterPersistRepositoryConfiguration(REPOSITORY.getType(), "governance", SERVER_LISTS, props)));
     }
     
     @Test
-    public void assertBuildCuratorClientWithTimeToLiveSecondsEqualsZero() {
-        Properties props = new Properties();
-        props.setProperty(ZookeeperPropertyKey.TIME_TO_LIVE_SECONDS.getKey(), "0");
-        ClusterPersistRepositoryConfiguration config = new ClusterPersistRepositoryConfiguration(REPOSITORY.getType(), "governance", SERVER_LISTS, props);
-        REPOSITORY.init(config);
+    void assertBuildCuratorClientWithTimeToLiveSecondsEqualsZero() {
+        assertDoesNotThrow(() -> REPOSITORY.init(new ClusterPersistRepositoryConfiguration(
+                REPOSITORY.getType(), "governance", SERVER_LISTS, PropertiesBuilder.build(new Property(ZookeeperPropertyKey.TIME_TO_LIVE_SECONDS.getKey(), "0")))));
     }
     
     @Test
-    public void assertBuildCuratorClientWithOperationTimeoutMillisecondsEqualsZero() {
-        Properties props = new Properties();
-        props.setProperty(ZookeeperPropertyKey.OPERATION_TIMEOUT_MILLISECONDS.getKey(), "0");
-        ClusterPersistRepositoryConfiguration config = new ClusterPersistRepositoryConfiguration(REPOSITORY.getType(), "governance", SERVER_LISTS, props);
-        REPOSITORY.init(config);
+    void assertBuildCuratorClientWithOperationTimeoutMillisecondsEqualsZero() {
+        assertDoesNotThrow(() -> REPOSITORY.init(new ClusterPersistRepositoryConfiguration(
+                REPOSITORY.getType(), "governance", SERVER_LISTS, PropertiesBuilder.build(new Property(ZookeeperPropertyKey.OPERATION_TIMEOUT_MILLISECONDS.getKey(), "0")))));
     }
     
     @Test
-    public void assertBuildCuratorClientWithDigest() {
-        Properties props = new Properties();
-        props.setProperty(ZookeeperPropertyKey.DIGEST.getKey(), "any");
-        ClusterPersistRepositoryConfiguration config = new ClusterPersistRepositoryConfiguration(REPOSITORY.getType(), "governance", SERVER_LISTS, props);
-        REPOSITORY.init(config);
+    void assertBuildCuratorClientWithDigest() {
+        REPOSITORY.init(new ClusterPersistRepositoryConfiguration(REPOSITORY.getType(), "governance", SERVER_LISTS,
+                PropertiesBuilder.build(new Property(ZookeeperPropertyKey.DIGEST.getKey(), "any"))));
         verify(builder).aclProvider(any(ACLProvider.class));
     }
     
     @Test
-    public void assertDeleteNotExistKey() {
+    void assertDeleteNotExistKey() {
         REPOSITORY.delete("/test/children/1");
         verify(client, times(0)).delete();
     }
     
     @Test
-    public void assertDeleteExistKey() throws Exception {
+    void assertDeleteExistKey() throws Exception {
         when(existsBuilder.forPath("/test/children/1")).thenReturn(new Stat());
         when(deleteBuilder.deletingChildrenIfNeeded()).thenReturn(backgroundVersionable);
         REPOSITORY.delete("/test/children/1");

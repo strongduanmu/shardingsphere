@@ -20,7 +20,7 @@ package org.apache.shardingsphere.db.protocol.opengauss.packet.command.query.ext
 import io.netty.buffer.Unpooled;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.extended.PostgreSQLColumnType;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -28,9 +28,9 @@ import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class OpenGaussComBatchBindPacketTest {
+class OpenGaussComBatchBindPacketTest {
     
     private static final byte[] BATCH_BIND_MESSAGE_BYTES = {
             'U', 0x00, 0x00, 0x00, 0x55, 0x00, 0x00, 0x00,
@@ -43,11 +43,11 @@ public final class OpenGaussComBatchBindPacketTest {
             0x00, 0x00, 0x00, 0x02, 0x33, 0x36, 0x00, 0x00,
             0x00, 0x01, 0x33, 0x00, 0x00, 0x00, 0x03, 0x54,
             0x6f, 0x6d, 0x00, 0x00, 0x00, 0x02, 0x35, 0x34,
-            0x45, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x45, 0x00, 0x00, 0x00, 0x00, 0x00
     };
     
     @Test
-    public void assertConstructOpenGaussComBatchBindPacket() {
+    void assertConstructOpenGaussComBatchBindPacket() {
         PostgreSQLPacketPayload payload = new PostgreSQLPacketPayload(Unpooled.wrappedBuffer(BATCH_BIND_MESSAGE_BYTES), StandardCharsets.UTF_8);
         assertThat(payload.readInt1(), is((int) 'U'));
         OpenGaussComBatchBindPacket actual = new OpenGaussComBatchBindPacket(payload);

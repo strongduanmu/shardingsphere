@@ -23,12 +23,14 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.util.exception.external.sql.type.generic.UnsupportedSQLOperationException;
-import org.apache.shardingsphere.transaction.xa.jta.datasource.XADataSourceFactory;
+import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
+import org.apache.shardingsphere.transaction.xa.jta.datasource.properties.XADataSourceDefinition;
+import org.apache.shardingsphere.transaction.xa.jta.datasource.swapper.DataSourceSwapper;
 
 import javax.sql.DataSource;
 
 /**
- * Data source utility.
+ * Data source utility class.
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class DataSourceUtils {
@@ -40,6 +42,7 @@ public final class DataSourceUtils {
      * @param databaseType database type
      * @param databaseName database name
      * @return built data source
+     * @throws UnsupportedSQLOperationException unsupported SQL operation exception
      */
     public static DataSource build(final Class<? extends DataSource> dataSourceClass, final DatabaseType databaseType, final String databaseName) {
         if (HikariDataSource.class == dataSourceClass) {
@@ -66,7 +69,7 @@ public final class DataSourceUtils {
     private static AtomikosDataSourceBean createAtomikosDataSourceBean(final DatabaseType databaseType, final DataSource dataSource, final String databaseName) {
         AtomikosDataSourceBean result = new AtomikosDataSourceBean();
         result.setUniqueResourceName(databaseName);
-        result.setXaDataSource(XADataSourceFactory.build(databaseType, dataSource));
+        result.setXaDataSource(new DataSourceSwapper(TypedSPILoader.getService(XADataSourceDefinition.class, databaseType.getType())).swap(dataSource));
         return result;
     }
     

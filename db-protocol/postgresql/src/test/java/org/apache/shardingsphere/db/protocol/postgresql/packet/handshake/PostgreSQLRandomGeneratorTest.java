@@ -17,15 +17,15 @@
 
 package org.apache.shardingsphere.db.protocol.postgresql.packet.handshake;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class PostgreSQLRandomGeneratorTest {
+class PostgreSQLRandomGeneratorTest {
     
     @Test
-    public void assertGenerateRandomBytes() {
+    void assertGenerateRandomBytes() {
         PostgreSQLRandomGenerator generator = PostgreSQLRandomGenerator.getInstance();
         for (int i = 1; i < 13; i++) {
             assertThat(generator.generateRandomBytes(i).length, is(i));

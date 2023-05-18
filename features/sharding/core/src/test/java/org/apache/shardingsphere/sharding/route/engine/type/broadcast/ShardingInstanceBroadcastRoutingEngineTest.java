@@ -20,11 +20,11 @@ package org.apache.shardingsphere.sharding.route.engine.type.broadcast;
 import org.apache.shardingsphere.infra.metadata.database.resource.ShardingSphereResourceMetaData;
 import org.apache.shardingsphere.infra.route.context.RouteContext;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 
@@ -32,8 +32,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class ShardingInstanceBroadcastRoutingEngineTest {
+@ExtendWith(MockitoExtension.class)
+class ShardingInstanceBroadcastRoutingEngineTest {
     
     private static final String DATASOURCE_NAME = "ds";
     
@@ -45,15 +45,15 @@ public final class ShardingInstanceBroadcastRoutingEngineTest {
     
     private ShardingInstanceBroadcastRoutingEngine shardingInstanceBroadcastRoutingEngine;
     
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         when(shardingRule.getDataSourceNames()).thenReturn(Collections.singletonList(DATASOURCE_NAME));
         when(resourceMetaData.getAllInstanceDataSourceNames()).thenReturn(Collections.singleton(DATASOURCE_NAME));
         shardingInstanceBroadcastRoutingEngine = new ShardingInstanceBroadcastRoutingEngine(resourceMetaData);
     }
     
     @Test
-    public void assertRoute() {
+    void assertRoute() {
         RouteContext routeContext = shardingInstanceBroadcastRoutingEngine.route(shardingRule);
         assertThat(routeContext.getRouteUnits().size(), is(1));
         assertThat(routeContext.getRouteUnits().iterator().next().getDataSourceMapper().getActualName(), is(DATASOURCE_NAME));

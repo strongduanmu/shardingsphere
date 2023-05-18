@@ -17,28 +17,26 @@
 
 package org.apache.shardingsphere.traffic.algorithm.traffic.hint;
 
-import org.apache.shardingsphere.infra.hint.SQLHintProperties;
+import org.apache.shardingsphere.infra.hint.HintValueContext;
 import org.apache.shardingsphere.traffic.api.traffic.hint.HintTrafficValue;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import java.util.Properties;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-public final class SQLHintTrafficAlgorithmTest {
+class SQLHintTrafficAlgorithmTest {
     
     @Test
-    public void assertMatchWhenSQLHintAllMatch() {
-        Properties props = new Properties();
-        props.put("USE_TRAFFIC", Boolean.TRUE.toString());
-        assertTrue(new SQLHintTrafficAlgorithm().match(new HintTrafficValue(new SQLHintProperties(props))));
+    void assertMatchWhenSQLHintAllMatch() {
+        HintValueContext hintValueContext = new HintValueContext();
+        hintValueContext.setUseTraffic(Boolean.TRUE);
+        assertTrue(new SQLHintTrafficAlgorithm().match(new HintTrafficValue(hintValueContext)));
     }
     
     @Test
-    public void assertMatchWhenSQLHintOneMatch() {
-        Properties props = new Properties();
-        props.put("USE_TRAFFIC", Boolean.FALSE.toString());
-        assertFalse(new SQLHintTrafficAlgorithm().match(new HintTrafficValue(new SQLHintProperties(props))));
+    void assertMatchWhenSQLHintOneMatch() {
+        HintValueContext hintValueContext = new HintValueContext();
+        hintValueContext.setUseTraffic(Boolean.FALSE);
+        assertFalse(new SQLHintTrafficAlgorithm().match(new HintTrafficValue(hintValueContext)));
     }
 }

@@ -33,9 +33,8 @@ import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sharding.rule.TableRule;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SubqueryTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.util.SafeNumberOperationUtil;
+import org.apache.shardingsphere.sql.parser.sql.common.util.SafeNumberOperationUtils;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,13 +52,13 @@ public final class ShardingConditions {
     
     private final List<ShardingCondition> conditions;
     
-    private final SQLStatementContext<?> sqlStatementContext;
+    private final SQLStatementContext sqlStatementContext;
     
     private final ShardingRule rule;
     
     private final boolean subqueryContainsShardingCondition;
     
-    public ShardingConditions(final List<ShardingCondition> conditions, final SQLStatementContext<?> sqlStatementContext, final ShardingRule rule) {
+    public ShardingConditions(final List<ShardingCondition> conditions, final SQLStatementContext sqlStatementContext, final ShardingRule rule) {
         this.conditions = conditions;
         this.sqlStatementContext = sqlStatementContext;
         this.rule = rule;
@@ -88,7 +87,7 @@ public final class ShardingConditions {
      */
     public void merge() {
         if (conditions.size() > 1) {
-            List<ShardingCondition> result = new ArrayList<>();
+            Collection<ShardingCondition> result = new LinkedList<>();
             result.add(conditions.remove(conditions.size() - 1));
             while (!conditions.isEmpty()) {
                 findUniqueShardingCondition(result, conditions.remove(conditions.size() - 1)).ifPresent(result::add);
@@ -97,7 +96,7 @@ public final class ShardingConditions {
         }
     }
     
-    private Optional<ShardingCondition> findUniqueShardingCondition(final List<ShardingCondition> conditions, final ShardingCondition condition) {
+    private Optional<ShardingCondition> findUniqueShardingCondition(final Collection<ShardingCondition> conditions, final ShardingCondition condition) {
         for (ShardingCondition each : conditions) {
             if (isSameShardingCondition(rule, condition, each)) {
                 return Optional.empty();
@@ -118,7 +117,7 @@ public final class ShardingConditions {
         return (selectContainsSubquery || insertSelectContainsSubquery) && !rule.getShardingLogicTableNames(sqlStatementContext.getTablesContext().getTableNames()).isEmpty();
     }
     
-    private boolean isSubqueryContainsShardingCondition(final List<ShardingCondition> conditions, final SQLStatementContext<?> sqlStatementContext) {
+    private boolean isSubqueryContainsShardingCondition(final List<ShardingCondition> conditions, final SQLStatementContext sqlStatementContext) {
         Collection<SelectStatement> selectStatements = getSelectStatements(sqlStatementContext);
         if (selectStatements.size() > 1) {
             Map<Integer, List<ShardingCondition>> startIndexShardingConditions = new HashMap<>();
@@ -137,7 +136,7 @@ public final class ShardingConditions {
         return true;
     }
     
-    private Collection<SelectStatement> getSelectStatements(final SQLStatementContext<?> sqlStatementContext) {
+    private Collection<SelectStatement> getSelectStatements(final SQLStatementContext sqlStatementContext) {
         Collection<SelectStatement> result = new LinkedList<>();
         if (sqlStatementContext instanceof SelectStatementContext) {
             result.add(((SelectStatementContext) sqlStatementContext).getSqlStatement());
@@ -184,7 +183,7 @@ public final class ShardingConditions {
                 && shardingValue1.getColumnName().equals(shardingValue2.getColumnName()) || isBindingTable(shardingRule, shardingValue1, shardingValue2);
     }
     
-    private Collection<String> findHintStrategyTables(final SQLStatementContext<?> sqlStatementContext) {
+    private Collection<String> findHintStrategyTables(final SQLStatementContext sqlStatementContext) {
         Collection<String> result = new HashSet<>();
         for (String each : sqlStatementContext.getTablesContext().getTableNames()) {
             Optional<TableRule> tableRule = rule.findTableRule(each);
@@ -215,11 +214,11 @@ public final class ShardingConditions {
     @SuppressWarnings({"rawtypes", "unchecked"})
     private boolean isSameShardingValue(final ShardingConditionValue shardingConditionValue1, final ShardingConditionValue shardingConditionValue2) {
         if (shardingConditionValue1 instanceof ListShardingConditionValue && shardingConditionValue2 instanceof ListShardingConditionValue) {
-            return SafeNumberOperationUtil.safeCollectionEquals(
+            return SafeNumberOperationUtils.safeCollectionEquals(
                     ((ListShardingConditionValue) shardingConditionValue1).getValues(), ((ListShardingConditionValue) shardingConditionValue2).getValues());
         }
         if (shardingConditionValue1 instanceof RangeShardingConditionValue && shardingConditionValue2 instanceof RangeShardingConditionValue) {
-            return SafeNumberOperationUtil.safeRangeEquals(
+            return SafeNumberOperationUtils.safeRangeEquals(
                     ((RangeShardingConditionValue) shardingConditionValue1).getValueRange(), ((RangeShardingConditionValue) shardingConditionValue2).getValueRange());
         }
         return false;

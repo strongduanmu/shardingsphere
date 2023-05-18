@@ -18,12 +18,11 @@
 package org.apache.shardingsphere.data.pipeline.postgresql.check.datasource;
 
 import org.apache.shardingsphere.data.pipeline.core.exception.job.PrepareJobWithoutEnoughPrivilegeException;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -33,12 +32,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class PostgreSQLDataSourceCheckerTest {
+@ExtendWith(MockitoExtension.class)
+class PostgreSQLDataSourceCheckerTest {
     
     @Mock
     private DataSource dataSource;
@@ -55,8 +56,8 @@ public final class PostgreSQLDataSourceCheckerTest {
     @Mock
     private ResultSet resultSet;
     
-    @Before
-    public void setUp() throws SQLException {
+    @BeforeEach
+    void setUp() throws SQLException {
         when(dataSource.getConnection()).thenReturn(connection);
         when(connection.getMetaData()).thenReturn(metaData);
         when(metaData.getUserName()).thenReturn("postgres");
@@ -66,29 +67,29 @@ public final class PostgreSQLDataSourceCheckerTest {
     }
     
     @Test
-    public void assertCheckRolReplication() throws SQLException {
+    void assertCheckRolReplication() throws SQLException {
         PostgreSQLDataSourceChecker dataSourceChecker = new PostgreSQLDataSourceChecker();
         when(resultSet.getString("rolreplication")).thenReturn("t");
         when(resultSet.getString("rolsuper")).thenReturn("f");
         dataSourceChecker.checkPrivilege(Collections.singletonList(dataSource));
-        verify(resultSet, Mockito.atLeastOnce()).getString("rolsuper");
+        verify(resultSet, atLeastOnce()).getString("rolsuper");
     }
     
     @Test
-    public void assertCheckRolSuper() throws SQLException {
+    void assertCheckRolSuper() throws SQLException {
         PostgreSQLDataSourceChecker dataSourceChecker = new PostgreSQLDataSourceChecker();
         when(resultSet.getString("rolsuper")).thenReturn("t");
         when(resultSet.getString("rolreplication")).thenReturn("f");
         dataSourceChecker.checkPrivilege(Collections.singletonList(dataSource));
-        verify(resultSet, Mockito.atLeastOnce()).getString("rolreplication");
+        verify(resultSet, atLeastOnce()).getString("rolreplication");
     }
     
-    @Test(expected = PrepareJobWithoutEnoughPrivilegeException.class)
-    public void asserCheckNoPrivilege() throws SQLException {
+    @Test
+    void asserCheckNoPrivilege() throws SQLException {
         PostgreSQLDataSourceChecker dataSourceChecker = new PostgreSQLDataSourceChecker();
         when(resultSet.getString("rolsuper")).thenReturn("f");
         when(resultSet.getString("rolreplication")).thenReturn("f");
-        dataSourceChecker.checkPrivilege(Collections.singletonList(dataSource));
-        verify(resultSet, Mockito.atLeastOnce()).getString("rolreplication");
+        assertThrows(PrepareJobWithoutEnoughPrivilegeException.class, () -> dataSourceChecker.checkPrivilege(Collections.singletonList(dataSource)));
+        verify(resultSet, atLeastOnce()).getString("rolreplication");
     }
 }

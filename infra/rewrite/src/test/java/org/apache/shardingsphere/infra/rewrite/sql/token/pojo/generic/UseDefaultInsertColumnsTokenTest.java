@@ -19,20 +19,20 @@ package org.apache.shardingsphere.infra.rewrite.sql.token.pojo.generic;
 
 import java.util.Arrays;
 import java.util.Collections;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class UseDefaultInsertColumnsTokenTest {
+class UseDefaultInsertColumnsTokenTest {
     
     @Test
-    public void assertToStringWithEmptyColumn() {
+    void assertToStringWithEmptyColumn() {
         assertThat(new UseDefaultInsertColumnsToken(0, Collections.emptyList()).toString(), is(""));
     }
     
     @Test
-    public void assertToStringWithColumns() {
+    void assertToStringWithColumns() {
         assertThat(new UseDefaultInsertColumnsToken(0, Arrays.asList("id", "name")).toString(), is("(id, name)"));
     }
 }

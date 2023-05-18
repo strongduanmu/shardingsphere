@@ -18,11 +18,11 @@
 package org.apache.shardingsphere.data.pipeline.mysql.ingest;
 
 import org.apache.shardingsphere.data.pipeline.mysql.ingest.binlog.BinlogPosition;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -35,8 +35,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLPositionInitializerTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLPositionInitializerTest {
     
     private static final String LOG_FILE_NAME = "binlog-000001";
     
@@ -50,8 +50,8 @@ public final class MySQLPositionInitializerTest {
     @Mock
     private Connection connection;
     
-    @Before
-    public void setUp() throws SQLException {
+    @BeforeEach
+    void setUp() throws SQLException {
         when(dataSource.getConnection()).thenReturn(connection);
         PreparedStatement positionStatement = mockPositionStatement();
         when(connection.prepareStatement("SHOW MASTER STATUS")).thenReturn(positionStatement);
@@ -60,7 +60,7 @@ public final class MySQLPositionInitializerTest {
     }
     
     @Test
-    public void assertGetCurrentPosition() throws SQLException {
+    void assertGetCurrentPosition() throws SQLException {
         MySQLPositionInitializer mySQLPositionInitializer = new MySQLPositionInitializer();
         BinlogPosition actual = mySQLPositionInitializer.init(dataSource, "");
         assertThat(actual.getServerId(), is(SERVER_ID));

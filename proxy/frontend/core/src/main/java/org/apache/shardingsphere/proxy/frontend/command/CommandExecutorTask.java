@@ -21,7 +21,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.shardingsphere.db.protocol.CommonConstants;
+import org.apache.shardingsphere.db.protocol.constant.CommonConstants;
+import org.apache.shardingsphere.db.protocol.event.WriteCompleteEvent;
 import org.apache.shardingsphere.db.protocol.packet.CommandPacket;
 import org.apache.shardingsphere.db.protocol.packet.CommandPacketType;
 import org.apache.shardingsphere.db.protocol.packet.DatabasePacket;
@@ -74,7 +75,6 @@ public final class CommandExecutorTask implements Runnable {
             if (sqlShowEnabled) {
                 fillLogMDC();
             }
-            connectionSession.getBackendConnection().prepareForTaskExecution();
             isNeedFlush = executeCommand(context, payload);
             // CHECKSTYLE:OFF
         } catch (final Exception ex) {
@@ -88,7 +88,7 @@ public final class CommandExecutorTask implements Runnable {
             connectionSession.clearQueryContext();
             Collection<SQLException> exceptions = Collections.emptyList();
             try {
-                connectionSession.getBackendConnection().closeExecutionResources();
+                connectionSession.getDatabaseConnectionManager().closeExecutionResources();
             } catch (final BackendConnectionException ex) {
                 exceptions = ex.getExceptions().stream().filter(SQLException.class::isInstance).map(SQLException.class::cast).collect(Collectors.toList());
             }
@@ -96,6 +96,7 @@ public final class CommandExecutorTask implements Runnable {
                 context.flush();
             }
             processClosedExceptions(exceptions);
+            context.pipeline().fireUserEventTriggered(new WriteCompleteEvent());
             if (sqlShowEnabled) {
                 clearLogMDC();
             }
@@ -107,6 +108,10 @@ public final class CommandExecutorTask implements Runnable {
         CommandPacketType type = commandExecuteEngine.getCommandPacketType(payload);
         CommandPacket commandPacket = commandExecuteEngine.getCommandPacket(payload, type, connectionSession);
         CommandExecutor commandExecutor = commandExecuteEngine.getCommandExecutor(type, commandPacket, connectionSession);
+        return doExecuteCommand(context, commandExecuteEngine, commandExecutor);
+    }
+    
+    private boolean doExecuteCommand(final ChannelHandlerContext context, final CommandExecuteEngine commandExecuteEngine, final CommandExecutor commandExecutor) throws SQLException {
         try {
             Collection<DatabasePacket<?>> responsePackets = commandExecutor.execute();
             if (responsePackets.isEmpty()) {
@@ -114,7 +119,7 @@ public final class CommandExecutorTask implements Runnable {
             }
             responsePackets.forEach(context::write);
             if (commandExecutor instanceof QueryCommandExecutor) {
-                commandExecuteEngine.writeQueryData(context, connectionSession.getBackendConnection(), (QueryCommandExecutor) commandExecutor, responsePackets.size());
+                commandExecuteEngine.writeQueryData(context, connectionSession.getDatabaseConnectionManager(), (QueryCommandExecutor) commandExecutor, responsePackets.size());
             }
             return true;
         } catch (final SQLException | ShardingSphereSQLException | SQLDialectException ex) {
@@ -126,7 +131,9 @@ public final class CommandExecutorTask implements Runnable {
     }
     
     private void processException(final Exception cause) {
-        if (!ExpectedExceptions.isExpected(cause.getClass())) {
+        if (ExpectedExceptions.isExpected(cause.getClass())) {
+            log.debug("Exception occur: ", cause);
+        } else {
             log.error("Exception occur: ", cause);
         }
         context.write(databaseProtocolFrontendEngine.getCommandExecuteEngine().getErrorPacket(cause));

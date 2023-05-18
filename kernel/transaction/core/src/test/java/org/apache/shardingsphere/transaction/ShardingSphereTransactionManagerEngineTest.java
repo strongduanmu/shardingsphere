@@ -17,10 +17,11 @@
 
 package org.apache.shardingsphere.transaction;
 
-import org.apache.shardingsphere.infra.database.type.DatabaseTypeFactory;
-import org.apache.shardingsphere.transaction.core.TransactionType;
+import org.apache.shardingsphere.infra.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
+import org.apache.shardingsphere.transaction.api.TransactionType;
 import org.apache.shardingsphere.transaction.core.fixture.ShardingSphereTransactionManagerFixture;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
@@ -29,21 +30,21 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public final class ShardingSphereTransactionManagerEngineTest {
+class ShardingSphereTransactionManagerEngineTest {
     
-    private final ShardingSphereTransactionManagerEngine transactionManagerEngine = new ShardingSphereTransactionManagerEngine();
+    private final ShardingSphereTransactionManagerEngine transactionManagerEngine = new ShardingSphereTransactionManagerEngine(TransactionType.XA);
     
     @Test
-    public void assertGetEngine() {
+    void assertGetEngine() {
         assertThat(transactionManagerEngine.getTransactionManager(TransactionType.XA), instanceOf(ShardingSphereTransactionManagerFixture.class));
     }
     
     @Test
-    public void assertRegisterTransactionResource() {
+    void assertRegisterTransactionResource() {
         Runnable caller = mock(Runnable.class);
         ShardingSphereTransactionManagerFixture transactionManager = (ShardingSphereTransactionManagerFixture) transactionManagerEngine.getTransactionManager(TransactionType.XA);
         transactionManager.setCaller(caller);
-        transactionManagerEngine.init(Collections.singletonMap("sharding_db.ds_0", DatabaseTypeFactory.getInstance("H2")), Collections.emptyMap(), "Atomikos");
+        transactionManagerEngine.init(Collections.singletonMap("sharding_db.ds_0", TypedSPILoader.getService(DatabaseType.class, "H2")), Collections.emptyMap(), "Atomikos");
         verify(caller).run();
     }
 }

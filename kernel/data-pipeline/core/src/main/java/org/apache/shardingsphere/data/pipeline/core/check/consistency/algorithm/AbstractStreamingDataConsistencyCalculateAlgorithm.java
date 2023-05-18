@@ -24,12 +24,13 @@ import org.apache.shardingsphere.data.pipeline.api.check.consistency.DataConsist
 import org.apache.shardingsphere.data.pipeline.api.check.consistency.DataConsistencyCalculatedResult;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Streaming data consistency calculate algorithm.
  */
-@RequiredArgsConstructor
 @Getter
 @Slf4j
 public abstract class AbstractStreamingDataConsistencyCalculateAlgorithm extends AbstractDataConsistencyCalculateAlgorithm {
@@ -51,7 +52,7 @@ public abstract class AbstractStreamingDataConsistencyCalculateAlgorithm extends
      * It's not thread-safe, it should be executed in only one thread at the same time.
      */
     @RequiredArgsConstructor
-    final class ResultIterable implements Iterable<DataConsistencyCalculatedResult> {
+    private final class ResultIterable implements Iterable<DataConsistencyCalculatedResult> {
         
         private final DataConsistencyCalculateParameter param;
         
@@ -62,32 +63,30 @@ public abstract class AbstractStreamingDataConsistencyCalculateAlgorithm extends
     }
     
     @RequiredArgsConstructor
-    final class ResultIterator implements Iterator<DataConsistencyCalculatedResult> {
+    private final class ResultIterator implements Iterator<DataConsistencyCalculatedResult> {
+        
+        private final AtomicReference<Optional<DataConsistencyCalculatedResult>> nextResult = new AtomicReference<>();
         
         private final DataConsistencyCalculateParameter param;
-        
-        private volatile Optional<DataConsistencyCalculatedResult> nextResult;
         
         @Override
         public boolean hasNext() {
             calculateIfNecessary();
-            return nextResult.isPresent();
+            return nextResult.get().isPresent();
         }
         
         @Override
         public DataConsistencyCalculatedResult next() {
             calculateIfNecessary();
-            Optional<DataConsistencyCalculatedResult> nextResult = this.nextResult;
-            param.setPreviousCalculatedResult(nextResult.orElse(null));
-            this.nextResult = null;
-            return nextResult.orElse(null);
+            Optional<DataConsistencyCalculatedResult> nextResult = this.nextResult.get();
+            this.nextResult.set(null);
+            return nextResult.orElseThrow(NoSuchElementException::new);
         }
         
         private void calculateIfNecessary() {
-            if (null != nextResult) {
-                return;
+            if (null == nextResult.get()) {
+                nextResult.set(calculateChunk(param));
             }
-            nextResult = calculateChunk(param);
         }
     }
 }

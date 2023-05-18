@@ -19,20 +19,21 @@ package org.apache.shardingsphere.db.protocol.mysql.packet.command.admin;
 
 import org.apache.shardingsphere.db.protocol.mysql.packet.command.MySQLCommandPacketType;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLUnsupportedCommandPacketTest {
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
+@ExtendWith(MockitoExtension.class)
+class MySQLUnsupportedCommandPacketTest {
     
     @Mock
     private MySQLPacketPayload payload;
     
     @Test
-    public void assertWrite() {
-        MySQLUnsupportedCommandPacket actual = new MySQLUnsupportedCommandPacket(MySQLCommandPacketType.COM_DEBUG);
-        actual.write(payload);
+    void assertWrite() {
+        assertDoesNotThrow(() -> new MySQLUnsupportedCommandPacket(MySQLCommandPacketType.COM_DEBUG).write(payload));
     }
 }

@@ -17,10 +17,10 @@
 
 package org.apache.shardingsphere.infra.yaml.schema.swapper;
 
-import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereColumn;
-import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereConstraint;
-import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereIndex;
-import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereTable;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereColumn;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereConstraint;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereIndex;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereTable;
 import org.apache.shardingsphere.infra.util.yaml.swapper.YamlConfigurationSwapper;
 import org.apache.shardingsphere.infra.yaml.schema.pojo.YamlShardingSphereColumn;
 import org.apache.shardingsphere.infra.yaml.schema.pojo.YamlShardingSphereConstraint;
@@ -43,7 +43,7 @@ public final class YamlTableSwapper implements YamlConfigurationSwapper<YamlShar
         YamlShardingSphereTable result = new YamlShardingSphereTable();
         result.setColumns(swapYamlColumns(table.getColumns()));
         result.setIndexes(swapYamlIndexes(table.getIndexes()));
-        result.setConstraints(swapYamlConstraints(table.getConstrains()));
+        result.setConstraints(swapYamlConstraints(table.getConstraints()));
         result.setName(table.getName());
         return result;
     }
@@ -77,8 +77,8 @@ public final class YamlTableSwapper implements YamlConfigurationSwapper<YamlShar
         return new ShardingSphereColumn(column.getName(), column.getDataType(), column.isPrimaryKey(), column.isGenerated(), column.isCaseSensitive(), column.isVisible(), column.isUnsigned());
     }
     
-    private Map<String, YamlShardingSphereConstraint> swapYamlConstraints(final Map<String, ShardingSphereConstraint> constrains) {
-        return constrains.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> swapYamlConstraint(entry.getValue()), (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
+    private Map<String, YamlShardingSphereConstraint> swapYamlConstraints(final Collection<ShardingSphereConstraint> constrains) {
+        return constrains.stream().collect(Collectors.toMap(key -> key.getName().toLowerCase(), this::swapYamlConstraint, (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
     }
     
     private YamlShardingSphereConstraint swapYamlConstraint(final ShardingSphereConstraint constraint) {
@@ -88,8 +88,8 @@ public final class YamlTableSwapper implements YamlConfigurationSwapper<YamlShar
         return result;
     }
     
-    private Map<String, YamlShardingSphereIndex> swapYamlIndexes(final Map<String, ShardingSphereIndex> indexes) {
-        return indexes.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> swapYamlIndex(entry.getValue()), (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
+    private Map<String, YamlShardingSphereIndex> swapYamlIndexes(final Collection<ShardingSphereIndex> indexes) {
+        return indexes.stream().collect(Collectors.toMap(key -> key.getName().toLowerCase(), this::swapYamlIndex, (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
     }
     
     private YamlShardingSphereIndex swapYamlIndex(final ShardingSphereIndex index) {
@@ -98,8 +98,8 @@ public final class YamlTableSwapper implements YamlConfigurationSwapper<YamlShar
         return result;
     }
     
-    private Map<String, YamlShardingSphereColumn> swapYamlColumns(final Map<String, ShardingSphereColumn> columns) {
-        return columns.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> swapYamlColumn(entry.getValue()), (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
+    private Map<String, YamlShardingSphereColumn> swapYamlColumns(final Collection<ShardingSphereColumn> columns) {
+        return columns.stream().collect(Collectors.toMap(key -> key.getName().toLowerCase(), this::swapYamlColumn, (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
     }
     
     private YamlShardingSphereColumn swapYamlColumn(final ShardingSphereColumn column) {
@@ -110,6 +110,7 @@ public final class YamlTableSwapper implements YamlConfigurationSwapper<YamlShar
         result.setPrimaryKey(column.isPrimaryKey());
         result.setDataType(column.getDataType());
         result.setVisible(column.isVisible());
+        result.setUnsigned(column.isUnsigned());
         return result;
     }
 }

@@ -19,14 +19,17 @@ package org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.ex
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.apache.shardingsphere.infra.util.exception.external.sql.type.wrapper.SQLWrapperException;
+import org.postgresql.jdbc.TimestampUtils;
 
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
 /**
- * Utils for PostgreSQL timestamp.
+ * Text timestamp utility class of PostgreSQL.
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class PostgreSQLTextTimestampUtils {
@@ -35,7 +38,7 @@ public final class PostgreSQLTextTimestampUtils {
             "[yyyy-MM-dd][yyyy_MM_dd][yyyyMMdd][yyyy-M-d][MM/dd/yy][yyMMdd]"
                     + "['T'][ ]"
                     + "[HH:mm:ss][HHmmss][HH:mm][HHmm]"
-                    + "[.SSSSSS][.SSSSS][.SSSS][.SSS][.SS][.S]"
+                    + "[.SSSSSSSSS][.SSSSSSSS][.SSSSSSS][.SSSSSS][.SSSSS][.SSSS][.SSS][.SS][.S]"
                     + "[ ]"
                     + "[XXXXX][XXXX][XXX][XX][X]");
     
@@ -49,7 +52,15 @@ public final class PostgreSQLTextTimestampUtils {
         try {
             return Timestamp.valueOf(LocalDateTime.from(POSTGRESQL_DATE_TIME_FORMATTER.parse(value)));
         } catch (final DateTimeParseException ignored) {
-            return Timestamp.valueOf(value);
+            return fallbackToPostgreSQLTimestampUtils(value);
+        }
+    }
+    
+    private static Timestamp fallbackToPostgreSQLTimestampUtils(final String value) {
+        try {
+            return new TimestampUtils(false, null).toTimestamp(null, value);
+        } catch (final SQLException ex) {
+            throw new SQLWrapperException(ex);
         }
     }
 }

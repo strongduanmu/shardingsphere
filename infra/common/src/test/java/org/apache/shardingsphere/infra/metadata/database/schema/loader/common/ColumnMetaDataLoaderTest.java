@@ -19,12 +19,12 @@ package org.apache.shardingsphere.infra.metadata.database.schema.loader.common;
 
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.ColumnMetaData;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -41,8 +41,8 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class ColumnMetaDataLoaderTest {
+@ExtendWith(MockitoExtension.class)
+class ColumnMetaDataLoaderTest {
     
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private Connection connection;
@@ -59,8 +59,8 @@ public final class ColumnMetaDataLoaderTest {
     @Mock
     private ResultSetMetaData resultSetMetaData;
     
-    @Before
-    public void setUp() throws SQLException {
+    @BeforeEach
+    void setUp() throws SQLException {
         when(connection.getCatalog()).thenReturn("catalog");
         when(connection.getMetaData().getPrimaryKeys("catalog", null, "tbl")).thenReturn(primaryResultSet);
         when(primaryResultSet.next()).thenReturn(true, false);
@@ -78,7 +78,7 @@ public final class ColumnMetaDataLoaderTest {
     }
     
     @Test
-    public void assertLoad() throws SQLException {
+    void assertLoad() throws SQLException {
         Collection<ColumnMetaData> actual = ColumnMetaDataLoader.load(connection, "tbl", mock(DatabaseType.class, RETURNS_DEEP_STUBS));
         assertThat(actual.size(), is(2));
         Iterator<ColumnMetaData> columnMetaDataIterator = actual.iterator();

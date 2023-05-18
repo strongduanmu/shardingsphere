@@ -17,39 +17,38 @@
 
 package org.apache.shardingsphere.infra.executor.sql.execute.engine;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.internal.configuration.plugins.Plugins;
 
-import java.lang.reflect.Field;
 import java.sql.SQLException;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class ExecutorExceptionHandlerTest {
+class ExecutorExceptionHandlerTest {
     
-    @After
-    public void tearDown() throws NoSuchFieldException, IllegalAccessException {
-        Field field = SQLExecutorExceptionHandler.class.getDeclaredField("IS_EXCEPTION_THROWN");
-        field.setAccessible(true);
-        ((ThreadLocal) field.get(SQLExecutorExceptionHandler.class)).remove();
-    }
-    
-    @Test(expected = SQLException.class)
-    public void assertHandleExceptionWithoutSet() throws SQLException {
-        assertTrue(SQLExecutorExceptionHandler.isExceptionThrown());
-        SQLExecutorExceptionHandler.handleException(new SQLException(""));
-    }
-    
-    @Test(expected = SQLException.class)
-    public void assertHandleExceptionWhenExceptionThrownIsTrue() throws SQLException {
-        SQLExecutorExceptionHandler.setExceptionThrown(true);
-        assertTrue(SQLExecutorExceptionHandler.isExceptionThrown());
-        SQLExecutorExceptionHandler.handleException(new SQLException(""));
+    @AfterEach
+    void tearDown() throws NoSuchFieldException, IllegalAccessException {
+        ((ThreadLocal<?>) Plugins.getMemberAccessor().get(SQLExecutorExceptionHandler.class.getDeclaredField("IS_EXCEPTION_THROWN"), SQLExecutorExceptionHandler.class)).remove();
     }
     
     @Test
-    public void assertHandleExceptionWhenExceptionThrownIsFalse() throws SQLException {
+    void assertHandleExceptionWithoutSet() {
+        assertTrue(SQLExecutorExceptionHandler.isExceptionThrown());
+        assertThrows(SQLException.class, () -> SQLExecutorExceptionHandler.handleException(new SQLException("")));
+    }
+    
+    @Test
+    void assertHandleExceptionWhenExceptionThrownIsTrue() {
+        SQLExecutorExceptionHandler.setExceptionThrown(true);
+        assertTrue(SQLExecutorExceptionHandler.isExceptionThrown());
+        assertThrows(SQLException.class, () -> SQLExecutorExceptionHandler.handleException(new SQLException("")));
+    }
+    
+    @Test
+    void assertHandleExceptionWhenExceptionThrownIsFalse() throws SQLException {
         SQLExecutorExceptionHandler.setExceptionThrown(false);
         assertFalse(SQLExecutorExceptionHandler.isExceptionThrown());
         SQLExecutorExceptionHandler.handleException(new SQLException(""));

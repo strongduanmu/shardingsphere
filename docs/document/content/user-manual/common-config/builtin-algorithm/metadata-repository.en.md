@@ -5,7 +5,7 @@ weight = 1
 
 ## Background
 
-Apache ShardingSphere provides different metadata persistence methods for different running modes. Users can choose an appropriate way to store metadata while configuring the running mode.
+Apache ShardingSphere provides different metadata persistence methods for different running modes. Users can freely choose the most appropriate way to store metadata while configuring the running mode.
 
 ## Parameters
 
@@ -17,12 +17,12 @@ Mode: Standalone
 
 Attributes:
 
-| *Name*                       | *Type* | *Description*                     | *Default Value*                                                         |
-| ---------------------------- | ------ | --------------------------------- | ----------------------------------------------------------------------- |
-| provider                    | String      | Type for metadata persist     | H2              |
-| jdbc_url                    | String      | JDBC URL              | jdbc:h2:mem:config;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;MODE=MYSQL              |
-| username                    | String      | username              | sa              |
-| password                    | String      | password              |                 |
+| *Name*   | *Type* | *Description*                                              | *Default Value*                                                         |
+|----------|--------|------------------------------------------------------------|-------------------------------------------------------------------------|
+| provider | String | Type for metadata persist, the optional value is H2, MySQL | H2                                                                      |
+| jdbc_url | String | JDBC URL                                                   | jdbc:h2:mem:config;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;MODE=MYSQL |
+| username | String | username                                                   | sa                                                                      |
+| password | String | password                                                   |                                                                         |
 
 
 ### ZooKeeper Repository
@@ -34,7 +34,7 @@ Mode: Cluster
 Attributes:
 
 | *Name*                       | *Type* | *Description*                     | *Default Value* |
-| ---------------------------- | ------ | --------------------------------- | --------------- |
+|------------------------------|--------|-----------------------------------|-----------------|
 | retryIntervalMilliseconds    | int    | Milliseconds of retry interval    | 500             |
 | maxRetries                   | int    | Max retries of client connection  | 3               |
 | timeToLiveSeconds            | int    | Seconds of ephemeral data live    | 60              |
@@ -49,10 +49,10 @@ Mode: Cluster
 
 Attributes:
 
-| *Name*                       | *Type* | *Description*                     | *Default Value* |
-| ---------------------------- | ------ | --------------------------------- | --------------- |
-| timeToLiveSeconds            | long   | Seconds of ephemeral data live    | 30              |
-| connectionTimeout            | long   | Seconds of connection timeout     | 30              |
+| *Name*            | *Type* | *Description*                  | *Default Value* |
+|-------------------|--------|--------------------------------|-----------------|
+| timeToLiveSeconds | long   | Seconds of ephemeral data live | 30              |
+| connectionTimeout | long   | Seconds of connection timeout  | 30              |
 
 ### Nacos Repository
 
@@ -62,12 +62,12 @@ Mode: Cluster
 
 Attributes:
 
-| *Name*                       | *Type* | *Description*                                     | *Default Value* |
-| ---------------------------- | ------ | ------------------------------------------------- | --------------- |
-| clusterIp                    | String | Unique identifier in cluster                      | Host IP         |
-| retryIntervalMilliseconds    | long   | Milliseconds of retry interval                    | 500             |
-| maxRetries                   | int    | Max retries for client to check data availability | 3               |
-| timeToLiveSeconds            | int    | Seconds of ephemeral instance live                | 30              |
+| *Name*                    | *Type* | *Description*                                     | *Default Value* |
+|---------------------------|--------|---------------------------------------------------|-----------------|
+| clusterIp                 | String | Unique identifier in cluster                      | Host IP         |
+| retryIntervalMilliseconds | long   | Milliseconds of retry interval                    | 500             |
+| maxRetries                | int    | Max retries for client to check data availability | 3               |
+| timeToLiveSeconds         | int    | Seconds of ephemeral instance live                | 30              |
 
 ### Consul Repository
 
@@ -77,10 +77,10 @@ Mode: Cluster
 
 Attributes:
 
-| *Name*                       | *Type*  | *Description*                                     | *Default Value* |
-| ---------------------------- | ------- | ------------------------------------------------- | --------------- |
-| timeToLiveSeconds            | String  | Seconds of ephemeral instance live                | 30s             |
-| blockQueryTimeToSeconds      | long    | Seconds of query timeout                          | 60              |
+| *Name*                  | *Type* | *Description*                      | *Default Value* |
+|-------------------------|--------|------------------------------------|-----------------|
+| timeToLiveSeconds       | String | Seconds of ephemeral instance live | 30s             |
+| blockQueryTimeToSeconds | long   | Seconds of query timeout           | 60              |
 
 ## Procedure
 

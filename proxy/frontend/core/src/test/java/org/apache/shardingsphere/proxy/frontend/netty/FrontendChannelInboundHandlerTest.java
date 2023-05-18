@@ -25,22 +25,24 @@ import org.apache.shardingsphere.db.protocol.packet.DatabasePacket;
 import org.apache.shardingsphere.db.protocol.payload.PacketPayload;
 import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
 import org.apache.shardingsphere.infra.metadata.user.Grantee;
+import org.apache.shardingsphere.mode.manager.ContextManager;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.frontend.authentication.AuthenticationEngine;
 import org.apache.shardingsphere.proxy.frontend.authentication.AuthenticationResult;
 import org.apache.shardingsphere.proxy.frontend.authentication.AuthenticationResultBuilder;
 import org.apache.shardingsphere.proxy.frontend.spi.DatabaseProtocolFrontendEngine;
+import org.apache.shardingsphere.test.mock.AutoMockExtension;
+import org.apache.shardingsphere.test.mock.StaticMockSettings;
 import org.apache.shardingsphere.transaction.rule.TransactionRule;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.internal.configuration.plugins.Plugins;
 
-import java.lang.reflect.Field;
+import java.util.Collections;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,12 +50,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class FrontendChannelInboundHandlerTest {
+@ExtendWith(AutoMockExtension.class)
+@StaticMockSettings(ProxyContext.class)
+class FrontendChannelInboundHandlerTest {
     
     private static final int CONNECTION_ID = 1;
     
@@ -69,40 +71,34 @@ public final class FrontendChannelInboundHandlerTest {
     
     private ConnectionSession connectionSession;
     
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         when(frontendEngine.getAuthenticationEngine()).thenReturn(authenticationEngine);
         when(frontendEngine.getType()).thenReturn("MySQL");
         when(authenticationEngine.handshake(any(ChannelHandlerContext.class))).thenReturn(CONNECTION_ID);
         channel = new EmbeddedChannel(false, true);
-        try (MockedStatic<ProxyContext> mocked = mockStatic(ProxyContext.class)) {
-            ProxyContext mockedProxyContext = mock(ProxyContext.class, RETURNS_DEEP_STUBS);
-            mocked.when(ProxyContext::getInstance).thenReturn(mockedProxyContext);
-            ShardingSphereRuleMetaData globalRuleMetaData = mock(ShardingSphereRuleMetaData.class);
-            when(mockedProxyContext.getContextManager().getMetaDataContexts().getMetaData().getGlobalRuleMetaData()).thenReturn(globalRuleMetaData);
-            when(globalRuleMetaData.getSingleRule(TransactionRule.class)).thenReturn(mock(TransactionRule.class));
-            frontendChannelInboundHandler = new FrontendChannelInboundHandler(frontendEngine, channel);
-        }
+        ContextManager contextManager = mock(ContextManager.class, RETURNS_DEEP_STUBS);
+        when(contextManager.getMetaDataContexts().getMetaData().getGlobalRuleMetaData()).thenReturn(new ShardingSphereRuleMetaData(Collections.singleton(mock(TransactionRule.class))));
+        when(ProxyContext.getInstance().getContextManager()).thenReturn(contextManager);
+        frontendChannelInboundHandler = new FrontendChannelInboundHandler(frontendEngine, channel);
         channel.pipeline().addLast(frontendChannelInboundHandler);
         connectionSession = getConnectionSession();
     }
     
     @SneakyThrows(ReflectiveOperationException.class)
     private ConnectionSession getConnectionSession() {
-        Field connectionSessionField = FrontendChannelInboundHandler.class.getDeclaredField("connectionSession");
-        connectionSessionField.setAccessible(true);
-        return (ConnectionSession) connectionSessionField.get(frontendChannelInboundHandler);
+        return (ConnectionSession) Plugins.getMemberAccessor().get(FrontendChannelInboundHandler.class.getDeclaredField("connectionSession"), frontendChannelInboundHandler);
     }
     
     @Test
-    public void assertChannelActive() throws Exception {
+    void assertChannelActive() throws Exception {
         channel.register();
         verify(authenticationEngine).handshake(any(ChannelHandlerContext.class));
         assertThat(connectionSession.getConnectionId(), is(CONNECTION_ID));
     }
     
     @Test
-    public void assertChannelReadNotAuthenticated() throws Exception {
+    void assertChannelReadNotAuthenticated() throws Exception {
         channel.register();
         AuthenticationResult authenticationResult = AuthenticationResultBuilder.finished("username", "hostname", "database");
         when(authenticationEngine.authenticate(any(ChannelHandlerContext.class), any(PacketPayload.class))).thenReturn(authenticationResult);
@@ -113,7 +109,7 @@ public final class FrontendChannelInboundHandlerTest {
     
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Test
-    public void assertChannelReadNotAuthenticatedAndExceptionOccur() throws Exception {
+    void assertChannelReadNotAuthenticatedAndExceptionOccur() throws Exception {
         channel.register();
         RuntimeException cause = new RuntimeException("assertChannelReadNotAuthenticatedAndExceptionOccur");
         doThrow(cause).when(authenticationEngine).authenticate(any(ChannelHandlerContext.class), any(PacketPayload.class));

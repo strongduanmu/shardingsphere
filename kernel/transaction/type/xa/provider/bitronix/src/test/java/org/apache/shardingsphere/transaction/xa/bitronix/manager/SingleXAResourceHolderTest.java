@@ -17,20 +17,23 @@
 
 package org.apache.shardingsphere.transaction.xa.bitronix.manager;
 
+import bitronix.tm.resource.common.ResourceBean;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import javax.transaction.xa.XAResource;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import bitronix.tm.resource.common.ResourceBean;
-import javax.transaction.xa.XAResource;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
-
-@RunWith(MockitoJUnitRunner.class)
-public final class SingleXAResourceHolderTest {
+@ExtendWith(MockitoExtension.class)
+class SingleXAResourceHolderTest {
     
     @Mock
     private XAResource xaResource;
@@ -40,38 +43,38 @@ public final class SingleXAResourceHolderTest {
     
     private SingleXAResourceHolder singleXAResourceHolder;
     
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         singleXAResourceHolder = new SingleXAResourceHolder(xaResource, resourceBean);
     }
     
     @Test
-    public void assertGetXAResource() {
+    void assertGetXAResource() {
         assertThat(singleXAResourceHolder.getXAResource(), is(xaResource));
     }
     
     @Test
-    public void assertGetResourceBean() {
+    void assertGetResourceBean() {
         assertThat(singleXAResourceHolder.getResourceBean(), is(resourceBean));
     }
     
     @Test
-    public void assertGetXAResourceHolders() {
-        assertNull(singleXAResourceHolder.getXAResourceHolders());
+    void assertGetXAResourceHolders() {
+        assertTrue(singleXAResourceHolder.getXAResourceHolders().isEmpty());
     }
     
     @Test
-    public void assertGetConnectionHandle() {
+    void assertGetConnectionHandle() {
         assertNull(singleXAResourceHolder.getConnectionHandle());
     }
     
     @Test
-    public void assertGetLastReleaseDate() {
+    void assertGetLastReleaseDate() {
         assertNull(singleXAResourceHolder.getLastReleaseDate());
     }
     
     @Test
-    public void assertClose() {
-        singleXAResourceHolder.close();
+    void assertClose() {
+        assertDoesNotThrow(() -> singleXAResourceHolder.close());
     }
 }

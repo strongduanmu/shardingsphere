@@ -18,32 +18,32 @@
 package org.apache.shardingsphere.db.protocol.mysql.packet.command.query.binary.close;
 
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLComStmtClosePacketTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLComStmtClosePacketTest {
     
     @Mock
     private MySQLPacketPayload payload;
     
     @Test
-    public void assertNew() {
+    void assertNew() {
         when(payload.readInt4()).thenReturn(1);
         MySQLComStmtClosePacket actual = new MySQLComStmtClosePacket(payload);
         assertThat(actual.getStatementId(), is(1));
     }
     
     @Test
-    public void assertWrite() {
+    void assertWrite() {
         when(payload.readInt4()).thenReturn(1);
-        MySQLComStmtClosePacket actual = new MySQLComStmtClosePacket(payload);
-        actual.write(payload);
+        assertDoesNotThrow(() -> new MySQLComStmtClosePacket(payload).write(payload));
     }
 }

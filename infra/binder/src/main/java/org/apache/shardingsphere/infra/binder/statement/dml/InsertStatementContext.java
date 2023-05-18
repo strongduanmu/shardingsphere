@@ -32,7 +32,7 @@ import org.apache.shardingsphere.infra.binder.type.TableAvailable;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeEngine;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereSchema;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.util.exception.ShardingSpherePreconditions;
 import org.apache.shardingsphere.sql.parser.sql.common.extractor.TableExtractor;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.AssignmentSegment;
@@ -59,7 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Insert SQL statement context.
  */
 @Getter
-public final class InsertStatementContext extends CommonSQLStatementContext<InsertStatement> implements TableAvailable, ParameterAware {
+public final class InsertStatementContext extends CommonSQLStatementContext implements TableAvailable, ParameterAware {
     
     private final TablesContext tablesContext;
     
@@ -188,11 +188,6 @@ public final class InsertStatementContext extends CommonSQLStatementContext<Inse
         return Optional.ofNullable(generatedKeyContext);
     }
     
-    @Override
-    public Collection<SimpleTableSegment> getAllTables() {
-        return tablesContext.getTables();
-    }
-    
     /**
      * Judge whether contains insert columns.
      *
@@ -259,6 +254,16 @@ public final class InsertStatementContext extends CommonSQLStatementContext<Inse
             result.add(each.getValues());
         }
         return result;
+    }
+    
+    @Override
+    public InsertStatement getSqlStatement() {
+        return (InsertStatement) super.getSqlStatement();
+    }
+    
+    @Override
+    public Collection<SimpleTableSegment> getAllTables() {
+        return tablesContext.getTables();
     }
     
     @Override

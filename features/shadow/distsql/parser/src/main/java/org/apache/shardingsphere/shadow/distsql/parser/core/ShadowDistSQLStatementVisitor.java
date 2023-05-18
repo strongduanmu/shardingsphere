@@ -51,7 +51,7 @@ import org.apache.shardingsphere.shadow.distsql.parser.statement.ShowDefaultShad
 import org.apache.shardingsphere.shadow.distsql.parser.statement.ShowShadowAlgorithmsStatement;
 import org.apache.shardingsphere.shadow.distsql.parser.statement.ShowShadowRulesStatement;
 import org.apache.shardingsphere.shadow.distsql.parser.statement.ShowShadowTableRulesStatement;
-import org.apache.shardingsphere.sql.parser.api.visitor.ASTNode;
+import org.apache.shardingsphere.sql.parser.api.ASTNode;
 import org.apache.shardingsphere.sql.parser.api.visitor.SQLVisitor;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.DatabaseSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
@@ -67,19 +67,19 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
- * SQL statement visitor for shadow dist SQL.
+ * SQL statement visitor for shadow DistSQL.
  */
-public final class ShadowDistSQLStatementVisitor extends ShadowDistSQLStatementBaseVisitor<ASTNode> implements SQLVisitor {
+public final class ShadowDistSQLStatementVisitor extends ShadowDistSQLStatementBaseVisitor<ASTNode> implements SQLVisitor<ASTNode> {
     
     @Override
     public ASTNode visitCreateShadowRule(final CreateShadowRuleContext ctx) {
-        List<ShadowRuleSegment> shadowRuleSegments = ctx.shadowRuleDefinition().stream().map(this::visit).map(each -> (ShadowRuleSegment) each).collect(Collectors.toList());
-        return new CreateShadowRuleStatement(autoCreateAlgorithmName(shadowRuleSegments));
+        List<ShadowRuleSegment> shadowRuleSegments = ctx.shadowRuleDefinition().stream().map(this::visit).map(ShadowRuleSegment.class::cast).collect(Collectors.toList());
+        return new CreateShadowRuleStatement(null != ctx.ifNotExists(), autoCreateAlgorithmName(shadowRuleSegments));
     }
     
     @Override
     public ASTNode visitCreateDefaultShadowAlgorithm(final CreateDefaultShadowAlgorithmContext ctx) {
-        return new CreateDefaultShadowAlgorithmStatement((ShadowAlgorithmSegment) visit(ctx.algorithmDefinition()));
+        return new CreateDefaultShadowAlgorithmStatement(null != ctx.ifNotExists(), (ShadowAlgorithmSegment) visit(ctx.algorithmDefinition()));
     }
     
     @Override
@@ -123,7 +123,7 @@ public final class ShadowDistSQLStatementVisitor extends ShadowDistSQLStatementB
     
     @Override
     public ASTNode visitAlterShadowRule(final AlterShadowRuleContext ctx) {
-        List<ShadowRuleSegment> shadowRuleSegments = ctx.shadowRuleDefinition().stream().map(this::visit).map(each -> (ShadowRuleSegment) each).collect(Collectors.toList());
+        List<ShadowRuleSegment> shadowRuleSegments = ctx.shadowRuleDefinition().stream().map(this::visit).map(ShadowRuleSegment.class::cast).collect(Collectors.toList());
         return new AlterShadowRuleStatement(autoCreateAlgorithmName(shadowRuleSegments));
     }
     
@@ -136,7 +136,7 @@ public final class ShadowDistSQLStatementVisitor extends ShadowDistSQLStatementB
     public ASTNode visitDropShadowAlgorithm(final DropShadowAlgorithmContext ctx) {
         return new DropShadowAlgorithmStatement(null != ctx.ifExists(), null == ctx.algorithmName()
                 ? Collections.emptyList()
-                : ctx.algorithmName().stream().map(this::getIdentifierValue).collect(Collectors.toSet()));
+                : ctx.algorithmName().stream().map(this::getIdentifierValue).collect(Collectors.toList()));
     }
     
     @Override
@@ -160,8 +160,8 @@ public final class ShadowDistSQLStatementVisitor extends ShadowDistSQLStatementB
         return null == ctx || ctx.isEmpty() ? null : new IdentifierValue(ctx.getText()).getValue();
     }
     
-    private Collection<ShadowAlgorithmSegment> visitShadowAlgorithms(final List<AlgorithmDefinitionContext> ctxs) {
-        return ctxs.stream().map(this::visit).map(each -> (ShadowAlgorithmSegment) each).collect(Collectors.toList());
+    private Collection<ShadowAlgorithmSegment> visitShadowAlgorithms(final List<AlgorithmDefinitionContext> contexts) {
+        return contexts.stream().map(this::visit).map(ShadowAlgorithmSegment.class::cast).collect(Collectors.toList());
     }
     
     @Override
@@ -174,13 +174,13 @@ public final class ShadowDistSQLStatementVisitor extends ShadowDistSQLStatementB
         return new CountShadowRuleStatement(Objects.nonNull(ctx.databaseName()) ? (DatabaseSegment) visit(ctx.databaseName()) : null);
     }
     
-    private static Collection<ShadowRuleSegment> autoCreateAlgorithmName(final Collection<ShadowRuleSegment> shadowRuleSegments) {
-        Collection<ShadowRuleSegment> newShadowRuleSegments = new LinkedList<>();
-        shadowRuleSegments.forEach(each -> buildShadowRuleSegment(newShadowRuleSegments, each));
-        return newShadowRuleSegments;
+    private Collection<ShadowRuleSegment> autoCreateAlgorithmName(final Collection<ShadowRuleSegment> shadowRuleSegments) {
+        Collection<ShadowRuleSegment> result = new LinkedList<>();
+        shadowRuleSegments.forEach(each -> buildShadowRuleSegment(result, each));
+        return result;
     }
     
-    private static void buildShadowRuleSegment(final Collection<ShadowRuleSegment> collection, final ShadowRuleSegment shadowRuleSegment) {
+    private void buildShadowRuleSegment(final Collection<ShadowRuleSegment> collection, final ShadowRuleSegment shadowRuleSegment) {
         Map<String, Collection<ShadowAlgorithmSegment>> shadowTableRules = new LinkedHashMap<>();
         shadowRuleSegment.getShadowTableRules().forEach((key, value) -> {
             int index = 0;
@@ -193,13 +193,13 @@ public final class ShadowDistSQLStatementVisitor extends ShadowDistSQLStatementB
         collection.add(new ShadowRuleSegment(shadowRuleSegment.getRuleName(), shadowRuleSegment.getSource(), shadowRuleSegment.getShadow(), shadowTableRules));
     }
     
-    private static ShadowAlgorithmSegment buildShadowAlgorithmSegment(final String ruleName, final String tableName, final Integer index, final ShadowAlgorithmSegment shadowAlgorithmSegment) {
+    private ShadowAlgorithmSegment buildShadowAlgorithmSegment(final String ruleName, final String tableName, final int index, final ShadowAlgorithmSegment shadowAlgorithmSegment) {
         String algorithmName = buildAlgorithmName(ruleName, tableName, shadowAlgorithmSegment.getAlgorithmSegment().getName(), index);
         AlgorithmSegment algorithmSegment = new AlgorithmSegment(shadowAlgorithmSegment.getAlgorithmSegment().getName(), shadowAlgorithmSegment.getAlgorithmSegment().getProps());
         return new ShadowAlgorithmSegment(algorithmName, algorithmSegment);
     }
     
-    private static String buildAlgorithmName(final String ruleName, final String tableName, final String algorithmType, final Integer index) {
+    private String buildAlgorithmName(final String ruleName, final String tableName, final String algorithmType, final int index) {
         return String.format("%s_%s_%s_%d", ruleName, tableName, algorithmType, index).toLowerCase();
     }
 }

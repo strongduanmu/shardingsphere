@@ -17,19 +17,17 @@
 
 package org.apache.shardingsphere.data.pipeline.api.config;
 
-import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import org.apache.shardingsphere.data.pipeline.api.metadata.LogicTableName;
 
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Table name and schema name mapping.
  */
-@RequiredArgsConstructor
 @ToString
 public final class TableNameSchemaNameMapping {
     
@@ -38,30 +36,20 @@ public final class TableNameSchemaNameMapping {
     /**
      * Convert table name and schema name mapping from schemas.
      *
-     * @param schemaTablesMap schema name and table names map
-     * @return logic table name and schema name map
+     * @param tableSchemaMap table name and schema name map
      */
-    public static Map<LogicTableName, String> convert(final Map<String, List<String>> schemaTablesMap) {
-        Map<LogicTableName, String> result = new LinkedHashMap<>();
-        schemaTablesMap.forEach((schemaName, tableNames) -> {
-            for (String each : tableNames) {
-                result.put(new LogicTableName(each), schemaName);
-            }
-        });
-        return result;
+    public TableNameSchemaNameMapping(final Map<String, String> tableSchemaMap) {
+        mapping = null == tableSchemaMap ? Collections.emptyMap() : getLogicTableNameMap(tableSchemaMap);
     }
     
-    /**
-     * Convert table name and schema name mapping.
-     *
-     * @param schemaName schema name
-     * @param tables tables
-     * @return logic table name and schema name map
-     */
-    public static Map<LogicTableName, String> convert(final String schemaName, final Collection<String> tables) {
-        Map<LogicTableName, String> result = new LinkedHashMap<>();
-        for (String each : tables) {
-            result.put(new LogicTableName(each), schemaName);
+    private Map<LogicTableName, String> getLogicTableNameMap(final Map<String, String> tableSchemaMap) {
+        Map<LogicTableName, String> result = new HashMap<>(tableSchemaMap.size(), 1);
+        for (Entry<String, String> entry : tableSchemaMap.entrySet()) {
+            String tableName = entry.getKey();
+            String schemaName = entry.getValue();
+            if (null != schemaName) {
+                result.put(new LogicTableName(tableName), schemaName);
+            }
         }
         return result;
     }

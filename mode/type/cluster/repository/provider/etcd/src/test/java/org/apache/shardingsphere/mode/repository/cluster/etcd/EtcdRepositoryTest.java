@@ -35,13 +35,15 @@ import io.etcd.jetcd.watch.WatchResponse;
 import io.grpc.stub.StreamObserver;
 import lombok.SneakyThrows;
 import org.apache.shardingsphere.mode.repository.cluster.etcd.props.EtcdProperties;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.internal.configuration.plugins.Plugins;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.plugins.MemberAccessor;
+import org.mockito.quality.Strictness;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -63,8 +65,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class EtcdRepositoryTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class EtcdRepositoryTest {
     
     private final EtcdRepository repository = new EtcdRepository();
     
@@ -95,8 +98,8 @@ public final class EtcdRepositoryTest {
     @Mock
     private CompletableFuture putFuture;
     
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         setClient();
         setProperties();
     }
@@ -132,14 +135,14 @@ public final class EtcdRepositoryTest {
     }
     
     @Test
-    public void assertGetKey() {
+    void assertGetKey() {
         repository.getDirectly("key");
         verify(kv).get(ByteSequence.from("key", StandardCharsets.UTF_8));
         verify(getResponse).getKvs();
     }
     
     @Test
-    public void assertGetChildrenKeys() {
+    void assertGetChildrenKeys() {
         io.etcd.jetcd.api.KeyValue keyValue1 = io.etcd.jetcd.api.KeyValue.newBuilder()
                 .setKey(ByteString.copyFromUtf8("/key/key1/key1-1"))
                 .setValue(ByteString.copyFromUtf8("value1")).build();
@@ -158,7 +161,7 @@ public final class EtcdRepositoryTest {
     
     @Test
     @SuppressWarnings("unchecked")
-    public void assertPersistEphemeral() {
+    void assertPersistEphemeral() {
         repository.persistEphemeral("key1", "value1");
         verify(lease).grant(anyLong());
         verify(lease).keepAlive(anyLong(), any(StreamObserver.class));
@@ -166,7 +169,7 @@ public final class EtcdRepositoryTest {
     }
     
     @Test
-    public void assertWatchUpdate() {
+    void assertWatchUpdate() {
         doAnswer(invocationOnMock -> {
             Watch.Listener listener = (Watch.Listener) invocationOnMock.getArguments()[2];
             listener.onNext(buildWatchResponse(WatchEvent.EventType.PUT));
@@ -178,7 +181,7 @@ public final class EtcdRepositoryTest {
     }
     
     @Test
-    public void assertWatchDelete() {
+    void assertWatchDelete() {
         doAnswer(invocationOnMock -> {
             Watch.Listener listener = (Watch.Listener) invocationOnMock.getArguments()[2];
             listener.onNext(buildWatchResponse(WatchEvent.EventType.DELETE));
@@ -190,7 +193,7 @@ public final class EtcdRepositoryTest {
     }
     
     @Test
-    public void assertWatchIgnored() {
+    void assertWatchIgnored() {
         doAnswer(invocationOnMock -> {
             Watch.Listener listener = (Watch.Listener) invocationOnMock.getArguments()[2];
             listener.onNext(buildWatchResponse(WatchEvent.EventType.UNRECOGNIZED));
@@ -202,25 +205,25 @@ public final class EtcdRepositoryTest {
     }
     
     @Test
-    public void assertDelete() {
+    void assertDelete() {
         repository.delete("key");
         verify(kv).delete(any(ByteSequence.class), any(DeleteOption.class));
     }
     
     @Test
-    public void assertPersist() {
+    void assertPersist() {
         repository.persist("key1", "value1");
         verify(kv).put(any(ByteSequence.class), any(ByteSequence.class));
     }
     
     @Test
-    public void assertClose() {
+    void assertClose() {
         repository.close();
         verify(client).close();
     }
     
     @Test
-    public void assertGetKeyWhenThrowInterruptedException() throws ExecutionException, InterruptedException {
+    void assertGetKeyWhenThrowInterruptedException() throws ExecutionException, InterruptedException {
         doThrow(InterruptedException.class).when(getFuture).get();
         try {
             repository.getDirectly("key");
@@ -232,7 +235,7 @@ public final class EtcdRepositoryTest {
     }
     
     @Test
-    public void assertGetKeyWhenThrowExecutionException() throws ExecutionException, InterruptedException {
+    void assertGetKeyWhenThrowExecutionException() throws ExecutionException, InterruptedException {
         doThrow(ExecutionException.class).when(getFuture).get();
         try {
             repository.getDirectly("key");
@@ -244,7 +247,7 @@ public final class EtcdRepositoryTest {
     }
     
     @Test
-    public void assertGetChildrenKeysWhenThrowInterruptedException() throws ExecutionException, InterruptedException {
+    void assertGetChildrenKeysWhenThrowInterruptedException() throws ExecutionException, InterruptedException {
         doThrow(InterruptedException.class).when(getFuture).get();
         try {
             repository.getChildrenKeys("/key/key1");
@@ -256,7 +259,7 @@ public final class EtcdRepositoryTest {
     }
     
     @Test
-    public void assertGetChildrenKeysWhenThrowExecutionException() throws ExecutionException, InterruptedException {
+    void assertGetChildrenKeysWhenThrowExecutionException() throws ExecutionException, InterruptedException {
         doThrow(ExecutionException.class).when(getFuture).get();
         try {
             repository.getChildrenKeys("/key/key1");

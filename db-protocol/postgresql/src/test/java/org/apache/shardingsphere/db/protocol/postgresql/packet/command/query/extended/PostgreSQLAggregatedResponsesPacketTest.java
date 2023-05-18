@@ -22,7 +22,7 @@ import org.apache.shardingsphere.db.protocol.postgresql.packet.PostgreSQLPacket;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.identifier.PostgreSQLIdentifierPacket;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.identifier.PostgreSQLMessagePacketType;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
@@ -30,10 +30,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public final class PostgreSQLAggregatedResponsesPacketTest {
+class PostgreSQLAggregatedResponsesPacketTest {
     
     @Test
-    public void assertWrite() {
+    void assertWrite() {
         PostgreSQLIdentifierPacket identifierPacket = mock(PostgreSQLIdentifierPacket.class);
         when(identifierPacket.getIdentifier()).thenReturn(PostgreSQLMessagePacketType.READY_FOR_QUERY);
         PostgreSQLPacket nonIdentifierPacket = mock(PostgreSQLPacket.class);

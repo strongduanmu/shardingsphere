@@ -19,9 +19,10 @@ package org.apache.shardingsphere.db.protocol.mysql.packet.handshake;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
+import org.apache.shardingsphere.db.protocol.constant.DatabaseProtocolServerInfo;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLAuthenticationMethod;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLCapabilityFlag;
-import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLServerInfo;
+import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLConstants;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLStatusFlag;
 import org.apache.shardingsphere.db.protocol.mysql.packet.MySQLPacket;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
@@ -34,7 +35,7 @@ import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
 @Getter
 public final class MySQLHandshakePacket implements MySQLPacket {
     
-    private final int protocolVersion = MySQLServerInfo.PROTOCOL_VERSION;
+    private final int protocolVersion = MySQLConstants.PROTOCOL_VERSION;
     
     private final String serverVersion;
     
@@ -46,25 +47,24 @@ public final class MySQLHandshakePacket implements MySQLPacket {
     
     private final MySQLStatusFlag statusFlag;
     
-    private final MySQLAuthPluginData authPluginData;
+    private final MySQLAuthenticationPluginData authPluginData;
     
     private int capabilityFlagsUpper;
     
     private String authPluginName;
     
-    public MySQLHandshakePacket(final int connectionId, final MySQLAuthPluginData authPluginData) {
-        serverVersion = MySQLServerInfo.getDefaultServerVersion();
+    public MySQLHandshakePacket(final int connectionId, final boolean sslEnabled, final MySQLAuthenticationPluginData authPluginData) {
+        serverVersion = DatabaseProtocolServerInfo.getDefaultProtocolVersion("MySQL");
         this.connectionId = connectionId;
-        capabilityFlagsLower = MySQLCapabilityFlag.calculateHandshakeCapabilityFlagsLower();
-        characterSet = MySQLServerInfo.DEFAULT_CHARSET.getId();
+        capabilityFlagsLower = MySQLCapabilityFlag.calculateHandshakeCapabilityFlagsLower() | (sslEnabled ? MySQLCapabilityFlag.CLIENT_SSL.getValue() : 0);
+        characterSet = MySQLConstants.DEFAULT_CHARSET.getId();
         statusFlag = MySQLStatusFlag.SERVER_STATUS_AUTOCOMMIT;
         capabilityFlagsUpper = MySQLCapabilityFlag.calculateHandshakeCapabilityFlagsUpper();
         this.authPluginData = authPluginData;
-        authPluginName = MySQLAuthenticationMethod.SECURE_PASSWORD_AUTHENTICATION.getMethodName();
+        authPluginName = MySQLAuthenticationMethod.NATIVE.getMethodName();
     }
     
     public MySQLHandshakePacket(final MySQLPacketPayload payload) {
-        Preconditions.checkArgument(0 == payload.readInt1(), "Sequence ID of MySQL handshake packet must be `0`");
         Preconditions.checkArgument(protocolVersion == payload.readInt1());
         serverVersion = payload.readStringNul();
         connectionId = payload.readInt4();
@@ -75,7 +75,7 @@ public final class MySQLHandshakePacket implements MySQLPacket {
         capabilityFlagsUpper = payload.readInt2();
         payload.readInt1();
         payload.skipReserved(10);
-        authPluginData = new MySQLAuthPluginData(authPluginDataPart1, readAuthPluginDataPart2(payload));
+        authPluginData = new MySQLAuthenticationPluginData(authPluginDataPart1, readAuthPluginDataPart2(payload));
         authPluginName = readAuthPluginName(payload);
     }
     
@@ -87,6 +87,7 @@ public final class MySQLHandshakePacket implements MySQLPacket {
      * From test, the 13th byte is nul byte and should be excluded from authPluginDataPart2.
      *
      * @param payload MySQL packet payload
+     * @return auth plugin data part2
      */
     private byte[] readAuthPluginDataPart2(final MySQLPacketPayload payload) {
         return isClientSecureConnection() ? payload.readStringNulByBytes() : new byte[0];
@@ -99,10 +100,10 @@ public final class MySQLHandshakePacket implements MySQLPacket {
     /**
      * Set authentication plugin name.
      *
-     * @param mysqlAuthenticationMethod MySQL authentication method
+     * @param authenticationMethod MySQL authentication method
      */
-    public void setAuthPluginName(final MySQLAuthenticationMethod mysqlAuthenticationMethod) {
-        authPluginName = mysqlAuthenticationMethod.getMethodName();
+    public void setAuthPluginName(final MySQLAuthenticationMethod authenticationMethod) {
+        authPluginName = authenticationMethod.getMethodName();
         capabilityFlagsUpper |= MySQLCapabilityFlag.CLIENT_PLUGIN_AUTH.getValue() >> 16;
     }
     
@@ -111,7 +112,7 @@ public final class MySQLHandshakePacket implements MySQLPacket {
         payload.writeInt1(protocolVersion);
         payload.writeStringNul(serverVersion);
         payload.writeInt4(connectionId);
-        payload.writeStringNul(new String(authPluginData.getAuthPluginDataPart1()));
+        payload.writeStringNul(new String(authPluginData.getAuthenticationPluginDataPart1()));
         payload.writeInt2(capabilityFlagsLower);
         payload.writeInt1(characterSet);
         payload.writeInt2(statusFlag.getValue());
@@ -124,7 +125,7 @@ public final class MySQLHandshakePacket implements MySQLPacket {
     
     private void writeAuthPluginDataPart2(final MySQLPacketPayload payload) {
         if (isClientSecureConnection()) {
-            payload.writeStringNul(new String(authPluginData.getAuthPluginDataPart2()));
+            payload.writeStringNul(new String(authPluginData.getAuthenticationPluginDataPart2()));
         }
     }
     
@@ -140,10 +141,5 @@ public final class MySQLHandshakePacket implements MySQLPacket {
     
     private boolean isClientPluginAuth() {
         return 0 != (capabilityFlagsUpper & MySQLCapabilityFlag.CLIENT_PLUGIN_AUTH.getValue() >> 16);
-    }
-    
-    @Override
-    public int getSequenceId() {
-        return 0;
     }
 }

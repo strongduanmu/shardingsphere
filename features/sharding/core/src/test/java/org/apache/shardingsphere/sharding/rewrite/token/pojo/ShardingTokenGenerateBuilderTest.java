@@ -27,10 +27,10 @@ import org.apache.shardingsphere.sharding.rewrite.token.generator.impl.ShardingR
 import org.apache.shardingsphere.sharding.rewrite.token.generator.impl.TableTokenGenerator;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sharding.rule.aware.ShardingRuleAware;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.internal.configuration.plugins.Plugins;
 
-import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -41,20 +41,20 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class ShardingTokenGenerateBuilderTest {
+class ShardingTokenGenerateBuilderTest {
     
     private ShardingRule shardingRule;
     
     private RouteContext routeContext;
     
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         shardingRule = mock(ShardingRule.class);
         routeContext = mock(RouteContext.class);
     }
     
     @Test
-    public void assertGetSQLTokenGenerators() throws Exception {
+    void assertGetSQLTokenGenerators() throws Exception {
         when(routeContext.containsTableSharding()).thenReturn(true);
         SelectStatementContext sqlStatementContext = mock(SelectStatementContext.class, RETURNS_DEEP_STUBS);
         when(sqlStatementContext.getProjectionsContext().getAggregationProjections().isEmpty()).thenReturn(false);
@@ -86,8 +86,6 @@ public final class ShardingTokenGenerateBuilderTest {
     }
     
     private void assertField(final SQLTokenGenerator sqlTokenGenerator, final Object filedInstance, final String fieldName) throws Exception {
-        Field field = sqlTokenGenerator.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        assertThat(field.get(sqlTokenGenerator), is(filedInstance));
+        assertThat(Plugins.getMemberAccessor().get(sqlTokenGenerator.getClass().getDeclaredField(fieldName), sqlTokenGenerator), is(filedInstance));
     }
 }

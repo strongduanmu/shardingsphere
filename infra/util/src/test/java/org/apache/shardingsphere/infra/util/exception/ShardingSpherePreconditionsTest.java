@@ -17,29 +17,31 @@
 
 package org.apache.shardingsphere.infra.util.exception;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
 
-public final class ShardingSpherePreconditionsTest {
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+class ShardingSpherePreconditionsTest {
     
-    @Test(expected = SQLException.class)
-    public void assertCheckStateToThrowsException() throws SQLException {
-        ShardingSpherePreconditions.checkState(false, SQLException::new);
+    @Test
+    void assertCheckStateToThrowsException() {
+        assertThrows(SQLException.class, () -> ShardingSpherePreconditions.checkState(false, SQLException::new));
     }
     
     @Test
-    public void assertCheckStateToNotThrowException() throws SQLException {
+    void assertCheckStateToNotThrowException() throws SQLException {
         ShardingSpherePreconditions.checkState(true, SQLException::new);
     }
     
-    @Test(expected = SQLException.class)
-    public void assertCheckNotNullToThrowsException() throws SQLException {
-        ShardingSpherePreconditions.checkNotNull(null, SQLException::new);
+    @Test
+    void assertCheckNotNullToThrowsException() {
+        assertThrows(SQLException.class, () -> ShardingSpherePreconditions.checkNotNull(null, SQLException::new));
     }
     
     @Test
-    public void assertCheckNotNullToNotThrowException() throws SQLException {
+    void assertCheckNotNullToNotThrowException() throws SQLException {
         ShardingSpherePreconditions.checkNotNull(new Object(), SQLException::new);
     }
 }

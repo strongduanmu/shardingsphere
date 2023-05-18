@@ -18,17 +18,18 @@
 package org.apache.shardingsphere.infra.database.metadata.dialect;
 
 import org.apache.shardingsphere.infra.database.metadata.UnrecognizedDatabaseURLException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNull;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class PostgreSQLDataSourceMetaDataTest {
+class PostgreSQLDataSourceMetaDataTest {
     
     @Test
-    public void assertNewConstructorWithSimpleJdbcUrl() {
+    void assertNewConstructorWithSimpleJdbcUrl() {
         PostgreSQLDataSourceMetaData actual = new PostgreSQLDataSourceMetaData("jdbc:postgresql://127.0.0.1/foo_ds");
         assertThat(actual.getHostname(), is("127.0.0.1"));
         assertThat(actual.getPort(), is(5432));
@@ -38,7 +39,7 @@ public final class PostgreSQLDataSourceMetaDataTest {
     }
     
     @Test
-    public void assertNewConstructorWithComplexJdbcUrl() {
+    void assertNewConstructorWithComplexJdbcUrl() {
         PostgreSQLDataSourceMetaData actual = new PostgreSQLDataSourceMetaData("jdbc:postgresql://127.0.0.1:9999,127.0.0.2:9999,127.0.0.3:9999/foo_ds?targetServerType=master");
         assertThat(actual.getHostname(), is("127.0.0.1"));
         assertThat(actual.getPort(), is(9999));
@@ -48,8 +49,8 @@ public final class PostgreSQLDataSourceMetaDataTest {
         assertThat(actual.getQueryProperties().getProperty("targetServerType"), is("master"));
     }
     
-    @Test(expected = UnrecognizedDatabaseURLException.class)
-    public void assertNewConstructorFailure() {
-        new PostgreSQLDataSourceMetaData("jdbc:postgresql:xxxxxxxx");
+    @Test
+    void assertNewConstructorFailure() {
+        assertThrows(UnrecognizedDatabaseURLException.class, () -> new PostgreSQLDataSourceMetaData("jdbc:postgresql:xxxxxxxx"));
     }
 }

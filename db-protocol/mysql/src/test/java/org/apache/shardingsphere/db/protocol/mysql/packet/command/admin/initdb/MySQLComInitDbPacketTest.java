@@ -19,32 +19,31 @@ package org.apache.shardingsphere.db.protocol.mysql.packet.command.admin.initdb;
 
 import org.apache.shardingsphere.db.protocol.mysql.packet.command.MySQLCommandPacketType;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLComInitDbPacketTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLComInitDbPacketTest {
     
     @Mock
     private MySQLPacketPayload payload;
     
     @Test
-    public void assertNew() {
+    void assertNew() {
         when(payload.readStringEOF()).thenReturn("logic_db");
         MySQLComInitDbPacket actual = new MySQLComInitDbPacket(payload);
-        assertThat(actual.getSequenceId(), is(0));
         assertThat(actual.getSchema(), is("logic_db"));
     }
     
     @Test
-    public void assertWrite() {
+    void assertWrite() {
         when(payload.readStringEOF()).thenReturn("logic_db");
         MySQLComInitDbPacket actual = new MySQLComInitDbPacket(payload);
         actual.write(payload);

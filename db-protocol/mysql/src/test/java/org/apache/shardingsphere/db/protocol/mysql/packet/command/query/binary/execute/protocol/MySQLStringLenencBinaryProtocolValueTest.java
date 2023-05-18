@@ -18,36 +18,36 @@
 package org.apache.shardingsphere.db.protocol.mysql.packet.command.query.binary.execute.protocol;
 
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLStringLenencBinaryProtocolValueTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLStringLenencBinaryProtocolValueTest {
     
     @Mock
     private MySQLPacketPayload payload;
     
     @Test
-    public void assertRead() {
+    void assertRead() {
         when(payload.readStringLenenc()).thenReturn("value");
-        assertThat(new MySQLStringLenencBinaryProtocolValue().read(payload), is("value"));
+        assertThat(new MySQLStringLenencBinaryProtocolValue().read(payload, false), is("value"));
     }
     
     @Test
-    public void assertWriteString() {
+    void assertWriteString() {
         new MySQLStringLenencBinaryProtocolValue().write(payload, "value");
         verify(payload).writeStringLenenc("value");
     }
     
     @Test
-    public void assertWriteByteArray() {
+    void assertWriteByteArray() {
         new MySQLStringLenencBinaryProtocolValue().write(payload, new byte[]{});
         verify(payload).writeBytesLenenc(new byte[]{});
     }

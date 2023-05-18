@@ -22,6 +22,7 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.shardingsphere.data.pipeline.core.exception.PipelineInternalException;
 import org.apache.shardingsphere.data.pipeline.mysql.ingest.binlog.BinlogContext;
 import org.apache.shardingsphere.data.pipeline.mysql.ingest.binlog.event.AbstractBinlogEvent;
 import org.apache.shardingsphere.data.pipeline.mysql.ingest.binlog.event.AbstractRowsEvent;
@@ -29,7 +30,7 @@ import org.apache.shardingsphere.data.pipeline.mysql.ingest.binlog.event.DeleteR
 import org.apache.shardingsphere.data.pipeline.mysql.ingest.binlog.event.PlaceholderEvent;
 import org.apache.shardingsphere.data.pipeline.mysql.ingest.binlog.event.UpdateRowsEvent;
 import org.apache.shardingsphere.data.pipeline.mysql.ingest.binlog.event.WriteRowsEvent;
-import org.apache.shardingsphere.db.protocol.CommonConstants;
+import org.apache.shardingsphere.db.protocol.constant.CommonConstants;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLBinlogEventType;
 import org.apache.shardingsphere.db.protocol.mysql.packet.binlog.MySQLBinlogEventHeader;
 import org.apache.shardingsphere.db.protocol.mysql.packet.binlog.management.MySQLBinlogFormatDescriptionEventPacket;
@@ -56,11 +57,10 @@ public final class MySQLBinlogEventPacketDecoder extends ByteToMessageDecoder {
     
     @Override
     protected void decode(final ChannelHandlerContext ctx, final ByteBuf in, final List<Object> out) {
-        // readable bytes must greater + seqId(1b) + statusCode(1b) + header-length(19b) +
-        while (in.readableBytes() >= 2 + MySQLBinlogEventHeader.MYSQL_BINLOG_EVENT_HEADER_LENGTH) {
+        // readable bytes must greater + statusCode(1b) + header-length(19b) +
+        while (in.readableBytes() >= 1 + MySQLBinlogEventHeader.MYSQL_BINLOG_EVENT_HEADER_LENGTH) {
             in.markReaderIndex();
             MySQLPacketPayload payload = new MySQLPacketPayload(in, ctx.channel().attr(CommonConstants.CHARSET_ATTRIBUTE_KEY).get());
-            skipSequenceId(payload);
             checkError(payload);
             MySQLBinlogEventHeader binlogEventHeader = new MySQLBinlogEventHeader(payload, binlogContext.getChecksumLength());
             // make sure event has complete body
@@ -75,7 +75,8 @@ public final class MySQLBinlogEventPacketDecoder extends ByteToMessageDecoder {
     }
     
     private AbstractBinlogEvent decodeEvent(final MySQLPacketPayload payload, final MySQLBinlogEventHeader binlogEventHeader) {
-        switch (MySQLBinlogEventType.valueOf(binlogEventHeader.getEventType())) {
+        MySQLBinlogEventType eventType = MySQLBinlogEventType.valueOf(binlogEventHeader.getEventType()).orElse(MySQLBinlogEventType.UNKNOWN_EVENT);
+        switch (eventType) {
             case ROTATE_EVENT:
                 decodeRotateEvent(binlogEventHeader, payload);
                 return null;
@@ -94,27 +95,23 @@ public final class MySQLBinlogEventPacketDecoder extends ByteToMessageDecoder {
             case TABLE_MAP_EVENT:
                 decodeTableMapEvent(binlogEventHeader, payload);
                 return null;
-            case WRITE_ROWS_EVENTv1:
-            case WRITE_ROWS_EVENTv2:
+            case WRITE_ROWS_EVENT_V1:
+            case WRITE_ROWS_EVENT_V2:
                 return decodeWriteRowsEventV2(binlogEventHeader, payload);
-            case UPDATE_ROWS_EVENTv1:
-            case UPDATE_ROWS_EVENTv2:
+            case UPDATE_ROWS_EVENT_V1:
+            case UPDATE_ROWS_EVENT_V2:
                 return decodeUpdateRowsEventV2(binlogEventHeader, payload);
-            case DELETE_ROWS_EVENTv1:
-            case DELETE_ROWS_EVENTv2:
+            case DELETE_ROWS_EVENT_V1:
+            case DELETE_ROWS_EVENT_V2:
                 return decodeDeleteRowsEventV2(binlogEventHeader, payload);
             default:
                 PlaceholderEvent result = createPlaceholderEvent(binlogEventHeader);
-                int remainDataLength = binlogEventHeader.getEventSize() + 2 - binlogEventHeader.getChecksumLength() - payload.getByteBuf().readerIndex();
+                int remainDataLength = binlogEventHeader.getEventSize() + 1 - binlogEventHeader.getChecksumLength() - payload.getByteBuf().readerIndex();
                 if (remainDataLength > 0) {
                     payload.skipReserved(remainDataLength);
                 }
                 return result;
         }
-    }
-    
-    private void skipSequenceId(final MySQLPacketPayload payload) {
-        payload.readInt1();
     }
     
     private void checkError(final MySQLPacketPayload payload) {
@@ -123,12 +120,10 @@ public final class MySQLBinlogEventPacketDecoder extends ByteToMessageDecoder {
             int errorNo = payload.readInt2();
             payload.skipReserved(1);
             String sqlState = payload.readStringFix(5);
-            throw new RuntimeException(String.format("Decode binlog event failed, errorCode: %d, sqlState: %s, errorMessage: %s", errorNo, sqlState, payload.readStringEOF()));
+            throw new PipelineInternalException(String.format("Decode binlog event failed, errorCode: %d, sqlState: %s, errorMessage: %s", errorNo, sqlState, payload.readStringEOF()));
         }
-        if (0 != statusCode) {
-            if (log.isDebugEnabled()) {
-                log.debug("Illegal binlog status code {}, remaining packet \n{}", statusCode, readRemainPacket(payload));
-            }
+        if (0 != statusCode && log.isDebugEnabled()) {
+            log.debug("Illegal binlog status code {}, remaining packet \n{}", statusCode, readRemainPacket(payload));
         }
     }
     

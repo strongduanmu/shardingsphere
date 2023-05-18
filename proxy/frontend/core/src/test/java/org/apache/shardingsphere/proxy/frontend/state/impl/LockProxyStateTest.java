@@ -18,12 +18,14 @@
 package org.apache.shardingsphere.proxy.frontend.state.impl;
 
 import org.apache.shardingsphere.infra.util.exception.external.sql.type.generic.UnsupportedSQLOperationException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public final class LockProxyStateTest {
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+class LockProxyStateTest {
     
-    @Test(expected = UnsupportedSQLOperationException.class)
-    public void assertExecute() {
-        new LockProxyState().execute(null, null, null, null);
+    @Test
+    void assertExecute() {
+        assertThrows(UnsupportedSQLOperationException.class, () -> new LockProxyState().execute(null, null, null, null));
     }
 }

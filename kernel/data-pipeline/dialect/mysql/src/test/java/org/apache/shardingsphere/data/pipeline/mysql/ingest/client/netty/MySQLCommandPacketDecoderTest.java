@@ -20,16 +20,16 @@ package org.apache.shardingsphere.data.pipeline.mysql.ingest.client.netty;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.shardingsphere.data.pipeline.mysql.ingest.client.InternalResultSet;
-import org.apache.shardingsphere.db.protocol.CommonConstants;
+import org.apache.shardingsphere.db.protocol.constant.CommonConstants;
 import org.apache.shardingsphere.db.protocol.mysql.packet.generic.MySQLEofPacket;
 import org.apache.shardingsphere.db.protocol.mysql.packet.generic.MySQLErrPacket;
 import org.apache.shardingsphere.db.protocol.mysql.packet.generic.MySQLOKPacket;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
@@ -40,8 +40,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLCommandPacketDecoderTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLCommandPacketDecoderTest {
     
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private ChannelHandlerContext channelHandlerContext;
@@ -49,13 +49,13 @@ public final class MySQLCommandPacketDecoderTest {
     @Mock
     private ByteBuf byteBuf;
     
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         when(channelHandlerContext.channel().attr(CommonConstants.CHARSET_ATTRIBUTE_KEY).get()).thenReturn(StandardCharsets.UTF_8);
     }
     
     @Test
-    public void assertDecodeOkPacket() {
+    void assertDecodeOkPacket() {
         MySQLCommandPacketDecoder commandPacketDecoder = new MySQLCommandPacketDecoder();
         List<Object> actual = new LinkedList<>();
         commandPacketDecoder.decode(channelHandlerContext, mockOkPacket(), actual);
@@ -64,12 +64,12 @@ public final class MySQLCommandPacketDecoderTest {
     
     private ByteBuf mockOkPacket() {
         when(byteBuf.readUnsignedByte()).thenReturn((short) 0, (short) MySQLOKPacket.HEADER);
-        when(byteBuf.getByte(1)).thenReturn((byte) MySQLOKPacket.HEADER);
+        when(byteBuf.getByte(0)).thenReturn((byte) MySQLOKPacket.HEADER);
         return byteBuf;
     }
     
     @Test
-    public void assertDecodeErrPacket() {
+    void assertDecodeErrPacket() {
         MySQLCommandPacketDecoder commandPacketDecoder = new MySQLCommandPacketDecoder();
         List<Object> actual = new LinkedList<>();
         commandPacketDecoder.decode(channelHandlerContext, mockErrPacket(), actual);
@@ -77,13 +77,13 @@ public final class MySQLCommandPacketDecoderTest {
     }
     
     private ByteBuf mockErrPacket() {
-        when(byteBuf.getByte(1)).thenReturn((byte) MySQLErrPacket.HEADER);
-        when(byteBuf.readUnsignedByte()).thenReturn((short) 0, (short) MySQLErrPacket.HEADER);
+        when(byteBuf.getByte(0)).thenReturn((byte) MySQLErrPacket.HEADER);
+        when(byteBuf.readUnsignedByte()).thenReturn((short) MySQLErrPacket.HEADER);
         return byteBuf;
     }
     
     @Test
-    public void assertDecodeQueryCommPacket() {
+    void assertDecodeQueryCommPacket() {
         MySQLCommandPacketDecoder commandPacketDecoder = new MySQLCommandPacketDecoder();
         List<Object> actual = new LinkedList<>();
         commandPacketDecoder.decode(channelHandlerContext, mockEmptyResultSetPacket(), actual);
@@ -95,13 +95,13 @@ public final class MySQLCommandPacketDecoderTest {
     }
     
     private ByteBuf mockEmptyResultSetPacket() {
-        when(byteBuf.getByte(1)).thenReturn((byte) 3);
+        when(byteBuf.getByte(0)).thenReturn((byte) 3);
         return byteBuf;
     }
     
     private ByteBuf mockFieldDefinition41Packet() {
-        when(byteBuf.getByte(1)).thenReturn((byte) 3);
-        when(byteBuf.readUnsignedByte()).thenReturn((short) 0, (short) 3, (short) 0x0c);
+        when(byteBuf.getByte(0)).thenReturn((byte) 3);
+        when(byteBuf.readUnsignedByte()).thenReturn((short) 3, (short) 0x0c);
         when(byteBuf.readBytes(new byte[3])).then(invocationOnMock -> {
             byte[] input = invocationOnMock.getArgument(0);
             System.arraycopy("def".getBytes(), 0, input, 0, input.length);
@@ -111,8 +111,8 @@ public final class MySQLCommandPacketDecoderTest {
     }
     
     private ByteBuf mockEofPacket() {
-        when(byteBuf.getByte(1)).thenReturn((byte) MySQLEofPacket.HEADER);
-        when(byteBuf.readUnsignedByte()).thenReturn((short) 0, (short) MySQLEofPacket.HEADER);
+        when(byteBuf.getByte(0)).thenReturn((byte) MySQLEofPacket.HEADER);
+        when(byteBuf.readUnsignedByte()).thenReturn((short) MySQLEofPacket.HEADER);
         return byteBuf;
     }
     

@@ -20,7 +20,7 @@ package org.apache.shardingsphere.sharding.rule;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.exception.metadata.ActualTableNotFoundException;
 import org.apache.shardingsphere.sharding.exception.metadata.BindingTableNotFoundException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,44 +33,45 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public final class BindingTableRuleTest {
+class BindingTableRuleTest {
     
     @Test
-    public void assertHasLogicTable() {
+    void assertHasLogicTable() {
         assertTrue(createBindingTableRule().hasLogicTable("Logic_Table"));
     }
     
     @Test
-    public void assertNotHasLogicTable() {
+    void assertNotHasLogicTable() {
         assertFalse(createBindingTableRule().hasLogicTable("New_Table"));
     }
     
     @Test
-    public void assertGetBindingActualTablesSuccess() {
+    void assertGetBindingActualTablesSuccess() {
         assertThat(createBindingTableRule().getBindingActualTable("ds1", "Sub_Logic_Table", "LOGIC_TABLE", "table_1"), is("SUB_TABLE_1"));
     }
     
-    @Test(expected = ActualTableNotFoundException.class)
-    public void assertGetBindingActualTablesFailureWhenNotFound() {
-        createBindingTableRule().getBindingActualTable("no_ds", "Sub_Logic_Table", "LOGIC_TABLE", "table_1");
-    }
-    
-    @Test(expected = BindingTableNotFoundException.class)
-    public void assertGetBindingActualTablesFailureWhenLogicTableNotFound() {
-        createBindingTableRule().getBindingActualTable("ds0", "No_Logic_Table", "LOGIC_TABLE", "table_1");
+    @Test
+    void assertGetBindingActualTablesFailureWhenNotFound() {
+        assertThrows(ActualTableNotFoundException.class, () -> createBindingTableRule().getBindingActualTable("no_ds", "Sub_Logic_Table", "LOGIC_TABLE", "table_1"));
     }
     
     @Test
-    public void assertGetAllLogicTables() {
+    void assertGetBindingActualTablesFailureWhenLogicTableNotFound() {
+        assertThrows(BindingTableNotFoundException.class, () -> createBindingTableRule().getBindingActualTable("ds0", "No_Logic_Table", "LOGIC_TABLE", "table_1"));
+    }
+    
+    @Test
+    void assertGetAllLogicTables() {
         assertThat(createBindingTableRule().getAllLogicTables(), is(new LinkedHashSet<>(Arrays.asList("logic_table", "sub_logic_table"))));
     }
     
     @Test
-    public void assertGetTableRules() {
+    void assertGetTableRules() {
         List<TableRule> tableRules = new ArrayList<>(createBindingTableRule().getTableRules().values());
         assertThat(tableRules.size(), is(2));
         assertThat(tableRules.get(0).getLogicTable(), is(createTableRule().getLogicTable()));

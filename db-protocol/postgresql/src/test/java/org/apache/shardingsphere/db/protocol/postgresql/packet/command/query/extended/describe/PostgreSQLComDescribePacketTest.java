@@ -19,23 +19,23 @@ package org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.ex
 
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQLCommandPacketType;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class PostgreSQLComDescribePacketTest {
+@ExtendWith(MockitoExtension.class)
+class PostgreSQLComDescribePacketTest {
     
     @Mock
     private PostgreSQLPacketPayload payload;
     
     @Test
-    public void assertNewInstance() {
+    void assertNewInstance() {
         when(payload.readInt1()).thenReturn((int) 'P');
         when(payload.readStringNul()).thenReturn("P_1");
         PostgreSQLComDescribePacket actual = new PostgreSQLComDescribePacket(payload);
@@ -44,7 +44,7 @@ public final class PostgreSQLComDescribePacketTest {
     }
     
     @Test
-    public void assertIdentifier() {
+    void assertIdentifier() {
         PostgreSQLComDescribePacket actual = new PostgreSQLComDescribePacket(payload);
         assertThat(actual.getIdentifier(), is(PostgreSQLCommandPacketType.DESCRIBE_COMMAND));
     }

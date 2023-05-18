@@ -19,34 +19,33 @@ package org.apache.shardingsphere.db.protocol.mysql.packet.command.query.text.qu
 
 import org.apache.shardingsphere.db.protocol.mysql.packet.command.MySQLCommandPacketType;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLComQueryPacketTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLComQueryPacketTest {
     
     @Mock
     private MySQLPacketPayload payload;
     
     @Test
-    public void assertNew() {
+    void assertNew() {
         when(payload.readStringEOF()).thenReturn("SELECT id FROM tbl");
-        MySQLComQueryPacket actual = new MySQLComQueryPacket(payload);
-        assertThat(actual.getSequenceId(), is(0));
+        MySQLComQueryPacket actual = new MySQLComQueryPacket(payload, false);
         assertThat(actual.getSql(), is("SELECT id FROM tbl"));
     }
     
     @Test
-    public void assertWrite() {
+    void assertWrite() {
         when(payload.readStringEOF()).thenReturn("SELECT id FROM tbl");
-        MySQLComQueryPacket actual = new MySQLComQueryPacket(payload);
+        MySQLComQueryPacket actual = new MySQLComQueryPacket(payload, false);
         actual.write(payload);
         verify(payload).writeInt1(MySQLCommandPacketType.COM_QUERY.getValue());
         verify(payload).writeStringEOF("SELECT id FROM tbl");

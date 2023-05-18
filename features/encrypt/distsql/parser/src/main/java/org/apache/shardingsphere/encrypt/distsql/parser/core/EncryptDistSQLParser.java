@@ -21,11 +21,11 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.TokenStream;
 import org.apache.shardingsphere.distsql.parser.autogen.EncryptDistSQLStatementParser;
 import org.apache.shardingsphere.sql.parser.api.parser.SQLParser;
-import org.apache.shardingsphere.sql.parser.api.visitor.ASTNode;
+import org.apache.shardingsphere.sql.parser.api.ASTNode;
 import org.apache.shardingsphere.sql.parser.core.ParseASTNode;
 
 /**
- * SQL parser for encrypt dist SQL.
+ * SQL parser for encrypt DistSQL.
  */
 public final class EncryptDistSQLParser extends EncryptDistSQLStatementParser implements SQLParser {
     

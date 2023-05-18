@@ -17,32 +17,40 @@
 
 package org.apache.shardingsphere.transaction.core;
 
-import org.apache.shardingsphere.test.mock.MockedDataSource;
-import org.junit.Test;
+import org.apache.shardingsphere.test.fixture.jdbc.MockedDataSource;
+import org.junit.jupiter.api.Test;
+
+import java.util.regex.Pattern;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class ResourceDataSourceTest {
+class ResourceDataSourceTest {
     
     private static final String DATABASE_NAME = "sharding_db";
     
     private static final String DATA_SOURCE_NAME = "fooDataSource";
     
     @Test
-    public void assertNewInstance() {
+    void assertNewInstance() {
         String originalName = DATABASE_NAME + "." + DATA_SOURCE_NAME;
         ResourceDataSource actual = new ResourceDataSource(originalName, new MockedDataSource());
         assertThat(actual.getOriginalName(), is(originalName));
         assertThat(actual.getDataSource(), instanceOf(MockedDataSource.class));
-        assertTrue(actual.getUniqueResourceName().startsWith("resource"));
+        assertTrue(isStartWithNumber(actual.getUniqueResourceName()));
         assertTrue(actual.getUniqueResourceName().endsWith(DATA_SOURCE_NAME));
     }
     
-    @Test(expected = IllegalStateException.class)
-    public void assertDataSourceNameOnlyFailure() {
-        new ResourceDataSource(DATA_SOURCE_NAME, new MockedDataSource());
+    private boolean isStartWithNumber(final String resourceId) {
+        Pattern pattern = Pattern.compile("[0-9]+-.*");
+        return pattern.matcher(resourceId).matches();
+    }
+    
+    @Test
+    void assertDataSourceNameOnlyFailure() {
+        assertThrows(IllegalStateException.class, () -> new ResourceDataSource(DATA_SOURCE_NAME, new MockedDataSource()));
     }
 }

@@ -18,44 +18,46 @@
 package org.apache.shardingsphere.infra.datasource.props;
 
 import com.zaxxer.hikari.HikariDataSource;
-import org.apache.shardingsphere.infra.database.type.dialect.H2DatabaseType;
-import org.apache.shardingsphere.infra.database.type.dialect.MySQLDatabaseType;
-import org.apache.shardingsphere.infra.distsql.exception.resource.InvalidResourcesException;
-import org.junit.Test;
+import org.apache.shardingsphere.infra.database.metadata.DataSourceMetaData;
+import org.apache.shardingsphere.infra.database.type.DatabaseTypeEngine;
+import org.apache.shardingsphere.test.fixture.jdbc.MockedDriver;
+import org.apache.shardingsphere.test.mock.AutoMockExtension;
+import org.apache.shardingsphere.test.mock.StaticMockSettings;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
-public final class DataSourcePropertiesValidatorTest {
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(AutoMockExtension.class)
+@StaticMockSettings(DatabaseTypeEngine.class)
+class DataSourcePropertiesValidatorTest {
+    
+    @BeforeAll
+    static void setUp() throws ClassNotFoundException {
+        Class.forName(MockedDriver.class.getName());
+    }
     
     @Test
-    public void assertValidateSuccess() throws InvalidResourcesException {
-        new DataSourcePropertiesValidator().validate(Collections.singletonMap("name", new DataSourceProperties(HikariDataSource.class.getName(), createValidProperties())), new H2DatabaseType());
+    void assertValidateSuccess() {
+        when(DatabaseTypeEngine.getDatabaseType("mock:jdbc").getDataSourceMetaData("mock:jdbc", null)).thenReturn(mock(DataSourceMetaData.class, RETURNS_DEEP_STUBS));
+        assertTrue(new DataSourcePropertiesValidator().validate(
+                Collections.singletonMap("name", new DataSourceProperties(HikariDataSource.class.getName(), Collections.singletonMap("jdbcUrl", "mock:jdbc")))).isEmpty());
     }
     
-    @Test(expected = InvalidResourcesException.class)
-    public void assertDatabaseTypeInValidateFail() throws InvalidResourcesException {
-        new DataSourcePropertiesValidator().validate(Collections.singletonMap("name", new DataSourceProperties(HikariDataSource.class.getName(), createValidProperties())), new MySQLDatabaseType());
-    }
-    
-    private Map<String, Object> createValidProperties() {
-        Map<String, Object> result = new HashMap<>();
-        result.put("driverClassName", "org.h2.Driver");
-        result.put("jdbcUrl", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false;MODE=MySQL");
-        result.put("username", "root");
-        result.put("password", "root");
-        return result;
-    }
-    
-    @Test(expected = InvalidResourcesException.class)
-    public void assertValidateFailed() throws InvalidResourcesException {
-        new DataSourcePropertiesValidator().validate(Collections.singletonMap("name", new DataSourceProperties(HikariDataSource.class.getName(), createInvalidProperties())), new H2DatabaseType());
-    }
-    
-    private Map<String, Object> createInvalidProperties() {
-        Map<String, Object> result = new HashMap<>();
-        result.put("jdbcUrl", "InvalidJdbcUrl");
-        return result;
+    @Test
+    void assertValidateFailed() {
+        when(DatabaseTypeEngine.getDatabaseType("mock:jdbc:invalid").getDataSourceMetaData("mock:jdbc:invalid", null)).thenReturn(mock(DataSourceMetaData.class, RETURNS_DEEP_STUBS));
+        Collection<String> actual = new DataSourcePropertiesValidator().validate(
+                Collections.singletonMap("name", new DataSourceProperties(HikariDataSource.class.getName(), Collections.singletonMap("jdbcUrl", "mock:jdbc:invalid"))));
+        assertThat(actual, is(Collections.singletonList("Invalid data source `name`, error message is: Invalid URL.")));
     }
 }

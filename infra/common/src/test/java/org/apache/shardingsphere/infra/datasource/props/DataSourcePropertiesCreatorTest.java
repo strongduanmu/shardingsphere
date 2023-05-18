@@ -21,21 +21,21 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.apache.shardingsphere.infra.datasource.config.ConnectionConfiguration;
 import org.apache.shardingsphere.infra.datasource.config.DataSourceConfiguration;
 import org.apache.shardingsphere.infra.datasource.config.PoolConfiguration;
-import org.apache.shardingsphere.test.mock.MockedDataSource;
-import org.junit.Test;
+import org.apache.shardingsphere.test.fixture.jdbc.MockedDataSource;
+import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class DataSourcePropertiesCreatorTest {
+class DataSourcePropertiesCreatorTest {
     
     @Test
-    public void assertCreateWithDataSourceConfiguration() {
+    void assertCreateWithDataSourceConfiguration() {
         assertParameter(DataSourcePropertiesCreator.create(HikariDataSource.class.getName(), createResourceConfiguration()));
     }
     
@@ -59,7 +59,7 @@ public final class DataSourcePropertiesCreatorTest {
     }
     
     @Test
-    public void assertCreateWithDataSource() {
+    void assertCreateWithDataSource() {
         assertThat(DataSourcePropertiesCreator.create(createDataSource()), is(new DataSourceProperties(MockedDataSource.class.getName(), createProperties())));
     }
     

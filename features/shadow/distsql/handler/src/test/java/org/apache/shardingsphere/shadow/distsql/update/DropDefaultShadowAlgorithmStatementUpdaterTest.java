@@ -17,22 +17,25 @@
 
 package org.apache.shardingsphere.shadow.distsql.update;
 
-import org.apache.shardingsphere.infra.distsql.exception.rule.MissingRequiredAlgorithmException;
+import org.apache.shardingsphere.distsql.handler.exception.algorithm.MissingRequiredAlgorithmException;
+import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.shadow.api.config.ShadowRuleConfiguration;
 import org.apache.shardingsphere.shadow.distsql.handler.update.DropDefaultShadowAlgorithmStatementUpdater;
 import org.apache.shardingsphere.shadow.distsql.parser.statement.DropDefaultShadowAlgorithmStatement;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class DropDefaultShadowAlgorithmStatementUpdaterTest {
+@ExtendWith(MockitoExtension.class)
+class DropDefaultShadowAlgorithmStatementUpdaterTest {
     
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private ShardingSphereDatabase database;
@@ -42,25 +45,27 @@ public final class DropDefaultShadowAlgorithmStatementUpdaterTest {
     
     private final DropDefaultShadowAlgorithmStatementUpdater updater = new DropDefaultShadowAlgorithmStatementUpdater();
     
-    @Test(expected = MissingRequiredAlgorithmException.class)
-    public void assertCheckWithoutDefaultAlgorithm() {
-        updater.checkSQLStatement(database, new DropDefaultShadowAlgorithmStatement(false), currentConfig);
+    @Test
+    void assertCheckWithoutDefaultAlgorithm() {
+        assertThrows(MissingRequiredAlgorithmException.class, () -> updater.checkSQLStatement(database, new DropDefaultShadowAlgorithmStatement(false), currentConfig));
     }
     
     @Test
-    public void assertCheckWithIfExists() {
+    void assertCheckWithIfExists() {
         updater.checkSQLStatement(database, new DropDefaultShadowAlgorithmStatement(true), currentConfig);
         updater.checkSQLStatement(database, new DropDefaultShadowAlgorithmStatement(true), null);
     }
     
     @Test
-    public void assertUpdate() {
+    void assertUpdate() {
         ShadowRuleConfiguration ruleConfig = new ShadowRuleConfiguration();
         ruleConfig.setDefaultShadowAlgorithmName("default");
+        ruleConfig.getShadowAlgorithms().put(ruleConfig.getDefaultShadowAlgorithmName(), mock(AlgorithmConfiguration.class));
         DropDefaultShadowAlgorithmStatement statement = new DropDefaultShadowAlgorithmStatement(false);
         updater.checkSQLStatement(database, new DropDefaultShadowAlgorithmStatement(true), ruleConfig);
         assertTrue(updater.hasAnyOneToBeDropped(statement, ruleConfig));
         updater.updateCurrentRuleConfiguration(statement, ruleConfig);
         assertNull(ruleConfig.getDefaultShadowAlgorithmName());
+        assertTrue(ruleConfig.getShadowAlgorithms().isEmpty());
     }
 }

@@ -32,7 +32,7 @@ public final class EncryptOrder {
     public static final int ORDER = 10;
     
     /**
-     * Algorithm provider encrypt order.
+     * Compatible encrypt order.
      */
-    public static final int ALGORITHM_PROVIDER_ORDER = ORDER + 1;
+    public static final int COMPATIBLE_ORDER = ORDER + 1;
 }

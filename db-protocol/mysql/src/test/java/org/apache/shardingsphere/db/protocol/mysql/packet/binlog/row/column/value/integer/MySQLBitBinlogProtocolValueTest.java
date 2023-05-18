@@ -19,18 +19,18 @@ package org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.column.val
 
 import org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.column.MySQLBinlogColumnDef;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLBitBinlogProtocolValueTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLBitBinlogProtocolValueTest {
     
     @Mock
     private MySQLBinlogColumnDef columnDef;
@@ -40,34 +40,34 @@ public final class MySQLBitBinlogProtocolValueTest {
     
     private MySQLBitBinlogProtocolValue actual;
     
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         actual = new MySQLBitBinlogProtocolValue();
     }
     
     @Test
-    public void assertReadWithLength1() {
+    void assertReadWithLength1() {
         when(columnDef.getColumnMeta()).thenReturn(1);
         when(payload.readLong(1)).thenReturn(1L);
         assertThat(actual.read(columnDef, payload), is(1L));
     }
     
     @Test
-    public void assertReadWithLength3() {
+    void assertReadWithLength3() {
         when(columnDef.getColumnMeta()).thenReturn(516);
         when(payload.readLong(3)).thenReturn(1L);
         assertThat(actual.read(columnDef, payload), is(1L));
     }
     
     @Test
-    public void assertReadWithLength5() {
+    void assertReadWithLength5() {
         when(columnDef.getColumnMeta()).thenReturn(1280);
         when(payload.readLong(5)).thenReturn(1L);
         assertThat(actual.read(columnDef, payload), is(1L));
     }
     
     @Test
-    public void assertReadWithLength8() {
+    void assertReadWithLength8() {
         when(columnDef.getColumnMeta()).thenReturn(2048);
         when(payload.readLong(8)).thenReturn(-1L);
         assertThat(actual.read(columnDef, payload), is(-1L));

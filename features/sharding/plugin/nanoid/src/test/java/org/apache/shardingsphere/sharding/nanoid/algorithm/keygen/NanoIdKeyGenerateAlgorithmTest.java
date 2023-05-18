@@ -17,19 +17,17 @@
 
 package org.apache.shardingsphere.sharding.nanoid.algorithm.keygen;
 
-import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
-import org.apache.shardingsphere.sharding.factory.KeyGenerateAlgorithmFactory;
-import org.junit.Test;
-
-import java.util.Properties;
+import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
+import org.apache.shardingsphere.sharding.spi.KeyGenerateAlgorithm;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class NanoIdKeyGenerateAlgorithmTest {
+class NanoIdKeyGenerateAlgorithmTest {
     
     @Test
-    public void assertGenerateKey() {
-        assertThat(((String) KeyGenerateAlgorithmFactory.newInstance(new AlgorithmConfiguration("NANOID", new Properties())).generateKey()).length(), is(21));
+    void assertGenerateKey() {
+        assertThat(TypedSPILoader.getService(KeyGenerateAlgorithm.class, "NANOID").generateKey().toString().length(), is(21));
     }
 }

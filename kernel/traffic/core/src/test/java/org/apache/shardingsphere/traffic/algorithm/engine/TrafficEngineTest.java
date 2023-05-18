@@ -17,7 +17,7 @@
 
 package org.apache.shardingsphere.traffic.algorithm.engine;
 
-import org.apache.shardingsphere.infra.binder.QueryContext;
+import org.apache.shardingsphere.infra.session.query.QueryContext;
 import org.apache.shardingsphere.infra.instance.InstanceContext;
 import org.apache.shardingsphere.infra.instance.metadata.InstanceMetaData;
 import org.apache.shardingsphere.infra.instance.metadata.InstanceType;
@@ -26,10 +26,10 @@ import org.apache.shardingsphere.traffic.engine.TrafficEngine;
 import org.apache.shardingsphere.traffic.rule.TrafficRule;
 import org.apache.shardingsphere.traffic.rule.TrafficStrategyRule;
 import org.apache.shardingsphere.traffic.spi.TrafficLoadBalanceAlgorithm;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,13 +38,13 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class TrafficEngineTest {
+@ExtendWith(MockitoExtension.class)
+class TrafficEngineTest {
     
     @Mock
     private TrafficRule trafficRule;
@@ -59,7 +59,7 @@ public final class TrafficEngineTest {
     private QueryContext queryContext;
     
     @Test
-    public void assertDispatchWhenNotExistTrafficStrategyRule() {
+    void assertDispatchWhenNotExistTrafficStrategyRule() {
         TrafficEngine trafficEngine = new TrafficEngine(trafficRule, instanceContext);
         when(trafficRule.findMatchedStrategyRule(queryContext, false)).thenReturn(Optional.empty());
         Optional<String> actual = trafficEngine.dispatch(queryContext, false);
@@ -67,7 +67,7 @@ public final class TrafficEngineTest {
     }
     
     @Test
-    public void assertDispatchWhenTrafficStrategyRuleInvalid() {
+    void assertDispatchWhenTrafficStrategyRuleInvalid() {
         TrafficEngine trafficEngine = new TrafficEngine(trafficRule, instanceContext);
         TrafficStrategyRule strategyRule = mock(TrafficStrategyRule.class);
         when(strategyRule.getLabels()).thenReturn(Collections.emptyList());
@@ -77,7 +77,7 @@ public final class TrafficEngineTest {
     }
     
     @Test
-    public void assertDispatchWhenExistTrafficStrategyRuleNotExistComputeNodeInstances() {
+    void assertDispatchWhenExistTrafficStrategyRuleNotExistComputeNodeInstances() {
         TrafficEngine trafficEngine = new TrafficEngine(trafficRule, instanceContext);
         when(trafficRule.findMatchedStrategyRule(queryContext, false)).thenReturn(Optional.of(strategyRule));
         when(strategyRule.getLabels()).thenReturn(Arrays.asList("OLTP", "OLAP"));
@@ -86,7 +86,7 @@ public final class TrafficEngineTest {
     }
     
     @Test
-    public void assertDispatchWhenExistTrafficStrategyRuleExistComputeNodeInstances() {
+    void assertDispatchWhenExistTrafficStrategyRuleExistComputeNodeInstances() {
         TrafficEngine trafficEngine = new TrafficEngine(trafficRule, instanceContext);
         when(trafficRule.findMatchedStrategyRule(queryContext, false)).thenReturn(Optional.of(strategyRule));
         when(strategyRule.getLabels()).thenReturn(Arrays.asList("OLTP", "OLAP"));
@@ -102,8 +102,8 @@ public final class TrafficEngineTest {
     
     private List<InstanceMetaData> mockComputeNodeInstances() {
         List<InstanceMetaData> result = new ArrayList<>();
-        result.add(new ProxyInstanceMetaData("foo_id", "127.0.0.1@3307"));
-        result.add(new ProxyInstanceMetaData("bar_id", "127.0.0.1@3308"));
+        result.add(new ProxyInstanceMetaData("foo_id", "127.0.0.1@3307", "foo_version"));
+        result.add(new ProxyInstanceMetaData("bar_id", "127.0.0.1@3308", "foo_version"));
         return result;
     }
 }

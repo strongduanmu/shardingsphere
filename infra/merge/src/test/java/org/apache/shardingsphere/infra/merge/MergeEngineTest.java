@@ -19,18 +19,20 @@ package org.apache.shardingsphere.infra.merge;
 
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
-import org.apache.shardingsphere.infra.context.ConnectionContext;
+import org.apache.shardingsphere.infra.session.connection.ConnectionContext;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
 import org.apache.shardingsphere.infra.merge.fixture.rule.DecoratorRuleFixture;
 import org.apache.shardingsphere.infra.merge.fixture.rule.MergerRuleFixture;
 import org.apache.shardingsphere.infra.merge.result.MergedResult;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.test.fixture.rule.MockedRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.apache.shardingsphere.test.fixture.infra.rule.MockedRule;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -42,8 +44,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MergeEngineTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class MergeEngineTest {
     
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private ShardingSphereDatabase database;
@@ -52,7 +55,7 @@ public final class MergeEngineTest {
     private QueryResult queryResult;
     
     @Test
-    public void assertMergeWithIndependentRule() throws SQLException {
+    void assertMergeWithIndependentRule() throws SQLException {
         when(database.getRuleMetaData().getRules()).thenReturn(Collections.singleton(new MockedRule()));
         when(queryResult.getValue(1, String.class)).thenReturn("test");
         MergedResult actual = new MergeEngine(database, new ConfigurationProperties(new Properties()), mock(ConnectionContext.class)).merge(Collections.singletonList(queryResult),
@@ -61,7 +64,7 @@ public final class MergeEngineTest {
     }
     
     @Test
-    public void assertMergeWithMergerRuleOnly() throws SQLException {
+    void assertMergeWithMergerRuleOnly() throws SQLException {
         when(database.getRuleMetaData().getRules()).thenReturn(Collections.singleton(new MergerRuleFixture()));
         MergedResult actual = new MergeEngine(database, new ConfigurationProperties(new Properties()), mock(ConnectionContext.class)).merge(Collections.singletonList(queryResult),
                 mock(SQLStatementContext.class));
@@ -69,7 +72,7 @@ public final class MergeEngineTest {
     }
     
     @Test
-    public void assertMergeWithDecoratorRuleOnly() throws SQLException {
+    void assertMergeWithDecoratorRuleOnly() throws SQLException {
         when(database.getRuleMetaData().getRules()).thenReturn(Collections.singleton(new DecoratorRuleFixture()));
         MergedResult actual = new MergeEngine(database, new ConfigurationProperties(new Properties()), mock(ConnectionContext.class)).merge(Collections.singletonList(queryResult),
                 mock(SQLStatementContext.class));
@@ -77,7 +80,7 @@ public final class MergeEngineTest {
     }
     
     @Test
-    public void assertMergeWithMergerRuleAndDecoratorRuleTogether() throws SQLException {
+    void assertMergeWithMergerRuleAndDecoratorRuleTogether() throws SQLException {
         when(database.getRuleMetaData().getRules()).thenReturn(Arrays.asList(new MergerRuleFixture(), new DecoratorRuleFixture()));
         MergedResult actual = new MergeEngine(database, new ConfigurationProperties(new Properties()), mock(ConnectionContext.class)).merge(Collections.singletonList(queryResult),
                 mock(SQLStatementContext.class));

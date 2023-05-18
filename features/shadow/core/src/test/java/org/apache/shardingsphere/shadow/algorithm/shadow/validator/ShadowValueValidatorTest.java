@@ -18,26 +18,27 @@
 package org.apache.shardingsphere.shadow.algorithm.shadow.validator;
 
 import org.apache.shardingsphere.shadow.exception.data.UnsupportedShadowColumnTypeException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Date;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
-public final class ShadowValueValidatorTest {
+class ShadowValueValidatorTest {
     
-    @Test(expected = UnsupportedShadowColumnTypeException.class)
-    public void assertValidateDateType() {
-        ShadowValueValidator.validate("tbl", "col", new Date());
-    }
-    
-    @Test(expected = UnsupportedShadowColumnTypeException.class)
-    public void assertValidateEnumType() {
-        ShadowValueValidator.validate("tbl", "col", mock(Enum.class));
+    @Test
+    void assertValidateDateType() {
+        assertThrows(UnsupportedShadowColumnTypeException.class, () -> ShadowValueValidator.validate("tbl", "col", new Date()));
     }
     
     @Test
-    public void assertValidateAcceptedType() {
+    void assertValidateEnumType() {
+        assertThrows(UnsupportedShadowColumnTypeException.class, () -> ShadowValueValidator.validate("tbl", "col", mock(Enum.class)));
+    }
+    
+    @Test
+    void assertValidateAcceptedType() {
         ShadowValueValidator.validate("tbl", "col", "");
     }
 }

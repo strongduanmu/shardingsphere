@@ -17,13 +17,35 @@
 
 package org.apache.shardingsphere.proxy.frontend.state.impl;
 
+import io.netty.channel.ChannelHandlerContext;
+import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
+import org.apache.shardingsphere.proxy.frontend.command.CommandExecutorTask;
+import org.apache.shardingsphere.proxy.frontend.executor.ConnectionThreadExecutorGroup;
+import org.apache.shardingsphere.proxy.frontend.executor.UserExecutorGroup;
+import org.apache.shardingsphere.proxy.frontend.spi.DatabaseProtocolFrontendEngine;
 import org.apache.shardingsphere.proxy.frontend.state.ProxyState;
-import org.apache.shardingsphere.infra.util.spi.annotation.SingletonSPI;
-import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPI;
+import org.apache.shardingsphere.transaction.api.TransactionType;
+
+import java.util.concurrent.ExecutorService;
 
 /**
  * OK proxy state.
  */
-@SingletonSPI
-public interface OKProxyState extends ProxyState, TypedSPI {
+public final class OKProxyState implements ProxyState {
+    
+    @Override
+    public void execute(final ChannelHandlerContext context, final Object message, final DatabaseProtocolFrontendEngine databaseProtocolFrontendEngine, final ConnectionSession connectionSession) {
+        ExecutorService executorService = determineSuitableExecutorService(connectionSession);
+        context.channel().config().setAutoRead(false);
+        executorService.execute(new CommandExecutorTask(databaseProtocolFrontendEngine, connectionSession, context, message));
+    }
+    
+    private ExecutorService determineSuitableExecutorService(final ConnectionSession connectionSession) {
+        return requireOccupyThreadForConnection(connectionSession) ? ConnectionThreadExecutorGroup.getInstance().get(connectionSession.getConnectionId())
+                : UserExecutorGroup.getInstance().getExecutorService();
+    }
+    
+    private boolean requireOccupyThreadForConnection(final ConnectionSession connectionSession) {
+        return TransactionType.isDistributedTransaction(connectionSession.getTransactionStatus().getTransactionType());
+    }
 }

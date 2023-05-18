@@ -29,6 +29,16 @@ import org.apache.shardingsphere.elasticjob.simple.job.SimpleJob;
 @Slf4j
 public abstract class AbstractSimplePipelineJob extends AbstractPipelineJob implements SimpleJob {
     
+    protected AbstractSimplePipelineJob(final String jobId) {
+        super(jobId);
+    }
+    
+    /**
+     * Build pipeline job item context.
+     * 
+     * @param shardingContext sharding context
+     * @return pipeline job item context
+     */
     protected abstract PipelineJobItemContext buildPipelineJobItemContext(ShardingContext shardingContext);
     
     protected abstract PipelineTasksRunner buildPipelineTasksRunner(PipelineJobItemContext pipelineJobItemContext);
@@ -42,7 +52,6 @@ public abstract class AbstractSimplePipelineJob extends AbstractPipelineJob impl
             log.info("stopping true, ignore");
             return;
         }
-        setJobId(jobId);
         PipelineJobItemContext jobItemContext = buildPipelineJobItemContext(shardingContext);
         PipelineTasksRunner tasksRunner = buildPipelineTasksRunner(jobItemContext);
         if (!addTasksRunner(shardingItem, tasksRunner)) {

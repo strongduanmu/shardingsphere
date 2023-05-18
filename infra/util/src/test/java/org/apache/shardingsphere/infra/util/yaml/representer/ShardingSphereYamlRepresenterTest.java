@@ -18,7 +18,7 @@
 package org.apache.shardingsphere.infra.util.yaml.representer;
 
 import org.apache.shardingsphere.infra.util.yaml.fixture.pojo.YamlConfigurationFixture;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
@@ -32,16 +32,16 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class ShardingSphereYamlRepresenterTest {
+class ShardingSphereYamlRepresenterTest {
     
     @Test
-    public void assertToYamlWithoutContent() {
+    void assertToYamlWithoutContent() {
         YamlConfigurationFixture actual = new YamlConfigurationFixture();
         assertThat(new Yaml(new ShardingSphereYamlRepresenter(), new DumperOptions()).dumpAsMap(actual), is("{}\n"));
     }
     
     @Test
-    public void assertToYamlWithAllContents() {
+    void assertToYamlWithAllContents() {
         YamlConfigurationFixture actual = new YamlConfigurationFixture();
         actual.setValue("value");
         actual.setCollection(Arrays.asList("value1", "value2"));

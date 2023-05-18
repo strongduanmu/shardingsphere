@@ -13,93 +13,19 @@ ShardingSphere 内置提供了多种负载均衡算法，具体包括了轮询�
 
 类型：ROUND_ROBIN
 
-说明：事务内，读请求路由到 primary，事务外，采用轮询策略路由到 replica。
-
-可配置属性：无
-
 ### 随机负载均衡算法
 
 类型：RANDOM
-
-说明：事务内，读请求路由到 primary，事务外，采用随机策略路由到 replica。
-
-可配置属性：无
 
 ### 权重负载均衡算法
 
 类型：WEIGHT
 
-说明：事务内，读请求路由到 primary，事务外，采用权重策略路由到 replica。
-
 可配置属性：
 
-| *属性名称*      | *数据类型* | *说明*                                                         |
-| -------------- | -------- |--------------------------------------------------------------|
-| ${replica-name} |   double    | 属性名使用读库名称，参数填写读库对应的权重值。权重参数范围最小值 > 0，合计 <= Double.MAX_VALUE。 |
-
-### 事务随机负载均衡算法
-
-类型：TRANSACTION_RANDOM
-
-说明：显式/非显式开启事务，读请求采用随机策略路由到多个 replica。
-
-可配置属性：无
-
-### 事务轮询负载均衡算法
-
-类型：TRANSACTION_ROUND_ROBIN
-
-说明：显式/非显式开启事务，读请求采用轮询策略路由到多个 replica。
-
-可配置属性：无
-
-### 事务权重负载均衡算法
-
-类型：TRANSACTION_WEIGHT
-
-说明：显式/非显式开启事务，读请求采用权重策略路由到多个 replica。
-
-可配置属性：
-
-| *属性名称*      | *数据类型* | *说明*                                                         |
-| -------------- | -------- |--------------------------------------------------------------|
-| ${replica-name} |   double    | 属性名使用读库名称，参数填写读库对应的权重值。权重参数范围最小值 > 0，合计 <= Double.MAX_VALUE。 |
-
-### 固定副本随机负载均衡算法
-
-类型：FIXED_REPLICA_RANDOM
-
-说明：显式开启事务，读请求采用随机策略路由到一个固定 replica；不开事务，每次读流量使用随机策略路由到不同的 replica。
-
-可配置属性：无
-
-### 固定副本轮询负载均衡算法
-
-类型：FIXED_REPLICA_ROUND_ROBIN
-
-说明：显式开启事务，读请求采用轮询策略路由到一个固定 replica；不开事务，每次读流量使用轮询策略路由到不同的 replica。
-
-可配置属性：无
-
-### 固定副本权重负载均衡算法
-
-类型：FIXED_REPLICA_WEIGHT
-
-说明：显式开启事务，读请求采用权重策略路由到一个固定 replica；不开事务，每次读流量使用权重策略路由到不同的 replica。
-
-可配置属性：
-
-| *属性名称*      | *数据类型* | *说明*                                                         |
-| -------------- | -------- |--------------------------------------------------------------|
-| ${replica-name} |   double    | 属性名使用读库名称，参数填写读库对应的权重值。权重参数范围最小值 > 0，合计 <= Double.MAX_VALUE。 |
-
-### 固定主库负载均衡算法
-
-类型：FIXED_PRIMARY
-
-说明：读请求全部路由到 primary
-
-可配置属性：无
+| *属性名称*          | *数据类型* | *说明*                                                         |
+|-----------------|--------|--------------------------------------------------------------|
+| ${replica-name} | double | 属性名使用读库名称，参数填写读库对应的权重值。权重参数范围最小值 > 0，合计 <= Double.MAX_VALUE。 |
 
 ## 操作步骤
 
@@ -112,15 +38,16 @@ rules:
 - !READWRITE_SPLITTING
   dataSources:
     readwrite_ds:
-      staticStrategy:
-        writeDataSourceName: write_ds
-        readDataSourceNames:
-          - read_ds_0
-          - read_ds_1
+      writeDataSourceName: write_ds
+      readDataSourceNames:
+        - read_ds_0
+        - read_ds_1
       loadBalancerName: random
+      transactionalReadQueryStrategy: PRIMARY
   loadBalancers:
     random:
       type: RANDOM
+      props:
 ```
 
 ## 相关参考

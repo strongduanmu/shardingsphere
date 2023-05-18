@@ -21,18 +21,21 @@ import io.netty.buffer.ByteBuf;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLBinaryColumnType;
 import org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.column.MySQLBinlogColumnDef;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.Serializable;
+
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLVarcharBinlogProtocolValueTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLVarcharBinlogProtocolValueTest {
     
     @Mock
     private MySQLPacketPayload payload;
@@ -42,32 +45,40 @@ public final class MySQLVarcharBinlogProtocolValueTest {
     
     private MySQLBinlogColumnDef columnDef;
     
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         columnDef = new MySQLBinlogColumnDef(MySQLBinaryColumnType.MYSQL_TYPE_VARCHAR);
     }
     
     @Test
-    public void assertReadVarcharValueWithMeta1() {
-        String expected = "test_value";
-        columnDef.setColumnMeta(10);
+    void assertReadVarcharValueWithMeta1() {
+        assertReadVarcharValueWithMeta("test_value".getBytes());
+        assertReadVarcharValueWithMeta(new byte[]{-1, 0, 1});
+    }
+    
+    private void assertReadVarcharValueWithMeta(final byte[] expected) {
+        columnDef.setColumnMeta(expected.length);
         when(payload.getByteBuf()).thenReturn(byteBuf);
-        when(byteBuf.readUnsignedByte()).thenReturn((short) expected.length());
-        when(payload.readStringFix(expected.length())).thenReturn(expected);
-        assertThat(new MySQLVarcharBinlogProtocolValue().read(columnDef, payload), is(expected));
+        when(byteBuf.readUnsignedByte()).thenReturn((short) expected.length);
+        when(payload.readStringFixByBytes(expected.length)).thenReturn(expected);
+        Serializable actual = new MySQLVarcharBinlogProtocolValue().read(columnDef, payload);
+        assertThat(actual, instanceOf(MySQLBinaryString.class));
+        assertThat(((MySQLBinaryString) actual).getBytes(), is(expected));
     }
     
     @Test
-    public void assertReadVarcharValueWithMeta2() {
+    void assertReadVarcharValueWithMeta2() {
         StringBuilder expectedStringBuilder = new StringBuilder("test string for length more than 256");
         for (int i = 0; i < 256; i++) {
             expectedStringBuilder.append(i);
         }
-        String expected = expectedStringBuilder.toString();
-        columnDef.setColumnMeta(expected.length());
+        byte[] expected = expectedStringBuilder.toString().getBytes();
+        columnDef.setColumnMeta(expected.length);
         when(payload.getByteBuf()).thenReturn(byteBuf);
-        when(byteBuf.readUnsignedShortLE()).thenReturn(expected.length());
-        when(payload.readStringFix(expected.length())).thenReturn(expected);
-        assertThat(new MySQLVarcharBinlogProtocolValue().read(columnDef, payload), is(expected));
+        when(byteBuf.readUnsignedShortLE()).thenReturn(expected.length);
+        when(payload.readStringFixByBytes(expected.length)).thenReturn(expected);
+        Serializable actual = new MySQLVarcharBinlogProtocolValue().read(columnDef, payload);
+        assertThat(actual, instanceOf(MySQLBinaryString.class));
+        assertThat(((MySQLBinaryString) actual).getBytes(), is(expected));
     }
 }

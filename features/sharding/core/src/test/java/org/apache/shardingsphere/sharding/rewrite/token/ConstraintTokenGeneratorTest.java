@@ -24,23 +24,23 @@ import org.apache.shardingsphere.sharding.rewrite.token.pojo.ConstraintToken;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.constraint.ConstraintSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class ConstraintTokenGeneratorTest {
+class ConstraintTokenGeneratorTest {
     
     @Test
-    public void assertIsGenerateSQLToken() {
+    void assertIsGenerateSQLToken() {
         ConstraintTokenGenerator generator = new ConstraintTokenGenerator();
         assertFalse(generator.isGenerateSQLToken(mock(CreateDatabaseStatementContext.class)));
         AlterTableStatementContext alterTableStatementContext = mock(AlterTableStatementContext.class);
@@ -52,7 +52,7 @@ public final class ConstraintTokenGeneratorTest {
     }
     
     @Test
-    public void assertGenerateSQLTokens() {
+    void assertGenerateSQLTokens() {
         ConstraintSegment constraintSegment = mock(ConstraintSegment.class);
         when(constraintSegment.getStartIndex()).thenReturn(1);
         when(constraintSegment.getStopIndex()).thenReturn(3);

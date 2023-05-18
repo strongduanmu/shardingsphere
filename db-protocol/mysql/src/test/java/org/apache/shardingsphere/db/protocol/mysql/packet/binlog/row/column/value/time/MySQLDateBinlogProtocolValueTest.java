@@ -20,17 +20,20 @@ package org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.column.val
 import io.netty.buffer.ByteBuf;
 import org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.column.MySQLBinlogColumnDef;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.sql.Date;
+import java.time.LocalDate;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLDateBinlogProtocolValueTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLDateBinlogProtocolValueTest {
     
     @Mock
     private MySQLPacketPayload payload;
@@ -42,16 +45,17 @@ public final class MySQLDateBinlogProtocolValueTest {
     private MySQLBinlogColumnDef columnDef;
     
     @Test
-    public void assertRead() {
+    void assertRead() {
         when(payload.getByteBuf()).thenReturn(byteBuf);
         when(byteBuf.readUnsignedMediumLE()).thenReturn(1901 * 16 * 32 + 32 + 1);
-        assertThat(new MySQLDateBinlogProtocolValue().read(columnDef, payload), is("1901-01-01"));
+        Date expected = Date.valueOf(LocalDate.of(1901, 1, 1));
+        assertThat(new MySQLDateBinlogProtocolValue().read(columnDef, payload), is(expected));
     }
     
     @Test
-    public void assertReadNullDate() {
+    void assertReadNullDate() {
         when(payload.getByteBuf()).thenReturn(byteBuf);
         when(byteBuf.readUnsignedMediumLE()).thenReturn(0);
-        assertThat(new MySQLDateBinlogProtocolValue().read(columnDef, payload), is(MySQLTimeValueUtil.ZERO_OF_DATE));
+        assertThat(new MySQLDateBinlogProtocolValue().read(columnDef, payload), is(MySQLTimeValueUtils.ZERO_OF_DATE));
     }
 }

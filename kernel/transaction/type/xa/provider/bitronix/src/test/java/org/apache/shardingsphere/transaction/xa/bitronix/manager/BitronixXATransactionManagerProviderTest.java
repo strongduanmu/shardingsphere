@@ -19,13 +19,13 @@ package org.apache.shardingsphere.transaction.xa.bitronix.manager;
 
 import bitronix.tm.BitronixTransactionManager;
 import bitronix.tm.resource.ResourceRegistrar;
-import org.apache.shardingsphere.infra.util.reflect.ReflectiveUtil;
 import org.apache.shardingsphere.transaction.xa.spi.SingleXAResource;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.internal.configuration.plugins.Plugins;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.sql.XADataSource;
 import javax.transaction.RollbackException;
@@ -34,14 +34,14 @@ import javax.transaction.Transaction;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class BitronixXATransactionManagerProviderTest {
+@ExtendWith(MockitoExtension.class)
+class BitronixXATransactionManagerProviderTest {
     
     private final BitronixXATransactionManagerProvider transactionManagerProvider = new BitronixXATransactionManagerProvider();
     
@@ -51,13 +51,13 @@ public final class BitronixXATransactionManagerProviderTest {
     @Mock
     private XADataSource xaDataSource;
     
-    @Before
-    public void setUp() {
-        ReflectiveUtil.setField(transactionManagerProvider, "transactionManager", transactionManager);
+    @BeforeEach
+    void setUp() throws ReflectiveOperationException {
+        Plugins.getMemberAccessor().set(BitronixXATransactionManagerProvider.class.getDeclaredField("transactionManager"), transactionManagerProvider, transactionManager);
     }
     
     @Test
-    public void assertRegisterRecoveryResourceThenRemove() {
+    void assertRegisterRecoveryResourceThenRemove() {
         transactionManagerProvider.registerRecoveryResource("ds1", xaDataSource);
         assertNotNull(ResourceRegistrar.get("ds1"));
         transactionManagerProvider.removeRecoveryResource("ds1", xaDataSource);
@@ -65,7 +65,7 @@ public final class BitronixXATransactionManagerProviderTest {
     }
     
     @Test
-    public void assertEnlistResource() throws SystemException, RollbackException {
+    void assertEnlistResource() throws SystemException, RollbackException {
         SingleXAResource singleXAResource = mock(SingleXAResource.class);
         Transaction transaction = mock(Transaction.class);
         when(transactionManager.getTransaction()).thenReturn(transaction);
@@ -74,12 +74,12 @@ public final class BitronixXATransactionManagerProviderTest {
     }
     
     @Test
-    public void assertGetTransactionManager() {
+    void assertGetTransactionManager() {
         assertThat(transactionManagerProvider.getTransactionManager(), is(transactionManager));
     }
     
     @Test
-    public void assertClose() {
+    void assertClose() {
         transactionManagerProvider.close();
         verify(transactionManager).shutdown();
     }

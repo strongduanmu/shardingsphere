@@ -19,23 +19,25 @@ package org.apache.shardingsphere.mode.manager.switcher;
 
 import org.apache.shardingsphere.infra.datasource.props.DataSourceProperties;
 import org.apache.shardingsphere.infra.metadata.database.resource.ShardingSphereResourceMetaData;
-import org.apache.shardingsphere.test.mock.MockedDataSource;
-import org.junit.Test;
+import org.apache.shardingsphere.test.fixture.jdbc.MockedDataSource;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class ResourceSwitchManagerTest {
+class ResourceSwitchManagerTest {
     
     @Test
-    public void assertCreate() throws InterruptedException {
+    void assertCreate() {
         Map<String, DataSource> dataSourceMap = createDataSourceMap();
         SwitchingResource actual = new ResourceSwitchManager().create(new ShardingSphereResourceMetaData("sharding_db", dataSourceMap), createToBeChangedDataSourcePropsMap());
         assertNewDataSources(actual);
@@ -44,12 +46,12 @@ public final class ResourceSwitchManagerTest {
     }
     
     @Test
-    public void assertCreateByAlterDataSourceProps() throws InterruptedException {
+    void assertCreateByAlterDataSourceProps() {
         Map<String, DataSource> dataSourceMap = new HashMap<>(3, 1);
         dataSourceMap.put("ds_0", new MockedDataSource());
         dataSourceMap.put("ds_1", new MockedDataSource());
         SwitchingResource actual = new ResourceSwitchManager().createByAlterDataSourceProps(new ShardingSphereResourceMetaData("sharding_db", dataSourceMap), Collections.emptyMap());
-        assertThat(actual.getNewDataSources().size(), is(0));
+        assertTrue(actual.getNewDataSources().isEmpty());
         assertThat(actual.getStaleDataSources().size(), is(2));
         actual.closeStaleDataSources();
         assertStaleDataSource((MockedDataSource) dataSourceMap.get("ds_0"));
@@ -78,17 +80,13 @@ public final class ResourceSwitchManagerTest {
         assertTrue(actual.getNewDataSources().containsKey("replace"));
     }
     
-    private void assertStaleDataSources(final Map<String, DataSource> originalDataSourceMap) throws InterruptedException {
+    private void assertStaleDataSources(final Map<String, DataSource> originalDataSourceMap) {
         assertStaleDataSource((MockedDataSource) originalDataSourceMap.get("replace"));
         assertNotStaleDataSource((MockedDataSource) originalDataSourceMap.get("not_change"));
     }
     
-    @SuppressWarnings("BusyWait")
-    private void assertStaleDataSource(final MockedDataSource dataSource) throws InterruptedException {
-        while (!dataSource.isClosed()) {
-            Thread.sleep(10L);
-        }
-        assertTrue(dataSource.isClosed());
+    private void assertStaleDataSource(final MockedDataSource dataSource) {
+        Awaitility.await().atMost(1L, TimeUnit.MINUTES).pollInterval(10L, TimeUnit.MILLISECONDS).until(dataSource::isClosed);
     }
     
     private void assertNotStaleDataSource(final MockedDataSource dataSource) {

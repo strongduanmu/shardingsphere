@@ -21,7 +21,7 @@ import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.datanode.DataNodeInfo;
 import org.apache.shardingsphere.sharding.fixture.CoreHintShardingAlgorithmFixture;
 import org.apache.shardingsphere.sharding.route.engine.condition.value.ListShardingConditionValue;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,10 +32,10 @@ import java.util.Properties;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class HintShardingStrategyTest {
+class HintShardingStrategyTest {
     
     @Test
-    public void assertDoSharding() {
+    void assertDoSharding() {
         Collection<String> targets = new HashSet<>(Arrays.asList("1", "2", "3"));
         HintShardingStrategy hintShardingStrategy = new HintShardingStrategy(new CoreHintShardingAlgorithmFixture());
         DataNodeInfo dataNodeInfo = new DataNodeInfo("logicTable_", 1, '0');

@@ -26,7 +26,7 @@ import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.SQLToken;
 import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.Substitutable;
 import org.apache.shardingsphere.infra.route.context.RouteMapper;
 import org.apache.shardingsphere.infra.route.context.RouteUnit;
-import org.apache.shardingsphere.sql.parser.sql.common.constant.QuoteCharacter;
+import org.apache.shardingsphere.sql.parser.sql.common.enums.QuoteCharacter;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -109,7 +109,7 @@ public final class SubstitutableColumnNameToken extends SQLToken implements Subs
         StringBuilder builder = new StringBuilder();
         String owner = columnProjection.getOwner();
         if (!Strings.isNullOrEmpty(owner)) {
-            builder.append(quoteCharacter.wrap(logicActualTableNames.getOrDefault(owner, owner))).append(".");
+            builder.append(quoteCharacter.wrap(logicActualTableNames.getOrDefault(owner, owner))).append('.');
         }
         builder.append(quoteCharacter.wrap(columnProjection.getName()));
         if (columnProjection.getAlias().isPresent()) {

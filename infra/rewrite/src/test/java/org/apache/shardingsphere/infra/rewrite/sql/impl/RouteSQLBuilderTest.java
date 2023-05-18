@@ -22,7 +22,7 @@ import org.apache.shardingsphere.infra.rewrite.sql.fixture.RouteUnitAwareSQLToke
 import org.apache.shardingsphere.infra.rewrite.sql.fixture.SQLTokenFixture;
 import org.apache.shardingsphere.infra.route.context.RouteMapper;
 import org.apache.shardingsphere.infra.route.context.RouteUnit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
@@ -31,10 +31,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class RouteSQLBuilderTest {
+class RouteSQLBuilderTest {
     
     @Test
-    public void assertToSQLWithNormalSQLToken() {
+    void assertToSQLWithNormalSQLToken() {
         SQLRewriteContext context = mock(SQLRewriteContext.class);
         when(context.getSql()).thenReturn("SELECT * FROM tbl WHERE id=?");
         when(context.getSqlTokens()).thenReturn(Collections.singletonList(new SQLTokenFixture(14, 16)));
@@ -42,7 +42,7 @@ public final class RouteSQLBuilderTest {
     }
     
     @Test
-    public void assertToSQLWithRouteUnitAwareSQLToken() {
+    void assertToSQLWithRouteUnitAwareSQLToken() {
         SQLRewriteContext context = mock(SQLRewriteContext.class);
         when(context.getSql()).thenReturn("SELECT * FROM tbl WHERE id=?");
         when(context.getSqlTokens()).thenReturn(Collections.singletonList(new RouteUnitAwareSQLTokenFixture(14, 16)));

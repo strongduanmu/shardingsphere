@@ -20,17 +20,18 @@ package org.apache.shardingsphere.infra.binder.segment.select.projection.impl;
 import com.google.common.base.Strings;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.Projection;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.LinkedList;
 import java.util.Optional;
 
 /**
  * Shorthand projection.
  */
+@RequiredArgsConstructor
 @Getter
 @EqualsAndHashCode
 @ToString
@@ -38,12 +39,7 @@ public final class ShorthandProjection implements Projection {
     
     private final String owner;
     
-    private final Map<String, ColumnProjection> actualColumns = new LinkedHashMap<>();
-    
-    public ShorthandProjection(final String owner, final Collection<ColumnProjection> columnProjections) {
-        this.owner = owner;
-        columnProjections.forEach(each -> actualColumns.put(each.getExpression().toLowerCase(), each));
-    }
+    private final Collection<Projection> actualColumns;
     
     @Override
     public String getExpression() {
@@ -62,10 +58,30 @@ public final class ShorthandProjection implements Projection {
     
     /**
      * Get owner.
-     * 
+     *
      * @return owner
      */
     public Optional<String> getOwner() {
         return Optional.ofNullable(owner);
+    }
+    
+    /**
+     * Get column projections.
+     *
+     * @return column projections
+     */
+    public Collection<ColumnProjection> getColumnProjections() {
+        Collection<ColumnProjection> result = new LinkedList<>();
+        for (Projection each : actualColumns) {
+            if (each instanceof ColumnProjection) {
+                result.add((ColumnProjection) each);
+            }
+        }
+        return result;
+    }
+    
+    @Override
+    public Projection cloneWithOwner(final String ownerName) {
+        return new ShorthandProjection(ownerName, actualColumns);
     }
 }

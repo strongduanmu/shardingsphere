@@ -33,6 +33,11 @@ import java.util.stream.Collectors;
 public enum ConfigurationPropertyKey implements TypedPropertyKey {
     
     /**
+     * The system log level.
+     */
+    SYSTEM_LOG_LEVEL("system-log-level", LoggerLevel.INFO.name(), LoggerLevel.class, false),
+    
+    /**
      * Whether show SQL in log.
      */
     SQL_SHOW("sql-show", String.valueOf(Boolean.FALSE), boolean.class, false),
@@ -53,7 +58,7 @@ public enum ConfigurationPropertyKey implements TypedPropertyKey {
     MAX_CONNECTIONS_SIZE_PER_QUERY("max-connections-size-per-query", String.valueOf(1), int.class, false),
     
     /**
-     * Whether validate table meta data consistency when application startup or updated.
+     * Whether validate table metadata consistency when application startup or updated.
      */
     CHECK_TABLE_METADATA_ENABLED("check-table-metadata-enabled", String.valueOf(Boolean.FALSE), boolean.class, false),
     
@@ -68,14 +73,9 @@ public enum ConfigurationPropertyKey implements TypedPropertyKey {
     PROXY_FRONTEND_DATABASE_PROTOCOL_TYPE("proxy-frontend-database-protocol-type", "", String.class, false),
     
     /**
-     * Flush threshold for every records from databases for ShardingSphere-Proxy.
+     * Flush threshold for every record from databases for ShardingSphere-Proxy.
      */
     PROXY_FRONTEND_FLUSH_THRESHOLD("proxy-frontend-flush-threshold", String.valueOf(128), int.class, false),
-    
-    /**
-     * Whether enable hint for ShardingSphere-Proxy.
-     */
-    PROXY_HINT_ENABLED("proxy-hint-enabled", String.valueOf(Boolean.FALSE), boolean.class, false),
     
     /**
      * Proxy backend query fetch size. A larger value may increase the memory usage of ShardingSphere Proxy.
@@ -89,25 +89,9 @@ public enum ConfigurationPropertyKey implements TypedPropertyKey {
     PROXY_FRONTEND_EXECUTOR_SIZE("proxy-frontend-executor-size", String.valueOf(0), int.class, true),
     
     /**
-     * Available options of proxy backend executor suitable: OLAP(default), OLTP. The OLTP option may reduce time cost of writing packets to client, but it may increase the latency of SQL execution
-     * and block other clients if client connections are more than {@link ConfigurationPropertyKey#PROXY_FRONTEND_EXECUTOR_SIZE}, especially executing slow SQL.
-     */
-    PROXY_BACKEND_EXECUTOR_SUITABLE("proxy-backend-executor-suitable", BackendExecutorType.OLAP.name(), BackendExecutorType.class, false),
-    
-    /**
      * Less than or equal to 0 means no limitation.
      */
     PROXY_FRONTEND_MAX_CONNECTIONS("proxy-frontend-max-connections", "0", int.class, false),
-    
-    /**
-     * Proxy backend driver type.
-     */
-    PROXY_BACKEND_DRIVER_TYPE("proxy-backend-driver-type", "JDBC", String.class, true),
-    
-    /**
-     * Proxy MySQL default version.
-     */
-    PROXY_MYSQL_DEFAULT_VERSION("proxy-mysql-default-version", "5.7.22", String.class, false),
     
     /**
      * Proxy default start port.
@@ -120,14 +104,29 @@ public enum ConfigurationPropertyKey implements TypedPropertyKey {
     PROXY_NETTY_BACKLOG("proxy-netty-backlog", "1024", int.class, false),
     
     /**
-     * Proxy instance type.
+     * CDC server port.
      */
-    PROXY_INSTANCE_TYPE("proxy-instance-type", "Proxy", String.class, true),
+    CDC_SERVER_PORT("cdc-server-port", "33071", int.class, true),
     
     /**
-     * Proxy metadata collector enabled.
+     * Proxy frontend SSL enabled.
      */
-    PROXY_METADATA_COLLECTOR_ENABLED("proxy-metadata-collector-enabled", String.valueOf(Boolean.FALSE), boolean.class, true);
+    PROXY_FRONTEND_SSL_ENABLED("proxy-frontend-ssl-enabled", String.valueOf(Boolean.FALSE), boolean.class, true),
+    
+    /**
+     * Proxy frontend SSL protocol version.
+     */
+    PROXY_FRONTEND_SSL_VERSION("proxy-frontend-ssl-version", "TLSv1.2,TLSv1.3", String.class, true),
+    
+    /**
+     * Proxy frontend SSL cipher.
+     */
+    PROXY_FRONTEND_SSL_CIPHER("proxy-frontend-ssl-cipher", "", String.class, true),
+    
+    /**
+     * Agent plugins enabled.
+     */
+    AGENT_PLUGINS_ENABLED("agent-plugins-enabled", String.valueOf(Boolean.TRUE), boolean.class, false);
     
     private final String key;
     

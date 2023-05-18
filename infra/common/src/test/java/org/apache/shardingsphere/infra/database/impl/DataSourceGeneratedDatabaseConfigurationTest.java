@@ -24,20 +24,19 @@ import org.apache.shardingsphere.infra.datasource.config.DataSourceConfiguration
 import org.apache.shardingsphere.infra.datasource.config.PoolConfiguration;
 import org.apache.shardingsphere.infra.datasource.props.DataSourceProperties;
 import org.apache.shardingsphere.infra.fixture.FixtureRuleConfiguration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class DataSourceGeneratedDatabaseConfigurationTest {
+class DataSourceGeneratedDatabaseConfigurationTest {
     
     @Test
-    public void assertGetDataSources() {
+    void assertGetDataSources() {
         DataSourceGeneratedDatabaseConfiguration databaseConfig = createDataSourceGeneratedDatabaseConfiguration();
         HikariDataSource hikariDataSource = (HikariDataSource) databaseConfig.getDataSources().get("normal_db");
         assertThat(hikariDataSource.getJdbcUrl(), is("jdbc:mock://127.0.0.1/normal_db"));
@@ -46,14 +45,14 @@ public final class DataSourceGeneratedDatabaseConfigurationTest {
     }
     
     @Test
-    public void assertGetRuleConfigurations() {
+    void assertGetRuleConfigurations() {
         DataSourceGeneratedDatabaseConfiguration databaseConfig = createDataSourceGeneratedDatabaseConfiguration();
         FixtureRuleConfiguration ruleConfig = (FixtureRuleConfiguration) databaseConfig.getRuleConfigurations().iterator().next();
         assertThat(ruleConfig.getName(), is("test_rule"));
     }
     
     @Test
-    public void assertGetDataSourceProperties() {
+    void assertGetDataSourceProperties() {
         DataSourceGeneratedDatabaseConfiguration databaseConfig = createDataSourceGeneratedDatabaseConfiguration();
         DataSourceProperties props = databaseConfig.getDataSourceProperties().get("normal_db");
         Map<String, Object> poolStandardProps = props.getPoolPropertySynonyms().getStandardProperties();
@@ -78,8 +77,6 @@ public final class DataSourceGeneratedDatabaseConfigurationTest {
     private Map<String, DataSourceConfiguration> createDataSources() {
         PoolConfiguration poolConfig = new PoolConfiguration(2000L, 1000L, 1000L, 2, 1, false, new Properties());
         DataSourceConfiguration dataSourceConfig = new DataSourceConfiguration(new ConnectionConfiguration("jdbc:mock://127.0.0.1/normal_db", "root", ""), poolConfig);
-        Map<String, DataSourceConfiguration> result = new HashMap<>(1, 1);
-        result.put("normal_db", dataSourceConfig);
-        return result;
+        return Collections.singletonMap("normal_db", dataSourceConfig);
     }
 }

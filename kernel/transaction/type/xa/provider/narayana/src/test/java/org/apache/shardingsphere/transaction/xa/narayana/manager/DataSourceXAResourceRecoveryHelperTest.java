@@ -17,12 +17,14 @@
 
 package org.apache.shardingsphere.transaction.xa.narayana.manager;
 
-import org.apache.shardingsphere.infra.util.reflect.ReflectiveUtil;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.internal.configuration.plugins.Plugins;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import javax.sql.XAConnection;
 import javax.sql.XADataSource;
@@ -37,8 +39,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class DataSourceXAResourceRecoveryHelperTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class DataSourceXAResourceRecoveryHelperTest {
     
     @Mock
     private XADataSource xaDataSource;
@@ -51,26 +54,26 @@ public final class DataSourceXAResourceRecoveryHelperTest {
     
     private DataSourceXAResourceRecoveryHelper recoveryHelper;
     
-    @Before
-    public void setUp() throws SQLException {
+    @BeforeEach
+    void setUp() throws SQLException {
         when(xaConnection.getXAResource()).thenReturn(xaResource);
         when(xaDataSource.getXAConnection()).thenReturn(xaConnection);
         recoveryHelper = new DataSourceXAResourceRecoveryHelper(xaDataSource);
     }
     
     @Test
-    public void assertGetXAResourcesCreatingConnecting() throws SQLException {
+    void assertGetXAResourcesCreatingConnecting() throws SQLException {
         recoveryHelper.getXAResources();
         XAResource[] xaResources = recoveryHelper.getXAResources();
         assertThat(xaResources.length, is(1));
         assertThat(xaResources[0], sameInstance(recoveryHelper));
-        verify(xaConnection, times(1)).getXAResource();
-        verify(xaDataSource, times(1)).getXAConnection();
+        verify(xaConnection).getXAResource();
+        verify(xaDataSource).getXAConnection();
     }
     
     @Test
-    public void assertGetXAResourcesWithoutConnecting() throws SQLException {
-        ReflectiveUtil.setField(recoveryHelper, "delegate", xaResource);
+    void assertGetXAResourcesWithoutConnecting() throws SQLException, ReflectiveOperationException {
+        Plugins.getMemberAccessor().set(DataSourceXAResourceRecoveryHelper.class.getDeclaredField("delegate"), recoveryHelper, xaResource);
         recoveryHelper.getXAResources();
         XAResource[] xaResources = recoveryHelper.getXAResources();
         assertThat(xaResources.length, is(1));
@@ -80,15 +83,15 @@ public final class DataSourceXAResourceRecoveryHelperTest {
     }
     
     @Test
-    public void assertDelegateRecover() throws XAException, SQLException {
+    void assertDelegateRecover() throws XAException, SQLException {
         recoveryHelper.getXAResources();
         recoveryHelper.recover(XAResource.TMSTARTRSCAN);
-        verify(xaResource, times(1)).recover(XAResource.TMSTARTRSCAN);
+        verify(xaResource).recover(XAResource.TMSTARTRSCAN);
         verify(xaConnection, times(0)).close();
     }
     
     @Test
-    public void assertDelegateRecoverAndCloseConnection() throws XAException, SQLException {
+    void assertDelegateRecoverAndCloseConnection() throws XAException, SQLException {
         recoveryHelper.getXAResources();
         recoveryHelper.recover(XAResource.TMENDRSCAN);
         verify(xaResource).recover(XAResource.TMENDRSCAN);
@@ -96,65 +99,65 @@ public final class DataSourceXAResourceRecoveryHelperTest {
     }
     
     @Test
-    public void assertDelegateStart() throws XAException {
+    void assertDelegateStart() throws XAException {
         recoveryHelper.getXAResources();
         recoveryHelper.start(null, 0);
-        verify(xaResource, times(1)).start(null, 0);
+        verify(xaResource).start(null, 0);
     }
     
     @Test
-    public void assertDelegateEnd() throws XAException {
+    void assertDelegateEnd() throws XAException {
         recoveryHelper.getXAResources();
         recoveryHelper.end(null, 0);
-        verify(xaResource, times(1)).end(null, 0);
+        verify(xaResource).end(null, 0);
     }
     
     @Test
-    public void assertDelegatePrepare() throws XAException {
+    void assertDelegatePrepare() throws XAException {
         recoveryHelper.getXAResources();
         recoveryHelper.prepare(null);
-        verify(xaResource, times(1)).prepare(null);
+        verify(xaResource).prepare(null);
     }
     
     @Test
-    public void assertDelegateCommit() throws XAException {
+    void assertDelegateCommit() throws XAException {
         recoveryHelper.getXAResources();
         recoveryHelper.commit(null, true);
-        verify(xaResource, times(1)).commit(null, true);
+        verify(xaResource).commit(null, true);
     }
     
     @Test
-    public void assertDelegateRollback() throws XAException {
+    void assertDelegateRollback() throws XAException {
         recoveryHelper.getXAResources();
         recoveryHelper.rollback(null);
-        verify(xaResource, times(1)).rollback(null);
+        verify(xaResource).rollback(null);
     }
     
     @Test
-    public void assertDelegateIsSameRM() throws XAException {
+    void assertDelegateIsSameRM() throws XAException {
         recoveryHelper.getXAResources();
         recoveryHelper.isSameRM(null);
-        verify(xaResource, times(1)).isSameRM(null);
+        verify(xaResource).isSameRM(null);
     }
     
     @Test
-    public void assertDelegateForget() throws XAException {
+    void assertDelegateForget() throws XAException {
         recoveryHelper.getXAResources();
         recoveryHelper.forget(null);
-        verify(xaResource, times(1)).forget(null);
+        verify(xaResource).forget(null);
     }
     
     @Test
-    public void assertDelegateGetTransactionTimeout() throws XAException {
+    void assertDelegateGetTransactionTimeout() throws XAException {
         recoveryHelper.getXAResources();
         recoveryHelper.getTransactionTimeout();
-        verify(xaResource, times(1)).getTransactionTimeout();
+        verify(xaResource).getTransactionTimeout();
     }
     
     @Test
-    public void assertDelegateSetTransactionTimeout() throws XAException {
+    void assertDelegateSetTransactionTimeout() throws XAException {
         recoveryHelper.getXAResources();
         recoveryHelper.setTransactionTimeout(0);
-        verify(xaResource, times(1)).setTransactionTimeout(0);
+        verify(xaResource).setTransactionTimeout(0);
     }
 }

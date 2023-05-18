@@ -22,31 +22,31 @@ import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQ
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQLCommandPacketType;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.extended.PostgreSQLAggregatedCommandPacket;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class OpenGaussCommandPacketFactoryTest {
+@ExtendWith(MockitoExtension.class)
+class OpenGaussCommandPacketFactoryTest {
     
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private PostgreSQLPacketPayload payload;
     
     @Test
-    public void assertNewOpenGaussComBatchBindPacket() {
+    void assertNewOpenGaussComBatchBindPacket() {
         when(payload.getByteBuf()).thenReturn(mock(ByteBuf.class));
         assertThat(OpenGaussCommandPacketFactory.newInstance(OpenGaussCommandPacketType.BATCH_BIND_COMMAND, payload), instanceOf(PostgreSQLAggregatedCommandPacket.class));
     }
     
     @Test
-    public void assertNewPostgreSQLPacket() {
+    void assertNewPostgreSQLPacket() {
         assertThat(OpenGaussCommandPacketFactory.newInstance(mock(PostgreSQLCommandPacketType.class), payload), instanceOf(PostgreSQLCommandPacket.class));
     }
 }

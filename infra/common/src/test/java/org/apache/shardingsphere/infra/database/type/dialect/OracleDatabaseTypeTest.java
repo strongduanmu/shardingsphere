@@ -18,8 +18,8 @@
 package org.apache.shardingsphere.infra.database.type.dialect;
 
 import org.apache.shardingsphere.infra.database.metadata.dialect.OracleDataSourceMetaData;
-import org.apache.shardingsphere.sql.parser.sql.common.constant.QuoteCharacter;
-import org.junit.Test;
+import org.apache.shardingsphere.sql.parser.sql.common.enums.QuoteCharacter;
+import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -27,56 +27,56 @@ import java.util.Collections;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class OracleDatabaseTypeTest {
+class OracleDatabaseTypeTest {
     
     @Test
-    public void assertGetQuoteCharacter() {
+    void assertGetQuoteCharacter() {
         assertThat(new OracleDatabaseType().getQuoteCharacter(), is(QuoteCharacter.QUOTE));
     }
     
     @Test
-    public void assertGetJdbcUrlPrefixes() {
+    void assertGetJdbcUrlPrefixes() {
         assertThat(new OracleDatabaseType().getJdbcUrlPrefixes(), is(Collections.singleton("jdbc:oracle:")));
     }
     
     @Test
-    public void assertOracleDataSourceMetaData() {
+    void assertOracleDataSourceMetaData() {
         assertThat(new OracleDatabaseType().getDataSourceMetaData("jdbc:oracle:oci:@127.0.0.1/foo_ds", "scott"), instanceOf(OracleDataSourceMetaData.class));
     }
     
     @Test
-    public void assertGetSchema() throws SQLException {
+    void assertGetSchema() throws SQLException {
         Connection connection = mock(Connection.class, RETURNS_DEEP_STUBS);
         when(connection.getMetaData().getUserName()).thenReturn("scott");
         assertThat(new OracleDatabaseType().getSchema(connection), is("SCOTT"));
     }
     
     @Test
-    public void assertGetSchemaIfExceptionThrown() throws SQLException {
+    void assertGetSchemaIfExceptionThrown() throws SQLException {
         Connection connection = mock(Connection.class, RETURNS_DEEP_STUBS);
         when(connection.getMetaData().getUserName()).thenThrow(SQLException.class);
         assertNull(new OracleDatabaseType().getSchema(connection));
     }
     
     @Test
-    public void assertFormatTableNamePattern() {
+    void assertFormatTableNamePattern() {
         assertThat(new OracleDatabaseType().formatTableNamePattern("tbl"), is("TBL"));
     }
     
     @Test
-    public void assertGetSystemDatabases() {
+    void assertGetSystemDatabases() {
         assertTrue(new OracleDatabaseType().getSystemDatabaseSchemaMap().isEmpty());
     }
     
     @Test
-    public void assertGetSystemSchemas() {
+    void assertGetSystemSchemas() {
         assertTrue(new OracleDatabaseType().getSystemSchemas().isEmpty());
     }
 }

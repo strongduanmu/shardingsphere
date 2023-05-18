@@ -39,7 +39,7 @@ public final class DerivedProjection implements Projection {
     
     private final String alias;
     
-    private final SQLSegment derivedProjection;
+    private final SQLSegment derivedProjectionSegment;
     
     @Override
     public Optional<String> getAlias() {
@@ -49,5 +49,10 @@ public final class DerivedProjection implements Projection {
     @Override
     public String getColumnLabel() {
         return getAlias().orElse(expression);
+    }
+    
+    @Override
+    public Projection cloneWithOwner(final String ownerName) {
+        return new DerivedProjection(expression, alias, derivedProjectionSegment);
     }
 }

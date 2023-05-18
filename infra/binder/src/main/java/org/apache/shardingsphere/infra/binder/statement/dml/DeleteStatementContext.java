@@ -38,7 +38,7 @@ import java.util.Map;
  * Delete statement context.
  */
 @Getter
-public final class DeleteStatementContext extends CommonSQLStatementContext<DeleteStatement> implements TableAvailable, WhereAvailable {
+public final class DeleteStatementContext extends CommonSQLStatementContext implements TableAvailable, WhereAvailable {
     
     private final TablesContext tablesContext;
     
@@ -62,7 +62,7 @@ public final class DeleteStatementContext extends CommonSQLStatementContext<Dele
     private Collection<SimpleTableSegment> filterAliasDeleteTable(final Collection<SimpleTableSegment> tableSegments) {
         Map<String, SimpleTableSegment> aliasTableSegmentMap = new HashMap<>(tableSegments.size(), 1f);
         for (SimpleTableSegment each : tableSegments) {
-            each.getAlias().ifPresent(alias -> aliasTableSegmentMap.putIfAbsent(alias, each));
+            each.getAlias().ifPresent(optional -> aliasTableSegmentMap.putIfAbsent(optional, each));
         }
         Collection<SimpleTableSegment> result = new LinkedList<>();
         for (SimpleTableSegment each : tableSegments) {
@@ -72,6 +72,11 @@ public final class DeleteStatementContext extends CommonSQLStatementContext<Dele
             }
         }
         return result;
+    }
+    
+    @Override
+    public DeleteStatement getSqlStatement() {
+        return (DeleteStatement) super.getSqlStatement();
     }
     
     @Override

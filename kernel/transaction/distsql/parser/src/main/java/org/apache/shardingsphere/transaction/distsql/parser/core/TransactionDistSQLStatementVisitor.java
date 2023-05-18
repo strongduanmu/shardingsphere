@@ -25,7 +25,7 @@ import org.apache.shardingsphere.distsql.parser.autogen.TransactionDistSQLStatem
 import org.apache.shardingsphere.distsql.parser.autogen.TransactionDistSQLStatementParser.ProviderDefinitionContext;
 import org.apache.shardingsphere.distsql.parser.autogen.TransactionDistSQLStatementParser.ShowTransactionRuleContext;
 import org.apache.shardingsphere.distsql.parser.autogen.TransactionDistSQLStatementParser.TransactionRuleDefinitionContext;
-import org.apache.shardingsphere.sql.parser.api.visitor.ASTNode;
+import org.apache.shardingsphere.sql.parser.api.ASTNode;
 import org.apache.shardingsphere.sql.parser.api.visitor.SQLVisitor;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 import org.apache.shardingsphere.transaction.distsql.parser.segment.TransactionProviderSegment;
@@ -35,9 +35,9 @@ import org.apache.shardingsphere.transaction.distsql.parser.statement.queryable.
 import java.util.Properties;
 
 /**
- * SQL statement visitor for transaction dist SQL.
+ * SQL statement visitor for transaction DistSQL.
  */
-public final class TransactionDistSQLStatementVisitor extends TransactionDistSQLStatementBaseVisitor<ASTNode> implements SQLVisitor {
+public final class TransactionDistSQLStatementVisitor extends TransactionDistSQLStatementBaseVisitor<ASTNode> implements SQLVisitor<ASTNode> {
     
     @Override
     public ASTNode visitShowTransactionRule(final ShowTransactionRuleContext ctx) {
@@ -51,12 +51,8 @@ public final class TransactionDistSQLStatementVisitor extends TransactionDistSQL
     
     @Override
     public ASTNode visitTransactionRuleDefinition(final TransactionRuleDefinitionContext ctx) {
-        String defaultType = getIdentifierValue(ctx.defaultType());
-        if (null == ctx.providerDefinition()) {
-            return new AlterTransactionRuleStatement(defaultType, new TransactionProviderSegment(null, null));
-        }
-        TransactionProviderSegment provider = (TransactionProviderSegment) visit(ctx.providerDefinition());
-        return new AlterTransactionRuleStatement(defaultType, provider);
+        return null == ctx.providerDefinition() ? new AlterTransactionRuleStatement(getIdentifierValue(ctx.defaultType()), new TransactionProviderSegment(null, null))
+                : new AlterTransactionRuleStatement(getIdentifierValue(ctx.defaultType()), (TransactionProviderSegment) visit(ctx.providerDefinition()));
     }
     
     @Override

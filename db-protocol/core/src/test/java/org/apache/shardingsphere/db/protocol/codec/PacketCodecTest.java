@@ -20,11 +20,11 @@ package org.apache.shardingsphere.db.protocol.codec;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.shardingsphere.db.protocol.packet.DatabasePacket;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 
@@ -33,8 +33,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class PacketCodecTest {
+@ExtendWith(MockitoExtension.class)
+class PacketCodecTest {
     
     @Mock
     private DatabasePacketCodecEngine databasePacketCodecEngine;
@@ -47,13 +47,13 @@ public final class PacketCodecTest {
     
     private PacketCodec packetCodec;
     
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         packetCodec = new PacketCodec(databasePacketCodecEngine);
     }
     
     @Test
-    public void assertDecodeWithValidHeader() {
+    void assertDecodeWithValidHeader() {
         when(byteBuf.readableBytes()).thenReturn(1);
         when(databasePacketCodecEngine.isValidHeader(1)).thenReturn(true);
         packetCodec.decode(context, byteBuf, Collections.emptyList());
@@ -61,7 +61,7 @@ public final class PacketCodecTest {
     }
     
     @Test
-    public void assertDecodeWithInvalidHeader() {
+    void assertDecodeWithInvalidHeader() {
         when(byteBuf.readableBytes()).thenReturn(1);
         when(databasePacketCodecEngine.isValidHeader(1)).thenReturn(false);
         packetCodec.decode(context, byteBuf, Collections.emptyList());
@@ -70,7 +70,7 @@ public final class PacketCodecTest {
     
     @SuppressWarnings("unchecked")
     @Test
-    public void assertEncode() {
+    void assertEncode() {
         DatabasePacket databasePacket = mock(DatabasePacket.class);
         packetCodec.encode(context, databasePacket, byteBuf);
         verify(databasePacketCodecEngine).encode(context, databasePacket, byteBuf);

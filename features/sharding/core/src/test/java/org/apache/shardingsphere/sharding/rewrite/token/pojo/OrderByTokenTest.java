@@ -17,21 +17,21 @@
 
 package org.apache.shardingsphere.sharding.rewrite.token.pojo;
 
-import org.apache.shardingsphere.sql.parser.sql.common.constant.OrderDirection;
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.shardingsphere.sql.parser.sql.common.enums.OrderDirection;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class OrderByTokenTest {
+class OrderByTokenTest {
     
     private OrderByToken orderByToken;
     
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         orderByToken = new OrderByToken(0);
         List<String> columnLabels = orderByToken.getColumnLabels();
         List<OrderDirection> orderDirections = orderByToken.getOrderDirections();
@@ -42,7 +42,7 @@ public final class OrderByTokenTest {
     }
     
     @Test
-    public void assertToString() {
+    void assertToString() {
         assertThat(orderByToken.toString(), is(" ORDER BY Test1 ASC,Test2 ASC "));
     }
 }

@@ -18,20 +18,21 @@
 package org.apache.shardingsphere.db.protocol.mysql.constant;
 
 import org.apache.shardingsphere.db.protocol.mysql.exception.MySQLProtocolException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public final class MySQLNewParametersBoundFlagTest {
+class MySQLNewParametersBoundFlagTest {
     
     @Test
-    public void assertValueOf() {
+    void assertValueOf() {
         assertThat(MySQLNewParametersBoundFlag.valueOf(MySQLNewParametersBoundFlag.PARAMETER_TYPE_EXIST.getValue()), is(MySQLNewParametersBoundFlag.PARAMETER_TYPE_EXIST));
     }
     
-    @Test(expected = MySQLProtocolException.class)
-    public void assertValueOfWithIllegalArgument() {
-        MySQLNewParametersBoundFlag.valueOf(-1);
+    @Test
+    void assertValueOfWithIllegalArgument() {
+        assertThrows(MySQLProtocolException.class, () -> MySQLNewParametersBoundFlag.valueOf(-1));
     }
 }

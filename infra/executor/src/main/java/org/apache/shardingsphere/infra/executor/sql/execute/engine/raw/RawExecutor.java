@@ -18,17 +18,15 @@
 package org.apache.shardingsphere.infra.executor.sql.execute.engine.raw;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.shardingsphere.infra.binder.QueryContext;
-import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
-import org.apache.shardingsphere.infra.context.ConnectionContext;
-import org.apache.shardingsphere.infra.util.eventbus.EventBusContext;
+import org.apache.shardingsphere.infra.session.query.QueryContext;
+import org.apache.shardingsphere.infra.session.connection.ConnectionContext;
 import org.apache.shardingsphere.infra.executor.kernel.ExecutorEngine;
 import org.apache.shardingsphere.infra.executor.kernel.model.ExecutionGroupContext;
 import org.apache.shardingsphere.infra.executor.sql.execute.engine.SQLExecutorExceptionHandler;
 import org.apache.shardingsphere.infra.executor.sql.execute.engine.raw.callback.RawSQLExecutorCallback;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.ExecuteResult;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.update.UpdateResult;
-import org.apache.shardingsphere.infra.executor.sql.process.ExecuteProcessEngine;
+import org.apache.shardingsphere.infra.executor.sql.process.ProcessEngine;
 
 import java.sql.SQLException;
 import java.util.Collections;
@@ -45,9 +43,7 @@ public final class RawExecutor {
     
     private final ConnectionContext connectionContext;
     
-    private final ConfigurationProperties props;
-    
-    private final EventBusContext eventBusContext;
+    private final ProcessEngine processEngine = new ProcessEngine();
     
     /**
      * Execute.
@@ -58,17 +54,15 @@ public final class RawExecutor {
      * @return execute results
      * @throws SQLException SQL exception
      */
-    public List<ExecuteResult> execute(final ExecutionGroupContext<RawSQLExecutionUnit> executionGroupContext, final QueryContext queryContext,
-                                       final RawSQLExecutorCallback callback) throws SQLException {
+    public List<ExecuteResult> execute(final ExecutionGroupContext<RawSQLExecutionUnit> executionGroupContext,
+                                       final QueryContext queryContext, final RawSQLExecutorCallback callback) throws SQLException {
         try {
-            ExecuteProcessEngine.initializeExecution(queryContext, executionGroupContext, eventBusContext);
+            processEngine.executeSQL(executionGroupContext, queryContext);
             // TODO Load query header for first query
             List<ExecuteResult> results = execute(executionGroupContext, (RawSQLExecutorCallback) null, callback);
-            ExecuteProcessEngine.finishExecution(executionGroupContext.getExecutionID(), eventBusContext);
-            return results.isEmpty() || Objects.isNull(results.get(0)) ? Collections
-                    .singletonList(new UpdateResult(0, 0L)) : results;
+            return results.isEmpty() || Objects.isNull(results.get(0)) ? Collections.singletonList(new UpdateResult(0, 0L)) : results;
         } finally {
-            ExecuteProcessEngine.cleanExecution();
+            processEngine.completeSQLExecution();
         }
     }
     
@@ -76,7 +70,7 @@ public final class RawExecutor {
     private <T> List<T> execute(final ExecutionGroupContext<RawSQLExecutionUnit> executionGroupContext,
                                 final RawSQLExecutorCallback firstCallback, final RawSQLExecutorCallback callback) throws SQLException {
         try {
-            return (List<T>) executorEngine.execute(executionGroupContext, firstCallback, callback, connectionContext.getTransactionConnectionContext().isInTransaction());
+            return (List<T>) executorEngine.execute(executionGroupContext, firstCallback, callback, connectionContext.getTransactionContext().isInTransaction());
         } catch (final SQLException ex) {
             SQLExecutorExceptionHandler.handleException(ex);
             return Collections.emptyList();

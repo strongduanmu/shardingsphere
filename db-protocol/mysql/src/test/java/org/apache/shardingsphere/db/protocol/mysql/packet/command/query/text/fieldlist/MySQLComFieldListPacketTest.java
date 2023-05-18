@@ -19,24 +19,24 @@ package org.apache.shardingsphere.db.protocol.mysql.packet.command.query.text.fi
 
 import org.apache.shardingsphere.db.protocol.mysql.packet.command.MySQLCommandPacketType;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLComFieldListPacketTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLComFieldListPacketTest {
     
     @Mock
     private MySQLPacketPayload payload;
     
     @Test
-    public void assertNew() {
+    void assertNew() {
         when(payload.readStringNul()).thenReturn("tbl");
         when(payload.readStringEOF()).thenReturn("-");
         MySQLComFieldListPacket actual = new MySQLComFieldListPacket(payload);
@@ -45,7 +45,7 @@ public final class MySQLComFieldListPacketTest {
     }
     
     @Test
-    public void assertWrite() {
+    void assertWrite() {
         when(payload.readStringNul()).thenReturn("tbl");
         when(payload.readStringEOF()).thenReturn("-");
         MySQLComFieldListPacket actual = new MySQLComFieldListPacket(payload);

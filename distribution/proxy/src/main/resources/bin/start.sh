@@ -103,6 +103,7 @@ unset -v PORT
 unset -v ADDRESSES
 unset -v CONF_PATH
 unset -v FORCE
+unset -v SOCKET_FILE
 
 print_usage() {
     echo "usage:"
@@ -118,6 +119,8 @@ print_usage() {
     echo "-p  Bind port, default is '3307', which could be changed in server.yaml"
     echo "-c  Path to config directory of ShardingSphere-Proxy, default is 'conf'"
     echo "-f  Force start ShardingSphere-Proxy"
+    echo "-g  Enable agent if shardingsphere-agent deployed in 'agent' directory"
+    echo "-s  The socket file to use for connection."
     exit 0
 }
 
@@ -134,12 +137,43 @@ if [ "$1" == "-v" ] || [ "$1" == "--version" ] ; then
     print_version
 fi
 
+AGENT_FILE=${DEPLOY_DIR}/agent/shardingsphere-agent.jar
+function set_agent_name() {
+    if [ -d "${DEPLOY_DIR}/agent" ]; then
+        AGENT_NAME=$(ls "${DEPLOY_DIR}/agent/shardingsphere-agent"*)
+        if [ -n "${AGENT_NAME}" ]; then
+          AGENT_FILE=${AGENT_NAME}
+        fi
+    fi
+}
+
+function set_agent_parameter() {
+    AGENT_PARAM="";
+    if [ -f "$AGENT_FILE" ]; then
+      AGENT_PARAM=" -javaagent:${AGENT_FILE} "
+    fi
+}
+
+PARAMETER_INDEX=0
+PARAMETERS=( $* )
+for arg in $*
+do
+  if [ "$arg" == "-g" ] || [ "$arg" == "--agent" ] ; then
+    set_agent_name
+    set_agent_parameter
+    unset PARAMETERS[PARAMETER_INDEX]
+    set -- "${PARAMETERS[@]}"
+    break
+  fi
+  let PARAMETER_INDEX+=1
+done
+
 if [ $# == 0 ]; then
     CLASS_PATH=${DEPLOY_DIR}/conf:${CLASS_PATH}
 fi
 
-if [[ $1 == -a ]] || [[ $1 == -p ]] || [[ $1 == -c ]] || [[ $1 == -f ]] ; then
-    while getopts ":a:p:c:f" opt
+if [[ $1 == -a ]] || [[ $1 == -p ]] || [[ $1 == -c ]] || [[ $1 == -f ]] || [[ $1 == -s ]]; then
+    while getopts ":a:p:c:f:s:" opt
     do
         case $opt in
         a)
@@ -154,6 +188,9 @@ if [[ $1 == -a ]] || [[ $1 == -p ]] || [[ $1 == -c ]] || [[ $1 == -f ]] ; then
         f)
           echo "The force param is true"
           FORCE=true;;
+        s)
+          echo "The socket file is $OPTARG"
+          SOCKET_FILE=$OPTARG;;
         ?)
           print_usage;;
         esac
@@ -186,6 +223,10 @@ if [ -z "$FORCE" ]; then
     FORCE=false
 fi
 
+if [ "$SOCKET_FILE" ]; then
+    ADDRESSES="${ADDRESSES},${SOCKET_FILE}"
+fi
+
 CLASS_PATH=${CONF_PATH}:${CLASS_PATH}
 MAIN_CLASS="${MAIN_CLASS} ${PORT} ${CONF_PATH} ${ADDRESSES} ${FORCE}"
 
@@ -193,13 +234,13 @@ echo "The classpath is ${CLASS_PATH}"
 echo "main class ${MAIN_CLASS}"
 
 if [ -n "${IS_DOCKER}" ]; then
-  exec $JAVA ${JAVA_OPTS} ${JAVA_MEM_OPTS} -classpath ${CLASS_PATH} ${MAIN_CLASS}
+  exec $JAVA ${JAVA_OPTS} ${JAVA_MEM_OPTS} -classpath ${CLASS_PATH} ${AGENT_PARAM} ${MAIN_CLASS}
   exit 0
 fi
 
 echo -e "Starting the $SERVER_NAME ...\c"
 
-nohup $JAVA ${JAVA_OPTS} ${JAVA_MEM_OPTS} -classpath ${CLASS_PATH} ${MAIN_CLASS} >> ${STDOUT_FILE} 2>&1 &
+nohup $JAVA ${JAVA_OPTS} ${JAVA_MEM_OPTS} -classpath ${CLASS_PATH} ${AGENT_PARAM} ${MAIN_CLASS} >> ${STDOUT_FILE} 2>&1 &
 if [ $? -eq 0 ]; then
   case "$OSTYPE" in
   *solaris*)

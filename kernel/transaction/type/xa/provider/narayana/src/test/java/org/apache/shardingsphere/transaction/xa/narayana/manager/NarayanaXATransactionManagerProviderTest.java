@@ -19,13 +19,13 @@ package org.apache.shardingsphere.transaction.xa.narayana.manager;
 
 import com.arjuna.ats.internal.jta.recovery.arjunacore.XARecoveryModule;
 import com.arjuna.ats.jbossatx.jta.RecoveryManagerService;
-import org.apache.shardingsphere.infra.util.reflect.ReflectiveUtil;
 import org.apache.shardingsphere.transaction.xa.spi.SingleXAResource;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.internal.configuration.plugins.Plugins;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.sql.XADataSource;
 import javax.transaction.RollbackException;
@@ -40,8 +40,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class NarayanaXATransactionManagerProviderTest {
+@ExtendWith(MockitoExtension.class)
+class NarayanaXATransactionManagerProviderTest {
     
     private final NarayanaXATransactionManagerProvider transactionManagerProvider = new NarayanaXATransactionManagerProvider();
     
@@ -57,27 +57,27 @@ public final class NarayanaXATransactionManagerProviderTest {
     @Mock
     private XADataSource xaDataSource;
     
-    @Before
-    public void setUp() {
-        ReflectiveUtil.setField(transactionManagerProvider, "xaRecoveryModule", xaRecoveryModule);
-        ReflectiveUtil.setField(transactionManagerProvider, "transactionManager", transactionManager);
-        ReflectiveUtil.setField(transactionManagerProvider, "recoveryManagerService", recoveryManagerService);
+    @BeforeEach
+    void setUp() throws ReflectiveOperationException {
+        Plugins.getMemberAccessor().set(NarayanaXATransactionManagerProvider.class.getDeclaredField("xaRecoveryModule"), transactionManagerProvider, xaRecoveryModule);
+        Plugins.getMemberAccessor().set(NarayanaXATransactionManagerProvider.class.getDeclaredField("transactionManager"), transactionManagerProvider, transactionManager);
+        Plugins.getMemberAccessor().set(NarayanaXATransactionManagerProvider.class.getDeclaredField("recoveryManagerService"), transactionManagerProvider, recoveryManagerService);
     }
     
     @Test
-    public void assertRegisterRecoveryResource() {
+    void assertRegisterRecoveryResource() {
         transactionManagerProvider.registerRecoveryResource("ds1", xaDataSource);
         verify(xaRecoveryModule).addXAResourceRecoveryHelper(any(DataSourceXAResourceRecoveryHelper.class));
     }
     
     @Test
-    public void assertRemoveRecoveryResource() {
+    void assertRemoveRecoveryResource() {
         transactionManagerProvider.removeRecoveryResource("ds1", xaDataSource);
         verify(xaRecoveryModule).removeXAResourceRecoveryHelper(any(DataSourceXAResourceRecoveryHelper.class));
     }
     
     @Test
-    public void assertEnlistResource() throws SystemException, RollbackException {
+    void assertEnlistResource() throws SystemException, RollbackException {
         SingleXAResource singleXAResource = mock(SingleXAResource.class);
         Transaction transaction = mock(Transaction.class);
         when(transactionManager.getTransaction()).thenReturn(transaction);
@@ -86,12 +86,12 @@ public final class NarayanaXATransactionManagerProviderTest {
     }
     
     @Test
-    public void assertGetTransactionManager() {
+    void assertGetTransactionManager() {
         assertThat(transactionManagerProvider.getTransactionManager(), is(transactionManager));
     }
     
     @Test
-    public void assertClose() throws Exception {
+    void assertClose() throws Exception {
         transactionManagerProvider.close();
         verify(recoveryManagerService).stop();
         verify(recoveryManagerService).destroy();

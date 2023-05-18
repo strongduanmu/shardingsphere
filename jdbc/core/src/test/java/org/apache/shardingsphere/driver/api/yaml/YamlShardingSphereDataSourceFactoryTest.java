@@ -19,15 +19,15 @@ package org.apache.shardingsphere.driver.api.yaml;
 
 import lombok.SneakyThrows;
 import org.apache.shardingsphere.driver.jdbc.core.datasource.ShardingSphereDataSource;
-import org.apache.shardingsphere.test.mock.MockedDataSource;
-import org.junit.Test;
+import org.apache.shardingsphere.test.fixture.jdbc.MockedDataSource;
+import org.junit.jupiter.api.Test;
+import org.mockito.internal.configuration.plugins.Plugins;
 
 import javax.sql.DataSource;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -37,20 +37,20 @@ import java.util.Objects;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class YamlShardingSphereDataSourceFactoryTest {
+class YamlShardingSphereDataSourceFactoryTest {
     
     @Test
-    public void assertCreateDataSourceWithFile() throws Exception {
+    void assertCreateDataSourceWithFile() throws Exception {
         assertDataSource(YamlShardingSphereDataSourceFactory.createDataSource(new File(getYamlFileUrl().toURI())));
     }
     
     @Test
-    public void assertCreateDataSourceWithBytes() throws SQLException, IOException {
+    void assertCreateDataSourceWithBytes() throws SQLException, IOException {
         assertDataSource(YamlShardingSphereDataSourceFactory.createDataSource(readFile(getYamlFileUrl()).getBytes()));
     }
     
     @Test
-    public void assertCreateDataSourceWithFileForExternalDataSources() throws Exception {
+    void assertCreateDataSourceWithFileForExternalDataSources() throws Exception {
         Map<String, DataSource> dataSourceMap = new HashMap<>(2, 1);
         dataSourceMap.put("ds_0", new MockedDataSource());
         dataSourceMap.put("ds_1", new MockedDataSource());
@@ -58,12 +58,12 @@ public final class YamlShardingSphereDataSourceFactoryTest {
     }
     
     @Test
-    public void assertCreateDataSourceWithFileForExternalSingleDataSource() throws Exception {
+    void assertCreateDataSourceWithFileForExternalSingleDataSource() throws Exception {
         assertDataSource(YamlShardingSphereDataSourceFactory.createDataSource(new MockedDataSource(), new File(getYamlFileUrl().toURI())));
     }
     
     @Test
-    public void assertCreateDataSourceWithBytesForExternalDataSources() throws Exception {
+    void assertCreateDataSourceWithBytesForExternalDataSources() throws Exception {
         Map<String, DataSource> dataSourceMap = new HashMap<>(2, 1);
         dataSourceMap.put("ds_0", new MockedDataSource());
         dataSourceMap.put("ds_1", new MockedDataSource());
@@ -71,7 +71,7 @@ public final class YamlShardingSphereDataSourceFactoryTest {
     }
     
     @Test
-    public void assertCreateDataSourceWithBytesForExternalSingleDataSource() throws Exception {
+    void assertCreateDataSourceWithBytesForExternalSingleDataSource() throws Exception {
         assertDataSource(YamlShardingSphereDataSourceFactory.createDataSource(new MockedDataSource(), readFile(getYamlFileUrl()).getBytes()));
     }
     
@@ -94,8 +94,6 @@ public final class YamlShardingSphereDataSourceFactoryTest {
     
     @SneakyThrows(ReflectiveOperationException.class)
     private void assertDataSource(final DataSource dataSource) {
-        Field field = ShardingSphereDataSource.class.getDeclaredField("databaseName");
-        field.setAccessible(true);
-        assertThat((String) field.get(dataSource), is("logic_db"));
+        assertThat(Plugins.getMemberAccessor().get(ShardingSphereDataSource.class.getDeclaredField("databaseName"), dataSource), is("logic_db"));
     }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.sharding.distsql.handler.enums;
 
+import org.apache.shardingsphere.infra.util.exception.ShardingSpherePreconditions;
 import org.apache.shardingsphere.infra.util.exception.external.sql.type.generic.UnsupportedSQLOperationException;
 import org.apache.shardingsphere.sharding.api.config.strategy.sharding.ComplexShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.sharding.HintShardingStrategyConfiguration;
@@ -29,7 +30,7 @@ import java.util.Collection;
 import java.util.Optional;
 
 /**
- * Sharding strategy type enum.
+ * Sharding strategy type.
  */
 public enum ShardingStrategyType {
     
@@ -96,7 +97,7 @@ public enum ShardingStrategyType {
         
         @Override
         public boolean isValid(final String shardingColumn) {
-            return true;
+            return null == shardingColumn;
         }
     },
     COMPLEX {
@@ -159,35 +160,35 @@ public enum ShardingStrategyType {
      *
      * @param name name
      * @return sharding strategy type
+     * @throws UnsupportedSQLOperationException unsupported SQL operation exception
      */
     public static ShardingStrategyType getValueOf(final String name) {
         try {
             return valueOf(name.toUpperCase());
-        } catch (final IllegalArgumentException ex) {
-            throw new UnsupportedSQLOperationException(String.format("unsupported strategy type %s", name));
+        } catch (final IllegalArgumentException ignored) {
+            throw new UnsupportedSQLOperationException(String.format("unsupported strategy type `%s`", name));
         }
     }
     
     /**
      * Returns the sharding strategy type.
      *
-     * @param shardingStrategyConfig implementation class of sharding strategy configuration
+     * @param config sharding strategy configuration
      * @return sharding strategy type
      */
-    public static ShardingStrategyType getValueOf(final ShardingStrategyConfiguration shardingStrategyConfig) {
-        Optional<ShardingStrategyType> type = Arrays.stream(values())
-                .filter(each -> shardingStrategyConfig.getClass().getCanonicalName().equals(each.getImplementedClass().getCanonicalName())).findFirst();
-        type.orElseThrow(() -> new UnsupportedOperationException(String.format("unsupported strategy type %s", shardingStrategyConfig.getClass().getName())));
-        return type.get();
+    public static ShardingStrategyType getValueOf(final ShardingStrategyConfiguration config) {
+        Optional<ShardingStrategyType> result = Arrays.stream(values()).filter(each -> config.getClass().getName().equals(each.getImplementedClass().getName())).findFirst();
+        ShardingSpherePreconditions.checkState(result.isPresent(), () -> new UnsupportedOperationException(String.format("unsupported strategy type: `%s`.", config.getClass().getName())));
+        return result.get();
     }
     
     /**
-     * Determine whether the specified type is included.
+     * Determine whether contains type.
      *
-     * @param name name
-     * @return have data or not
+     * @param type type
+     * @return contains or not
      */
-    public static boolean contain(final String name) {
-        return Arrays.stream(values()).map(Enum::name).anyMatch(each -> each.equalsIgnoreCase(name));
+    public static boolean contains(final String type) {
+        return Arrays.stream(values()).map(Enum::name).anyMatch(each -> each.equalsIgnoreCase(type));
     }
 }

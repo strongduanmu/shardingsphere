@@ -17,17 +17,19 @@
 
 package org.apache.shardingsphere.mode.repository.cluster.nacos.props;
 
-import org.junit.Test;
+import org.apache.shardingsphere.test.util.PropertiesBuilder;
+import org.apache.shardingsphere.test.util.PropertiesBuilder.Property;
+import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class NacosPropertiesTest {
+class NacosPropertiesTest {
     
     @Test
-    public void assertGetValue() {
+    void assertGetValue() {
         NacosProperties actual = new NacosProperties(createProperties());
         assertThat(actual.getValue(NacosPropertyKey.CLUSTER_IP), is("127.0.0.1"));
         assertThat(actual.getValue(NacosPropertyKey.RETRY_INTERVAL_MILLISECONDS), is(1000L));
@@ -36,16 +38,15 @@ public final class NacosPropertiesTest {
     }
     
     private Properties createProperties() {
-        Properties result = new Properties();
-        result.setProperty(NacosPropertyKey.CLUSTER_IP.getKey(), "127.0.0.1");
-        result.setProperty(NacosPropertyKey.RETRY_INTERVAL_MILLISECONDS.getKey(), "1000");
-        result.setProperty(NacosPropertyKey.MAX_RETRIES.getKey(), "5");
-        result.setProperty(NacosPropertyKey.TIME_TO_LIVE_SECONDS.getKey(), "60");
-        return result;
+        return PropertiesBuilder.build(
+                new Property(NacosPropertyKey.CLUSTER_IP.getKey(), "127.0.0.1"),
+                new Property(NacosPropertyKey.RETRY_INTERVAL_MILLISECONDS.getKey(), "1000"),
+                new Property(NacosPropertyKey.MAX_RETRIES.getKey(), "5"),
+                new Property(NacosPropertyKey.TIME_TO_LIVE_SECONDS.getKey(), "60"));
     }
     
     @Test
-    public void assertGetDefaultValue() {
+    void assertGetDefaultValue() {
         NacosProperties actual = new NacosProperties(new Properties());
         assertThat(actual.getValue(NacosPropertyKey.CLUSTER_IP), is(""));
         assertThat(actual.getValue(NacosPropertyKey.RETRY_INTERVAL_MILLISECONDS), is(500L));

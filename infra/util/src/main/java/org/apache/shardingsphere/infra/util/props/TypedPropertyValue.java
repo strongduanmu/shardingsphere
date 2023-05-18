@@ -39,14 +39,14 @@ public final class TypedPropertyValue {
         if (int.class == key.getType() || Integer.class == key.getType()) {
             try {
                 return Integer.valueOf(value);
-            } catch (final NumberFormatException ex) {
+            } catch (final NumberFormatException ignored) {
                 throw new TypedPropertyValueException(key, value);
             }
         }
         if (long.class == key.getType() || Long.class == key.getType()) {
             try {
                 return Long.valueOf(value);
-            } catch (final NumberFormatException ex) {
+            } catch (final NumberFormatException ignored) {
                 throw new TypedPropertyValueException(key, value);
             }
         }
@@ -58,8 +58,8 @@ public final class TypedPropertyValue {
     
     private Enum<?> getEnumValue(final TypedPropertyKey key, final String value) throws TypedPropertyValueException {
         try {
-            return (Enum<?>) key.getType().getMethod("valueOf", String.class).invoke(null, value);
-        } catch (final ReflectiveOperationException | IllegalArgumentException ex) {
+            return (Enum<?>) key.getType().getMethod("valueOf", String.class).invoke(null, value.toUpperCase());
+        } catch (final ReflectiveOperationException | IllegalArgumentException ignored) {
             throw new TypedPropertyValueException(key, value);
         }
     }

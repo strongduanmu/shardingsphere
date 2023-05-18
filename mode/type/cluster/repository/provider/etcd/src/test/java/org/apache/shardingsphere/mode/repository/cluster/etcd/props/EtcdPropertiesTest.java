@@ -17,28 +17,24 @@
 
 package org.apache.shardingsphere.mode.repository.cluster.etcd.props;
 
-import org.junit.Test;
+import org.apache.shardingsphere.test.util.PropertiesBuilder;
+import org.apache.shardingsphere.test.util.PropertiesBuilder.Property;
+import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class EtcdPropertiesTest {
+class EtcdPropertiesTest {
     
     @Test
-    public void assertGetValue() {
-        assertThat(new EtcdProperties(createProperties()).getValue(EtcdPropertyKey.TIME_TO_LIVE_SECONDS), is(50L));
-    }
-    
-    private Properties createProperties() {
-        Properties result = new Properties();
-        result.setProperty(EtcdPropertyKey.TIME_TO_LIVE_SECONDS.getKey(), "50");
-        return result;
+    void assertGetValue() {
+        assertThat(new EtcdProperties(PropertiesBuilder.build(new Property(EtcdPropertyKey.TIME_TO_LIVE_SECONDS.getKey(), "50"))).getValue(EtcdPropertyKey.TIME_TO_LIVE_SECONDS), is(50L));
     }
     
     @Test
-    public void assertGetDefaultValue() {
+    void assertGetDefaultValue() {
         assertThat(new EtcdProperties(new Properties()).getValue(EtcdPropertyKey.TIME_TO_LIVE_SECONDS), is(30L));
     }
 }

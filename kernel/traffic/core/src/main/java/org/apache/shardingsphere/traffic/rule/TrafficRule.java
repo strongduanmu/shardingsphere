@@ -19,11 +19,12 @@ package org.apache.shardingsphere.traffic.rule;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
-import org.apache.shardingsphere.infra.binder.QueryContext;
+import org.apache.shardingsphere.infra.session.query.QueryContext;
 import org.apache.shardingsphere.infra.binder.statement.CommonSQLStatementContext;
 import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
-import org.apache.shardingsphere.infra.hint.SQLHintProperties;
+import org.apache.shardingsphere.infra.hint.HintValueContext;
 import org.apache.shardingsphere.infra.rule.identifier.scope.GlobalRule;
+import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
 import org.apache.shardingsphere.traffic.api.config.TrafficRuleConfiguration;
 import org.apache.shardingsphere.traffic.api.config.TrafficStrategyConfiguration;
@@ -34,8 +35,6 @@ import org.apache.shardingsphere.traffic.api.traffic.segment.SegmentTrafficAlgor
 import org.apache.shardingsphere.traffic.api.traffic.segment.SegmentTrafficValue;
 import org.apache.shardingsphere.traffic.api.traffic.transaction.TransactionTrafficAlgorithm;
 import org.apache.shardingsphere.traffic.api.traffic.transaction.TransactionTrafficValue;
-import org.apache.shardingsphere.traffic.factory.TrafficAlgorithmFactory;
-import org.apache.shardingsphere.traffic.factory.TrafficLoadBalanceAlgorithmFactory;
 import org.apache.shardingsphere.traffic.spi.TrafficAlgorithm;
 import org.apache.shardingsphere.traffic.spi.TrafficLoadBalanceAlgorithm;
 
@@ -47,7 +46,6 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 
 /**
  * Traffic rule.
@@ -72,7 +70,8 @@ public final class TrafficRule implements GlobalRule {
             if (null == trafficAlgorithms.get(each.getAlgorithmName())) {
                 break;
             }
-            result.put(each.getName() + "." + each.getAlgorithmName(), TrafficAlgorithmFactory.newInstance(trafficAlgorithms.get(each.getAlgorithmName())));
+            AlgorithmConfiguration algorithmConfig = trafficAlgorithms.get(each.getAlgorithmName());
+            result.put(each.getName() + "." + each.getAlgorithmName(), TypedSPILoader.getService(TrafficAlgorithm.class, algorithmConfig.getType(), algorithmConfig.getProps()));
         }
         return result;
     }
@@ -83,7 +82,8 @@ public final class TrafficRule implements GlobalRule {
             if (null == loadBalancers.get(each.getLoadBalancerName())) {
                 break;
             }
-            result.put(each.getName() + "." + each.getLoadBalancerName(), TrafficLoadBalanceAlgorithmFactory.newInstance(loadBalancers.get(each.getLoadBalancerName())));
+            AlgorithmConfiguration algorithmConfig = loadBalancers.get(each.getLoadBalancerName());
+            result.put(each.getName() + "." + each.getLoadBalancerName(), TypedSPILoader.getService(TrafficLoadBalanceAlgorithm.class, algorithmConfig.getType(), algorithmConfig.getProps()));
         }
         return result;
     }
@@ -149,10 +149,10 @@ public final class TrafficRule implements GlobalRule {
             return matchTransactionTraffic((TransactionTrafficAlgorithm) trafficAlgorithm, inTransaction);
         }
         if (trafficAlgorithm instanceof HintTrafficAlgorithm) {
-            SQLHintProperties sqlHintProps = queryContext.getSqlStatementContext() instanceof CommonSQLStatementContext
-                    ? ((CommonSQLStatementContext) queryContext.getSqlStatementContext()).getSqlHintExtractor().getSqlHintProperties()
-                    : new SQLHintProperties(new Properties());
-            return matchHintTraffic((HintTrafficAlgorithm) trafficAlgorithm, sqlHintProps);
+            HintValueContext hintValueContext = queryContext.getSqlStatementContext() instanceof CommonSQLStatementContext
+                    ? ((CommonSQLStatementContext) queryContext.getSqlStatementContext()).getSqlHintExtractor().getHintValueContext()
+                    : new HintValueContext();
+            return matchHintTraffic((HintTrafficAlgorithm) trafficAlgorithm, hintValueContext);
         }
         if (trafficAlgorithm instanceof SegmentTrafficAlgorithm) {
             SQLStatement sqlStatement = queryContext.getSqlStatementContext().getSqlStatement();
@@ -161,8 +161,8 @@ public final class TrafficRule implements GlobalRule {
         return false;
     }
     
-    private boolean matchHintTraffic(final HintTrafficAlgorithm trafficAlgorithm, final SQLHintProperties sqlHintProps) {
-        HintTrafficValue hintTrafficValue = new HintTrafficValue(sqlHintProps);
+    private boolean matchHintTraffic(final HintTrafficAlgorithm trafficAlgorithm, final HintValueContext hintValueContext) {
+        HintTrafficValue hintTrafficValue = new HintTrafficValue(hintValueContext);
         return trafficAlgorithm.match(hintTrafficValue);
     }
     

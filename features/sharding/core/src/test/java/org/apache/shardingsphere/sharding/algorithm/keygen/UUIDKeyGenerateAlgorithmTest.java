@@ -17,17 +17,17 @@
 
 package org.apache.shardingsphere.sharding.algorithm.keygen;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class UUIDKeyGenerateAlgorithmTest {
+class UUIDKeyGenerateAlgorithmTest {
     
     private final UUIDKeyGenerateAlgorithm uuidKeyGenerateAlgorithm = new UUIDKeyGenerateAlgorithm();
     
     @Test
-    public void assertGenerateKey() {
+    void assertGenerateKey() {
         assertThat(uuidKeyGenerateAlgorithm.generateKey().length(), is(32));
     }
 }

@@ -19,11 +19,12 @@ package org.apache.shardingsphere.infra.metadata.data.collector;
 
 import org.apache.shardingsphere.infra.metadata.data.ShardingSphereTableData;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.infra.metadata.database.schema.decorator.model.ShardingSphereTable;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereTable;
 import org.apache.shardingsphere.infra.util.spi.annotation.SingletonSPI;
 import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPI;
 
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -35,10 +36,11 @@ public interface ShardingSphereDataCollector extends TypedSPI {
     /**
      * Collect.
      *
-     * @param shardingSphereDatabase ShardingSphere database
+     * @param databaseName database name
      * @param table table
+     * @param shardingSphereDatabases ShardingSphere databases
      * @return ShardingSphere table data
      * @throws SQLException sql exception
      */
-    Optional<ShardingSphereTableData> collect(ShardingSphereDatabase shardingSphereDatabase, ShardingSphereTable table) throws SQLException;
+    Optional<ShardingSphereTableData> collect(String databaseName, ShardingSphereTable table, Map<String, ShardingSphereDatabase> shardingSphereDatabases) throws SQLException;
 }

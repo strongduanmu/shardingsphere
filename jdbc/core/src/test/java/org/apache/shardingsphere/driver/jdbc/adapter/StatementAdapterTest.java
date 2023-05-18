@@ -20,38 +20,43 @@ package org.apache.shardingsphere.driver.jdbc.adapter;
 import lombok.SneakyThrows;
 import org.apache.shardingsphere.driver.jdbc.core.connection.ShardingSphereConnection;
 import org.apache.shardingsphere.driver.jdbc.core.statement.ShardingSphereStatement;
+import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.database.DefaultDatabase;
 import org.apache.shardingsphere.infra.executor.sql.context.ExecutionContext;
 import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
 import org.apache.shardingsphere.infra.rule.identifier.type.DataNodeContainedRule;
+import org.apache.shardingsphere.parser.rule.SQLParserRule;
+import org.apache.shardingsphere.parser.rule.builder.DefaultSQLParserRuleConfigurationBuilder;
 import org.apache.shardingsphere.sqlfederation.rule.SQLFederationRule;
 import org.apache.shardingsphere.sqlfederation.rule.builder.DefaultSQLFederationRuleConfigurationBuilder;
 import org.apache.shardingsphere.traffic.rule.TrafficRule;
 import org.apache.shardingsphere.traffic.rule.builder.DefaultTrafficRuleConfigurationBuilder;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.mockito.internal.configuration.plugins.Plugins;
 
-import java.lang.reflect.Field;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public final class StatementAdapterTest {
+class StatementAdapterTest {
     
     @Test
-    public void assertClose() throws SQLException {
+    void assertClose() throws SQLException {
         Statement statement = mock(Statement.class);
         ShardingSphereStatement actual = mockShardingSphereStatement(statement);
         actual.close();
@@ -61,7 +66,7 @@ public final class StatementAdapterTest {
     }
     
     @Test
-    public void assertSetPoolable() throws SQLException {
+    void assertSetPoolable() throws SQLException {
         Statement statement = mock(Statement.class);
         ShardingSphereStatement actual = mockShardingSphereStatement(statement);
         actual.setPoolable(true);
@@ -70,7 +75,7 @@ public final class StatementAdapterTest {
     }
     
     @Test
-    public void assertSetFetchSize() throws SQLException {
+    void assertSetFetchSize() throws SQLException {
         Statement statement = mock(Statement.class);
         ShardingSphereStatement actual = mockShardingSphereStatement(statement);
         actual.setFetchSize(100);
@@ -79,7 +84,7 @@ public final class StatementAdapterTest {
     }
     
     @Test
-    public void assertSetFetchDirection() throws SQLException {
+    void assertSetFetchDirection() throws SQLException {
         Statement statement = mock(Statement.class);
         ShardingSphereStatement actual = mockShardingSphereStatement(statement);
         actual.setFetchDirection(ResultSet.FETCH_REVERSE);
@@ -88,7 +93,7 @@ public final class StatementAdapterTest {
     }
     
     @Test
-    public void assertSetEscapeProcessing() throws SQLException {
+    void assertSetEscapeProcessing() throws SQLException {
         Statement statement = mock(Statement.class);
         ShardingSphereStatement actual = mockShardingSphereStatement(statement);
         actual.setEscapeProcessing(true);
@@ -96,7 +101,7 @@ public final class StatementAdapterTest {
     }
     
     @Test
-    public void assertCancel() throws SQLException {
+    void assertCancel() throws SQLException {
         Statement statement = mock(Statement.class);
         ShardingSphereStatement actual = mockShardingSphereStatement(statement);
         actual.cancel();
@@ -104,7 +109,7 @@ public final class StatementAdapterTest {
     }
     
     @Test
-    public void assertGetUpdateCountWithoutAccumulate() throws SQLException {
+    void assertGetUpdateCountWithoutAccumulate() throws SQLException {
         Statement statement1 = mock(Statement.class);
         when(statement1.getUpdateCount()).thenReturn(Integer.MAX_VALUE);
         Statement statement2 = mock(Statement.class);
@@ -114,7 +119,7 @@ public final class StatementAdapterTest {
     }
     
     @Test
-    public void assertGetUpdateCountWithoutAccumulateAndInvalidResult() throws SQLException {
+    void assertGetUpdateCountWithoutAccumulateAndInvalidResult() throws SQLException {
         Statement statement = mock(Statement.class);
         when(statement.getUpdateCount()).thenReturn(-1);
         ShardingSphereStatement actual = mockShardingSphereStatement(statement);
@@ -122,13 +127,13 @@ public final class StatementAdapterTest {
     }
     
     @Test
-    public void assertGetUpdateCountWithoutAccumulateAndEmptyResult() throws SQLException {
+    void assertGetUpdateCountWithoutAccumulateAndEmptyResult() throws SQLException {
         ShardingSphereStatement actual = mockShardingSphereStatement();
         assertThat(actual.getUpdateCount(), is(-1));
     }
     
     @Test
-    public void assertGetUpdateCountWithAccumulate() throws SQLException {
+    void assertGetUpdateCountWithAccumulate() throws SQLException {
         Statement statement1 = mock(Statement.class);
         when(statement1.getUpdateCount()).thenReturn(Integer.MAX_VALUE);
         Statement statement2 = mock(Statement.class);
@@ -138,17 +143,21 @@ public final class StatementAdapterTest {
     }
     
     @Test
-    public void assertGetWarnings() {
-        assertNull(mockShardingSphereStatement().getWarnings());
+    void assertGetWarnings() throws SQLException {
+        try (ShardingSphereStatement actual = mockShardingSphereStatement()) {
+            assertNull(actual.getWarnings());
+        }
     }
     
     @Test
-    public void assertClearWarnings() {
-        mockShardingSphereStatement().clearWarnings();
+    void assertClearWarnings() throws SQLException {
+        try (ShardingSphereStatement actual = mockShardingSphereStatement()) {
+            assertDoesNotThrow(actual::clearWarnings);
+        }
     }
     
     @Test
-    public void assertGetMoreResults() throws SQLException {
+    void assertGetMoreResults() throws SQLException {
         Statement statement = mock(Statement.class);
         when(statement.getMoreResults()).thenReturn(true);
         ShardingSphereStatement actual = mockShardingSphereStatement(statement);
@@ -156,17 +165,17 @@ public final class StatementAdapterTest {
     }
     
     @Test
-    public void assertGetMoreResultsWithCurrent() {
+    void assertGetMoreResultsWithCurrent() {
         assertFalse(mockShardingSphereStatement().getMoreResults(Statement.KEEP_CURRENT_RESULT));
     }
     
     @Test
-    public void assertGetMaxFieldSizeWithoutRoutedStatements() throws SQLException {
+    void assertGetMaxFieldSizeWithoutRoutedStatements() throws SQLException {
         assertThat(mockShardingSphereStatement().getMaxFieldSize(), is(0));
     }
     
     @Test
-    public void assertGetMaxFieldSizeWithRoutedStatements() throws SQLException {
+    void assertGetMaxFieldSizeWithRoutedStatements() throws SQLException {
         Statement statement = mock(Statement.class);
         when(statement.getMaxFieldSize()).thenReturn(10);
         ShardingSphereStatement actual = mockShardingSphereStatement(statement);
@@ -174,7 +183,7 @@ public final class StatementAdapterTest {
     }
     
     @Test
-    public void assertSetMaxFieldSize() throws SQLException {
+    void assertSetMaxFieldSize() throws SQLException {
         Statement statement = mock(Statement.class);
         ShardingSphereStatement actual = mockShardingSphereStatement(statement);
         actual.setMaxFieldSize(10);
@@ -182,12 +191,12 @@ public final class StatementAdapterTest {
     }
     
     @Test
-    public void assertGetMaxRowsWitRoutedStatements() throws SQLException {
+    void assertGetMaxRowsWitRoutedStatements() throws SQLException {
         assertThat(mockShardingSphereStatement().getMaxRows(), is(-1));
     }
     
     @Test
-    public void assertGetMaxRowsWithoutRoutedStatements() throws SQLException {
+    void assertGetMaxRowsWithoutRoutedStatements() throws SQLException {
         Statement statement = mock(Statement.class);
         when(statement.getMaxRows()).thenReturn(10);
         ShardingSphereStatement actual = mockShardingSphereStatement(statement);
@@ -195,7 +204,7 @@ public final class StatementAdapterTest {
     }
     
     @Test
-    public void assertSetMaxRows() throws SQLException {
+    void assertSetMaxRows() throws SQLException {
         Statement statement = mock(Statement.class);
         ShardingSphereStatement actual = mockShardingSphereStatement(statement);
         actual.setMaxRows(10);
@@ -203,12 +212,12 @@ public final class StatementAdapterTest {
     }
     
     @Test
-    public void assertGetQueryTimeoutWithoutRoutedStatements() throws SQLException {
+    void assertGetQueryTimeoutWithoutRoutedStatements() throws SQLException {
         assertThat(mockShardingSphereStatement().getQueryTimeout(), is(0));
     }
     
     @Test
-    public void assertGetQueryTimeoutWithRoutedStatements() throws SQLException {
+    void assertGetQueryTimeoutWithRoutedStatements() throws SQLException {
         Statement statement = mock(Statement.class);
         when(statement.getQueryTimeout()).thenReturn(10);
         ShardingSphereStatement actual = mockShardingSphereStatement(statement);
@@ -216,7 +225,7 @@ public final class StatementAdapterTest {
     }
     
     @Test
-    public void assertSetQueryTimeout() throws SQLException {
+    void assertSetQueryTimeout() throws SQLException {
         Statement statement = mock(Statement.class);
         ShardingSphereStatement actual = mockShardingSphereStatement(statement);
         actual.setQueryTimeout(10);
@@ -225,11 +234,13 @@ public final class StatementAdapterTest {
     
     private ShardingSphereStatement mockShardingSphereStatement(final Statement... statements) {
         ShardingSphereConnection connection = mock(ShardingSphereConnection.class, RETURNS_DEEP_STUBS);
-        ShardingSphereRuleMetaData globalRuleMetaData = mock(ShardingSphereRuleMetaData.class);
+        ShardingSphereRuleMetaData globalRuleMetaData = new ShardingSphereRuleMetaData(Arrays.asList(
+                new TrafficRule(new DefaultTrafficRuleConfigurationBuilder().build()),
+                new SQLFederationRule(new DefaultSQLFederationRuleConfigurationBuilder().build()),
+                new SQLParserRule(new DefaultSQLParserRuleConfigurationBuilder().build())));
         when(connection.getContextManager().getMetaDataContexts().getMetaData().getGlobalRuleMetaData()).thenReturn(globalRuleMetaData);
+        when(connection.getContextManager().getMetaDataContexts().getMetaData().getProps()).thenReturn(new ConfigurationProperties(new Properties()));
         when(connection.getDatabaseName()).thenReturn("db");
-        when(globalRuleMetaData.getSingleRule(TrafficRule.class)).thenReturn(new TrafficRule(new DefaultTrafficRuleConfigurationBuilder().build()));
-        when(globalRuleMetaData.getSingleRule(SQLFederationRule.class)).thenReturn(new SQLFederationRule(new DefaultSQLFederationRuleConfigurationBuilder().build()));
         ShardingSphereStatement result = new ShardingSphereStatement(connection);
         result.getRoutedStatements().addAll(Arrays.asList(statements));
         return result;
@@ -239,15 +250,13 @@ public final class StatementAdapterTest {
         ShardingSphereConnection connection = mock(ShardingSphereConnection.class, RETURNS_DEEP_STUBS);
         DataNodeContainedRule rule = mock(DataNodeContainedRule.class);
         when(rule.isNeedAccumulate(any())).thenReturn(true);
-        when(connection.getContextManager()
-                .getMetaDataContexts().getMetaData().getDatabase(DefaultDatabase.LOGIC_NAME).getRuleMetaData().getRules()).thenReturn(Collections.singletonList(rule));
-        TrafficRule trafficRule = new TrafficRule(new DefaultTrafficRuleConfigurationBuilder().build());
-        SQLFederationRule sqlFederationRule = new SQLFederationRule(new DefaultSQLFederationRuleConfigurationBuilder().build());
-        ShardingSphereRuleMetaData globalRuleMetaData = mock(ShardingSphereRuleMetaData.class);
+        when(connection.getContextManager().getMetaDataContexts().getMetaData().getDatabase(DefaultDatabase.LOGIC_NAME).getRuleMetaData().getRules()).thenReturn(Collections.singleton(rule));
         when(connection.getDatabaseName()).thenReturn("db");
-        when(connection.getContextManager().getMetaDataContexts().getMetaData().getGlobalRuleMetaData()).thenReturn(globalRuleMetaData);
-        when(globalRuleMetaData.getSingleRule(TrafficRule.class)).thenReturn(trafficRule);
-        when(globalRuleMetaData.getSingleRule(SQLFederationRule.class)).thenReturn(sqlFederationRule);
+        when(connection.getContextManager().getMetaDataContexts().getMetaData().getGlobalRuleMetaData()).thenReturn(new ShardingSphereRuleMetaData(Arrays.asList(
+                new TrafficRule(new DefaultTrafficRuleConfigurationBuilder().build()),
+                new SQLFederationRule(new DefaultSQLFederationRuleConfigurationBuilder().build()),
+                new SQLParserRule(new DefaultSQLParserRuleConfigurationBuilder().build()))));
+        when(connection.getContextManager().getMetaDataContexts().getMetaData().getProps()).thenReturn(new ConfigurationProperties(new Properties()));
         ShardingSphereStatement result = new ShardingSphereStatement(connection);
         result.getRoutedStatements().addAll(Arrays.asList(statements));
         ExecutionContext executionContext = mock(ExecutionContext.class, RETURNS_DEEP_STUBS);
@@ -257,8 +266,6 @@ public final class StatementAdapterTest {
     
     @SneakyThrows(ReflectiveOperationException.class)
     private void setExecutionContext(final ShardingSphereStatement statement, final ExecutionContext executionContext) {
-        Field field = statement.getClass().getDeclaredField("executionContext");
-        field.setAccessible(true);
-        field.set(statement, executionContext);
+        Plugins.getMemberAccessor().set(statement.getClass().getDeclaredField("executionContext"), statement, executionContext);
     }
 }

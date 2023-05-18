@@ -18,7 +18,7 @@
 package org.apache.shardingsphere.infra.database.type.dialect;
 
 import org.apache.shardingsphere.infra.fixture.InfraDatabaseTypeFixture;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -28,17 +28,17 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class DatabaseTypeTest {
+class DatabaseTypeTest {
     
     @Test
-    public void assertGetSchema() throws SQLException {
+    void assertGetSchema() throws SQLException {
         Connection connection = mock(Connection.class);
         when(connection.getSchema()).thenReturn("ds");
         assertThat(new InfraDatabaseTypeFixture().getSchema(connection), is("ds"));
     }
     
     @Test
-    public void assertFormatTableNamePattern() {
+    void assertFormatTableNamePattern() {
         assertThat(new InfraDatabaseTypeFixture().formatTableNamePattern("tbl"), is("tbl"));
     }
 }

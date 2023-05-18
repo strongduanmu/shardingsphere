@@ -57,10 +57,10 @@ public final class SelectStatementConverter implements SQLStatementConverter<Sel
             SqlNode rowCount = limit.get().getRowCount().flatMap(optional -> new PaginationValueSQLConverter().convert(optional)).orElse(null);
             return new SqlOrderBy(SqlParserPos.ZERO, sqlCombine, orderBy, offset, rowCount);
         }
-        return !orderBy.isEmpty() ? new SqlOrderBy(SqlParserPos.ZERO, sqlCombine, orderBy, null, null) : sqlCombine;
+        return orderBy.isEmpty() ? sqlCombine : new SqlOrderBy(SqlParserPos.ZERO, sqlCombine, orderBy, null, null);
     }
     
-    private static SqlSelect convertSelect(final SelectStatement selectStatement) {
+    private SqlSelect convertSelect(final SelectStatement selectStatement) {
         SqlNodeList distinct = new DistinctConverter().convert(selectStatement.getProjections()).orElse(null);
         SqlNodeList projection = new ProjectionsConverter().convert(selectStatement.getProjections()).orElseThrow(IllegalStateException::new);
         SqlNode from = new TableConverter().convert(selectStatement.getFrom()).orElse(null);
@@ -70,12 +70,11 @@ public final class SelectStatementConverter implements SQLStatementConverter<Sel
         return new SqlSelect(SqlParserPos.ZERO, distinct, projection, from, where, groupBy, having, SqlNodeList.EMPTY, null, null, null, SqlNodeList.EMPTY);
     }
     
-    private static SqlNode convertCombine(final SqlNode sqlNode, final SelectStatement selectStatement) {
+    private SqlNode convertCombine(final SqlNode sqlNode, final SelectStatement selectStatement) {
         if (selectStatement.getCombine().isPresent()) {
             CombineSegment combineSegment = selectStatement.getCombine().get();
-            SqlNode combineSqlNode = new SqlBasicCall(CombineOperatorConverter.convert(combineSegment.getCombineType()),
-                    Arrays.asList(sqlNode, convertSelect(combineSegment.getSelectStatement())), SqlParserPos.ZERO);
-            return convertCombine(combineSqlNode, combineSegment.getSelectStatement());
+            return new SqlBasicCall(CombineOperatorConverter.convert(combineSegment.getCombineType()),
+                    Arrays.asList(convert(combineSegment.getLeft()), convert(combineSegment.getRight())), SqlParserPos.ZERO);
         }
         return sqlNode;
     }

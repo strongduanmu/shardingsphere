@@ -22,18 +22,22 @@ import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLBinaryColumnTyp
 import org.apache.shardingsphere.db.protocol.mysql.packet.binlog.row.column.MySQLBinlogColumnDef;
 import org.apache.shardingsphere.db.protocol.mysql.payload.MySQLPacketPayload;
 import org.apache.shardingsphere.infra.util.exception.external.sql.type.generic.UnsupportedSQLOperationException;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.Serializable;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MySQLStringBinlogProtocolValueTest {
+@ExtendWith(MockitoExtension.class)
+class MySQLStringBinlogProtocolValueTest {
     
     @Mock
     private MySQLPacketPayload payload;
@@ -43,33 +47,33 @@ public final class MySQLStringBinlogProtocolValueTest {
     
     private MySQLBinlogColumnDef columnDef;
     
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         columnDef = new MySQLBinlogColumnDef(MySQLBinaryColumnType.MYSQL_TYPE_STRING);
     }
     
     @Test
-    public void assertReadEnumValueWithMeta1() {
+    void assertReadEnumValueWithMeta1() {
         columnDef.setColumnMeta((MySQLBinaryColumnType.MYSQL_TYPE_ENUM.getValue() << 8) + 1);
         when(payload.readInt1()).thenReturn(1);
         assertThat(new MySQLStringBinlogProtocolValue().read(columnDef, payload), is(1));
     }
     
     @Test
-    public void assertReadEnumValueWithMeta2() {
+    void assertReadEnumValueWithMeta2() {
         columnDef.setColumnMeta((MySQLBinaryColumnType.MYSQL_TYPE_ENUM.getValue() << 8) + 2);
         when(payload.readInt2()).thenReturn(32767);
         assertThat(new MySQLStringBinlogProtocolValue().read(columnDef, payload), is(32767));
     }
     
-    @Test(expected = UnsupportedSQLOperationException.class)
-    public void assertReadEnumValueWithMetaFailure() {
+    @Test
+    void assertReadEnumValueWithMetaFailure() {
         columnDef.setColumnMeta((MySQLBinaryColumnType.MYSQL_TYPE_ENUM.getValue() << 8) + 3);
-        new MySQLStringBinlogProtocolValue().read(columnDef, payload);
+        assertThrows(UnsupportedSQLOperationException.class, () -> new MySQLStringBinlogProtocolValue().read(columnDef, payload));
     }
     
     @Test
-    public void assertReadSetValue() {
+    void assertReadSetValue() {
         columnDef.setColumnMeta(MySQLBinaryColumnType.MYSQL_TYPE_SET.getValue() << 8);
         when(payload.getByteBuf()).thenReturn(byteBuf);
         when(byteBuf.readByte()).thenReturn((byte) 0xff);
@@ -77,28 +81,32 @@ public final class MySQLStringBinlogProtocolValueTest {
     }
     
     @Test
-    public void assertReadStringValue() {
+    void assertReadStringValue() {
         String expected = "test_value";
         columnDef.setColumnMeta(MySQLBinaryColumnType.MYSQL_TYPE_STRING.getValue() << 8);
         when(payload.getByteBuf()).thenReturn(byteBuf);
         when(byteBuf.readUnsignedByte()).thenReturn((short) expected.length());
-        when(payload.readStringFix(expected.length())).thenReturn(expected);
-        assertThat(new MySQLStringBinlogProtocolValue().read(columnDef, payload), is(expected));
+        when(payload.readStringFixByBytes(expected.length())).thenReturn(expected.getBytes());
+        Serializable actual = new MySQLStringBinlogProtocolValue().read(columnDef, payload);
+        assertInstanceOf(MySQLBinaryString.class, actual);
+        assertThat(((MySQLBinaryString) actual).getBytes(), is(expected.getBytes()));
     }
     
     @Test
-    public void assertReadLongStringValue() {
+    void assertReadLongStringValue() {
         String expected = "test_value";
         columnDef.setColumnMeta((MySQLBinaryColumnType.MYSQL_TYPE_STRING.getValue() ^ ((256 & 0x300) >> 4)) << 8);
         when(payload.getByteBuf()).thenReturn(byteBuf);
         when(byteBuf.readUnsignedShortLE()).thenReturn(expected.length());
-        when(payload.readStringFix(expected.length())).thenReturn(expected);
-        assertThat(new MySQLStringBinlogProtocolValue().read(columnDef, payload), is(expected));
+        when(payload.readStringFixByBytes(expected.length())).thenReturn(expected.getBytes());
+        Serializable actual = new MySQLStringBinlogProtocolValue().read(columnDef, payload);
+        assertInstanceOf(MySQLBinaryString.class, actual);
+        assertThat(((MySQLBinaryString) actual).getBytes(), is(expected.getBytes()));
     }
     
-    @Test(expected = UnsupportedSQLOperationException.class)
-    public void assertReadValueWithUnknownType() {
+    @Test
+    void assertReadValueWithUnknownType() {
         columnDef.setColumnMeta(MySQLBinaryColumnType.MYSQL_TYPE_VAR_STRING.getValue() << 8);
-        new MySQLStringBinlogProtocolValue().read(columnDef, payload);
+        assertThrows(UnsupportedSQLOperationException.class, () -> new MySQLStringBinlogProtocolValue().read(columnDef, payload));
     }
 }

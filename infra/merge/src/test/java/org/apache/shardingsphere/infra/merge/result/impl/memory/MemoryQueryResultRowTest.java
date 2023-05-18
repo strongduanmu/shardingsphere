@@ -18,23 +18,24 @@
 package org.apache.shardingsphere.infra.merge.result.impl.memory;
 
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class MemoryQueryResultRowTest {
+class MemoryQueryResultRowTest {
     
     private MemoryQueryResultRow memoryResultSetRow;
     
-    @Before
-    public void setUp() throws SQLException {
+    @BeforeEach
+    void setUp() throws SQLException {
         QueryResult queryResult = mock(QueryResult.class, RETURNS_DEEP_STUBS);
         when(queryResult.getMetaData().getColumnCount()).thenReturn(1);
         when(queryResult.getValue(1, Object.class)).thenReturn("value");
@@ -42,33 +43,33 @@ public final class MemoryQueryResultRowTest {
     }
     
     @Test
-    public void assertGetCell() {
+    void assertGetCell() {
         assertThat(memoryResultSetRow.getCell(1).toString(), is("value"));
     }
     
-    @Test(expected = IllegalArgumentException.class)
-    public void assertGetCellWithNegativeColumnIndex() {
-        memoryResultSetRow.getCell(-1);
-    }
-    
-    @Test(expected = IllegalArgumentException.class)
-    public void assertGetCellWithColumnIndexOutOfRange() {
-        memoryResultSetRow.getCell(2);
+    @Test
+    void assertGetCellWithNegativeColumnIndex() {
+        assertThrows(IllegalArgumentException.class, () -> memoryResultSetRow.getCell(-1));
     }
     
     @Test
-    public void assertSetCell() {
+    void assertGetCellWithColumnIndexOutOfRange() {
+        assertThrows(IllegalArgumentException.class, () -> memoryResultSetRow.getCell(2));
+    }
+    
+    @Test
+    void assertSetCell() {
         memoryResultSetRow.setCell(1, "new");
         assertThat(memoryResultSetRow.getCell(1).toString(), is("new"));
     }
     
-    @Test(expected = IllegalArgumentException.class)
-    public void assertSetCellWithNegativeColumnIndex() {
-        memoryResultSetRow.setCell(-1, "new");
+    @Test
+    void assertSetCellWithNegativeColumnIndex() {
+        assertThrows(IllegalArgumentException.class, () -> memoryResultSetRow.setCell(-1, "new"));
     }
     
-    @Test(expected = IllegalArgumentException.class)
-    public void assertSetCellWithColumnIndexOutOfRange() {
-        memoryResultSetRow.setCell(2, "new");
+    @Test
+    void assertSetCellWithColumnIndexOutOfRange() {
+        assertThrows(IllegalArgumentException.class, () -> memoryResultSetRow.setCell(2, "new"));
     }
 }

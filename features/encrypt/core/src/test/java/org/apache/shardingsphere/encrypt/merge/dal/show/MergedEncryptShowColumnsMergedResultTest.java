@@ -24,10 +24,12 @@ import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryRe
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableNameSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -38,44 +40,46 @@ import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class MergedEncryptShowColumnsMergedResultTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class MergedEncryptShowColumnsMergedResultTest {
     
     @Mock
     private QueryResult queryResult;
     
     @Test
-    public void assertNextWithNotHasNext() throws SQLException {
+    void assertNextWithNotHasNext() throws SQLException {
         assertFalse(createMergedEncryptColumnsMergedResult(queryResult, mock(EncryptRule.class)).next());
     }
     
     @Test
-    public void assertNextWithHasNext() throws SQLException {
+    void assertNextWithHasNext() throws SQLException {
         when(queryResult.next()).thenReturn(true);
         assertTrue(createMergedEncryptColumnsMergedResult(queryResult, mock(EncryptRule.class)).next());
     }
     
     @Test
-    public void assertNextWithAssistedQuery() throws SQLException {
+    void assertNextWithAssistedQuery() throws SQLException {
         when(queryResult.next()).thenReturn(true).thenReturn(false);
         when(queryResult.getValue(1, String.class)).thenReturn("user_id_assisted");
         assertFalse(createMergedEncryptColumnsMergedResult(queryResult, mockEncryptRule()).next());
     }
     
     @Test
-    public void assertNextWithLikeQuery() throws SQLException {
+    void assertNextWithLikeQuery() throws SQLException {
         when(queryResult.next()).thenReturn(true).thenReturn(false);
         when(queryResult.getValue(1, String.class)).thenReturn("user_id_like");
         assertFalse(createMergedEncryptColumnsMergedResult(queryResult, mockEncryptRule()).next());
     }
     
     @Test
-    public void assertNextWithLikeQueryAndMultiColumns() throws SQLException {
+    void assertNextWithLikeQueryAndMultiColumns() throws SQLException {
         when(queryResult.next()).thenReturn(true, true, true, false);
         when(queryResult.getValue(1, String.class)).thenReturn("user_id_like", "order_id", "content");
         MergedEncryptShowColumnsMergedResult actual = createMergedEncryptColumnsMergedResult(queryResult, mockEncryptRule());
@@ -85,7 +89,7 @@ public final class MergedEncryptShowColumnsMergedResultTest {
     }
     
     @Test
-    public void assertGetValueWithCipherColumn() throws SQLException {
+    void assertGetValueWithCipherColumn() throws SQLException {
         when(queryResult.getValue(1, String.class)).thenReturn("user_id_cipher");
         assertThat(createMergedEncryptColumnsMergedResult(queryResult, mockEncryptRule()).getValue(1, String.class), is("user_id"));
     }
@@ -102,30 +106,31 @@ public final class MergedEncryptShowColumnsMergedResultTest {
     }
     
     @Test
-    public void assertGetValueWithOtherColumn() throws SQLException {
+    void assertGetValueWithOtherColumn() throws SQLException {
         when(queryResult.getValue(1, String.class)).thenReturn("user_id_assisted");
         assertThat(createMergedEncryptColumnsMergedResult(queryResult, mock(EncryptRule.class)).getValue(1, String.class), is("user_id_assisted"));
     }
     
     @Test
-    public void assertGetValueWithOtherIndex() throws SQLException {
+    void assertGetValueWithOtherIndex() throws SQLException {
         when(queryResult.getValue(2, String.class)).thenReturn("user_id");
         assertThat(createMergedEncryptColumnsMergedResult(queryResult, mock(EncryptRule.class)).getValue(2, String.class), is("user_id"));
     }
     
     @Test
-    public void assertWasNull() throws SQLException {
+    void assertWasNull() throws SQLException {
         assertFalse(createMergedEncryptColumnsMergedResult(queryResult, mock(EncryptRule.class)).wasNull());
     }
     
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void assertGetCalendarValue() throws SQLException {
-        createMergedEncryptColumnsMergedResult(queryResult, mock(EncryptRule.class)).getCalendarValue(1, Date.class, Calendar.getInstance());
+    @Test
+    void assertGetCalendarValue() {
+        assertThrows(SQLFeatureNotSupportedException.class,
+                () -> createMergedEncryptColumnsMergedResult(queryResult, mock(EncryptRule.class)).getCalendarValue(1, Date.class, Calendar.getInstance()));
     }
     
-    @Test(expected = SQLFeatureNotSupportedException.class)
-    public void assertGetInputStream() throws SQLException {
-        createMergedEncryptColumnsMergedResult(queryResult, mock(EncryptRule.class)).getInputStream(1, "asc");
+    @Test
+    void assertGetInputStream() {
+        assertThrows(SQLFeatureNotSupportedException.class, () -> createMergedEncryptColumnsMergedResult(queryResult, mock(EncryptRule.class)).getInputStream(1, "asc"));
     }
     
     private MergedEncryptShowColumnsMergedResult createMergedEncryptColumnsMergedResult(final QueryResult queryResult, final EncryptRule encryptRule) {

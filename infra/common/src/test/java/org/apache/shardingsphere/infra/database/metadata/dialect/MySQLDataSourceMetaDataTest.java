@@ -18,17 +18,18 @@
 package org.apache.shardingsphere.infra.database.metadata.dialect;
 
 import org.apache.shardingsphere.infra.database.metadata.UnrecognizedDatabaseURLException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNull;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class MySQLDataSourceMetaDataTest {
+class MySQLDataSourceMetaDataTest {
     
     @Test
-    public void assertNewConstructorWithSimpleJdbcUrl() {
+    void assertNewConstructorWithSimpleJdbcUrl() {
         MySQLDataSourceMetaData actual = new MySQLDataSourceMetaData("jdbc:mysql://127.0.0.1/foo_ds");
         assertThat(actual.getHostname(), is("127.0.0.1"));
         assertThat(actual.getPort(), is(3306));
@@ -38,7 +39,7 @@ public final class MySQLDataSourceMetaDataTest {
     }
     
     @Test
-    public void assertNewConstructorWithComplexJdbcUrl() {
+    void assertNewConstructorWithComplexJdbcUrl() {
         MySQLDataSourceMetaData actual = new MySQLDataSourceMetaData("jdbc:mysql:loadbalance://127.0.0.1:9999,127.0.0.2:9999/foo_ds?serverTimezone=UTC&useSSL=false");
         assertThat(actual.getHostname(), is("127.0.0.1"));
         assertThat(actual.getPort(), is(9999));
@@ -49,8 +50,8 @@ public final class MySQLDataSourceMetaDataTest {
         assertThat(actual.getQueryProperties().getProperty("useSSL"), is(Boolean.FALSE.toString()));
     }
     
-    @Test(expected = UnrecognizedDatabaseURLException.class)
-    public void assertNewConstructorFailure() {
-        new MySQLDataSourceMetaData("jdbc:mysql:xxxxxxxx");
+    @Test
+    void assertNewConstructorFailure() {
+        assertThrows(UnrecognizedDatabaseURLException.class, () -> new MySQLDataSourceMetaData("jdbc:mysql:xxxxxxxx"));
     }
 }

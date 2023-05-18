@@ -23,8 +23,8 @@ import org.apache.shardingsphere.infra.route.context.RouteMapper;
 import org.apache.shardingsphere.infra.route.context.RouteUnit;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -34,14 +34,14 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class ShardingInsertValuesTokenTest {
+class ShardingInsertValuesTokenTest {
     
     private ShardingInsertValuesToken shardingInsertValuesToken;
     
     private RouteUnit routeUnit;
     
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         shardingInsertValuesToken = new ShardingInsertValuesToken(0, 2);
         RouteMapper routeMapper = new RouteMapper("logic_ds", "actual_ds");
         RouteMapper routeMapper1 = new RouteMapper("tbl", "tbl_0");
@@ -60,12 +60,12 @@ public final class ShardingInsertValuesTokenTest {
     }
     
     @Test
-    public void assertToStringWithRouteUnit() {
+    void assertToStringWithRouteUnit() {
         assertThat(shardingInsertValuesToken.toString(routeUnit), is("('shardingsphere', 'test')"));
     }
     
     @Test
-    public void assertToStringWithoutRouteUnit() {
+    void assertToStringWithoutRouteUnit() {
         assertThat(shardingInsertValuesToken.toString(), is("('shardingsphere', 'test')"));
     }
 }

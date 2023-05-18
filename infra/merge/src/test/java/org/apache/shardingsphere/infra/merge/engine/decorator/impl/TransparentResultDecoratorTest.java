@@ -20,29 +20,30 @@ package org.apache.shardingsphere.infra.merge.engine.decorator.impl;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
 import org.apache.shardingsphere.infra.merge.result.MergedResult;
-import org.junit.Test;
+import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
+import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class TransparentResultDecoratorTest {
+class TransparentResultDecoratorTest {
     
     @Test
-    public void assertDecorateQueryResult() throws SQLException {
+    void assertDecorateQueryResult() throws SQLException {
         QueryResult queryResult = mock(QueryResult.class);
         when(queryResult.next()).thenReturn(true);
         TransparentResultDecorator decorator = new TransparentResultDecorator();
-        assertTrue(decorator.decorate(queryResult, mock(SQLStatementContext.class), new TransparentRule()).next());
+        assertTrue(decorator.decorate(queryResult, mock(SQLStatementContext.class), mock(ShardingSphereRule.class)).next());
     }
     
     @Test
-    public void assertDecorateMergedResult() throws SQLException {
+    void assertDecorateMergedResult() throws SQLException {
         MergedResult mergedResult = mock(MergedResult.class);
         when(mergedResult.next()).thenReturn(true);
         TransparentResultDecorator decorator = new TransparentResultDecorator();
-        assertTrue(decorator.decorate(mergedResult, mock(SQLStatementContext.class), new TransparentRule()).next());
+        assertTrue(decorator.decorate(mergedResult, mock(SQLStatementContext.class), mock(ShardingSphereRule.class)).next());
     }
 }

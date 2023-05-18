@@ -20,31 +20,23 @@ grammar RDLStatement;
 import BaseRule;
 
 createReadwriteSplittingRule
-    : CREATE READWRITE_SPLITTING RULE readwriteSplittingRuleDefinition (COMMA readwriteSplittingRuleDefinition)*
+    : CREATE READWRITE_SPLITTING RULE ifNotExists? readwriteSplittingRuleDefinition (COMMA_ readwriteSplittingRuleDefinition)*
     ;
 
 alterReadwriteSplittingRule
-    : ALTER READWRITE_SPLITTING RULE readwriteSplittingRuleDefinition (COMMA readwriteSplittingRuleDefinition)*
+    : ALTER READWRITE_SPLITTING RULE readwriteSplittingRuleDefinition (COMMA_ readwriteSplittingRuleDefinition)*
     ;
 
 dropReadwriteSplittingRule
-    : DROP READWRITE_SPLITTING RULE ifExists? ruleName (COMMA ruleName)*
+    : DROP READWRITE_SPLITTING RULE ifExists? ruleName (COMMA_ ruleName)*
     ;
 
 readwriteSplittingRuleDefinition
-    : ruleName LP (staticReadwriteSplittingRuleDefinition | dynamicReadwriteSplittingRuleDefinition) (COMMA algorithmDefinition)? RP
-    ;
-
-staticReadwriteSplittingRuleDefinition
-    : WRITE_STORAGE_UNIT EQ writeStorageUnitName COMMA READ_STORAGE_UNITS LP readStorageUnitsNames RP
-    ;
-
-dynamicReadwriteSplittingRuleDefinition
-    : AUTO_AWARE_RESOURCE EQ resourceName (COMMA WRITE_DATA_SOURCE_QUERY_ENABLED EQ writeDataSourceQueryEnabled)?
+    : ruleName LP_ WRITE_STORAGE_UNIT EQ_ writeStorageUnitName COMMA_ READ_STORAGE_UNITS LP_ readStorageUnitsNames RP_ (COMMA_ algorithmDefinition)? RP_
     ;
 
 ruleName
-    : IDENTIFIER
+    : IDENTIFIER_
     ;
 
 writeStorageUnitName
@@ -52,13 +44,13 @@ writeStorageUnitName
     ;
 
 readStorageUnitsNames
-    : storageUnitName (COMMA storageUnitName)*
+    : storageUnitName (COMMA_ storageUnitName)*
     ;
 
 ifExists
     : IF EXISTS
     ;
 
-writeDataSourceQueryEnabled
-    : TRUE | FALSE
+ifNotExists
+    : IF NOT EXISTS
     ;

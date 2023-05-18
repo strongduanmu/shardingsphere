@@ -17,15 +17,15 @@
 
 package org.apache.shardingsphere.infra.binder.segment.insert.values.expression;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public final class DerivedParameterMarkerExpressionSegmentTest {
+class DerivedParameterMarkerExpressionSegmentTest {
     
     @Test
-    public void assertInstanceConstructedOk() {
+    void assertInstanceConstructedOk() {
         int parameterMarkerIndex = 10;
         DerivedParameterMarkerExpressionSegment derivedParameterMarkerExpressionSegment = new DerivedParameterMarkerExpressionSegment(parameterMarkerIndex);
         assertThat(derivedParameterMarkerExpressionSegment.getStartIndex(), is(0));

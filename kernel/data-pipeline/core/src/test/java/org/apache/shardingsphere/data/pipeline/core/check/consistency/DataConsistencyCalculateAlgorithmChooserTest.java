@@ -19,37 +19,37 @@ package org.apache.shardingsphere.data.pipeline.core.check.consistency;
 
 import org.apache.shardingsphere.data.pipeline.spi.check.consistency.DataConsistencyCalculateAlgorithm;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.infra.database.type.DatabaseTypeFactory;
-import org.junit.Test;
+import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNotNull;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public final class DataConsistencyCalculateAlgorithmChooserTest {
+class DataConsistencyCalculateAlgorithmChooserTest {
     
     @Test
-    public void assertChooseOnDifferentDatabaseTypes() {
-        DatabaseType databaseType = DatabaseTypeFactory.getInstance("Oracle");
-        DatabaseType peerDatabaseType = DatabaseTypeFactory.getInstance("PostgreSQL");
+    void assertChooseOnDifferentDatabaseTypes() {
+        DatabaseType databaseType = TypedSPILoader.getService(DatabaseType.class, "Oracle");
+        DatabaseType peerDatabaseType = TypedSPILoader.getService(DatabaseType.class, "PostgreSQL");
         DataConsistencyCalculateAlgorithm actual = DataConsistencyCalculateAlgorithmChooser.choose(databaseType, peerDatabaseType);
         assertNotNull(actual);
         assertThat(actual.getType(), is("DATA_MATCH"));
     }
     
     @Test
-    public void assertChooseOnMySQL() {
-        DatabaseType databaseType = DatabaseTypeFactory.getInstance("MySQL");
-        DatabaseType peerDatabaseType = DatabaseTypeFactory.getInstance("MySQL");
+    void assertChooseOnMySQL() {
+        DatabaseType databaseType = TypedSPILoader.getService(DatabaseType.class, "MySQL");
+        DatabaseType peerDatabaseType = TypedSPILoader.getService(DatabaseType.class, "MySQL");
         DataConsistencyCalculateAlgorithm actual = DataConsistencyCalculateAlgorithmChooser.choose(databaseType, peerDatabaseType);
         assertNotNull(actual);
         assertThat(actual.getType(), is("CRC32_MATCH"));
     }
     
     @Test
-    public void assertChooseOnPostgreSQL() {
-        DatabaseType databaseType = DatabaseTypeFactory.getInstance("PostgreSQL");
-        DatabaseType peerDatabaseType = DatabaseTypeFactory.getInstance("PostgreSQL");
+    void assertChooseOnPostgreSQL() {
+        DatabaseType databaseType = TypedSPILoader.getService(DatabaseType.class, "PostgreSQL");
+        DatabaseType peerDatabaseType = TypedSPILoader.getService(DatabaseType.class, "PostgreSQL");
         DataConsistencyCalculateAlgorithm actual = DataConsistencyCalculateAlgorithmChooser.choose(databaseType, peerDatabaseType);
         assertNotNull(actual);
         assertThat(actual.getType(), is("DATA_MATCH"));

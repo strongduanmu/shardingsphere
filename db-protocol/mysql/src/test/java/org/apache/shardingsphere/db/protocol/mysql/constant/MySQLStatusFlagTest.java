@@ -18,25 +18,26 @@
 package org.apache.shardingsphere.db.protocol.mysql.constant;
 
 import org.apache.shardingsphere.infra.util.exception.external.sql.type.generic.UnknownSQLException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public final class MySQLStatusFlagTest {
+class MySQLStatusFlagTest {
     
     @Test
-    public void assertGetValue() {
+    void assertGetValue() {
         assertThat(MySQLStatusFlag.SERVER_STATUS_IN_TRANS.getValue(), is(0x0001));
     }
     
     @Test
-    public void assertValueOfByInteger() {
+    void assertValueOfByInteger() {
         assertThat(MySQLStatusFlag.valueOf(0x0001), is(MySQLStatusFlag.SERVER_STATUS_IN_TRANS));
     }
     
-    @Test(expected = UnknownSQLException.class)
-    public void assertValueOfByIntegerFailure() {
-        MySQLStatusFlag.valueOf(0x0011);
+    @Test
+    void assertValueOfByIntegerFailure() {
+        assertThrows(UnknownSQLException.class, () -> MySQLStatusFlag.valueOf(0x0011));
     }
 }

@@ -28,10 +28,12 @@ import java.util.stream.Collectors;
 
 /**
  * Sharding condition value for list values.
+ * 
+ * @param <T> type of sharding condition value
  */
 @RequiredArgsConstructor
 @Getter
-public final class ListShardingConditionValue<T extends Comparable<?>> implements ShardingConditionValue {
+public final class ListShardingConditionValue<T> implements ShardingConditionValue {
     
     private final String columnName;
     

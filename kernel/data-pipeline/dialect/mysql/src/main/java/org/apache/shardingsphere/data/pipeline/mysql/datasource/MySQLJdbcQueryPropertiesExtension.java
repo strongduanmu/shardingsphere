@@ -35,11 +35,13 @@ public final class MySQLJdbcQueryPropertiesExtension implements JdbcQueryPropert
     
     public MySQLJdbcQueryPropertiesExtension() {
         queryProps.setProperty("useSSL", Boolean.FALSE.toString());
+        queryProps.setProperty("useServerPrepStmts", Boolean.FALSE.toString());
         queryProps.setProperty("rewriteBatchedStatements", Boolean.TRUE.toString());
         queryProps.setProperty("yearIsDateType", Boolean.FALSE.toString());
         queryProps.setProperty("zeroDateTimeBehavior", getZeroDateTimeBehavior());
         queryProps.setProperty("noDatetimeStringSync", Boolean.TRUE.toString());
         queryProps.setProperty("jdbcCompliantTruncation", Boolean.FALSE.toString());
+        queryProps.setProperty("netTimeoutForStreamingResults", "600");
     }
     
     private String getZeroDateTimeBehavior() {
@@ -53,7 +55,7 @@ public final class MySQLJdbcQueryPropertiesExtension implements JdbcQueryPropert
     
     private static String initMysqlConnectorVersion() {
         try {
-            Class<?> mysqlDriverClass = MySQLJdbcQueryPropertiesExtension.class.getClassLoader().loadClass("com.mysql.jdbc.Driver");
+            Class<?> mysqlDriverClass = Thread.currentThread().getContextClassLoader().loadClass("com.mysql.jdbc.Driver");
             return mysqlDriverClass.getPackage().getImplementationVersion();
         } catch (final ClassNotFoundException ex) {
             log.warn("not find com.mysql.jdbc.Driver class");

@@ -18,25 +18,25 @@
 package org.apache.shardingsphere.infra.binder.segment.select.projection.impl;
 
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.sql.parser.sql.common.constant.AggregationType;
-import org.junit.Test;
+import org.apache.shardingsphere.sql.parser.sql.common.enums.AggregationType;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
-public final class AggregationDistinctProjectionTest {
+class AggregationDistinctProjectionTest {
     
     private final AggregationDistinctProjection aggregationDistinctProjection = new AggregationDistinctProjection(
             0, 0, AggregationType.COUNT, "(DISTINCT order_id)", "c", "order_id", mock(DatabaseType.class));
     
     @Test
-    public void assertGetDistinctColumnLabel() {
+    void assertGetDistinctColumnLabel() {
         assertThat(aggregationDistinctProjection.getDistinctColumnLabel(), is("c"));
     }
     
     @Test
-    public void assertGetDistinctColumnName() {
+    void assertGetDistinctColumnName() {
         assertThat(aggregationDistinctProjection.getDistinctInnerExpression(), is("order_id"));
     }
 }

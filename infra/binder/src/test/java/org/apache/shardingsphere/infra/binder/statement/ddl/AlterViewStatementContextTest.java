@@ -26,8 +26,8 @@ import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.Identifi
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.ddl.MySQLAlterViewStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLSelectStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.ddl.PostgreSQLAlterViewStatement;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
@@ -37,17 +37,17 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class AlterViewStatementContextTest {
+class AlterViewStatementContextTest {
     
     private SimpleTableSegment view;
     
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         view = new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("view")));
     }
     
     @Test
-    public void assertMySQLNewInstance() {
+    void assertMySQLNewInstance() {
         SelectStatement select = mock(MySQLSelectStatement.class);
         when(select.getFrom()).thenReturn(view);
         MySQLAlterViewStatement mySQLAlterViewStatement = mock(MySQLAlterViewStatement.class);
@@ -57,7 +57,7 @@ public final class AlterViewStatementContextTest {
     }
     
     @Test
-    public void assertPostgreSQLNewInstance() {
+    void assertPostgreSQLNewInstance() {
         PostgreSQLAlterViewStatement postgreSQLAlterViewStatement = mock(PostgreSQLAlterViewStatement.class);
         when(postgreSQLAlterViewStatement.getView()).thenReturn(view);
         when(postgreSQLAlterViewStatement.getRenameView()).thenReturn(Optional.of(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("view")))));

@@ -22,7 +22,7 @@ import org.apache.shardingsphere.driver.jdbc.exception.syntax.ColumnIndexOutOfRa
 import org.apache.shardingsphere.driver.jdbc.exception.syntax.ColumnLabelNotFoundException;
 import org.apache.shardingsphere.driver.jdbc.exception.connection.ResultSetClosedException;
 import org.apache.shardingsphere.driver.jdbc.unsupported.AbstractUnsupportedDatabaseMetaDataResultSet;
-import org.apache.shardingsphere.infra.executor.sql.execute.result.query.impl.driver.jdbc.type.util.ResultSetUtil;
+import org.apache.shardingsphere.infra.executor.sql.execute.result.query.impl.driver.jdbc.type.util.ResultSetUtils;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
 import org.apache.shardingsphere.infra.rule.identifier.type.DataNodeContainedRule;
 
@@ -32,6 +32,7 @@ import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -124,7 +125,7 @@ public final class DatabaseMetaDataResultSet extends AbstractUnsupportedDatabase
     }
     
     private Optional<DataNodeContainedRule> findDataNodeContainedRule() {
-        return rules.stream().filter(each -> each instanceof DataNodeContainedRule).findFirst().map(optional -> (DataNodeContainedRule) optional);
+        return rules.stream().filter(DataNodeContainedRule.class::isInstance).findFirst().map(DataNodeContainedRule.class::cast);
     }
     
     @Override
@@ -167,7 +168,7 @@ public final class DatabaseMetaDataResultSet extends AbstractUnsupportedDatabase
     private BigDecimal getBigDecimal(final int columnIndex, final boolean needScale, final int scale) throws SQLException {
         checkClosed();
         checkColumnIndex(columnIndex);
-        return (BigDecimal) ResultSetUtil.convertBigDecimalValue(currentDatabaseMetaDataObject.getObject(columnIndex), needScale, scale);
+        return (BigDecimal) ResultSetUtils.convertBigDecimalValue(currentDatabaseMetaDataObject.getObject(columnIndex), needScale, scale);
     }
     
     @Override
@@ -176,10 +177,15 @@ public final class DatabaseMetaDataResultSet extends AbstractUnsupportedDatabase
     }
     
     @Override
+    public Statement getStatement() throws SQLException {
+        return resultSet.getStatement();
+    }
+    
+    @Override
     public String getString(final int columnIndex) throws SQLException {
         checkClosed();
         checkColumnIndex(columnIndex);
-        return (String) ResultSetUtil.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), String.class);
+        return (String) ResultSetUtils.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), String.class);
     }
     
     @Override
@@ -201,7 +207,7 @@ public final class DatabaseMetaDataResultSet extends AbstractUnsupportedDatabase
     public boolean getBoolean(final int columnIndex) throws SQLException {
         checkClosed();
         checkColumnIndex(columnIndex);
-        return (boolean) ResultSetUtil.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), boolean.class);
+        return (boolean) ResultSetUtils.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), boolean.class);
     }
     
     @Override
@@ -213,7 +219,7 @@ public final class DatabaseMetaDataResultSet extends AbstractUnsupportedDatabase
     public byte getByte(final int columnIndex) throws SQLException {
         checkClosed();
         checkColumnIndex(columnIndex);
-        return (byte) ResultSetUtil.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), byte.class);
+        return (byte) ResultSetUtils.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), byte.class);
     }
     
     @Override
@@ -225,7 +231,7 @@ public final class DatabaseMetaDataResultSet extends AbstractUnsupportedDatabase
     public short getShort(final int columnIndex) throws SQLException {
         checkClosed();
         checkColumnIndex(columnIndex);
-        return (short) ResultSetUtil.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), short.class);
+        return (short) ResultSetUtils.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), short.class);
     }
     
     @Override
@@ -237,7 +243,7 @@ public final class DatabaseMetaDataResultSet extends AbstractUnsupportedDatabase
     public int getInt(final int columnIndex) throws SQLException {
         checkClosed();
         checkColumnIndex(columnIndex);
-        return (int) ResultSetUtil.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), int.class);
+        return (int) ResultSetUtils.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), int.class);
     }
     
     @Override
@@ -249,7 +255,7 @@ public final class DatabaseMetaDataResultSet extends AbstractUnsupportedDatabase
     public long getLong(final int columnIndex) throws SQLException {
         checkClosed();
         checkColumnIndex(columnIndex);
-        return (long) ResultSetUtil.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), long.class);
+        return (long) ResultSetUtils.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), long.class);
     }
     
     @Override
@@ -261,7 +267,7 @@ public final class DatabaseMetaDataResultSet extends AbstractUnsupportedDatabase
     public float getFloat(final int columnIndex) throws SQLException {
         checkClosed();
         checkColumnIndex(columnIndex);
-        return (float) ResultSetUtil.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), float.class);
+        return (float) ResultSetUtils.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), float.class);
     }
     
     @Override
@@ -273,7 +279,7 @@ public final class DatabaseMetaDataResultSet extends AbstractUnsupportedDatabase
     public double getDouble(final int columnIndex) throws SQLException {
         checkClosed();
         checkColumnIndex(columnIndex);
-        return (double) ResultSetUtil.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), double.class);
+        return (double) ResultSetUtils.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), double.class);
     }
     
     @Override
@@ -285,7 +291,7 @@ public final class DatabaseMetaDataResultSet extends AbstractUnsupportedDatabase
     public byte[] getBytes(final int columnIndex) throws SQLException {
         checkClosed();
         checkColumnIndex(columnIndex);
-        return (byte[]) ResultSetUtil.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), byte[].class);
+        return (byte[]) ResultSetUtils.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), byte[].class);
     }
     
     @Override
@@ -297,7 +303,7 @@ public final class DatabaseMetaDataResultSet extends AbstractUnsupportedDatabase
     public Date getDate(final int columnIndex) throws SQLException {
         checkClosed();
         checkColumnIndex(columnIndex);
-        return (Date) ResultSetUtil.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), Date.class);
+        return (Date) ResultSetUtils.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), Date.class);
     }
     
     @Override
@@ -309,7 +315,7 @@ public final class DatabaseMetaDataResultSet extends AbstractUnsupportedDatabase
     public Time getTime(final int columnIndex) throws SQLException {
         checkClosed();
         checkColumnIndex(columnIndex);
-        return (Time) ResultSetUtil.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), Time.class);
+        return (Time) ResultSetUtils.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), Time.class);
     }
     
     @Override
@@ -321,7 +327,7 @@ public final class DatabaseMetaDataResultSet extends AbstractUnsupportedDatabase
     public Timestamp getTimestamp(final int columnIndex) throws SQLException {
         checkClosed();
         checkColumnIndex(columnIndex);
-        return (Timestamp) ResultSetUtil.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), Timestamp.class);
+        return (Timestamp) ResultSetUtils.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), Timestamp.class);
     }
     
     @Override
@@ -333,7 +339,7 @@ public final class DatabaseMetaDataResultSet extends AbstractUnsupportedDatabase
     public URL getURL(final int columnIndex) throws SQLException {
         checkClosed();
         checkColumnIndex(columnIndex);
-        return (URL) ResultSetUtil.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), URL.class);
+        return (URL) ResultSetUtils.convertValue(currentDatabaseMetaDataObject.getObject(columnIndex), URL.class);
     }
     
     @Override

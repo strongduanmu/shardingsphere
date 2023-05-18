@@ -20,20 +20,20 @@ package org.apache.shardingsphere.sharding.route.engine.condition.generator;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.LinkedList;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public final class ConditionValueTest {
+class ConditionValueTest {
     
     @Test
-    public void assertGetValueFromLiteralExpressionSegment() {
+    void assertGetValueFromLiteralExpressionSegment() {
         ExpressionSegment expressionSegment = new LiteralExpressionSegment(0, 0, "shardingsphere");
         ConditionValue conditionValue = new ConditionValue(expressionSegment, new LinkedList<>());
         assertTrue(conditionValue.getValue().isPresent());
@@ -42,7 +42,7 @@ public final class ConditionValueTest {
     }
     
     @Test
-    public void assertGetValueFromParameterMarkerSegment() {
+    void assertGetValueFromParameterMarkerSegment() {
         ExpressionSegment expressionSegment = new ParameterMarkerExpressionSegment(0, 0, 0);
         ConditionValue conditionValue = new ConditionValue(expressionSegment, Collections.singletonList(1));
         assertTrue(conditionValue.getValue().isPresent());

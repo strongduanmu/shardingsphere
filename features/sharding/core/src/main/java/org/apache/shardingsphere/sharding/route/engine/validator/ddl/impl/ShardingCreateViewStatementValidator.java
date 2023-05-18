@@ -20,6 +20,7 @@ package org.apache.shardingsphere.sharding.route.engine.validator.ddl.impl;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
+import org.apache.shardingsphere.infra.hint.HintValueContext;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.route.context.RouteContext;
 import org.apache.shardingsphere.sharding.exception.metadata.EngagedViewException;
@@ -42,14 +43,13 @@ import java.util.List;
 /**
  * Sharding create view statement validator.
  */
-public final class ShardingCreateViewStatementValidator extends ShardingDDLStatementValidator<CreateViewStatement> {
+public final class ShardingCreateViewStatementValidator extends ShardingDDLStatementValidator {
     
     @Override
-    public void preValidate(final ShardingRule shardingRule, final SQLStatementContext<CreateViewStatement> sqlStatementContext,
+    public void preValidate(final ShardingRule shardingRule, final SQLStatementContext sqlStatementContext,
                             final List<Object> params, final ShardingSphereDatabase database, final ConfigurationProperties props) {
-        SelectStatement selectStatement = sqlStatementContext.getSqlStatement().getSelect();
         TableExtractor extractor = new TableExtractor();
-        extractor.extractTablesFromSelect(selectStatement);
+        extractor.extractTablesFromSelect(((CreateViewStatement) sqlStatementContext.getSqlStatement()).getSelect());
         Collection<SimpleTableSegment> tableSegments = extractor.getRewriteTables();
         String sqlFederationType = props.getValue(ConfigurationPropertyKey.SQL_FEDERATION_TYPE);
         if ("NONE".equals(sqlFederationType) && isShardingTablesWithoutBinding(shardingRule, sqlStatementContext, tableSegments)) {
@@ -61,19 +61,20 @@ public final class ShardingCreateViewStatementValidator extends ShardingDDLState
     }
     
     @Override
-    public void postValidate(final ShardingRule shardingRule, final SQLStatementContext<CreateViewStatement> sqlStatementContext, final List<Object> params,
+    public void postValidate(final ShardingRule shardingRule, final SQLStatementContext sqlStatementContext, final HintValueContext hintValueContext, final List<Object> params,
                              final ShardingSphereDatabase database, final ConfigurationProperties props, final RouteContext routeContext) {
-        SelectStatement selectStatement = sqlStatementContext.getSqlStatement().getSelect();
+        SelectStatement selectStatement = ((CreateViewStatement) sqlStatementContext.getSqlStatement()).getSelect();
         if (isContainsNotSupportedViewStatement(selectStatement, routeContext)) {
             throw new UnsupportedCreateViewException();
         }
     }
     
-    private boolean isShardingTablesWithoutBinding(final ShardingRule shardingRule, final SQLStatementContext<CreateViewStatement> sqlStatementContext,
+    private boolean isShardingTablesWithoutBinding(final ShardingRule shardingRule, final SQLStatementContext sqlStatementContext,
                                                    final Collection<SimpleTableSegment> tableSegments) {
         for (SimpleTableSegment each : tableSegments) {
             String logicTable = each.getTableName().getIdentifier().getValue();
-            if (shardingRule.isShardingTable(logicTable) && !isBindingTables(shardingRule, sqlStatementContext.getSqlStatement().getView().getTableName().getIdentifier().getValue(), logicTable)) {
+            if (shardingRule.isShardingTable(logicTable) && !isBindingTables(
+                    shardingRule, ((CreateViewStatement) sqlStatementContext.getSqlStatement()).getView().getTableName().getIdentifier().getValue(), logicTable)) {
                 return true;
             }
         }
@@ -85,13 +86,14 @@ public final class ShardingCreateViewStatementValidator extends ShardingDDLState
         return shardingRule.isAllBindingTables(bindTables);
     }
     
-    private boolean isAllBroadcastTablesWithoutConfigView(final ShardingRule shardingRule, final SQLStatementContext<CreateViewStatement> sqlStatementContext,
+    private boolean isAllBroadcastTablesWithoutConfigView(final ShardingRule shardingRule, final SQLStatementContext sqlStatementContext,
                                                           final Collection<SimpleTableSegment> tableSegments) {
         Collection<String> tables = new LinkedList<>();
         for (SimpleTableSegment each : tableSegments) {
             tables.add(each.getTableName().getIdentifier().getValue());
         }
-        return shardingRule.isAllBroadcastTables(tables) && !shardingRule.isBroadcastTable(sqlStatementContext.getSqlStatement().getView().getTableName().getIdentifier().getValue());
+        return shardingRule.isAllBroadcastTables(tables) && !shardingRule.isBroadcastTable(
+                ((CreateViewStatement) sqlStatementContext.getSqlStatement()).getView().getTableName().getIdentifier().getValue());
     }
     
     private boolean isContainsNotSupportedViewStatement(final SelectStatement selectStatement, final RouteContext routeContext) {

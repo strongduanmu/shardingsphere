@@ -17,39 +17,40 @@
 
 package org.apache.shardingsphere.encrypt.rewrite.token.generator;
 
+import org.apache.shardingsphere.encrypt.rewrite.token.generator.fixture.EncryptGeneratorFixtureBuilder;
 import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-public final class InsertCipherNameTokenGeneratorTest extends EncryptGeneratorBaseTest {
+class InsertCipherNameTokenGeneratorTest {
     
     private final InsertCipherNameTokenGenerator generator = new InsertCipherNameTokenGenerator();
     
-    @Before
-    public void setup() {
-        generator.setEncryptRule(createEncryptRule());
+    @BeforeEach
+    void setup() {
+        generator.setEncryptRule(EncryptGeneratorFixtureBuilder.createEncryptRule());
     }
     
     @Test
-    public void assertIsNotGenerateSQLTokenWithNotInsertStatement() {
+    void assertIsNotGenerateSQLTokenWithNotInsertStatement() {
         assertFalse(generator.isGenerateSQLToken(mock(SelectStatementContext.class)));
     }
     
     @Test
-    public void assertIsGenerateSQLTokenWithInsertStatementContext() {
-        assertTrue(generator.isGenerateSQLToken(createInsertStatementContext(Collections.emptyList())));
+    void assertIsGenerateSQLTokenWithInsertStatementContext() {
+        assertTrue(generator.isGenerateSQLToken(EncryptGeneratorFixtureBuilder.createInsertStatementContext(Collections.emptyList())));
     }
     
     @Test
-    public void assertGenerateSQLTokensWithInsertStatementContext() {
-        assertThat(generator.generateSQLTokens(createInsertStatementContext(Collections.emptyList())).size(), is(1));
+    void assertGenerateSQLTokensWithInsertStatementContext() {
+        assertThat(generator.generateSQLTokens(EncryptGeneratorFixtureBuilder.createInsertStatementContext(Collections.emptyList())).size(), is(1));
     }
 }

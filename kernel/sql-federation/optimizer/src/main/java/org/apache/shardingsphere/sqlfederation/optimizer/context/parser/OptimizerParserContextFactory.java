@@ -17,13 +17,14 @@
 
 package org.apache.shardingsphere.sqlfederation.optimizer.context.parser;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.shardingsphere.infra.database.type.DatabaseType;
 import org.apache.shardingsphere.infra.database.type.DatabaseTypeEngine;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.sqlfederation.optimizer.context.parser.dialect.OptimizerSQLDialectBuilderFactory;
+import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
+import org.apache.shardingsphere.sqlfederation.optimizer.context.parser.dialect.OptimizerSQLDialectBuilder;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -33,8 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Optimizer parser context factory.
  */
-@RequiredArgsConstructor
-@Getter
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class OptimizerParserContextFactory {
     
     /**
@@ -65,7 +65,7 @@ public final class OptimizerParserContextFactory {
     private static Properties createSQLDialectProperties(final DatabaseType databaseType) {
         Properties result = new Properties();
         result.setProperty(CalciteConnectionProperty.TIME_ZONE.camelName(), "UTC");
-        result.putAll(OptimizerSQLDialectBuilderFactory.build(databaseType));
+        result.putAll(TypedSPILoader.getService(OptimizerSQLDialectBuilder.class, null == databaseType ? null : databaseType.getType()).build());
         return result;
     }
 }
