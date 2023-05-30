@@ -68,7 +68,7 @@ class OpenGaussComQueryExecutorTest {
     void setUp() throws SQLException {
         PostgreSQLComQueryPacket queryPacket = mock(PostgreSQLComQueryPacket.class);
         ConnectionSession connectionSession = mock(ConnectionSession.class);
-        when(queryPacket.getSql()).thenReturn("");
+        when(queryPacket.getSQL()).thenReturn("");
         queryExecutor = new OpenGaussComQueryExecutor(portalContext, queryPacket, connectionSession);
         setMockFieldIntoExecutor(queryExecutor);
     }
@@ -82,7 +82,7 @@ class OpenGaussComQueryExecutorTest {
     void assertExecuteQueryAndReturnEmptyResult() throws SQLException {
         QueryResponseHeader queryResponseHeader = mock(QueryResponseHeader.class);
         when(proxyBackendHandler.execute()).thenReturn(queryResponseHeader);
-        Collection<DatabasePacket<?>> actual = queryExecutor.execute();
+        Collection actual = queryExecutor.execute();
         assertThat(actual.size(), is(1));
         assertThat(actual.iterator().next(), is(instanceOf(PostgreSQLRowDescriptionPacket.class)));
         assertThat(queryExecutor.getResponseType(), is(ResponseType.QUERY));
@@ -94,7 +94,7 @@ class OpenGaussComQueryExecutorTest {
         QueryResponseHeader queryResponseHeader = mock(QueryResponseHeader.class);
         when(queryResponseHeader.getQueryHeaders()).thenReturn(Collections.singletonList(new QueryHeader("schema", "table", "label", "column", 1, "type", 2, 3, true, true, true, true)));
         when(proxyBackendHandler.execute()).thenReturn(queryResponseHeader);
-        Collection<DatabasePacket<?>> actual = queryExecutor.execute();
+        Collection actual = queryExecutor.execute();
         assertThat(actual.size(), is(1));
         assertThat(actual.iterator().next(), is(instanceOf(PostgreSQLRowDescriptionPacket.class)));
         assertThat(queryExecutor.getResponseType(), is(ResponseType.QUERY));
@@ -104,7 +104,7 @@ class OpenGaussComQueryExecutorTest {
     @Test
     void assertExecuteUpdate() throws SQLException {
         when(proxyBackendHandler.execute()).thenReturn(new UpdateResponseHeader(mock(InsertStatement.class)));
-        Collection<DatabasePacket<?>> actual = queryExecutor.execute();
+        Collection<DatabasePacket> actual = queryExecutor.execute();
         assertThat(actual.size(), is(1));
         assertThat(actual.iterator().next(), is(instanceOf(PostgreSQLCommandCompletePacket.class)));
         assertThat(queryExecutor.getResponseType(), is(ResponseType.UPDATE));

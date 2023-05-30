@@ -149,7 +149,10 @@ public final class DatabaseConnector implements DatabaseBackendHandler {
         Optional<DataNodeContainedRule> dataNodeContainedRule = getDataNodeContainedRuleForShardingRule(database.getRuleMetaData().findRules(DataNodeContainedRule.class));
         Collection<ColumnContainedRule> columnContainedRules = database.getRuleMetaData().findRules(ColumnContainedRule.class);
         for (String each : sqlStatementContext.getTablesContext().getTableNames()) {
-            return (!dataNodeContainedRule.isPresent() || !dataNodeContainedRule.get().getAllTables().contains(each)) && !containsInColumnContainedRule(each, columnContainedRules);
+            if ((!dataNodeContainedRule.isPresent() || !dataNodeContainedRule.get().getAllTables().contains(each)) && !containsInColumnContainedRule(each, columnContainedRules)) {
+                continue;
+            }
+            return false;
         }
         return true;
     }
@@ -165,7 +168,9 @@ public final class DatabaseConnector implements DatabaseBackendHandler {
     
     private boolean containsInColumnContainedRule(final String tableName, final Collection<ColumnContainedRule> columnContainedRules) {
         for (ColumnContainedRule each : columnContainedRules) {
-            return each.getTables().contains(tableName);
+            if (each.getTables().contains(tableName)) {
+                return true;
+            }
         }
         return false;
     }
@@ -241,7 +246,7 @@ public final class DatabaseConnector implements DatabaseBackendHandler {
             result = doExecute(executionContexts);
             transactionManager.commit();
             // CHECKSTYLE:OFF
-        } catch (final Exception ex) {
+        } catch (final RuntimeException ex) {
             // CHECKSTYLE:ON
             transactionManager.rollback();
             String databaseName = databaseConnectionManager.getConnectionSession().getDatabaseName();

@@ -26,12 +26,11 @@ import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEve
 import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEventListener;
 import org.apache.shardingsphere.mode.repository.cluster.nacos.util.NacosMetaDataUtils;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -50,8 +49,8 @@ public final class NamingEventListener implements EventListener {
             return;
         }
         NamingEvent namingEvent = (NamingEvent) event;
-        List<Instance> instances = namingEvent.getInstances().stream().sorted(Comparator.comparing(NacosMetaDataUtils::getKey)).collect(Collectors.toList());
-        List<WatchData> watchDataList = new LinkedList<>();
+        Collection<Instance> instances = namingEvent.getInstances().stream().sorted(Comparator.comparing(NacosMetaDataUtils::getKey)).collect(Collectors.toList());
+        Collection<WatchData> watchDataList = new LinkedList<>();
         synchronized (this) {
             instances.forEach(instance -> prefixListenerMap.forEach((prefixPath, listener) -> {
                 String key = NacosMetaDataUtils.getKey(instance);
@@ -92,13 +91,13 @@ public final class NamingEventListener implements EventListener {
     }
     
     private Type getEventChangedType(final Instance preInstance, final Instance instance) {
-        if (Objects.isNull(preInstance) && Objects.nonNull(instance)) {
+        if (null == preInstance && null != instance) {
             return DataChangedEvent.Type.ADDED;
         }
-        if (Objects.nonNull(preInstance) && Objects.nonNull(instance) && NacosMetaDataUtils.getTimestamp(preInstance) != NacosMetaDataUtils.getTimestamp(instance)) {
+        if (null != preInstance && null != instance && NacosMetaDataUtils.getTimestamp(preInstance) != NacosMetaDataUtils.getTimestamp(instance)) {
             return DataChangedEvent.Type.UPDATED;
         }
-        if (Objects.nonNull(preInstance) && Objects.isNull(instance)) {
+        if (null != preInstance && null == instance) {
             return DataChangedEvent.Type.DELETED;
         }
         return DataChangedEvent.Type.IGNORED;
@@ -109,7 +108,7 @@ public final class NamingEventListener implements EventListener {
      *
      * @param instances instances
      */
-    public void setPreInstances(final List<Instance> instances) {
+    public void setPreInstances(final Collection<Instance> instances) {
         preInstances = instances.stream().filter(instance -> {
             for (String each : prefixListenerMap.keySet()) {
                 if (NacosMetaDataUtils.getKey(instance).startsWith(each)) {

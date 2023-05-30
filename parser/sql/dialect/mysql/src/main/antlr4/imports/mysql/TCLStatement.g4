@@ -52,7 +52,7 @@ begin
     ;
 
 lock
-    : LOCK (INSTANCE FOR BACKUP | (TABLES tableLock (COMMA_ tableLock)*))
+    : LOCK (INSTANCE FOR BACKUP | ((TABLES | TABLE) tableLock (COMMA_ tableLock)*))
     ;
 
 unlock
@@ -61,16 +61,6 @@ unlock
 
 releaseSavepoint
     : RELEASE SAVEPOINT identifier
-    ;
-
-xa
-    : XA ((START | BEGIN) xid (JOIN | RESUME)?
-        | END xid (SUSPEND (FOR MIGRATE)?)?
-        | PREPARE xid
-        | COMMIT xid (ONE PHASE)?
-        | ROLLBACK xid
-        | RECOVER (CONVERT XID)?
-    )
     ;
 
 optionChain
@@ -89,7 +79,30 @@ lockOption
     : READ LOCAL? | LOW_PRIORITY? WRITE
     ;
 
+xaBegin
+    : XA (START | BEGIN) xid (JOIN | RESUME)?
+    ;
+
+xaPrepare
+    : XA PREPARE xid
+    ;
+
+xaCommit
+    : XA COMMIT xid (ONE PHASE)?
+    ;
+
+xaRollback
+    : XA ROLLBACK xid
+    ;
+
+xaEnd
+    : XA END xid (SUSPEND (FOR MIGRATE)?)?
+    ;
+
+xaRecovery
+    : XA RECOVER (CONVERT XID)?
+    ;
+
 xid
     : gtrid=textString (COMMA_ bqual=textString (COMMA_ formatID=NUMBER_)?)?
     ;
-

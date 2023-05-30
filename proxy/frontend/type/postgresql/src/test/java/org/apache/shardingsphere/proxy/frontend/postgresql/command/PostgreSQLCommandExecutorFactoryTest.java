@@ -98,7 +98,7 @@ class PostgreSQLCommandExecutorFactoryTest {
     private PostgreSQLCommandPacket preparePacket(final Class<? extends PostgreSQLCommandPacket> commandPacketClass) {
         PostgreSQLCommandPacket result = mock(commandPacketClass);
         if (result instanceof PostgreSQLComQueryPacket) {
-            when(((PostgreSQLComQueryPacket) result).getSql()).thenReturn("");
+            when(((PostgreSQLComQueryPacket) result).getSQL()).thenReturn("");
         }
         return result;
     }
@@ -153,7 +153,7 @@ class PostgreSQLCommandExecutorFactoryTest {
     }
     
     @Test
-    void asserAggregatedFlushPacket() throws SQLException {
+    void assertAggregatedFlushPacket() throws SQLException {
         PostgreSQLComFlushPacket flushPacket = mock(PostgreSQLComFlushPacket.class);
         when(flushPacket.getIdentifier()).thenReturn(PostgreSQLCommandPacketType.FLUSH_COMMAND);
         PostgreSQLComSyncPacket syncPacket = mock(PostgreSQLComSyncPacket.class);

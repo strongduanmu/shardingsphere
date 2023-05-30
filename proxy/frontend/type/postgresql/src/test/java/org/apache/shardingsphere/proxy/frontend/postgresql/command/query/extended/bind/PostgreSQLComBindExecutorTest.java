@@ -89,7 +89,7 @@ class PostgreSQLComBindExecutorTest {
         ContextManager contextManager = mock(ContextManager.class, Answers.RETURNS_DEEP_STUBS);
         when(ProxyContext.getInstance().getContextManager()).thenReturn(contextManager);
         when(ProxyContext.getInstance().getDatabase(databaseName)).thenReturn(database);
-        Collection<DatabasePacket<?>> actual = executor.execute();
+        Collection<DatabasePacket> actual = executor.execute();
         assertThat(actual.size(), is(1));
         assertThat(actual.iterator().next(), is(PostgreSQLBindCompletePacket.getInstance()));
         verify(portalContext).add(any(Portal.class));

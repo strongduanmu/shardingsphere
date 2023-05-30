@@ -70,7 +70,7 @@ class PostgreSQLComExecuteExecutorTest {
     void assertExecute() throws SQLException {
         PostgreSQLPacket expectedPacket = mock(PostgreSQLPacket.class);
         when(portal.execute(anyInt())).thenReturn(Collections.singletonList(expectedPacket));
-        List<DatabasePacket<?>> actualPackets = executor.execute();
+        List<DatabasePacket> actualPackets = executor.execute();
         assertThat(actualPackets.size(), is(1));
         assertThat(actualPackets.iterator().next(), is(expectedPacket));
     }

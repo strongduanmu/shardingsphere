@@ -27,70 +27,73 @@ import org.apache.shardingsphere.proxy.backend.handler.ProxyBackendHandler;
 import org.apache.shardingsphere.proxy.backend.response.data.QueryResponseRow;
 import org.apache.shardingsphere.proxy.backend.response.header.ResponseHeader;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.XAStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.xa.XABeginStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.xa.XACommitStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.xa.XARecoveryStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.xa.XARollbackStatement;
+import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.xa.XAStatement;
 import org.apache.shardingsphere.transaction.xa.jta.exception.XATransactionNestedBeginException;
 
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import java.util.Collections;
 
 /**
  * XA transaction handler.
- * TODO Currently XA transaction started with `XA START` doesn't support for database with multiple datasource, a flag should be added for this both in init progress and add datasource from DistSQL.
  */
+// TODO Currently XA transaction started with `XA START` doesn't support for database with multiple datasource, a flag should be added for this both in init progress and add datasource from DistSQL.
 @RequiredArgsConstructor
 public final class TransactionXAHandler implements ProxyBackendHandler {
     
-    private final XAStatement tclStatement;
+    private final XAStatement xaStatement;
     
     private final ConnectionSession connectionSession;
     
     private final DatabaseConnector backendHandler;
     
     public TransactionXAHandler(final SQLStatementContext sqlStatementContext, final String sql, final ConnectionSession connectionSession) {
-        this.tclStatement = (XAStatement) sqlStatementContext.getSqlStatement();
+        xaStatement = (XAStatement) sqlStatementContext.getSqlStatement();
         this.connectionSession = connectionSession;
-        QueryContext queryContext = new QueryContext(sqlStatementContext, sql, Collections.emptyList());
-        backendHandler = DatabaseConnectorFactory.getInstance().newInstance(queryContext, connectionSession.getDatabaseConnectionManager(), false);
+        backendHandler = DatabaseConnectorFactory.getInstance().newInstance(
+                new QueryContext(sqlStatementContext, sql, Collections.emptyList()), connectionSession.getDatabaseConnectionManager(), false);
     }
     
     @Override
     public boolean next() throws SQLException {
-        return "RECOVER".equals(this.tclStatement.getOp()) && backendHandler.next();
+        return xaStatement instanceof XARecoveryStatement && backendHandler.next();
     }
     
     @Override
     public QueryResponseRow getRowData() throws SQLException {
-        return "RECOVER".equals(this.tclStatement.getOp()) ? backendHandler.getRowData() : new QueryResponseRow(Collections.emptyList());
+        return xaStatement instanceof XARecoveryStatement ? backendHandler.getRowData() : new QueryResponseRow(Collections.emptyList());
     }
     
     @Override
     public ResponseHeader execute() throws SQLException {
-        switch (tclStatement.getOp()) {
-            case "START":
-            case "BEGIN":
-                /*
-                 * we have to let session occupy the thread when doing xa transaction. according to https://dev.mysql.com/doc/refman/5.7/en/xa-states.html XA and local transactions are mutually
-                 * exclusive
-                 */
-                ShardingSpherePreconditions.checkState(!connectionSession.getTransactionStatus().isInTransaction(), XATransactionNestedBeginException::new);
-                ResponseHeader header = backendHandler.execute();
-                connectionSession.getConnectionContext().getTransactionContext().setInTransaction(true);
-                return header;
-            case "END":
-            case "PREPARE":
-            case "RECOVER":
-                return backendHandler.execute();
-            case "COMMIT":
-            case "ROLLBACK":
-                try {
-                    return backendHandler.execute();
-                } finally {
-                    connectionSession.getConnectionContext().clearTransactionConnectionContext();
-                    connectionSession.getConnectionContext().clearCursorConnectionContext();
-                }
-            default:
-                throw new SQLFeatureNotSupportedException(String.format("unrecognized XA statement `%s`", tclStatement.getOp()));
+        if (xaStatement instanceof XABeginStatement) {
+            return begin();
+        }
+        if (xaStatement instanceof XACommitStatement || xaStatement instanceof XARollbackStatement) {
+            return finish();
+        }
+        return backendHandler.execute();
+    }
+    
+    /*
+     * We have to let session occupy the thread when doing xa transaction. According to https://dev.mysql.com/doc/refman/5.7/en/xa-states.html XA and local transactions are mutually exclusive.
+     */
+    private ResponseHeader begin() throws SQLException {
+        ShardingSpherePreconditions.checkState(!connectionSession.getTransactionStatus().isInTransaction(), XATransactionNestedBeginException::new);
+        ResponseHeader result = backendHandler.execute();
+        connectionSession.getConnectionContext().getTransactionContext().setInTransaction(true);
+        return result;
+    }
+    
+    private ResponseHeader finish() throws SQLException {
+        try {
+            return backendHandler.execute();
+        } finally {
+            connectionSession.getConnectionContext().clearTransactionConnectionContext();
+            connectionSession.getConnectionContext().clearCursorConnectionContext();
         }
     }
 }

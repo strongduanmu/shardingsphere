@@ -20,6 +20,7 @@ package org.apache.shardingsphere.proxy.frontend.mysql.command.query.binary.prep
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLBinaryColumnType;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLConstants;
+import org.apache.shardingsphere.db.protocol.mysql.packet.MySQLPacket;
 import org.apache.shardingsphere.db.protocol.mysql.packet.command.admin.MySQLComSetOptionPacket;
 import org.apache.shardingsphere.db.protocol.mysql.packet.command.query.MySQLColumnDefinition41Packet;
 import org.apache.shardingsphere.db.protocol.mysql.packet.command.query.MySQLColumnDefinitionFlag;
@@ -72,18 +73,18 @@ public final class MySQLComStmtPrepareExecutor implements CommandExecutor {
     private final ConnectionSession connectionSession;
     
     @Override
-    public Collection<DatabasePacket<?>> execute() {
+    public Collection<DatabasePacket> execute() {
         failedIfContainsMultiStatements();
         MetaDataContexts metaDataContexts = ProxyContext.getInstance().getContextManager().getMetaDataContexts();
         SQLParserRule sqlParserRule = metaDataContexts.getMetaData().getGlobalRuleMetaData().getSingleRule(SQLParserRule.class);
-        SQLStatement sqlStatement = sqlParserRule.getSQLParserEngine(TypedSPILoader.getService(DatabaseType.class, "MySQL").getType()).parse(packet.getSql(), true);
-        if (!MySQLComStmtPrepareChecker.isStatementAllowed(sqlStatement)) {
+        SQLStatement sqlStatement = sqlParserRule.getSQLParserEngine(TypedSPILoader.getService(DatabaseType.class, "MySQL").getType()).parse(packet.getSQL(), true);
+        if (!MySQLComStmtPrepareChecker.isAllowedStatement(sqlStatement)) {
             throw new UnsupportedPreparedStatementException();
         }
         SQLStatementContext sqlStatementContext = SQLStatementContextFactory.newInstance(ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaData(),
                 sqlStatement, connectionSession.getDefaultDatabaseName());
         int statementId = MySQLStatementIdGenerator.getInstance().nextStatementId(connectionSession.getConnectionId());
-        MySQLServerPreparedStatement serverPreparedStatement = new MySQLServerPreparedStatement(packet.getSql(), sqlStatementContext, new CopyOnWriteArrayList<>());
+        MySQLServerPreparedStatement serverPreparedStatement = new MySQLServerPreparedStatement(packet.getSQL(), sqlStatementContext, new CopyOnWriteArrayList<>());
         connectionSession.getServerPreparedStatementRegistry().addPreparedStatement(statementId, serverPreparedStatement);
         return createPackets(sqlStatementContext, statementId, serverPreparedStatement);
     }
@@ -92,13 +93,13 @@ public final class MySQLComStmtPrepareExecutor implements CommandExecutor {
         // TODO Multi statements should be identified by SQL Parser instead of checking if sql contains ";".
         if (connectionSession.getAttributeMap().hasAttr(MySQLConstants.MYSQL_OPTION_MULTI_STATEMENTS)
                 && MySQLComSetOptionPacket.MYSQL_OPTION_MULTI_STATEMENTS_ON == connectionSession.getAttributeMap().attr(MySQLConstants.MYSQL_OPTION_MULTI_STATEMENTS).get()
-                && packet.getSql().contains(";")) {
+                && packet.getSQL().contains(";")) {
             throw new UnsupportedPreparedStatementException();
         }
     }
     
-    private Collection<DatabasePacket<?>> createPackets(final SQLStatementContext sqlStatementContext, final int statementId, final MySQLServerPreparedStatement serverPreparedStatement) {
-        Collection<DatabasePacket<?>> result = new LinkedList<>();
+    private Collection<DatabasePacket> createPackets(final SQLStatementContext sqlStatementContext, final int statementId, final MySQLServerPreparedStatement serverPreparedStatement) {
+        Collection<DatabasePacket> result = new LinkedList<>();
         List<Projection> projections = getProjections(sqlStatementContext);
         int parameterCount = sqlStatementContext.getSqlStatement().getParameterCount();
         result.add(new MySQLComStmtPrepareOKPacket(statementId, projections.size(), parameterCount, 0));
@@ -119,12 +120,12 @@ public final class MySQLComStmtPrepareExecutor implements CommandExecutor {
         return sqlStatementContext instanceof SelectStatementContext ? ((SelectStatementContext) sqlStatementContext).getProjectionsContext().getExpandProjections() : Collections.emptyList();
     }
     
-    private Collection<DatabasePacket<?>> createParameterColumnDefinition41Packets(final SQLStatementContext sqlStatementContext, final int characterSet,
-                                                                                   final MySQLServerPreparedStatement serverPreparedStatement) {
+    private Collection<MySQLPacket> createParameterColumnDefinition41Packets(final SQLStatementContext sqlStatementContext, final int characterSet,
+                                                                             final MySQLServerPreparedStatement serverPreparedStatement) {
         Map<ParameterMarkerSegment, ShardingSphereColumn> columnsOfParameterMarkers =
                 MySQLComStmtPrepareParameterMarkerExtractor.findColumnsOfParameterMarkers(sqlStatementContext.getSqlStatement(), getSchema(sqlStatementContext));
         Collection<ParameterMarkerSegment> parameterMarkerSegments = ((AbstractSQLStatement) sqlStatementContext.getSqlStatement()).getParameterMarkerSegments();
-        Collection<DatabasePacket<?>> result = new ArrayList<>(parameterMarkerSegments.size());
+        Collection<MySQLPacket> result = new ArrayList<>(parameterMarkerSegments.size());
         for (ParameterMarkerSegment each : parameterMarkerSegments) {
             ShardingSphereColumn column = columnsOfParameterMarkers.get(each);
             if (null != column) {
@@ -139,12 +140,12 @@ public final class MySQLComStmtPrepareExecutor implements CommandExecutor {
         return result;
     }
     
-    private Collection<DatabasePacket<?>> createProjectionColumnDefinition41Packets(final SelectStatementContext selectStatementContext, final int characterSet) {
+    private Collection<MySQLPacket> createProjectionColumnDefinition41Packets(final SelectStatementContext selectStatementContext, final int characterSet) {
         Collection<Projection> projections = selectStatementContext.getProjectionsContext().getExpandProjections();
         ShardingSphereSchema schema = getSchema(selectStatementContext);
         Map<String, String> columnToTableMap = selectStatementContext.getTablesContext()
                 .findTableNamesByColumnProjection(projections.stream().filter(ColumnProjection.class::isInstance).map(ColumnProjection.class::cast).collect(Collectors.toList()), schema);
-        Collection<DatabasePacket<?>> result = new ArrayList<>(projections.size());
+        Collection<MySQLPacket> result = new ArrayList<>(projections.size());
         for (Projection each : projections) {
             // TODO Calculate column definition flag for other projection types
             if (each instanceof ColumnProjection) {

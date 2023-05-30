@@ -36,7 +36,7 @@ public abstract class AbstractDriverTest {
     
     private static final List<String> ACTUAL_DATA_SOURCE_NAMES = Arrays.asList("jdbc_0", "jdbc_1", "single_jdbc", "shadow_jdbc_0", "shadow_jdbc_1", "encrypt", "test_primary_ds", "test_replica_ds");
     
-    private static final Map<String, DataSource> ACTUAL_DATA_SOURCES = new HashMap<>(ACTUAL_DATA_SOURCE_NAMES.size(), 1);
+    private static final Map<String, DataSource> ACTUAL_DATA_SOURCES = new HashMap<>(ACTUAL_DATA_SOURCE_NAMES.size(), 1F);
     
     @BeforeAll
     static synchronized void initializeDataSource() throws SQLException {
@@ -49,13 +49,13 @@ public abstract class AbstractDriverTest {
     private static void initializeSchema(final String dataSourceName) throws SQLException {
         try (Connection connection = ACTUAL_DATA_SOURCES.get(dataSourceName).getConnection()) {
             if ("encrypt".equals(dataSourceName)) {
-                RunScript.execute(connection, new InputStreamReader(Objects.requireNonNull(AbstractDriverTest.class.getClassLoader().getResourceAsStream("sql/jdbc_encrypt_init.sql"))));
+                RunScript.execute(connection, new InputStreamReader(Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResourceAsStream("sql/jdbc_encrypt_init.sql"))));
             } else if ("shadow_jdbc_0".equals(dataSourceName) || "shadow_jdbc_1".equals(dataSourceName)) {
-                RunScript.execute(connection, new InputStreamReader(Objects.requireNonNull(AbstractDriverTest.class.getClassLoader().getResourceAsStream("sql/jdbc_shadow_init.sql"))));
+                RunScript.execute(connection, new InputStreamReader(Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResourceAsStream("sql/jdbc_shadow_init.sql"))));
             } else if ("single_jdbc".equals(dataSourceName)) {
-                RunScript.execute(connection, new InputStreamReader(Objects.requireNonNull(AbstractDriverTest.class.getClassLoader().getResourceAsStream("sql/single_jdbc_init.sql"))));
+                RunScript.execute(connection, new InputStreamReader(Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResourceAsStream("sql/single_jdbc_init.sql"))));
             } else {
-                RunScript.execute(connection, new InputStreamReader(Objects.requireNonNull(AbstractDriverTest.class.getClassLoader().getResourceAsStream("sql/jdbc_init.sql"))));
+                RunScript.execute(connection, new InputStreamReader(Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResourceAsStream("sql/jdbc_init.sql"))));
             }
         }
     }

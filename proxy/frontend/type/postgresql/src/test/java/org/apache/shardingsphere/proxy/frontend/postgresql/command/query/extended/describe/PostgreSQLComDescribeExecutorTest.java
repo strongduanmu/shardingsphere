@@ -120,12 +120,11 @@ class PostgreSQLComDescribeExecutorTest {
         PostgreSQLRowDescriptionPacket expected = mock(PostgreSQLRowDescriptionPacket.class);
         when(portal.describe()).thenReturn(expected);
         when(portalContext.get("P_1")).thenReturn(portal);
-        Collection<DatabasePacket<?>> actual = executor.execute();
+        Collection<DatabasePacket> actual = executor.execute();
         assertThat(actual.size(), is(1));
         assertThat(actual.iterator().next(), is(expected));
     }
     
-    @SuppressWarnings("rawtypes")
     @Test
     void assertDescribePreparedStatementInsertWithoutColumns() throws SQLException {
         when(packet.getType()).thenReturn('S');
@@ -144,9 +143,9 @@ class PostgreSQLComDescribeExecutorTest {
         ShardingSphereDatabase database = contextManager.getMetaDataContexts().getMetaData().getDatabase(DATABASE_NAME);
         when(ProxyContext.getInstance().getDatabase(DATABASE_NAME)).thenReturn(database);
         connectionSession.getServerPreparedStatementRegistry().addPreparedStatement(statementId, new PostgreSQLServerPreparedStatement(sql, sqlStatementContext, parameterTypes));
-        Collection<DatabasePacket<?>> actualPackets = executor.execute();
+        Collection<DatabasePacket> actualPackets = executor.execute();
         assertThat(actualPackets.size(), is(2));
-        Iterator<DatabasePacket<?>> actualPacketsIterator = actualPackets.iterator();
+        Iterator<DatabasePacket> actualPacketsIterator = actualPackets.iterator();
         PostgreSQLParameterDescriptionPacket actualParameterDescription = (PostgreSQLParameterDescriptionPacket) actualPacketsIterator.next();
         PostgreSQLPacketPayload mockPayload = mock(PostgreSQLPacketPayload.class);
         actualParameterDescription.write(mockPayload);
@@ -156,7 +155,6 @@ class PostgreSQLComDescribeExecutorTest {
         assertThat(actualPacketsIterator.next(), is(PostgreSQLNoDataPacket.getInstance()));
     }
     
-    @SuppressWarnings("rawtypes")
     @Test
     void assertDescribePreparedStatementInsertWithColumns() throws SQLException {
         when(packet.getType()).thenReturn('S');
@@ -175,9 +173,9 @@ class PostgreSQLComDescribeExecutorTest {
         ShardingSphereDatabase database = contextManager.getMetaDataContexts().getMetaData().getDatabase(DATABASE_NAME);
         when(ProxyContext.getInstance().getDatabase(DATABASE_NAME)).thenReturn(database);
         connectionSession.getServerPreparedStatementRegistry().addPreparedStatement(statementId, new PostgreSQLServerPreparedStatement(sql, sqlStatementContext, parameterTypes));
-        Collection<DatabasePacket<?>> actualPackets = executor.execute();
+        Collection<DatabasePacket> actualPackets = executor.execute();
         assertThat(actualPackets.size(), is(2));
-        Iterator<DatabasePacket<?>> actualPacketsIterator = actualPackets.iterator();
+        Iterator<DatabasePacket> actualPacketsIterator = actualPackets.iterator();
         PostgreSQLParameterDescriptionPacket actualParameterDescription = (PostgreSQLParameterDescriptionPacket) actualPacketsIterator.next();
         PostgreSQLPacketPayload mockPayload = mock(PostgreSQLPacketPayload.class);
         actualParameterDescription.write(mockPayload);
@@ -187,7 +185,6 @@ class PostgreSQLComDescribeExecutorTest {
         assertThat(actualPacketsIterator.next(), is(PostgreSQLNoDataPacket.getInstance()));
     }
     
-    @SuppressWarnings("rawtypes")
     @Test
     void assertDescribePreparedStatementInsertWithCaseInsensitiveColumns() throws SQLException {
         when(packet.getType()).thenReturn('S');
@@ -206,9 +203,9 @@ class PostgreSQLComDescribeExecutorTest {
         ShardingSphereDatabase database = contextManager.getMetaDataContexts().getMetaData().getDatabase(DATABASE_NAME);
         when(ProxyContext.getInstance().getDatabase(DATABASE_NAME)).thenReturn(database);
         connectionSession.getServerPreparedStatementRegistry().addPreparedStatement(statementId, new PostgreSQLServerPreparedStatement(sql, sqlStatementContext, parameterTypes));
-        Collection<DatabasePacket<?>> actualPackets = executor.execute();
+        Collection<DatabasePacket> actualPackets = executor.execute();
         assertThat(actualPackets.size(), is(2));
-        Iterator<DatabasePacket<?>> actualPacketsIterator = actualPackets.iterator();
+        Iterator<DatabasePacket> actualPacketsIterator = actualPackets.iterator();
         PostgreSQLParameterDescriptionPacket actualParameterDescription = (PostgreSQLParameterDescriptionPacket) actualPacketsIterator.next();
         PostgreSQLPacketPayload mockPayload = mock(PostgreSQLPacketPayload.class);
         actualParameterDescription.write(mockPayload);
@@ -218,7 +215,6 @@ class PostgreSQLComDescribeExecutorTest {
         assertThat(actualPacketsIterator.next(), is(PostgreSQLNoDataPacket.getInstance()));
     }
     
-    @SuppressWarnings("rawtypes")
     @Test
     void assertDescribePreparedStatementInsertWithUndefinedColumns() {
         when(packet.getType()).thenReturn('S');
@@ -240,7 +236,6 @@ class PostgreSQLComDescribeExecutorTest {
         assertThrows(ColumnNotFoundException.class, () -> executor.execute());
     }
     
-    @SuppressWarnings("rawtypes")
     @Test
     void assertDescribePreparedStatementInsertWithReturningClause() throws SQLException {
         when(packet.getType()).thenReturn('S');
@@ -260,16 +255,16 @@ class PostgreSQLComDescribeExecutorTest {
         ShardingSphereDatabase database = contextManager.getMetaDataContexts().getMetaData().getDatabase(DATABASE_NAME);
         when(ProxyContext.getInstance().getDatabase(DATABASE_NAME)).thenReturn(database);
         connectionSession.getServerPreparedStatementRegistry().addPreparedStatement(statementId, new PostgreSQLServerPreparedStatement(sql, sqlStatementContext, parameterTypes));
-        Collection<DatabasePacket<?>> actualPackets = executor.execute();
+        Collection<DatabasePacket> actualPackets = executor.execute();
         assertThat(actualPackets.size(), is(2));
-        Iterator<DatabasePacket<?>> actualPacketsIterator = actualPackets.iterator();
+        Iterator<DatabasePacket> actualPacketsIterator = actualPackets.iterator();
         PostgreSQLParameterDescriptionPacket actualParameterDescription = (PostgreSQLParameterDescriptionPacket) actualPacketsIterator.next();
         PostgreSQLPacketPayload mockPayload = mock(PostgreSQLPacketPayload.class);
         actualParameterDescription.write(mockPayload);
         verify(mockPayload).writeInt2(3);
         verify(mockPayload).writeInt4(23);
         verify(mockPayload, times(2)).writeInt4(18);
-        DatabasePacket<?> actualRowDescriptionPacket = actualPacketsIterator.next();
+        DatabasePacket actualRowDescriptionPacket = actualPacketsIterator.next();
         assertThat(actualRowDescriptionPacket, is(instanceOf(PostgreSQLRowDescriptionPacket.class)));
         assertRowDescriptions((PostgreSQLRowDescriptionPacket) actualRowDescriptionPacket);
     }
@@ -324,7 +319,6 @@ class PostgreSQLComDescribeExecutorTest {
         return (Collection<PostgreSQLColumnDescription>) Plugins.getMemberAccessor().get(PostgreSQLRowDescriptionPacket.class.getDeclaredField("columnDescriptions"), packet);
     }
     
-    @SuppressWarnings("rawtypes")
     @Test
     void assertDescribeSelectPreparedStatement() throws SQLException {
         when(packet.getType()).thenReturn('S');
@@ -341,9 +335,9 @@ class PostgreSQLComDescribeExecutorTest {
         ShardingSphereDatabase database = contextManager.getMetaDataContexts().getMetaData().getDatabase(DATABASE_NAME);
         when(ProxyContext.getInstance().getDatabase(DATABASE_NAME)).thenReturn(database);
         connectionSession.getServerPreparedStatementRegistry().addPreparedStatement(statementId, new PostgreSQLServerPreparedStatement(sql, sqlStatementContext, parameterTypes));
-        Collection<DatabasePacket<?>> actual = executor.execute();
+        Collection<DatabasePacket> actual = executor.execute();
         assertThat(actual.size(), is(2));
-        Iterator<DatabasePacket<?>> actualPacketsIterator = actual.iterator();
+        Iterator<DatabasePacket> actualPacketsIterator = actual.iterator();
         PostgreSQLParameterDescriptionPacket actualParameterDescription = (PostgreSQLParameterDescriptionPacket) actualPacketsIterator.next();
         assertThat(actualParameterDescription, instanceOf(PostgreSQLParameterDescriptionPacket.class));
         PostgreSQLPacketPayload mockPayload = mock(PostgreSQLPacketPayload.class);

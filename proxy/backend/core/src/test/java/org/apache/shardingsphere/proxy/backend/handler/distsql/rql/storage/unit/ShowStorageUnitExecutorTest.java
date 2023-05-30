@@ -108,7 +108,7 @@ class ShowStorageUnitExecutorTest {
     void assertAllStorageUnit() {
         RQLExecutor<ShowStorageUnitsStatement> executor = new ShowStorageUnitExecutor();
         ShowStorageUnitsStatement showStorageUnitsStatement = new ShowStorageUnitsStatement(mock(DatabaseSegment.class), null);
-        Map<Integer, String> nameMap = new HashMap<>(3, 1);
+        Map<Integer, String> nameMap = new HashMap<>(3, 1F);
         nameMap.put(0, "ds_2");
         nameMap.put(1, "ds_1");
         nameMap.put(2, "ds_0");
@@ -129,7 +129,7 @@ class ShowStorageUnitExecutorTest {
             assertThat(data.getCell(9), is("100"));
             assertThat(data.getCell(10), is("10"));
             assertThat(data.getCell(11), is(""));
-            assertThat(data.getCell(12), is(""));
+            assertThat(data.getCell(12), is("{\"openedConnections\":[]}"));
             index++;
         }
     }
@@ -153,7 +153,7 @@ class ShowStorageUnitExecutorTest {
         assertThat(data.getCell(9), is("100"));
         assertThat(data.getCell(10), is("10"));
         assertThat(data.getCell(11), is(""));
-        assertThat(data.getCell(12), is(""));
+        assertThat(data.getCell(12), is("{\"openedConnections\":[]}"));
     }
     
     @Test

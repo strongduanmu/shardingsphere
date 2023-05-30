@@ -617,6 +617,12 @@ public abstract class MySQLStatementVisitor extends MySQLStatementBaseVisitor<AS
         if (null != ctx.LP_() && 1 == ctx.expr().size()) {
             return visit(ctx.expr(0));
         }
+        if (null != ctx.OR_()) {
+            ExpressionSegment left = (ExpressionSegment) visit(ctx.simpleExpr(0));
+            ExpressionSegment right = (ExpressionSegment) visit(ctx.simpleExpr(1));
+            String text = ctx.start.getInputStream().getText(new Interval(ctx.start.getStartIndex(), ctx.stop.getStopIndex()));
+            return new BinaryOperationExpression(ctx.start.getStartIndex(), ctx.stop.getStopIndex(), left, right, ctx.OR_().getText(), text);
+        }
         return visitRemainSimpleExpr(ctx);
     }
     
@@ -755,7 +761,12 @@ public abstract class MySQLStatementVisitor extends MySQLStatementBaseVisitor<AS
     @Override
     public ASTNode visitTableStatement(final TableStatementContext ctx) {
         MySQLSelectStatement result = new MySQLSelectStatement();
-        result.setTable((SimpleTableSegment) visit(ctx.tableName()));
+        if (null != ctx.TABLE()) {
+            result.setFrom(new SimpleTableSegment(new TableNameSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(),
+                    new IdentifierValue(ctx.tableName().getText()))));
+        } else {
+            result.setTable((SimpleTableSegment) visit(ctx.tableName()));
+        }
         return result;
     }
     
@@ -1342,7 +1353,7 @@ public abstract class MySQLStatementVisitor extends MySQLStatementBaseVisitor<AS
         } else {
             result.setInsertColumns(new InsertColumnsSegment(ctx.start.getStartIndex() - 1, ctx.start.getStartIndex() - 1, Collections.emptyList()));
         }
-        result.getValues().addAll(createReplaceValuesSegments(ctx.assignmentValues()));
+        result.getValues().addAll(createInsertValuesSegments(ctx.assignmentValues()));
         return result;
     }
     
@@ -1350,14 +1361,6 @@ public abstract class MySQLStatementVisitor extends MySQLStatementBaseVisitor<AS
         List<ColumnSegment> result = new LinkedList<>();
         for (InsertIdentifierContext each : fields.insertIdentifier()) {
             result.add((ColumnSegment) visit(each));
-        }
-        return result;
-    }
-    
-    private Collection<InsertValuesSegment> createReplaceValuesSegments(final Collection<AssignmentValuesContext> assignmentValuesContexts) {
-        Collection<InsertValuesSegment> result = new LinkedList<>();
-        for (AssignmentValuesContext each : assignmentValuesContexts) {
-            result.add((InsertValuesSegment) visit(each));
         }
         return result;
     }

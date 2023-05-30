@@ -20,7 +20,6 @@ package org.apache.shardingsphere.db.protocol.mysql.packet.command.query.binary.
 import com.google.common.base.Preconditions;
 import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.ToString;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLBinaryColumnType;
 import org.apache.shardingsphere.db.protocol.mysql.constant.MySQLNewParametersBoundFlag;
 import org.apache.shardingsphere.db.protocol.mysql.packet.command.MySQLCommandPacket;
@@ -40,10 +39,9 @@ import java.util.Set;
 /**
  * COM_STMT_EXECUTE command packet for MySQL.
  *
- * @see <a href="https://dev.mysql.com/doc/internals/en/com-stmt-execute.html">COM_STMT_EXECUTE</a>
+ * @see <a href="https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_execute.html">COM_STMT_EXECUTE</a>
  */
 @Getter
-@ToString(of = "statementId")
 public final class MySQLComStmtExecutePacket extends MySQLCommandPacket {
     
     private static final int ITERATION_COUNT = 1;

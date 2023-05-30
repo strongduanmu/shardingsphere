@@ -48,10 +48,10 @@ public final class PostgreSQLAggregatedBatchedStatementsCommandExecutor implemen
     private final List<PostgreSQLCommandPacket> packets;
     
     @Override
-    public Collection<DatabasePacket<?>> execute() throws SQLException {
+    public Collection<DatabasePacket> execute() throws SQLException {
         PostgreSQLServerPreparedStatement preparedStatement = getPreparedStatement();
         PostgreSQLBatchedStatementsExecutor executor = new PostgreSQLBatchedStatementsExecutor(connectionSession, preparedStatement, readParameterSets(preparedStatement.getParameterTypes()));
-        List<DatabasePacket<?>> result = new ArrayList<>(packets.size());
+        Collection<DatabasePacket> result = new ArrayList<>(packets.size());
         int totalInserted = executor.executeBatch();
         int executePacketCount = executePacketCount();
         for (PostgreSQLCommandPacket each : packets) {

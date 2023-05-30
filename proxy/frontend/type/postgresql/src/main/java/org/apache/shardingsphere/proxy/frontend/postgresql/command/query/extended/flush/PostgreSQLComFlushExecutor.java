@@ -30,7 +30,7 @@ import java.util.Collections;
 public final class PostgreSQLComFlushExecutor implements CommandExecutor {
     
     @Override
-    public Collection<DatabasePacket<?>> execute() throws SQLException {
+    public Collection<DatabasePacket> execute() throws SQLException {
         return Collections.emptyList();
     }
 }

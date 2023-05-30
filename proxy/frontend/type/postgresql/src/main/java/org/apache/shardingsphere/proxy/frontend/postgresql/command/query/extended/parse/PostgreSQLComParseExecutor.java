@@ -57,9 +57,9 @@ public final class PostgreSQLComParseExecutor implements CommandExecutor {
     private final ConnectionSession connectionSession;
     
     @Override
-    public Collection<DatabasePacket<?>> execute() {
+    public Collection<DatabasePacket> execute() {
         SQLParserEngine sqlParserEngine = createShardingSphereSQLParserEngine(connectionSession.getDatabaseName());
-        String sql = packet.getSql();
+        String sql = packet.getSQL();
         SQLStatement sqlStatement = sqlParserEngine.parse(sql, true);
         if (sqlStatement.getParameterCount() > 0) {
             sql = convertSQLToJDBCStyle(sqlStatement, sql);
@@ -71,7 +71,7 @@ public final class PostgreSQLComParseExecutor implements CommandExecutor {
                         sqlStatement, connectionSession.getDefaultDatabaseName());
         PostgreSQLServerPreparedStatement serverPreparedStatement = new PostgreSQLServerPreparedStatement(sql, sqlStatementContext, paddedColumnTypes);
         connectionSession.getServerPreparedStatementRegistry().addPreparedStatement(packet.getStatementId(), serverPreparedStatement);
-        return Collections.singletonList(PostgreSQLParseCompletePacket.getInstance());
+        return Collections.singleton(PostgreSQLParseCompletePacket.getInstance());
     }
     
     private SQLParserEngine createShardingSphereSQLParserEngine(final String databaseName) {

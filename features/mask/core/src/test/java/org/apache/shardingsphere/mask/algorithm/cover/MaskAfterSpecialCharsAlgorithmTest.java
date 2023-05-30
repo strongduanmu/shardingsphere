@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MaskAfterSpecialCharsAlgorithmTest {
@@ -73,5 +74,21 @@ class MaskAfterSpecialCharsAlgorithmTest {
     void assertInitWhenReplaceCharIsEmpty() {
         assertThrows(MaskAlgorithmInitializationException.class,
                 () -> new MaskBeforeSpecialCharsAlgorithm().init(PropertiesBuilder.build(new Property("special-chars", "d1"), new Property("replace-char", ""))));
+    }
+    
+    @Test
+    void assertInitWhenReplaceCharIsMissing() {
+        assertThrows(MaskAlgorithmInitializationException.class, () -> new MaskBeforeSpecialCharsAlgorithm().init(PropertiesBuilder.build(new Property("special-chars", "d1"))));
+    }
+    
+    @Test
+    void assertInitWhenPropertiesAreEmpty() {
+        assertThrows(MaskAlgorithmInitializationException.class, () -> new MaskBeforeSpecialCharsAlgorithm().init(PropertiesBuilder.build()));
+    }
+    
+    @Test
+    void assertInitWhenValidPropertiesAreSet() {
+        MaskBeforeSpecialCharsAlgorithm algorithm = new MaskBeforeSpecialCharsAlgorithm();
+        assertDoesNotThrow(() -> algorithm.init(PropertiesBuilder.build(new Property("special-chars", "d1"), new Property("replace-char", "*"))));
     }
 }

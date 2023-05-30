@@ -31,8 +31,8 @@ import org.apache.shardingsphere.mode.manager.ContextManager;
 import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
 import org.apache.shardingsphere.parser.rule.SQLParserRule;
 import org.apache.shardingsphere.parser.rule.builder.DefaultSQLParserRuleConfigurationBuilder;
-import org.apache.shardingsphere.proxy.backend.connector.ProxyDatabaseConnectionManager;
 import org.apache.shardingsphere.proxy.backend.connector.DatabaseConnector;
+import org.apache.shardingsphere.proxy.backend.connector.ProxyDatabaseConnectionManager;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.handler.admin.DatabaseAdminQueryBackendHandler;
 import org.apache.shardingsphere.proxy.backend.handler.data.impl.UnicastDatabaseBackendHandler;
@@ -118,10 +118,10 @@ class ProxyBackendHandlerFactoryTest {
     
     @Test
     void assertNewInstanceWithDistSQL() throws SQLException {
-        String sql = "set dist variable transaction_type='LOCAL'";
+        String sql = "set dist variable sql_show='true'";
         ProxyBackendHandler actual = ProxyBackendHandlerFactory.newInstance(databaseType, sql, connectionSession);
         assertThat(actual, instanceOf(UpdatableRALBackendHandler.class));
-        sql = "show dist variable where name = transaction_type";
+        sql = "show dist variable where name = sql_show";
         actual = ProxyBackendHandlerFactory.newInstance(databaseType, sql, connectionSession);
         assertThat(actual, instanceOf(QueryableRALBackendHandler.class));
         sql = "show dist variables";
@@ -187,8 +187,8 @@ class ProxyBackendHandlerFactoryTest {
         assertThat(actual, instanceOf(UnicastDatabaseBackendHandler.class));
     }
     
-    // TODO Fix me
-    @Disabled
+    // TODO
+    @Disabled("FIX ME")
     @Test
     void assertNewInstanceWithQuery() throws SQLException {
         String sql = "SELECT * FROM t_order limit 1";

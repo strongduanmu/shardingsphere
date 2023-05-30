@@ -30,7 +30,7 @@ import java.util.Map.Entry;
 /**
  * Error response packet for openGauss.
  */
-public final class OpenGaussErrorResponsePacket implements PostgreSQLIdentifierPacket {
+public final class OpenGaussErrorResponsePacket extends PostgreSQLIdentifierPacket {
     
     public static final char FIELD_TYPE_SEVERITY = 'S';
     
@@ -61,13 +61,13 @@ public final class OpenGaussErrorResponsePacket implements PostgreSQLIdentifierP
     private final Map<Character, String> fields;
     
     public OpenGaussErrorResponsePacket(final ServerErrorMessage serverErrorMessage) {
-        fields = new LinkedHashMap<>(13, 1);
+        fields = new LinkedHashMap<>(13, 1F);
         fillFieldsByServerErrorMessage(serverErrorMessage);
         fillRequiredFieldsIfNecessary();
     }
     
     public OpenGaussErrorResponsePacket(final String severityLevel, final String sqlState, final String message) {
-        fields = new LinkedHashMap<>(4, 1);
+        fields = new LinkedHashMap<>(4, 1F);
         fields.put(FIELD_TYPE_SEVERITY, severityLevel);
         fields.put(FIELD_TYPE_CODE, sqlState);
         fields.put(FIELD_TYPE_MESSAGE, message);
@@ -121,7 +121,7 @@ public final class OpenGaussErrorResponsePacket implements PostgreSQLIdentifierP
     }
     
     @Override
-    public void write(final PostgreSQLPacketPayload payload) {
+    protected void write(final PostgreSQLPacketPayload payload) {
         for (Entry<Character, String> entry : fields.entrySet()) {
             payload.writeInt1(entry.getKey());
             payload.writeStringNul(entry.getValue());

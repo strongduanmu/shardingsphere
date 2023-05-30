@@ -18,14 +18,14 @@
 package org.apache.shardingsphere.proxy.frontend.postgresql.command;
 
 import io.netty.channel.ChannelHandlerContext;
-import org.apache.shardingsphere.db.protocol.packet.CommandPacket;
-import org.apache.shardingsphere.db.protocol.packet.CommandPacketType;
 import org.apache.shardingsphere.db.protocol.packet.DatabasePacket;
+import org.apache.shardingsphere.db.protocol.packet.command.CommandPacket;
+import org.apache.shardingsphere.db.protocol.packet.command.CommandPacketType;
 import org.apache.shardingsphere.db.protocol.payload.PacketPayload;
+import org.apache.shardingsphere.db.protocol.postgresql.packet.PostgreSQLPacket;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQLCommandPacket;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQLCommandPacketFactory;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQLCommandPacketType;
-import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQLCommandPacketTypeLoader;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.PostgreSQLDataRowPacket;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.generic.PostgreSQLCommandCompletePacket;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.generic.PostgreSQLReadyForQueryPacket;
@@ -51,7 +51,7 @@ public final class PostgreSQLCommandExecuteEngine implements CommandExecuteEngin
     
     @Override
     public PostgreSQLCommandPacketType getCommandPacketType(final PacketPayload payload) {
-        return PostgreSQLCommandPacketTypeLoader.getCommandPacketType((PostgreSQLPacketPayload) payload);
+        return PostgreSQLCommandPacketType.valueOf(payload.getByteBuf().getByte(payload.getByteBuf().readerIndex()));
     }
     
     @Override
@@ -66,12 +66,12 @@ public final class PostgreSQLCommandExecuteEngine implements CommandExecuteEngin
     }
     
     @Override
-    public DatabasePacket<?> getErrorPacket(final Exception cause) {
+    public PostgreSQLPacket getErrorPacket(final Exception cause) {
         return PostgreSQLErrPacketFactory.newInstance(cause);
     }
     
     @Override
-    public Optional<DatabasePacket<?>> getOtherPacket(final ConnectionSession connectionSession) {
+    public Optional<DatabasePacket> getOtherPacket(final ConnectionSession connectionSession) {
         return Optional.of(connectionSession.getTransactionStatus().isInTransaction() ? PostgreSQLReadyForQueryPacket.TRANSACTION_FAILED : PostgreSQLReadyForQueryPacket.NOT_IN_TRANSACTION);
     }
     
@@ -108,11 +108,8 @@ public final class PostgreSQLCommandExecuteEngine implements CommandExecuteEngin
                 .getContextManager().getMetaDataContexts().getMetaData().getProps().<Integer>getValue(ConfigurationPropertyKey.PROXY_FRONTEND_FLUSH_THRESHOLD);
         while (queryCommandExecutor.next()) {
             flushCount++;
-            while (!context.channel().isWritable() && context.channel().isActive()) {
-                context.flush();
-                databaseConnectionManager.getResourceLock().doAwait();
-            }
-            DatabasePacket<?> resultValue = queryCommandExecutor.getQueryRowPacket();
+            databaseConnectionManager.getResourceLock().doAwait(context);
+            DatabasePacket resultValue = queryCommandExecutor.getQueryRowPacket();
             context.write(resultValue);
             if (proxyFrontendFlushThreshold == flushCount) {
                 context.flush();

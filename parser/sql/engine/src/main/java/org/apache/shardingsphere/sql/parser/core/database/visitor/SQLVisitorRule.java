@@ -311,7 +311,7 @@ public enum SQLVisitorRule {
     
     GRANT_ROLE_OR_PRIVILEGE_ON_TO("GrantRoleOrPrivilegeOnTo", SQLStatementType.DCL),
     
-    GRANT_PROXY("GrantPROXY", SQLStatementType.DCL),
+    GRANT_PROXY("GrantProxy", SQLStatementType.DCL),
     
     REVOKE("Revoke", SQLStatementType.DCL),
     
@@ -473,7 +473,17 @@ public enum SQLVisitorRule {
     
     STOP_SLAVE("StopSlave", SQLStatementType.RL),
     
-    XA("Xa", SQLStatementType.TCL),
+    XA_BEGIN("XaBegin", SQLStatementType.TCL),
+    
+    XA_PREPARE("XaPrepare", SQLStatementType.TCL),
+    
+    XA_COMMIT("XaCommit", SQLStatementType.TCL),
+    
+    XA_ROLLBACK("XaRollback", SQLStatementType.TCL),
+    
+    XA_END("XaEnd", SQLStatementType.TCL),
+    
+    XA_RECOVERY("XaRecovery", SQLStatementType.TCL),
     
     ABORT("Abort", SQLStatementType.TCL),
     

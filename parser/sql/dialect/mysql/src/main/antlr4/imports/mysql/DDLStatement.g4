@@ -104,7 +104,7 @@ alterListItem
     | ALTER INDEX indexName visibility  # alterIndex
     | ALTER CHECK constraintName constraintEnforcement  # alterCheck
     | ALTER CONSTRAINT constraintName constraintEnforcement # alterConstraint
-    | RENAME COLUMN columnInternalRef=identifier TO identifier  # renameColumn
+    | RENAME COLUMN oldColumn TO newColumn  # renameColumn
     | RENAME (TO | AS)? tableName # alterRenameTable
     | RENAME keyOrIndex indexName TO indexName  # renameIndex
     | CONVERT TO charset charsetName collateClause?  # alterConvert
@@ -198,7 +198,7 @@ alterAlgorithmOption
     ;
 
 alterLockOption
-    : LOCK EQ_? (DEFAULT | NONE | 'SHARED' | 'EXCLUSIVE')
+    : LOCK EQ_? (DEFAULT | NONE | SHARED | EXCLUSIVE)
     ;
 
 truncateTable
@@ -421,7 +421,7 @@ dropTrigger
     ;
 
 renameTable
-    : RENAME TABLE tableName TO tableName (COMMA_ tableName TO tableName)*
+    : RENAME (TABLE | TABLES) tableName TO tableName (COMMA_ tableName TO tableName)*
     ;
 
 createDefinitionClause

@@ -27,7 +27,7 @@ import org.apache.shardingsphere.test.fixture.infra.database.type.MockedDatabase
 public final class DatabaseProtocolFrontendEngineFixture implements DatabaseProtocolFrontendEngine {
     
     @Override
-    public DatabasePacketCodecEngine<?> getCodecEngine() {
+    public DatabasePacketCodecEngine getCodecEngine() {
         return null;
     }
     

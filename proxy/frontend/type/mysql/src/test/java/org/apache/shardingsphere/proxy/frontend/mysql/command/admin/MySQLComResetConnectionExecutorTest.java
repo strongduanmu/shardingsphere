@@ -56,7 +56,7 @@ class MySQLComResetConnectionExecutorTest {
         when(connectionSession.getServerPreparedStatementRegistry()).thenReturn(new ServerPreparedStatementRegistry());
         int statementId = 1;
         connectionSession.getServerPreparedStatementRegistry().addPreparedStatement(statementId, new MySQLServerPreparedStatement("", null, Collections.emptyList()));
-        Collection<DatabasePacket<?>> actual = new MySQLComResetConnectionExecutor(connectionSession).execute();
+        Collection<DatabasePacket> actual = new MySQLComResetConnectionExecutor(connectionSession).execute();
         assertThat(actual.size(), is(1));
         assertThat(actual.iterator().next(), instanceOf(MySQLOKPacket.class));
         verify(connectionSession).setAutoCommit(true);
