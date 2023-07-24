@@ -23,9 +23,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.Projection;
-import org.apache.shardingsphere.infra.database.type.DatabaseType;
-import org.apache.shardingsphere.infra.database.type.SchemaSupportedDatabaseType;
+import org.apache.shardingsphere.infra.binder.segment.select.projection.util.ProjectionUtils;
+import org.apache.shardingsphere.infra.database.spi.DatabaseType;
 import org.apache.shardingsphere.sql.parser.sql.common.enums.AggregationType;
+import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +45,7 @@ public class AggregationProjection implements Projection {
     
     private final String innerExpression;
     
-    private final String alias;
+    private final IdentifierValue alias;
     
     private final DatabaseType databaseType;
     
@@ -54,31 +55,22 @@ public class AggregationProjection implements Projection {
     private int index = -1;
     
     @Override
-    public final String getExpression() {
+    public String getColumnName() {
+        return ProjectionUtils.getColumnNameFromFunction(type.name(), type.name() + innerExpression, databaseType);
+    }
+    
+    @Override
+    public String getColumnLabel() {
+        return getAlias().isPresent() ? ProjectionUtils.getColumnLabelFromAlias(getAlias().get(), databaseType) : getColumnName();
+    }
+    
+    @Override
+    public String getExpression() {
         return type.name() + innerExpression;
     }
     
     @Override
-    public final Optional<String> getAlias() {
+    public final Optional<IdentifierValue> getAlias() {
         return Optional.ofNullable(alias);
-    }
-    
-    /**
-     * Get column label.
-     *
-     * @return column label
-     */
-    @Override
-    public String getColumnLabel() {
-        return getAlias().orElseGet(() -> databaseType instanceof SchemaSupportedDatabaseType ? type.name().toLowerCase() : getExpression());
-    }
-    
-    @Override
-    public Projection cloneWithOwner(final String ownerName) {
-        // TODO replace column owner when AggregationProjection contains owner
-        AggregationProjection result = new AggregationProjection(type, innerExpression, alias, databaseType);
-        result.setIndex(index);
-        result.getDerivedAggregationProjections().addAll(derivedAggregationProjections);
-        return result;
     }
 }

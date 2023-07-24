@@ -250,20 +250,20 @@ mysql> SHOW MASK RULES FROM mask_db;
 +--------+-----------+---------------------------+-----------------------------------+
 | t_user | password  | MD5                       |                                   |
 | t_user | email     | MASK_BEFORE_SPECIAL_CHARS | replace-char=*,special-chars=@    |
-| t_user | telephone | KEEP_FIRST_N_LAST_M       | first-n=3,replace-char=*,last-m=4 |
+| t_user | telephone | KEEP_FIRST_N_LAST_M       | first-n=3,last-m=4,replace-char=* |
 +--------+-----------+---------------------------+-----------------------------------+
 3 rows in set (0.01 sec)
 
 -- Show encryption rules
 mysql> SHOW ENCRYPT RULES FROM mask_db;
-+--------+--------------+------------------+--------------+-----------------------+-------------------+----------------+-------------------------+---------------------+----------------------+-----------------+------------------+--------------------------+
-| table  | logic_column | cipher_column    | plain_column | assisted_query_column | like_query_column | encryptor_type | encryptor_props         | assisted_query_type | assisted_query_props | like_query_type | like_query_props | query_with_cipher_column |
-+--------+--------------+------------------+--------------+-----------------------+-------------------+----------------+-------------------------+---------------------+----------------------+-----------------+------------------+--------------------------+
-| t_user | user_name    | user_name_cipher |              |                       |                   | AES            | aes-key-value=123456abc |                     |                      |                 |                  | true                     |
-| t_user | password     | password_cipher  |              |                       |                   | AES            | aes-key-value=123456abc |                     |                      |                 |                  | true                     |
-| t_user | email        | email_cipher     |              |                       |                   | AES            | aes-key-value=123456abc |                     |                      |                 |                  | true                     |
-| t_user | telephone    | telephone_cipher |              |                       |                   | AES            | aes-key-value=123456abc |                     |                      |                 |                  | true                     |
-+--------+--------------+------------------+--------------+-----------------------+-------------------+----------------+-------------------------+---------------------+----------------------+-----------------+------------------+--------------------------+
++--------+--------------+------------------+--------------+-----------------------+-------------------+----------------+-------------------------+---------------------+----------------------+-----------------+------------------+
+| table  | logic_column | cipher_column    | assisted_query_column | like_query_column | encryptor_type | encryptor_props         | assisted_query_type | assisted_query_props | like_query_type | like_query_props |
++--------+--------------+------------------+-----------------------+-------------------+----------------+-------------------------+---------------------+----------------------+-----------------+------------------+
+| t_user | user_name    | user_name_cipher |                       |                   | AES            | aes-key-value=123456abc |                     |                      |                 |                  |
+| t_user | password     | password_cipher  |                       |                   | AES            | aes-key-value=123456abc |                     |                      |                 |                  |
+| t_user | email        | email_cipher     |                       |                   | AES            | aes-key-value=123456abc |                     |                      |                 |                  |
+| t_user | telephone    | telephone_cipher |                       |                   | AES            | aes-key-value=123456abc |                     |                      |                 |                  |
++--------+--------------+------------------+-----------------------+-------------------+----------------+-------------------------+---------------------+----------------------+-----------------+------------------+
 4 rows in set (0.01 sec)
 ```
 

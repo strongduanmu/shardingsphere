@@ -17,12 +17,12 @@
 
 package org.apache.shardingsphere.infra.binder.segment.select.projection.impl;
 
-import com.google.common.base.Strings;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.Projection;
+import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -37,18 +37,13 @@ import java.util.Optional;
 @ToString
 public final class ShorthandProjection implements Projection {
     
-    private final String owner;
+    private final IdentifierValue owner;
     
     private final Collection<Projection> actualColumns;
     
     @Override
-    public String getExpression() {
-        return Strings.isNullOrEmpty(owner) ? "*" : owner + ".*";
-    }
-    
-    @Override
-    public Optional<String> getAlias() {
-        return Optional.empty();
+    public String getColumnName() {
+        return null == owner ? "*" : owner.getValue() + ".*";
     }
     
     @Override
@@ -56,12 +51,22 @@ public final class ShorthandProjection implements Projection {
         return "*";
     }
     
+    @Override
+    public String getExpression() {
+        return null == owner ? "*" : owner.getValue() + ".*";
+    }
+    
+    @Override
+    public Optional<IdentifierValue> getAlias() {
+        return Optional.empty();
+    }
+    
     /**
      * Get owner.
-     *
+     * 
      * @return owner
      */
-    public Optional<String> getOwner() {
+    public Optional<IdentifierValue> getOwner() {
         return Optional.ofNullable(owner);
     }
     
@@ -78,10 +83,5 @@ public final class ShorthandProjection implements Projection {
             }
         }
         return result;
-    }
-    
-    @Override
-    public Projection cloneWithOwner(final String ownerName) {
-        return new ShorthandProjection(ownerName, actualColumns);
     }
 }

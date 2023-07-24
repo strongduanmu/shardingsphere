@@ -25,7 +25,7 @@ dataSources:
     connectionTimeoutMilliseconds: 30000
     idleTimeoutMilliseconds: 60000
     maxLifetimeMilliseconds: 1800000
-    maxPoolSize: 2
+    maxPoolSize: 20
     minPoolSize: 2
   encrypt_write_ds_1:
     url: jdbc:mysql://mysql.dbtbl_with_readwrite_splitting_and_encrypt.host:3306/encrypt_write_ds_1?serverTimezone=UTC&useSSL=false&characterEncoding=utf-8
@@ -200,6 +200,9 @@ dataSources:
     minPoolSize: 2
 
 rules:
+- !SINGLE
+  tables:
+    - "*.*"
 - !SHARDING
   tables:
     t_order:
@@ -294,9 +297,6 @@ rules:
   bindingTables:
     - ref_0:t_user,t_user_item,t_user_details
     - ref_1:t_order,t_order_item
-  broadcastTables:
-    - t_product_category
-    - t_country
 
   shardingAlgorithms:
     it_standard_fixture:
@@ -322,6 +322,11 @@ rules:
   auditors:
     auditor_constant:
       type: IT.AUDITOR.FIXTURE
+
+- !BROADCAST
+  tables:
+    - t_country
+    - t_product_category
 
 - !READWRITE_SPLITTING
   dataSources:

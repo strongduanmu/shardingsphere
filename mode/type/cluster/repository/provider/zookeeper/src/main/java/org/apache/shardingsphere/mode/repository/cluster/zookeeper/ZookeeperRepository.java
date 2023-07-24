@@ -33,8 +33,8 @@ import org.apache.shardingsphere.infra.instance.InstanceContextAware;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepository;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepositoryConfiguration;
 import org.apache.shardingsphere.mode.repository.cluster.exception.ClusterPersistRepositoryException;
-import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEvent;
-import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEvent.Type;
+import org.apache.shardingsphere.mode.event.DataChangedEvent;
+import org.apache.shardingsphere.mode.event.DataChangedEvent.Type;
 import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEventListener;
 import org.apache.shardingsphere.mode.repository.cluster.lock.holder.DistributedLockHolder;
 import org.apache.shardingsphere.mode.repository.cluster.zookeeper.handler.ZookeeperExceptionHandler;
@@ -239,6 +239,7 @@ public final class ZookeeperRepository implements ClusterPersistRepository, Inst
             caches.put(key, cache);
         }
         CuratorCacheListener curatorCacheListener = CuratorCacheListener.builder()
+                .afterInitialized()
                 .forTreeCache(client, (framework, treeCacheListener) -> {
                     Type changedType = getChangedType(treeCacheListener.getType());
                     if (Type.IGNORED != changedType) {
@@ -247,17 +248,7 @@ public final class ZookeeperRepository implements ClusterPersistRepository, Inst
                     }
                 }).build();
         cache.listenable().addListener(curatorCacheListener);
-        start(cache);
-    }
-    
-    private void start(final CuratorCache cache) {
-        try {
-            cache.start();
-            // CHECKSTYLE:OFF
-        } catch (final Exception ex) {
-            // CHECKSTYLE:ON
-            ZookeeperExceptionHandler.handleException(ex);
-        }
+        cache.start();
     }
     
     private Type getChangedType(final TreeCacheEvent.Type type) {

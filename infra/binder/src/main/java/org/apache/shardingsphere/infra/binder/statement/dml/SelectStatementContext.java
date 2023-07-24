@@ -37,6 +37,7 @@ import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.Agg
 import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.AggregationProjection;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.ColumnProjection;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.ParameterMarkerProjection;
+import org.apache.shardingsphere.infra.binder.segment.select.projection.impl.SubqueryProjection;
 import org.apache.shardingsphere.infra.binder.segment.table.TablesContext;
 import org.apache.shardingsphere.infra.binder.statement.CommonSQLStatementContext;
 import org.apache.shardingsphere.infra.binder.type.TableAvailable;
@@ -44,6 +45,7 @@ import org.apache.shardingsphere.infra.binder.type.WhereAvailable;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereSchema;
+import org.apache.shardingsphere.infra.rule.identifier.type.TableContainedRule;
 import org.apache.shardingsphere.infra.util.exception.ShardingSpherePreconditions;
 import org.apache.shardingsphere.sql.parser.sql.common.enums.ParameterMarkerType;
 import org.apache.shardingsphere.sql.parser.sql.common.enums.SubqueryType;
@@ -68,6 +70,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.util.ExpressionExtractUti
 import org.apache.shardingsphere.sql.parser.sql.common.util.SQLUtils;
 import org.apache.shardingsphere.sql.parser.sql.common.util.SubqueryExtractUtils;
 import org.apache.shardingsphere.sql.parser.sql.common.util.WhereExtractUtils;
+import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -99,6 +102,8 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
     
     private final Collection<ColumnSegment> columnSegments = new LinkedList<>();
     
+    private final boolean containsEnhancedTable;
+    
     private SubqueryType subqueryType;
     
     private boolean needAggregateRewrite;
@@ -117,6 +122,28 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
         projectionsContext = new ProjectionsContextEngine(databaseName, getSchemas(metaData, databaseName), getDatabaseType())
                 .createProjectionsContext(getSqlStatement().getFrom(), getSqlStatement().getProjections(), groupByContext, orderByContext);
         paginationContext = new PaginationContextEngine().createPaginationContext(sqlStatement, projectionsContext, params, whereSegments);
+        containsEnhancedTable = isContainsEnhancedTable(metaData, databaseName, getTablesContext().getTableNames());
+    }
+    
+    private boolean isContainsEnhancedTable(final ShardingSphereMetaData metaData, final String databaseName, final Collection<String> tableNames) {
+        for (TableContainedRule each : getTableContainedRules(metaData, databaseName)) {
+            for (String tableName : tableNames) {
+                if (each.getEnhancedTableMapper().contains(tableName)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    private Collection<TableContainedRule> getTableContainedRules(final ShardingSphereMetaData metaData, final String databaseName) {
+        if (null == databaseName) {
+            ShardingSpherePreconditions.checkState(tablesContext.getSimpleTableSegments().isEmpty(), NoDatabaseSelectedException::new);
+            return Collections.emptyList();
+        }
+        ShardingSphereDatabase database = metaData.getDatabase(databaseName);
+        ShardingSpherePreconditions.checkNotNull(database, () -> new UnknownDatabaseException(databaseName));
+        return database.getRuleMetaData().findRules(TableContainedRule.class);
     }
     
     private Map<Integer, SelectStatementContext> createSubqueryContexts(final ShardingSphereMetaData metaData, final List<Object> params, final String defaultDatabaseName) {
@@ -132,7 +159,7 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
     
     private Map<String, ShardingSphereSchema> getSchemas(final ShardingSphereMetaData metaData, final String databaseName) {
         if (null == databaseName) {
-            ShardingSpherePreconditions.checkState(tablesContext.getTables().isEmpty(), NoDatabaseSelectedException::new);
+            ShardingSpherePreconditions.checkState(tablesContext.getSimpleTableSegments().isEmpty(), NoDatabaseSelectedException::new);
             return Collections.emptyMap();
         }
         ShardingSphereDatabase database = metaData.getDatabase(databaseName);
@@ -265,21 +292,22 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
         }
         String rawName = SQLUtils.getExactlyValue(((TextOrderByItemSegment) orderByItem).getText());
         for (Projection each : projectionsContext.getProjections()) {
+            Optional<String> result = each.getAlias().map(IdentifierValue::getValue);
             if (SQLUtils.getExactlyExpression(rawName).equalsIgnoreCase(SQLUtils.getExactlyExpression(SQLUtils.getExactlyValue(each.getExpression())))) {
-                return each.getAlias();
+                return result;
             }
-            if (rawName.equalsIgnoreCase(each.getAlias().orElse(null))) {
+            if (rawName.equalsIgnoreCase(result.orElse(null))) {
                 return Optional.of(rawName);
             }
             if (isSameColumnName(each, rawName)) {
-                return each.getAlias();
+                return result;
             }
         }
         return Optional.empty();
     }
     
     private boolean isSameColumnName(final Projection projection, final String name) {
-        return projection instanceof ColumnProjection && name.equalsIgnoreCase(((ColumnProjection) projection).getName());
+        return projection instanceof ColumnProjection && name.equalsIgnoreCase(((ColumnProjection) projection).getName().getValue());
     }
     
     private String getOrderItemText(final TextOrderByItemSegment orderByItemSegment) {
@@ -298,6 +326,27 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
         return !groupByContext.getItems().isEmpty() && groupByContext.getItems().equals(orderByContext.getItems());
     }
     
+    /**
+     * Find column projection.
+     * 
+     * @param columnIndex column index
+     * @return find column projection
+     */
+    public Optional<ColumnProjection> findColumnProjection(final int columnIndex) {
+        List<Projection> expandProjections = projectionsContext.getExpandProjections();
+        if (expandProjections.size() < columnIndex) {
+            return Optional.empty();
+        }
+        Projection projection = expandProjections.get(columnIndex - 1);
+        if (projection instanceof ColumnProjection) {
+            return Optional.of((ColumnProjection) projection);
+        }
+        if (projection instanceof SubqueryProjection && ((SubqueryProjection) projection).getProjection() instanceof ColumnProjection) {
+            return Optional.of((ColumnProjection) ((SubqueryProjection) projection).getProjection());
+        }
+        return Optional.empty();
+    }
+    
     @Override
     public SelectStatement getSqlStatement() {
         return (SelectStatement) super.getSqlStatement();
@@ -305,7 +354,7 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
     
     @Override
     public Collection<SimpleTableSegment> getAllTables() {
-        return tablesContext.getTables();
+        return tablesContext.getSimpleTableSegments();
     }
     
     @Override

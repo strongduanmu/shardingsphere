@@ -62,7 +62,7 @@ public final class BootstrapInitializer {
     }
     
     private ContextManager createContextManager(final ProxyConfiguration proxyConfig, final ModeConfiguration modeConfig, final int port, final boolean force) throws SQLException {
-        ContextManagerBuilderParameter param = new ContextManagerBuilderParameter(modeConfig, proxyConfig.getDatabaseConfigurations(),
+        ContextManagerBuilderParameter param = new ContextManagerBuilderParameter(modeConfig, proxyConfig.getDatabaseConfigurations(), proxyConfig.getGlobalConfiguration().getDataSources(),
                 proxyConfig.getGlobalConfiguration().getRules(), proxyConfig.getGlobalConfiguration().getProperties(), proxyConfig.getGlobalConfiguration().getLabels(),
                 createInstanceMetaData(port), force);
         return TypedSPILoader.getService(ContextManagerBuilder.class, null == modeConfig ? null : modeConfig.getType()).build(param);
@@ -77,7 +77,7 @@ public final class BootstrapInitializer {
             try {
                 each.onInitialized(null, contextManager);
                 // CHECKSTYLE:OFF
-            } catch (final Exception ex) {
+            } catch (final RuntimeException ex) {
                 // CHECKSTYLE:ON
                 log.error("contextManager onInitialized callback for '{}' failed", each.getClass().getName(), ex);
             }

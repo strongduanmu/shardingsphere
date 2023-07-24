@@ -17,6 +17,8 @@
 
 package org.apache.shardingsphere.infra.binder.segment.select.projection;
 
+import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
+
 import java.util.Optional;
 
 /**
@@ -25,31 +27,30 @@ import java.util.Optional;
 public interface Projection {
     
     /**
-     * Get expression.
+     * Get column name.
      * 
+     * @return column name
+     */
+    String getColumnName();
+    
+    /**
+     * Get column label.
+     *
+     * @return column label
+     */
+    String getColumnLabel();
+    
+    /**
+     * Get expression.
+     *
      * @return expression
      */
     String getExpression();
     
     /**
      * Get alias.
-     * 
+     *
      * @return alias
      */
-    Optional<String> getAlias();
-    
-    /**
-     * Get columnLabel.
-     *
-     * @return columnLabel
-     */
-    String getColumnLabel();
-    
-    /**
-     * Clone with owner.
-     * 
-     * @param ownerName owner name
-     * @return new projection
-     */
-    Projection cloneWithOwner(String ownerName);
+    Optional<IdentifierValue> getAlias();
 }

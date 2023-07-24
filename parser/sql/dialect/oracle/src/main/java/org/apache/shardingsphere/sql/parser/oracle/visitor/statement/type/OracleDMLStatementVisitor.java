@@ -124,7 +124,6 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.complex.
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.subquery.SubqueryExpressionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.subquery.SubquerySegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.AggregationProjectionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ColumnProjectionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.DatetimeProjectionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ExpressionProjectionSegment;
@@ -141,6 +140,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.Or
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.HavingSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.LockSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.AliasAvailable;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.AliasSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.InsertMultiTableElementSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.ModelSegment;
@@ -174,139 +174,6 @@ import java.util.stream.Collectors;
 public final class OracleDMLStatementVisitor extends OracleStatementVisitor implements DMLStatementVisitor {
     
     @Override
-    public ASTNode visitInsert(final InsertContext ctx) {
-        // TODO :FIXME, since there is no segment for insertValuesClause, InsertStatement is created by sub rule.
-        return null == ctx.insertSingleTable() ? visit(ctx.insertMultiTable()) : visit(ctx.insertSingleTable());
-    }
-    
-    @Override
-    public ASTNode visitInsertSingleTable(final InsertSingleTableContext ctx) {
-        OracleInsertStatement result = (OracleInsertStatement) visit(ctx.insertIntoClause());
-        if (null != ctx.insertValuesClause()) {
-            result.getValues().addAll(createInsertValuesSegments(ctx.insertValuesClause().assignmentValues()));
-        }
-        if (null != ctx.selectSubquery()) {
-            OracleSelectStatement subquery = (OracleSelectStatement) visit(ctx.selectSubquery());
-            SubquerySegment subquerySegment = new SubquerySegment(ctx.selectSubquery().start.getStartIndex(), ctx.selectSubquery().stop.getStopIndex(), subquery);
-            result.setSelectSubquery(subquerySegment);
-        }
-        result.getParameterMarkerSegments().addAll(getParameterMarkerSegments());
-        return result;
-    }
-    
-    private Collection<InsertValuesSegment> createInsertValuesSegments(final AssignmentValuesContext ctx) {
-        Collection<InsertValuesSegment> result = new LinkedList<>();
-        result.add((InsertValuesSegment) visit(ctx));
-        return result;
-    }
-    
-    @Override
-    public ASTNode visitInsertMultiTable(final InsertMultiTableContext ctx) {
-        OracleInsertStatement result = new OracleInsertStatement();
-        result.setInsertMultiTableElementSegment(null == ctx.conditionalInsertClause()
-                ? createInsertMultiTableElementSegment(ctx.multiTableElement())
-                : (InsertMultiTableElementSegment) visit(ctx.conditionalInsertClause()));
-        OracleSelectStatement subquery = (OracleSelectStatement) visit(ctx.selectSubquery());
-        SubquerySegment subquerySegment = new SubquerySegment(ctx.selectSubquery().start.getStartIndex(), ctx.selectSubquery().stop.getStopIndex(), subquery);
-        result.setSelectSubquery(subquerySegment);
-        result.getParameterMarkerSegments().addAll(getParameterMarkerSegments());
-        return result;
-    }
-    
-    private InsertMultiTableElementSegment createInsertMultiTableElementSegment(final List<MultiTableElementContext> ctx) {
-        Collection<OracleInsertStatement> insertStatements = new LinkedList<>();
-        for (MultiTableElementContext each : ctx) {
-            insertStatements.add((OracleInsertStatement) visit(each));
-        }
-        InsertMultiTableElementSegment result = new InsertMultiTableElementSegment(ctx.get(0).getStart().getStartIndex(), ctx.get(ctx.size() - 1).getStop().getStopIndex());
-        result.getInsertStatements().addAll(insertStatements);
-        return result;
-    }
-    
-    @Override
-    public ASTNode visitInsertValuesClause(final InsertValuesClauseContext ctx) {
-        OracleInsertStatement result = new OracleInsertStatement();
-        result.getValues().addAll(createInsertValuesSegments(ctx.assignmentValues()));
-        return result;
-    }
-    
-    @Override
-    public ASTNode visitInsertIntoClause(final InsertIntoClauseContext ctx) {
-        OracleInsertStatement result = new OracleInsertStatement();
-        if (null != ctx.dmlTableExprClause().dmlTableClause()) {
-            result.setTable((SimpleTableSegment) visit(ctx.dmlTableExprClause().dmlTableClause()));
-        } else if (null != ctx.dmlTableExprClause().dmlSubqueryClause()) {
-            result.setInsertSelect((SubquerySegment) visit(ctx.dmlTableExprClause().dmlSubqueryClause()));
-        } else {
-            result.setInsertSelect((SubquerySegment) visit(ctx.dmlTableExprClause().tableCollectionExpr()));
-        }
-        if (null != ctx.columnNames()) {
-            ColumnNamesContext columnNames = ctx.columnNames();
-            CollectionValue<ColumnSegment> columnSegments = (CollectionValue<ColumnSegment>) visit(columnNames);
-            result.setInsertColumns(new InsertColumnsSegment(columnNames.start.getStartIndex(), columnNames.stop.getStopIndex(), columnSegments.getValue()));
-        } else {
-            result.setInsertColumns(new InsertColumnsSegment(ctx.stop.getStopIndex() + 1, ctx.stop.getStopIndex() + 1, Collections.emptyList()));
-        }
-        return result;
-    }
-    
-    @Override
-    public ASTNode visitDmlTableClause(final DmlTableClauseContext ctx) {
-        return visit(ctx.tableName());
-    }
-    
-    @Override
-    public ASTNode visitDmlSubqueryClause(final DmlSubqueryClauseContext ctx) {
-        OracleSelectStatement subquery = (OracleSelectStatement) visit(ctx.selectSubquery());
-        return new SubquerySegment(ctx.selectSubquery().start.getStartIndex(), ctx.selectSubquery().stop.getStopIndex(), subquery);
-    }
-    
-    @Override
-    public ASTNode visitTableCollectionExpr(final TableCollectionExprContext ctx) {
-        OracleSelectStatement subquery = (OracleSelectStatement) visit(ctx.collectionExpr().selectSubquery());
-        return new SubquerySegment(ctx.collectionExpr().selectSubquery().start.getStartIndex(), ctx.collectionExpr().selectSubquery().stop.getStopIndex(), subquery);
-    }
-    
-    @Override
-    public ASTNode visitConditionalInsertClause(final ConditionalInsertClauseContext ctx) {
-        Collection<OracleInsertStatement> insertStatements = new LinkedList<>();
-        for (ConditionalInsertWhenPartContext each : ctx.conditionalInsertWhenPart()) {
-            insertStatements.addAll(createInsertStatementsFromConditionalInsertWhen(each));
-        }
-        if (null != ctx.conditionalInsertElsePart()) {
-            insertStatements.addAll(createInsertStatementsFromConditionalInsertElse(ctx.conditionalInsertElsePart()));
-        }
-        InsertMultiTableElementSegment result = new InsertMultiTableElementSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex());
-        result.getInsertStatements().addAll(insertStatements);
-        return result;
-    }
-    
-    private Collection<OracleInsertStatement> createInsertStatementsFromConditionalInsertWhen(final ConditionalInsertWhenPartContext ctx) {
-        Collection<OracleInsertStatement> result = new LinkedList<>();
-        for (MultiTableElementContext each : ctx.multiTableElement()) {
-            result.add((OracleInsertStatement) visit(each));
-        }
-        return result;
-    }
-    
-    private Collection<OracleInsertStatement> createInsertStatementsFromConditionalInsertElse(final ConditionalInsertElsePartContext ctx) {
-        Collection<OracleInsertStatement> result = new LinkedList<>();
-        for (MultiTableElementContext each : ctx.multiTableElement()) {
-            result.add((OracleInsertStatement) visit(each));
-        }
-        return result;
-    }
-    
-    @Override
-    public ASTNode visitMultiTableElement(final MultiTableElementContext ctx) {
-        OracleInsertStatement result = (OracleInsertStatement) visit(ctx.insertIntoClause());
-        if (null != ctx.insertValuesClause()) {
-            result.getValues().addAll(createInsertValuesSegments(ctx.insertValuesClause().assignmentValues()));
-        }
-        return result;
-    }
-    
-    @Override
     public ASTNode visitUpdate(final UpdateContext ctx) {
         OracleUpdateStatement result = new OracleUpdateStatement();
         result.setTable((TableSegment) visit(ctx.updateSpecification()));
@@ -317,7 +184,7 @@ public final class OracleDMLStatementVisitor extends OracleStatementVisitor impl
         if (null != ctx.whereClause()) {
             result.setWhere((WhereSegment) visit(ctx.whereClause()));
         }
-        result.getParameterMarkerSegments().addAll(getParameterMarkerSegments());
+        result.addParameterMarkerSegments(getParameterMarkerSegments());
         return result;
     }
     
@@ -406,18 +273,81 @@ public final class OracleDMLStatementVisitor extends OracleStatementVisitor impl
     }
     
     @Override
-    public ASTNode visitAssignmentValues(final AssignmentValuesContext ctx) {
-        List<ExpressionSegment> segments = new LinkedList<>();
-        for (AssignmentValueContext each : ctx.assignmentValue()) {
-            segments.add((ExpressionSegment) visit(each));
-        }
-        return new InsertValuesSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), segments);
+    public ASTNode visitInsert(final InsertContext ctx) {
+        // TODO :FIXME, since there is no segment for insertValuesClause, InsertStatement is created by sub rule.
+        return null == ctx.insertSingleTable() ? visit(ctx.insertMultiTable()) : visit(ctx.insertSingleTable());
     }
     
     @Override
-    public ASTNode visitAssignmentValue(final AssignmentValueContext ctx) {
-        ExprContext expr = ctx.expr();
-        return null == expr ? new CommonExpressionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ctx.getText()) : visit(expr);
+    public ASTNode visitInsertSingleTable(final InsertSingleTableContext ctx) {
+        OracleInsertStatement result = (OracleInsertStatement) visit(ctx.insertIntoClause());
+        if (null != ctx.insertValuesClause()) {
+            result.getValues().addAll(createInsertValuesSegments(ctx.insertValuesClause().assignmentValues()));
+        }
+        if (null != ctx.selectSubquery()) {
+            OracleSelectStatement subquery = (OracleSelectStatement) visit(ctx.selectSubquery());
+            SubquerySegment subquerySegment = new SubquerySegment(ctx.selectSubquery().start.getStartIndex(), ctx.selectSubquery().stop.getStopIndex(), subquery);
+            result.setSelectSubquery(subquerySegment);
+        }
+        result.addParameterMarkerSegments(getParameterMarkerSegments());
+        return result;
+    }
+    
+    private Collection<InsertValuesSegment> createInsertValuesSegments(final AssignmentValuesContext ctx) {
+        Collection<InsertValuesSegment> result = new LinkedList<>();
+        result.add((InsertValuesSegment) visit(ctx));
+        return result;
+    }
+    
+    @Override
+    public ASTNode visitInsertMultiTable(final InsertMultiTableContext ctx) {
+        OracleInsertStatement result = new OracleInsertStatement();
+        result.setInsertMultiTableElementSegment(null == ctx.conditionalInsertClause()
+                ? createInsertMultiTableElementSegment(ctx.multiTableElement())
+                : (InsertMultiTableElementSegment) visit(ctx.conditionalInsertClause()));
+        OracleSelectStatement subquery = (OracleSelectStatement) visit(ctx.selectSubquery());
+        SubquerySegment subquerySegment = new SubquerySegment(ctx.selectSubquery().start.getStartIndex(), ctx.selectSubquery().stop.getStopIndex(), subquery);
+        result.setSelectSubquery(subquerySegment);
+        result.addParameterMarkerSegments(getParameterMarkerSegments());
+        return result;
+    }
+    
+    private InsertMultiTableElementSegment createInsertMultiTableElementSegment(final List<MultiTableElementContext> ctx) {
+        Collection<OracleInsertStatement> insertStatements = new LinkedList<>();
+        for (MultiTableElementContext each : ctx) {
+            insertStatements.add((OracleInsertStatement) visit(each));
+        }
+        InsertMultiTableElementSegment result = new InsertMultiTableElementSegment(ctx.get(0).getStart().getStartIndex(), ctx.get(ctx.size() - 1).getStop().getStopIndex());
+        result.getInsertStatements().addAll(insertStatements);
+        return result;
+    }
+    
+    @Override
+    public ASTNode visitInsertValuesClause(final InsertValuesClauseContext ctx) {
+        OracleInsertStatement result = new OracleInsertStatement();
+        result.getValues().addAll(createInsertValuesSegments(ctx.assignmentValues()));
+        return result;
+    }
+    
+    @SuppressWarnings("unchecked")
+    @Override
+    public ASTNode visitInsertIntoClause(final InsertIntoClauseContext ctx) {
+        OracleInsertStatement result = new OracleInsertStatement();
+        if (null != ctx.dmlTableExprClause().dmlTableClause()) {
+            result.setTable((SimpleTableSegment) visit(ctx.dmlTableExprClause().dmlTableClause()));
+        } else if (null != ctx.dmlTableExprClause().dmlSubqueryClause()) {
+            result.setInsertSelect((SubquerySegment) visit(ctx.dmlTableExprClause().dmlSubqueryClause()));
+        } else {
+            result.setInsertSelect((SubquerySegment) visit(ctx.dmlTableExprClause().tableCollectionExpr()));
+        }
+        if (null != ctx.columnNames()) {
+            ColumnNamesContext columnNames = ctx.columnNames();
+            CollectionValue<ColumnSegment> columnSegments = (CollectionValue<ColumnSegment>) visit(columnNames);
+            result.setInsertColumns(new InsertColumnsSegment(columnNames.start.getStartIndex(), columnNames.stop.getStopIndex(), columnSegments.getValue()));
+        } else {
+            result.setInsertColumns(new InsertColumnsSegment(ctx.stop.getStopIndex() + 1, ctx.stop.getStopIndex() + 1, Collections.emptyList()));
+        }
+        return result;
     }
     
     @Override
@@ -430,7 +360,7 @@ public final class OracleDMLStatementVisitor extends OracleStatementVisitor impl
         if (null != ctx.whereClause()) {
             result.setWhere((WhereSegment) visit(ctx.whereClause()));
         }
-        result.getParameterMarkerSegments().addAll(getParameterMarkerSegments());
+        result.addParameterMarkerSegments(getParameterMarkerSegments());
         return result;
     }
     
@@ -448,13 +378,84 @@ public final class OracleDMLStatementVisitor extends OracleStatementVisitor impl
     }
     
     @Override
+    public ASTNode visitMultiTableElement(final MultiTableElementContext ctx) {
+        OracleInsertStatement result = (OracleInsertStatement) visit(ctx.insertIntoClause());
+        if (null != ctx.insertValuesClause()) {
+            result.getValues().addAll(createInsertValuesSegments(ctx.insertValuesClause().assignmentValues()));
+        }
+        return result;
+    }
+    
+    @Override
     public ASTNode visitSelect(final SelectContext ctx) {
         OracleSelectStatement result = (OracleSelectStatement) visit(ctx.selectSubquery());
-        result.getParameterMarkerSegments().addAll(getParameterMarkerSegments());
+        result.addParameterMarkerSegments(getParameterMarkerSegments());
         if (null != ctx.forUpdateClause()) {
             result.setLock((LockSegment) visit(ctx.forUpdateClause()));
         }
         return result;
+    }
+    
+    @Override
+    public ASTNode visitDmlTableClause(final DmlTableClauseContext ctx) {
+        return visit(ctx.tableName());
+    }
+    
+    @Override
+    public ASTNode visitDmlSubqueryClause(final DmlSubqueryClauseContext ctx) {
+        OracleSelectStatement subquery = (OracleSelectStatement) visit(ctx.selectSubquery());
+        return new SubquerySegment(ctx.selectSubquery().start.getStartIndex(), ctx.selectSubquery().stop.getStopIndex(), subquery);
+    }
+    
+    @Override
+    public ASTNode visitTableCollectionExpr(final TableCollectionExprContext ctx) {
+        OracleSelectStatement subquery = (OracleSelectStatement) visit(ctx.collectionExpr().selectSubquery());
+        return new SubquerySegment(ctx.collectionExpr().selectSubquery().start.getStartIndex(), ctx.collectionExpr().selectSubquery().stop.getStopIndex(), subquery);
+    }
+    
+    @Override
+    public ASTNode visitConditionalInsertClause(final ConditionalInsertClauseContext ctx) {
+        Collection<OracleInsertStatement> insertStatements = new LinkedList<>();
+        for (ConditionalInsertWhenPartContext each : ctx.conditionalInsertWhenPart()) {
+            insertStatements.addAll(createInsertStatementsFromConditionalInsertWhen(each));
+        }
+        if (null != ctx.conditionalInsertElsePart()) {
+            insertStatements.addAll(createInsertStatementsFromConditionalInsertElse(ctx.conditionalInsertElsePart()));
+        }
+        InsertMultiTableElementSegment result = new InsertMultiTableElementSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex());
+        result.getInsertStatements().addAll(insertStatements);
+        return result;
+    }
+    
+    private Collection<OracleInsertStatement> createInsertStatementsFromConditionalInsertWhen(final ConditionalInsertWhenPartContext ctx) {
+        Collection<OracleInsertStatement> result = new LinkedList<>();
+        for (MultiTableElementContext each : ctx.multiTableElement()) {
+            result.add((OracleInsertStatement) visit(each));
+        }
+        return result;
+    }
+    
+    private Collection<OracleInsertStatement> createInsertStatementsFromConditionalInsertElse(final ConditionalInsertElsePartContext ctx) {
+        Collection<OracleInsertStatement> result = new LinkedList<>();
+        for (MultiTableElementContext each : ctx.multiTableElement()) {
+            result.add((OracleInsertStatement) visit(each));
+        }
+        return result;
+    }
+    
+    @Override
+    public ASTNode visitAssignmentValues(final AssignmentValuesContext ctx) {
+        List<ExpressionSegment> segments = new LinkedList<>();
+        for (AssignmentValueContext each : ctx.assignmentValue()) {
+            segments.add((ExpressionSegment) visit(each));
+        }
+        return new InsertValuesSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), segments);
+    }
+    
+    @Override
+    public ASTNode visitAssignmentValue(final AssignmentValueContext ctx) {
+        ExprContext expr = ctx.expr();
+        return null == expr ? new CommonExpressionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ctx.getText()) : visit(expr);
     }
     
     @Override
@@ -685,14 +686,6 @@ public final class OracleDMLStatementVisitor extends OracleStatementVisitor impl
     private ASTNode createProjection(final SelectProjectionExprClauseContext ctx) {
         AliasSegment alias = null == ctx.alias() ? null : (AliasSegment) visit(ctx.alias());
         ASTNode projection = visit(ctx.expr());
-        if (projection instanceof AggregationProjectionSegment) {
-            ((AggregationProjectionSegment) projection).setAlias(alias);
-            return projection;
-        }
-        if (projection instanceof ExpressionProjectionSegment) {
-            ((ExpressionProjectionSegment) projection).setAlias(alias);
-            return projection;
-        }
         if (projection instanceof FunctionSegment) {
             FunctionSegment segment = (FunctionSegment) projection;
             ExpressionProjectionSegment result = new ExpressionProjectionSegment(segment.getStartIndex(), segment.getStopIndex(), segment.getText(), segment);
@@ -721,41 +714,28 @@ public final class OracleDMLStatementVisitor extends OracleStatementVisitor impl
         if (projection instanceof BinaryOperationExpression) {
             BinaryOperationExpression binaryExpression = (BinaryOperationExpression) projection;
             int startIndex = binaryExpression.getStartIndex();
-            int stopIndex = null != alias ? alias.getStopIndex() : binaryExpression.getStopIndex();
+            int stopIndex = null == alias ? binaryExpression.getStopIndex() : alias.getStopIndex();
             ExpressionProjectionSegment result = new ExpressionProjectionSegment(startIndex, stopIndex, binaryExpression.getText(), binaryExpression);
             result.setAlias(alias);
             return result;
         }
         if (projection instanceof DatetimeExpression) {
             DatetimeExpression datetimeExpression = (DatetimeExpression) projection;
-            if (null != datetimeExpression.getRight()) {
-                return new DatetimeProjectionSegment(datetimeExpression.getStartIndex(), datetimeExpression.getStopIndex(), datetimeExpression.getLeft(), datetimeExpression.getRight(),
-                        datetimeExpression.getText());
-            }
-            return new DatetimeProjectionSegment(datetimeExpression.getStartIndex(), datetimeExpression.getStopIndex(), datetimeExpression.getLeft(), datetimeExpression.getText());
+            return null == datetimeExpression.getRight()
+                    ? new DatetimeProjectionSegment(datetimeExpression.getStartIndex(), datetimeExpression.getStopIndex(), datetimeExpression.getLeft(), datetimeExpression.getText())
+                    : new DatetimeProjectionSegment(datetimeExpression.getStartIndex(), datetimeExpression.getStopIndex(),
+                            datetimeExpression.getLeft(), datetimeExpression.getRight(), datetimeExpression.getText());
         }
-        if (projection instanceof XmlQueryAndExistsFunctionSegment) {
-            XmlQueryAndExistsFunctionSegment xmlExistsFunctionSegment = (XmlQueryAndExistsFunctionSegment) projection;
-            return new XmlQueryAndExistsFunctionSegment(xmlExistsFunctionSegment.getStartIndex(), xmlExistsFunctionSegment.getStopIndex(),
-                    xmlExistsFunctionSegment.getFunctionName(), xmlExistsFunctionSegment.getXQueryString(), xmlExistsFunctionSegment.getText());
+        if (projection instanceof XmlQueryAndExistsFunctionSegment || projection instanceof XmlPiFunctionSegment || projection instanceof XmlSerializeFunctionSegment) {
+            return projection;
         }
-        if (projection instanceof XmlPiFunctionSegment) {
-            XmlPiFunctionSegment xmlPiFunctionSegment = (XmlPiFunctionSegment) projection;
-            if (null != xmlPiFunctionSegment.getIdentifier()) {
-                return new XmlPiFunctionSegment(xmlPiFunctionSegment.getStartIndex(), xmlPiFunctionSegment.getStopIndex(), xmlPiFunctionSegment.getFunctionName(),
-                        xmlPiFunctionSegment.getIdentifier(), xmlPiFunctionSegment.getValueExpr(), xmlPiFunctionSegment.getText());
-            }
-            return new XmlPiFunctionSegment(xmlPiFunctionSegment.getStartIndex(), xmlPiFunctionSegment.getStopIndex(), xmlPiFunctionSegment.getFunctionName(),
-                    xmlPiFunctionSegment.getEvalNameValueExpr(), xmlPiFunctionSegment.getValueExpr(), xmlPiFunctionSegment.getText());
-        }
-        if (projection instanceof XmlSerializeFunctionSegment) {
-            XmlSerializeFunctionSegment xmlSerializeFunctionSegment = (XmlSerializeFunctionSegment) projection;
-            return new XmlSerializeFunctionSegment(xmlSerializeFunctionSegment.getStartIndex(), xmlSerializeFunctionSegment.getStopIndex(), xmlSerializeFunctionSegment.getFunctionName(),
-                    xmlSerializeFunctionSegment.getParameter(), xmlSerializeFunctionSegment.getDataType(), xmlSerializeFunctionSegment.getEncoding(), xmlSerializeFunctionSegment.getVersion(),
-                    xmlSerializeFunctionSegment.getIdentSize(), xmlSerializeFunctionSegment.getText());
+        if (projection instanceof AliasAvailable) {
+            ((AliasAvailable) projection).setAlias(alias);
+            return projection;
         }
         LiteralExpressionSegment column = (LiteralExpressionSegment) projection;
-        ExpressionProjectionSegment result = null == alias ? new ExpressionProjectionSegment(column.getStartIndex(), column.getStopIndex(), String.valueOf(column.getLiterals()), column)
+        ExpressionProjectionSegment result = null == alias
+                ? new ExpressionProjectionSegment(column.getStartIndex(), column.getStopIndex(), String.valueOf(column.getLiterals()), column)
                 : new ExpressionProjectionSegment(column.getStartIndex(), ctx.alias().stop.getStopIndex(), String.valueOf(column.getLiterals()), column);
         result.setAlias(alias);
         return result;
@@ -1175,4 +1155,5 @@ public final class OracleDMLStatementVisitor extends OracleStatementVisitor impl
     public ASTNode visitLockTable(final LockTableContext ctx) {
         return new OracleLockTableStatement();
     }
+    
 }

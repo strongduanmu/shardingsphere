@@ -31,7 +31,7 @@ import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepositor
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepositoryConfiguration;
 import org.apache.shardingsphere.mode.repository.cluster.consul.props.ConsulProperties;
 import org.apache.shardingsphere.mode.repository.cluster.consul.props.ConsulPropertyKey;
-import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEvent;
+import org.apache.shardingsphere.mode.event.DataChangedEvent;
 import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEventListener;
 import org.apache.shardingsphere.mode.repository.cluster.lock.holder.DistributedLockHolder;
 
@@ -198,10 +198,5 @@ public final class ConsulRepository implements ClusterPersistRepository {
     @Override
     public String getType() {
         return "Consul";
-    }
-    
-    @Override
-    public Collection<String> getTypeAliases() {
-        return ClusterPersistRepository.super.getTypeAliases();
     }
 }

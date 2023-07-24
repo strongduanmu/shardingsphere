@@ -20,6 +20,7 @@ package org.apache.shardingsphere.parser.distsql.handler.query;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.merge.result.impl.local.LocalDataQueryResultRow;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
+import org.apache.shardingsphere.infra.metadata.database.resource.ShardingSphereResourceMetaData;
 import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
 import org.apache.shardingsphere.parser.config.SQLParserRuleConfiguration;
 import org.apache.shardingsphere.parser.distsql.parser.statement.queryable.ShowSQLParserRuleStatement;
@@ -59,7 +60,7 @@ class ShowSQLParserRuleExecutorTest {
         Collection<String> columns = executor.getColumnNames();
         assertThat(columns.size(), is(3));
         Iterator<String> iterator = columns.iterator();
-        assertThat(iterator.next(), is("sql_comment_parse_enable"));
+        assertThat(iterator.next(), is("sql_comment_parse_enabled"));
         assertThat(iterator.next(), is("parse_tree_cache"));
         assertThat(iterator.next(), is("sql_statement_cache"));
     }
@@ -67,6 +68,7 @@ class ShowSQLParserRuleExecutorTest {
     private ShardingSphereMetaData mockMetaData() {
         SQLParserRule sqlParserRule = mock(SQLParserRule.class);
         when(sqlParserRule.getConfiguration()).thenReturn(new SQLParserRuleConfiguration(true, new CacheOption(128, 1024), new CacheOption(2000, 65535)));
-        return new ShardingSphereMetaData(new LinkedHashMap<>(), new ShardingSphereRuleMetaData(Collections.singleton(sqlParserRule)), new ConfigurationProperties(new Properties()));
+        return new ShardingSphereMetaData(new LinkedHashMap<>(), mock(ShardingSphereResourceMetaData.class),
+                new ShardingSphereRuleMetaData(Collections.singleton(sqlParserRule)), new ConfigurationProperties(new Properties()));
     }
 }

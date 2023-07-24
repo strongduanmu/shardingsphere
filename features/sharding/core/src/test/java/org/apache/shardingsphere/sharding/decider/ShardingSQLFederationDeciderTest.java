@@ -18,11 +18,12 @@
 package org.apache.shardingsphere.sharding.decider;
 
 import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
-import org.apache.shardingsphere.infra.database.DefaultDatabase;
-import org.apache.shardingsphere.infra.database.type.dialect.PostgreSQLDatabaseType;
+import org.apache.shardingsphere.infra.database.core.DefaultDatabase;
+import org.apache.shardingsphere.infra.database.spi.DatabaseType;
 import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
+import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
 import org.apache.shardingsphere.sharding.rule.BindingTableRule;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sharding.rule.TableRule;
@@ -135,6 +136,19 @@ class ShardingSQLFederationDeciderTest {
     }
     
     @Test
+    void assertDecideWhenContainsOnlyOneTable() {
+        SelectStatementContext select = createStatementContext();
+        when(select.getTablesContext().getTableNames()).thenReturn(Collections.singletonList("t_order"));
+        when(select.isContainsJoinQuery()).thenReturn(true);
+        ShardingRule shardingRule = createShardingRule();
+        when(shardingRule.getShardingLogicTableNames(Collections.singletonList("t_order"))).thenReturn(Collections.singletonList("t_order"));
+        ShardingSphereDatabase database = createDatabase();
+        when(shardingRule.isAllBindingTables(database, select, Collections.singletonList("t_order"))).thenReturn(false);
+        Collection<DataNode> includedDataNodes = new HashSet<>();
+        assertFalse(new ShardingSQLFederationDecider().decide(select, Collections.emptyList(), mock(ShardingSphereRuleMetaData.class), database, shardingRule, includedDataNodes));
+    }
+    
+    @Test
     void assertDecideWhenAllTablesIsNotBindingTablesAndContainsPagination() {
         SelectStatementContext select = createStatementContext();
         when(select.isContainsJoinQuery()).thenReturn(true);
@@ -150,7 +164,7 @@ class ShardingSQLFederationDeciderTest {
     private SelectStatementContext createStatementContext() {
         SelectStatementContext result = mock(SelectStatementContext.class, RETURNS_DEEP_STUBS);
         when(result.getTablesContext().getTableNames()).thenReturn(Arrays.asList("t_order", "t_order_item"));
-        when(result.getDatabaseType()).thenReturn(new PostgreSQLDatabaseType());
+        when(result.getDatabaseType()).thenReturn(TypedSPILoader.getService(DatabaseType.class, "FIXTURE"));
         return result;
     }
     

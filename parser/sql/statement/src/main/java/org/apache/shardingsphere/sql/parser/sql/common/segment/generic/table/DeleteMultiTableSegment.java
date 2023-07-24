@@ -20,6 +20,7 @@ package org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.AliasSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -41,7 +42,12 @@ public final class DeleteMultiTableSegment implements TableSegment {
     private TableSegment relationTable;
     
     @Override
-    public Optional<String> getAlias() {
+    public Optional<String> getAliasName() {
+        return Optional.empty();
+    }
+    
+    @Override
+    public Optional<IdentifierValue> getAlias() {
         return Optional.empty();
     }
     

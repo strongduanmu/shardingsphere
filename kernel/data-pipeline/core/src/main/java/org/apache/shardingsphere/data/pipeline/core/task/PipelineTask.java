@@ -17,15 +17,16 @@
 
 package org.apache.shardingsphere.data.pipeline.core.task;
 
-import org.apache.shardingsphere.data.pipeline.api.task.progress.TaskProgress;
+import org.apache.shardingsphere.data.pipeline.common.task.progress.TaskProgress;
 
+import java.io.Closeable;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * Pipeline task interface.
  */
-public interface PipelineTask {
+public interface PipelineTask extends Closeable {
     
     /**
      * Start task.
@@ -52,4 +53,9 @@ public interface PipelineTask {
      * @return task progress
      */
     TaskProgress getTaskProgress();
+    
+    /**
+     * Close.
+     */
+    void close();
 }

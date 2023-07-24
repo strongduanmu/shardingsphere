@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.Projection;
+import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 
 import java.util.Optional;
 
@@ -36,21 +37,20 @@ public final class ExpressionProjection implements Projection {
     
     private final String expression;
     
-    private final String alias;
+    private final IdentifierValue alias;
     
     @Override
-    public Optional<String> getAlias() {
-        return Optional.ofNullable(alias);
+    public String getColumnName() {
+        return expression;
     }
     
     @Override
     public String getColumnLabel() {
-        return getAlias().orElse(expression);
+        return getAlias().map(IdentifierValue::getValue).orElse(expression);
     }
     
     @Override
-    public Projection cloneWithOwner(final String ownerName) {
-        // TODO replace column owner when ExpressionProjection contains owner
-        return new ExpressionProjection(expression, alias);
+    public Optional<IdentifierValue> getAlias() {
+        return Optional.ofNullable(alias);
     }
 }

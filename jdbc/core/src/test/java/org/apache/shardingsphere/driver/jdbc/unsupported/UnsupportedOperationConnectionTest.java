@@ -17,9 +17,8 @@
 
 package org.apache.shardingsphere.driver.jdbc.unsupported;
 
-import org.apache.shardingsphere.driver.jdbc.context.JDBCContext;
 import org.apache.shardingsphere.driver.jdbc.core.connection.ShardingSphereConnection;
-import org.apache.shardingsphere.infra.database.DefaultDatabase;
+import org.apache.shardingsphere.infra.database.core.DefaultDatabase;
 import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
 import org.apache.shardingsphere.infra.util.exception.external.sql.type.generic.UnsupportedSQLOperationException;
 import org.apache.shardingsphere.mode.manager.ContextManager;
@@ -44,22 +43,7 @@ class UnsupportedOperationConnectionTest {
         ContextManager contextManager = mock(ContextManager.class, RETURNS_DEEP_STUBS);
         when(contextManager.getMetaDataContexts().getMetaData().getGlobalRuleMetaData()).thenReturn(
                 new ShardingSphereRuleMetaData(Arrays.asList(mock(TransactionRule.class, RETURNS_DEEP_STUBS), mock(TrafficRule.class))));
-        shardingSphereConnection = new ShardingSphereConnection(DefaultDatabase.LOGIC_NAME, contextManager, mock(JDBCContext.class));
-    }
-    
-    @Test
-    void assertPrepareCall() {
-        assertThrows(SQLFeatureNotSupportedException.class, () -> shardingSphereConnection.prepareCall(""));
-    }
-    
-    @Test
-    void assertPrepareCallWithResultSetTypeAndResultSetConcurrency() {
-        assertThrows(SQLFeatureNotSupportedException.class, () -> shardingSphereConnection.prepareCall("", 0, 0));
-    }
-    
-    @Test
-    void assertPrepareCallWithResultSetTypeAndResultSetConcurrencyAndResultSetHoldability() {
-        assertThrows(SQLFeatureNotSupportedException.class, () -> shardingSphereConnection.prepareCall("", 0, 0, 0));
+        shardingSphereConnection = new ShardingSphereConnection(DefaultDatabase.LOGIC_NAME, contextManager);
     }
     
     @Test

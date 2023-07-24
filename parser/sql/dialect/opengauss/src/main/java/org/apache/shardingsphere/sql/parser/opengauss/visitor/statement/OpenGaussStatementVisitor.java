@@ -47,6 +47,7 @@ import org.apache.shardingsphere.sql.parser.autogen.OpenGaussStatementParser.Dat
 import org.apache.shardingsphere.sql.parser.autogen.OpenGaussStatementParser.DeleteContext;
 import org.apache.shardingsphere.sql.parser.autogen.OpenGaussStatementParser.ExecuteStmtContext;
 import org.apache.shardingsphere.sql.parser.autogen.OpenGaussStatementParser.ExprListContext;
+import org.apache.shardingsphere.sql.parser.autogen.OpenGaussStatementParser.ExtractArgContext;
 import org.apache.shardingsphere.sql.parser.autogen.OpenGaussStatementParser.ForLockingClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.OpenGaussStatementParser.FromClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.OpenGaussStatementParser.FromListContext;
@@ -107,10 +108,12 @@ import org.apache.shardingsphere.sql.parser.autogen.OpenGaussStatementParser.Whe
 import org.apache.shardingsphere.sql.parser.autogen.OpenGaussStatementParser.WhereClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.OpenGaussStatementParser.WhereOrCurrentClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.OpenGaussStatementParser.WindowClauseContext;
+import org.apache.shardingsphere.sql.parser.autogen.OpenGaussStatementParser.WindowDefinitionContext;
+import org.apache.shardingsphere.sql.parser.autogen.OpenGaussStatementParser.WindowSpecificationContext;
 import org.apache.shardingsphere.sql.parser.sql.common.enums.AggregationType;
 import org.apache.shardingsphere.sql.parser.sql.common.enums.CombineType;
 import org.apache.shardingsphere.sql.parser.sql.common.enums.JoinType;
-import org.apache.shardingsphere.sql.parser.sql.common.enums.NullsOrderType;
+import org.apache.shardingsphere.infra.database.enums.NullsOrderType;
 import org.apache.shardingsphere.sql.parser.sql.common.enums.OrderDirection;
 import org.apache.shardingsphere.sql.parser.sql.common.enums.ParameterMarkerType;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.constraint.ConstraintSegment;
@@ -130,6 +133,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.BinaryOp
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.CaseWhenExpression;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExistsSubqueryExpression;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExtractArgExpression;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.FunctionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.InExpression;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ListExpression;
@@ -451,8 +455,16 @@ public abstract class OpenGaussStatementVisitor extends OpenGaussStatementBaseVi
         }
         FunctionSegment result = new FunctionSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ctx.getChild(0).getText(), getOriginalText(ctx));
         Collection<ExpressionSegment> expressionSegments = getExpressionSegments(getTargetRuleContextFromParseTree(ctx, AExprContext.class));
+        if ("EXTRACT".equalsIgnoreCase(ctx.getChild(0).getText())) {
+            result.getParameters().add((ExpressionSegment) visit(getTargetRuleContextFromParseTree(ctx, ExtractArgContext.class).iterator().next()));
+        }
         result.getParameters().addAll(expressionSegments);
         return result;
+    }
+    
+    @Override
+    public ASTNode visitExtractArg(final ExtractArgContext ctx) {
+        return new ExtractArgExpression(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ctx.getChild(0).getText());
     }
     
     private <T extends ParseTree> Collection<T> getTargetRuleContextFromParseTree(final ParseTree parseTree, final Class<? extends T> clazz) {
@@ -688,7 +700,7 @@ public abstract class OpenGaussStatementVisitor extends OpenGaussStatementBaseVi
         if (null != ctx.returningClause()) {
             result.setReturningSegment((ReturningSegment) visit(ctx.returningClause()));
         }
-        result.getParameterMarkerSegments().addAll(getParameterMarkerSegments());
+        result.addParameterMarkerSegments(getParameterMarkerSegments());
         return result;
     }
     
@@ -702,6 +714,7 @@ public abstract class OpenGaussStatementVisitor extends OpenGaussStatementBaseVi
         return result;
     }
     
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public ASTNode visitQualifiedNameList(final QualifiedNameListContext ctx) {
         CollectionValue<SimpleTableSegment> result = new CollectionValue<>();
@@ -733,6 +746,7 @@ public abstract class OpenGaussStatementVisitor extends OpenGaussStatementBaseVi
         return result;
     }
     
+    @SuppressWarnings("unchecked")
     @Override
     public ASTNode visitInsertRest(final InsertRestContext ctx) {
         OpenGaussInsertStatement result = new OpenGaussInsertStatement();
@@ -781,6 +795,7 @@ public abstract class OpenGaussStatementVisitor extends OpenGaussStatementBaseVi
         return new ColumnAssignmentSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(), columnSegments, expressionSegment);
     }
     
+    @SuppressWarnings("unchecked")
     @Override
     public ASTNode visitInsertColumnList(final InsertColumnListContext ctx) {
         CollectionValue<ColumnSegment> result = new CollectionValue<>();
@@ -876,7 +891,7 @@ public abstract class OpenGaussStatementVisitor extends OpenGaussStatementBaseVi
         if (null != ctx.whereOrCurrentClause()) {
             result.setWhere((WhereSegment) visit(ctx.whereOrCurrentClause()));
         }
-        result.getParameterMarkerSegments().addAll(getParameterMarkerSegments());
+        result.addParameterMarkerSegments(getParameterMarkerSegments());
         return result;
     }
     
@@ -894,7 +909,7 @@ public abstract class OpenGaussStatementVisitor extends OpenGaussStatementBaseVi
         if (null != ctx.whereOrCurrentClause()) {
             result.setWhere((WhereSegment) visit(ctx.whereOrCurrentClause()));
         }
-        result.getParameterMarkerSegments().addAll(getParameterMarkerSegments());
+        result.addParameterMarkerSegments(getParameterMarkerSegments());
         return result;
     }
     
@@ -907,7 +922,7 @@ public abstract class OpenGaussStatementVisitor extends OpenGaussStatementBaseVi
     public ASTNode visitSelect(final SelectContext ctx) {
         // TODO :Unsupported for withClause.
         OpenGaussSelectStatement result = (OpenGaussSelectStatement) visit(ctx.selectNoParens());
-        result.getParameterMarkerSegments().addAll(getParameterMarkerSegments());
+        result.addParameterMarkerSegments(getParameterMarkerSegments());
         return result;
     }
     
@@ -1013,7 +1028,19 @@ public abstract class OpenGaussStatementVisitor extends OpenGaussStatementBaseVi
     
     @Override
     public ASTNode visitWindowClause(final WindowClauseContext ctx) {
+        if (null != ctx.windowDefinitionList()) {
+            return new WindowSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), getWindowItem(ctx.windowDefinitionList().windowDefinition()),
+                    getWindowSpecification(ctx.windowDefinitionList().windowDefinition().windowSpecification()));
+        }
         return new WindowSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex());
+    }
+    
+    private IdentifierValue getWindowItem(final WindowDefinitionContext ctx) {
+        return new IdentifierValue(ctx.colId().identifier().getText());
+    }
+    
+    private Collection<ExpressionSegment> getWindowSpecification(final WindowSpecificationContext ctx) {
+        return createInsertValuesSegments(ctx.partitionClause().exprList());
     }
     
     @Override
@@ -1037,7 +1064,7 @@ public abstract class OpenGaussStatementVisitor extends OpenGaussStatementBaseVi
                 return new IndexOrderByItemSegment(index.getStartIndex(), index.getStopIndex(),
                         Integer.parseInt(index.getLiterals().toString()), OrderDirection.ASC, null);
             }
-            return new ExpressionOrderByItemSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(), getOriginalText(ctx), OrderDirection.ASC, null);
+            return new ExpressionOrderByItemSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(), getOriginalText(ctx), OrderDirection.ASC, null, (ExpressionSegment) visit(ctx.aExpr()));
         }
         return new ExpressionOrderByItemSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(), getOriginalText(ctx), OrderDirection.ASC, null);
     }
@@ -1124,41 +1151,53 @@ public abstract class OpenGaussStatementVisitor extends OpenGaussStatementBaseVi
     @Override
     public ASTNode visitTableReference(final TableReferenceContext ctx) {
         if (null != ctx.relationExpr()) {
-            SimpleTableSegment result = (SimpleTableSegment) visit(ctx.relationExpr().qualifiedName());
-            if (null != ctx.aliasClause()) {
-                result.setAlias((AliasSegment) visit(ctx.aliasClause()));
-            }
-            return result;
+            return getSimpleTableSegment(ctx);
         }
         if (null != ctx.selectWithParens()) {
-            OpenGaussSelectStatement select = (OpenGaussSelectStatement) visit(ctx.selectWithParens());
-            SubquerySegment subquery = new SubquerySegment(ctx.selectWithParens().start.getStartIndex(), ctx.selectWithParens().stop.getStopIndex(), select);
-            AliasSegment alias = null != ctx.aliasClause() ? (AliasSegment) visit(ctx.aliasClause()) : null;
-            SubqueryTableSegment result = new SubqueryTableSegment(subquery);
-            result.setAlias(alias);
-            return result;
+            return getSubqueryTableSegment(ctx);
         }
         if (null != ctx.tableReference()) {
-            JoinTableSegment result = new JoinTableSegment();
-            result.setLeft((TableSegment) visit(ctx.tableReference()));
-            int startIndex = null != ctx.LP_() ? ctx.LP_().getSymbol().getStartIndex() : ctx.tableReference().start.getStartIndex();
-            int stopIndex = 0;
-            AliasSegment alias = null;
-            if (null != ctx.aliasClause()) {
-                alias = (AliasSegment) visit(ctx.aliasClause());
-                startIndex = null != ctx.RP_() ? ctx.RP_().getSymbol().getStopIndex() : ctx.joinedTable().stop.getStopIndex();
-            } else {
-                stopIndex = null != ctx.RP_() ? ctx.RP_().getSymbol().getStopIndex() : ctx.tableReference().start.getStopIndex();
-            }
-            result.setStartIndex(startIndex);
-            result.setStopIndex(stopIndex);
-            visitJoinedTable(ctx.joinedTable(), result);
-            result.setAlias(alias);
-            return result;
+            return getJoinTableSegment(ctx);
         }
         // TODO deal with functionTable and xmlTable
-        TableNameSegment tableName = new TableNameSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(), new IdentifierValue("not support"));
-        return new SimpleTableSegment(tableName);
+        return new SimpleTableSegment(new TableNameSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(), new IdentifierValue("not support")));
+    }
+    
+    private SimpleTableSegment getSimpleTableSegment(final TableReferenceContext ctx) {
+        SimpleTableSegment result = (SimpleTableSegment) visit(ctx.relationExpr().qualifiedName());
+        if (null != ctx.aliasClause()) {
+            result.setAlias((AliasSegment) visit(ctx.aliasClause()));
+        }
+        return result;
+    }
+    
+    private SubqueryTableSegment getSubqueryTableSegment(final TableReferenceContext ctx) {
+        OpenGaussSelectStatement select = (OpenGaussSelectStatement) visit(ctx.selectWithParens());
+        SubquerySegment subquery = new SubquerySegment(ctx.selectWithParens().start.getStartIndex(), ctx.selectWithParens().stop.getStopIndex(), select);
+        SubqueryTableSegment result = new SubqueryTableSegment(subquery);
+        if (null != ctx.aliasClause()) {
+            result.setAlias((AliasSegment) visit(ctx.aliasClause()));
+        }
+        return result;
+    }
+    
+    private JoinTableSegment getJoinTableSegment(final TableReferenceContext ctx) {
+        JoinTableSegment result = new JoinTableSegment();
+        result.setLeft((TableSegment) visit(ctx.tableReference()));
+        int startIndex = null != ctx.LP_() ? ctx.LP_().getSymbol().getStartIndex() : ctx.tableReference().start.getStartIndex();
+        int stopIndex = 0;
+        AliasSegment alias = null;
+        if (null != ctx.aliasClause()) {
+            alias = (AliasSegment) visit(ctx.aliasClause());
+            startIndex = null == ctx.RP_() ? ctx.joinedTable().stop.getStopIndex() : ctx.RP_().getSymbol().getStopIndex();
+        } else {
+            stopIndex = null == ctx.RP_() ? ctx.tableReference().start.getStopIndex() : ctx.RP_().getSymbol().getStopIndex();
+        }
+        result.setStartIndex(startIndex);
+        result.setStopIndex(stopIndex);
+        visitJoinedTable(ctx.joinedTable(), result);
+        result.setAlias(alias);
+        return result;
     }
     
     private JoinTableSegment visitJoinedTable(final JoinedTableContext ctx, final JoinTableSegment tableSegment) {
@@ -1189,7 +1228,7 @@ public abstract class OpenGaussStatementVisitor extends OpenGaussStatementBaseVi
         if (null != ctx.FULL()) {
             return JoinType.FULL.name();
         }
-        return null != ctx.LEFT() ? JoinType.LEFT.name() : JoinType.RIGHT.name();
+        return null == ctx.LEFT() ? JoinType.RIGHT.name() : JoinType.LEFT.name();
     }
     
     private String getNaturalJoinType(final NaturalJoinTypeContext ctx) {

@@ -82,6 +82,7 @@ execute
     | dropSynonym
     | dropPackage
     | dropEdition
+    | dropTableSpace
     | dropOutline
     | alterOutline
     | alterAnalyticView
@@ -108,6 +109,7 @@ execute
     | createRestorePoint
     | dropRestorePoint
     | dropOperator
+    | dropType
     | alterLibrary
     | alterMaterializedZonemap
     | alterJava
@@ -122,6 +124,7 @@ execute
     | alterHierarchy
     | alterLockdownProfile
     | alterPluggableDatabase
+    | explain
     | createProcedure
     | dropProcedure
     | alterProcedure
@@ -132,7 +135,15 @@ execute
     | dropMaterializedView
     | dropMaterializedViewLog
     | dropMaterializedZonemap
+    | dropContext
     | alterResourceCost
     | alterRole
+    | createTablespace
+    | dropSequence
+    | dropProfile
+    | dropFunction
+    | dropCluster
+    | systemAction
+    | alterType
     ) SEMI_?
     ;

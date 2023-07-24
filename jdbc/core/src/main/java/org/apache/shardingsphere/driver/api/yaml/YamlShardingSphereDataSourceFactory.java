@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 import org.apache.shardingsphere.driver.api.ShardingSphereDataSourceFactory;
 import org.apache.shardingsphere.infra.config.mode.ModeConfiguration;
 import org.apache.shardingsphere.infra.config.rule.RuleConfiguration;
-import org.apache.shardingsphere.infra.database.DefaultDatabase;
+import org.apache.shardingsphere.infra.database.core.DefaultDatabase;
 import org.apache.shardingsphere.infra.datasource.pool.destroyer.DataSourcePoolDestroyer;
 import org.apache.shardingsphere.infra.util.yaml.YamlEngine;
 import org.apache.shardingsphere.infra.yaml.config.pojo.YamlRootConfiguration;
@@ -63,7 +63,7 @@ public final class YamlShardingSphereDataSourceFactory {
         try {
             return createDataSource(dataSourceMap, rootConfig);
             // CHECKSTYLE:OFF
-        } catch (final Exception ex) {
+        } catch (final SQLException | RuntimeException ex) {
             // CHECKSTYLE:ON
             dataSourceMap.values().stream().map(DataSourcePoolDestroyer::new).forEach(DataSourcePoolDestroyer::asyncDestroy);
             throw ex;
@@ -189,6 +189,9 @@ public final class YamlShardingSphereDataSourceFactory {
         }
         if (null != jdbcConfiguration.getLogging()) {
             jdbcConfiguration.getRules().add(jdbcConfiguration.getLogging());
+        }
+        if (null != jdbcConfiguration.getSqlFederation()) {
+            jdbcConfiguration.getRules().add(jdbcConfiguration.getSqlFederation());
         }
     }
 }

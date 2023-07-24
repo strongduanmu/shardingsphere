@@ -20,8 +20,11 @@ package org.apache.shardingsphere.infra.binder.segment.select.projection.impl;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 import org.apache.shardingsphere.infra.binder.segment.select.projection.Projection;
+import org.apache.shardingsphere.infra.database.enums.QuoteCharacter;
+import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 
 import java.util.Optional;
 
@@ -30,33 +33,70 @@ import java.util.Optional;
  */
 @RequiredArgsConstructor
 @Getter
-@EqualsAndHashCode
+@Setter
+@EqualsAndHashCode(exclude = {"originalOwner", "originalName"})
 @ToString
 public final class ColumnProjection implements Projection {
     
-    private final String owner;
+    private final IdentifierValue owner;
     
-    private final String name;
+    private final IdentifierValue name;
     
-    private final String alias;
+    private final IdentifierValue alias;
+    
+    private IdentifierValue originalOwner;
+    
+    private IdentifierValue originalName;
+    
+    public ColumnProjection(final String owner, final String name, final String alias) {
+        this(null == owner ? null : new IdentifierValue(owner, QuoteCharacter.NONE), new IdentifierValue(name, QuoteCharacter.NONE),
+                null == alias ? null : new IdentifierValue(alias, QuoteCharacter.NONE));
+    }
     
     @Override
-    public String getExpression() {
-        return null == owner ? name : owner + "." + name;
+    public String getColumnName() {
+        return null == owner ? name.getValue() : owner.getValue() + "." + name.getValue();
     }
     
     @Override
     public String getColumnLabel() {
-        return getAlias().orElse(name);
+        return getAlias().map(IdentifierValue::getValue).orElse(name.getValue());
     }
     
     @Override
-    public Optional<String> getAlias() {
+    public String getExpression() {
+        return null == owner ? name.getValue() : owner.getValue() + "." + name.getValue();
+    }
+    
+    @Override
+    public Optional<IdentifierValue> getAlias() {
         return Optional.ofNullable(alias);
     }
     
-    @Override
-    public Projection cloneWithOwner(final String ownerName) {
-        return new ColumnProjection(ownerName, name, alias);
+    /**
+     * Get owner.
+     *
+     * @return owner
+     */
+    public Optional<IdentifierValue> getOwner() {
+        return Optional.ofNullable(owner);
+    }
+    
+    /**
+     * Get original owner.
+     *
+     * @return original owner
+     */
+    public IdentifierValue getOriginalOwner() {
+        return null == originalOwner ? owner : originalOwner;
+    }
+    
+    /**
+     * Get original name.
+     * 
+     * @return original name
+     */
+    public IdentifierValue getOriginalName() {
+        return null == originalName ? name : originalName;
     }
 }

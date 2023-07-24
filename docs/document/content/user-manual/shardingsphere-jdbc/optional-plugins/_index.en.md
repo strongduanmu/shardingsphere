@@ -4,7 +4,7 @@ weight = 6
 +++
 
 ShardingSphere only includes the implementation of the core SPI by default, and there is a part of the SPI that contains third-party dependencies in Git Source
-Implemented plugins are not included. Retrievable at https://central.sonatype.dev/.
+Implemented plugins are not included. Retrievable at https://central.sonatype.com/.
 
 SPI and existing implementation classes of SPI corresponding to all plugins can be retrieved at https://shardingsphere.apache.org/document/current/cn/dev-manual/.
 
@@ -26,8 +26,6 @@ All the built-in plugins for ShardingSphere-JDBC are listed below in the form of
 - `org.apache.shardingsphere:shardingsphere-sharding-core`, data sharding core
 - `org.apache.shardingsphere:shardingsphere-single-core`, single-table (only the only table that exists in all sharded data sources) core
 - `org.apache.shardingsphere:shardingsphere-sql-federation-core`, federation query executor core
-- `org.apache.shardingsphere:shardingsphere-sql-federation-executor-advanced`, the `advanced` implementation of federated query executor
-- `org.apache.shardingsphere:shardingsphere-sql-federation-executor-original`, the `original` implementation of federated query executor
 - `org.apache.shardingsphere:shardingsphere-sql-parser-mysql`, MySQL dialect implementation of SQL parsing
 - `org.apache.shardingsphere:shardingsphere-sql-parser-opengauss`, OpenGauss dialect implementation of SQL parsing
 - `org.apache.shardingsphere:shardingsphere-sql-parser-oracle`, Oracle dialect implementation of SQL parsing

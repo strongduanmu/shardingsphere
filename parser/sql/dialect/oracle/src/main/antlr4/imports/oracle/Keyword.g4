@@ -439,6 +439,22 @@ SECOND
 MICROSECOND
     : M I C R O S E C O N D
     ;
+    
+TIMEZONE_HOUR
+    : T I M E Z O N E UL_ H O U R
+    ;
+    
+TIMEZONE_MINUTE
+    : T I M E Z O N E UL_ M I N U T E
+    ;
+    
+TIMEZONE_REGION
+    : T I M E Z O N E UL_ R E G I O N
+    ;
+    
+TIMEZONE_ABBR
+    : T I M E Z O N E UL_ A B B R
+    ;
 
 MAX
     : M A X
@@ -759,6 +775,10 @@ SHOW
 XMLTABLE
     : X M L T A B L E
     ;
+    
+ISSCHEMAVALID
+    : I S S C H E M A V A L I D
+    ;
 
 XMLNAMESPACES
     : X M L N A M E S P A C E S
@@ -770,4 +790,20 @@ ORDINALITY
 
 PATH
     : P A T H
+    ;
+
+EXTRACT
+    : E X T R A C T
+    ;
+    
+ANYDATA
+    : A N Y D A T A
+    ;
+    
+ANYTYPE
+    : A N Y T Y P E
+    ;
+    
+ANYDATASET
+    : A N Y D A T A S E T
     ;

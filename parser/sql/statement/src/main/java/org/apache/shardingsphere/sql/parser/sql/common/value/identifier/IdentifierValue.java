@@ -18,10 +18,11 @@
 package org.apache.shardingsphere.sql.parser.sql.common.value.identifier;
 
 import com.google.common.base.Strings;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
-import org.apache.shardingsphere.sql.parser.sql.common.enums.QuoteCharacter;
+import org.apache.shardingsphere.infra.database.enums.QuoteCharacter;
 import org.apache.shardingsphere.sql.parser.sql.common.util.SQLUtils;
 import org.apache.shardingsphere.sql.parser.sql.common.value.ValueASTNode;
 
@@ -30,6 +31,7 @@ import org.apache.shardingsphere.sql.parser.sql.common.value.ValueASTNode;
  */
 @RequiredArgsConstructor
 @Getter
+@EqualsAndHashCode
 @ToString
 public final class IdentifierValue implements ValueASTNode<String> {
     

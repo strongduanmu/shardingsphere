@@ -19,7 +19,7 @@ package org.apache.shardingsphere.encrypt.metadata;
 
 import org.apache.shardingsphere.encrypt.rule.EncryptRule;
 import org.apache.shardingsphere.encrypt.rule.EncryptTable;
-import org.apache.shardingsphere.infra.database.DefaultDatabase;
+import org.apache.shardingsphere.infra.database.core.DefaultDatabase;
 import org.apache.shardingsphere.infra.metadata.database.schema.builder.GenericSchemaBuilderMaterial;
 import org.apache.shardingsphere.infra.metadata.database.schema.reviser.MetaDataReviseEngine;
 import org.apache.shardingsphere.infra.metadata.database.schema.loader.model.ColumnMetaData;
@@ -60,9 +60,8 @@ class EncryptMetaDataReviseEngineTest {
         EncryptRule result = mock(EncryptRule.class);
         EncryptTable encryptTable = mock(EncryptTable.class);
         when(result.findEncryptTable(TABLE_NAME)).thenReturn(Optional.of(encryptTable));
-        when(encryptTable.getAssistedQueryColumns()).thenReturn(Collections.emptyList());
-        when(encryptTable.getLikeQueryColumns()).thenReturn(Collections.singletonList("pwd_like"));
         when(encryptTable.isCipherColumn("pwd_cipher")).thenReturn(true);
+        when(encryptTable.isLikeQueryColumn("pwd_like")).thenReturn(true);
         when(encryptTable.getLogicColumnByCipherColumn("pwd_cipher")).thenReturn("pwd");
         return result;
     }

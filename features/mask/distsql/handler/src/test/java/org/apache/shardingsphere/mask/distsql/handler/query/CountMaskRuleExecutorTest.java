@@ -20,6 +20,7 @@ package org.apache.shardingsphere.mask.distsql.handler.query;
 import org.apache.shardingsphere.infra.merge.result.impl.local.LocalDataQueryResultRow;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
+import org.apache.shardingsphere.infra.rule.identifier.type.TableNamesMapper;
 import org.apache.shardingsphere.mask.distsql.parser.statement.CountMaskRuleStatement;
 import org.apache.shardingsphere.mask.rule.MaskRule;
 import org.junit.jupiter.api.Test;
@@ -67,7 +68,9 @@ class CountMaskRuleExecutorTest {
     
     private MaskRule mockMaskRule() {
         MaskRule result = mock(MaskRule.class);
-        when(result.getTables()).thenReturn(Collections.singleton("mask_table"));
+        TableNamesMapper tableNamesMapper = new TableNamesMapper();
+        tableNamesMapper.put("mask_table");
+        when(result.getLogicTableMapper()).thenReturn(tableNamesMapper);
         return result;
     }
 }

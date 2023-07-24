@@ -18,12 +18,14 @@
 package org.apache.shardingsphere.encrypt.distsql.handler.update;
 
 import org.apache.shardingsphere.distsql.handler.exception.rule.DuplicateRuleException;
+import org.apache.shardingsphere.distsql.handler.exception.rule.InvalidRuleConfigurationException;
 import org.apache.shardingsphere.distsql.handler.exception.storageunit.EmptyStorageUnitException;
 import org.apache.shardingsphere.distsql.handler.update.RuleDefinitionCreateUpdater;
 import org.apache.shardingsphere.distsql.parser.segment.AlgorithmSegment;
 import org.apache.shardingsphere.encrypt.api.config.EncryptRuleConfiguration;
 import org.apache.shardingsphere.encrypt.api.config.rule.EncryptTableRuleConfiguration;
 import org.apache.shardingsphere.encrypt.distsql.handler.converter.EncryptRuleStatementConverter;
+import org.apache.shardingsphere.encrypt.distsql.parser.segment.EncryptColumnSegment;
 import org.apache.shardingsphere.encrypt.distsql.parser.segment.EncryptRuleSegment;
 import org.apache.shardingsphere.encrypt.distsql.parser.statement.CreateEncryptRuleStatement;
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithm;
@@ -46,8 +48,59 @@ public final class CreateEncryptRuleStatementUpdater implements RuleDefinitionCr
         if (!sqlStatement.isIfNotExists()) {
             checkDuplicateRuleNames(database.getName(), sqlStatement, currentRuleConfig);
         }
+        checkColumnNames(sqlStatement);
         checkToBeCreatedEncryptors(sqlStatement);
         checkDataSources(database);
+    }
+    
+    private void checkDuplicateRuleNames(final String databaseName, final CreateEncryptRuleStatement sqlStatement, final EncryptRuleConfiguration currentRuleConfig) {
+        Collection<String> duplicatedRuleNames = getDuplicatedRuleNames(sqlStatement, currentRuleConfig);
+        ShardingSpherePreconditions.checkState(duplicatedRuleNames.isEmpty(), () -> new DuplicateRuleException("encrypt", databaseName, duplicatedRuleNames));
+    }
+    
+    private Collection<String> getDuplicatedRuleNames(final CreateEncryptRuleStatement sqlStatement, final EncryptRuleConfiguration currentRuleConfig) {
+        Collection<String> currentRuleNames = new LinkedHashSet<>();
+        if (null != currentRuleConfig) {
+            currentRuleNames = currentRuleConfig.getTables().stream().map(EncryptTableRuleConfiguration::getName).collect(Collectors.toSet());
+        }
+        return sqlStatement.getRules().stream().map(EncryptRuleSegment::getTableName).filter(currentRuleNames::contains).collect(Collectors.toSet());
+    }
+    
+    private void checkColumnNames(final CreateEncryptRuleStatement sqlStatement) {
+        for (EncryptRuleSegment each : sqlStatement.getRules()) {
+            ShardingSpherePreconditions.checkState(isColumnNameNotConflicts(each),
+                    () -> new InvalidRuleConfigurationException("encrypt", "assisted query column or like query column conflicts with logic column"));
+        }
+    }
+    
+    private boolean isColumnNameNotConflicts(final EncryptRuleSegment rule) {
+        for (EncryptColumnSegment each : rule.getColumns()) {
+            if (null != each.getLikeQuery() && each.getName().equals(each.getLikeQuery().getName())) {
+                return false;
+            }
+            if (null != each.getAssistedQuery() && each.getName().equals(each.getAssistedQuery().getName())) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    private void checkToBeCreatedEncryptors(final CreateEncryptRuleStatement sqlStatement) {
+        Collection<AlgorithmSegment> encryptors = new LinkedHashSet<>();
+        sqlStatement.getRules().forEach(each -> each.getColumns().forEach(column -> {
+            encryptors.add(column.getCipher().getEncryptor());
+            if (null != column.getAssistedQuery()) {
+                encryptors.add(column.getAssistedQuery().getEncryptor());
+            }
+            if (null != column.getLikeQuery()) {
+                encryptors.add(column.getLikeQuery().getEncryptor());
+            }
+        }));
+        encryptors.stream().filter(Objects::nonNull).forEach(each -> TypedSPILoader.checkService(EncryptAlgorithm.class, each.getName(), each.getProps()));
+    }
+    
+    private void checkDataSources(final ShardingSphereDatabase database) {
+        ShardingSpherePreconditions.checkState(!database.getResourceMetaData().getDataSources().isEmpty(), () -> new EmptyStorageUnitException(database.getName()));
     }
     
     @Override
@@ -64,33 +117,6 @@ public final class CreateEncryptRuleStatementUpdater implements RuleDefinitionCr
     public void updateCurrentRuleConfiguration(final EncryptRuleConfiguration currentRuleConfig, final EncryptRuleConfiguration toBeCreatedRuleConfig) {
         currentRuleConfig.getTables().addAll(toBeCreatedRuleConfig.getTables());
         currentRuleConfig.getEncryptors().putAll(toBeCreatedRuleConfig.getEncryptors());
-    }
-    
-    private void checkDuplicateRuleNames(final String databaseName, final CreateEncryptRuleStatement sqlStatement, final EncryptRuleConfiguration currentRuleConfig) {
-        Collection<String> duplicatedRuleNames = getDuplicatedRuleNames(sqlStatement, currentRuleConfig);
-        ShardingSpherePreconditions.checkState(duplicatedRuleNames.isEmpty(), () -> new DuplicateRuleException("encrypt", databaseName, duplicatedRuleNames));
-    }
-    
-    private Collection<String> getDuplicatedRuleNames(final CreateEncryptRuleStatement sqlStatement, final EncryptRuleConfiguration currentRuleConfig) {
-        Collection<String> currentRuleNames = new LinkedHashSet<>();
-        if (null != currentRuleConfig) {
-            currentRuleNames = currentRuleConfig.getTables().stream().map(EncryptTableRuleConfiguration::getName).collect(Collectors.toSet());
-        }
-        return sqlStatement.getRules().stream().map(EncryptRuleSegment::getTableName).filter(currentRuleNames::contains).collect(Collectors.toSet());
-    }
-    
-    private void checkToBeCreatedEncryptors(final CreateEncryptRuleStatement sqlStatement) {
-        Collection<AlgorithmSegment> encryptors = new LinkedHashSet<>();
-        sqlStatement.getRules().forEach(each -> each.getColumns().forEach(column -> {
-            encryptors.add(column.getEncryptor());
-            encryptors.add(column.getAssistedQueryEncryptor());
-            encryptors.add(column.getLikeQueryEncryptor());
-        }));
-        encryptors.stream().filter(Objects::nonNull).forEach(each -> TypedSPILoader.checkService(EncryptAlgorithm.class, each.getName(), each.getProps()));
-    }
-    
-    private void checkDataSources(final ShardingSphereDatabase database) {
-        ShardingSpherePreconditions.checkState(!database.getResourceMetaData().getDataSources().isEmpty(), () -> new EmptyStorageUnitException(database.getName()));
     }
     
     @Override

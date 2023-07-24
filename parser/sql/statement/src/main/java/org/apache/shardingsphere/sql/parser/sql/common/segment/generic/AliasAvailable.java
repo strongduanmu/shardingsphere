@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.sql.parser.sql.common.segment.generic;
 
 import org.apache.shardingsphere.sql.parser.sql.common.segment.SQLSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
 
 import java.util.Optional;
 
@@ -27,11 +28,18 @@ import java.util.Optional;
 public interface AliasAvailable extends SQLSegment {
     
     /**
+     * Get alias name.
+     *
+     * @return alias name
+     */
+    Optional<String> getAliasName();
+    
+    /**
      * Get alias.
      *
      * @return alias
      */
-    Optional<String> getAlias();
+    Optional<IdentifierValue> getAlias();
     
     /**
      * Set alias.

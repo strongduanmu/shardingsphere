@@ -20,7 +20,7 @@ package org.apache.shardingsphere.sharding.route.engine.type.broadcast;
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.binder.type.IndexAvailable;
-import org.apache.shardingsphere.infra.database.type.DatabaseType;
+import org.apache.shardingsphere.infra.database.spi.DatabaseType;
 import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.metadata.database.schema.QualifiedTable;
@@ -74,9 +74,7 @@ public final class ShardingTableBroadcastRoutingEngine implements ShardingRouteE
         Collection<RouteContext> result = new LinkedList<>();
         for (String each : logicTableNames) {
             RouteContext routeContext = new RouteContext();
-            if (shardingRule.getBroadcastTables().contains(each)) {
-                routeContext.getRouteUnits().addAll(getBroadcastTableRouteUnits(shardingRule, each));
-            } else if (shardingRule.findTableRule(each).isPresent()) {
+            if (shardingRule.findTableRule(each).isPresent()) {
                 routeContext.getRouteUnits().addAll(getAllRouteUnits(shardingRule, each));
             }
             if (!routeContext.getRouteUnits().isEmpty()) {

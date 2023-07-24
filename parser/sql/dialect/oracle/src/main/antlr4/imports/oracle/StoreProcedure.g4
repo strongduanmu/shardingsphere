@@ -69,12 +69,11 @@ exceptionHandler
     ;
 
 declareSection
-    : itemList1 itemList2?
-    | itemList2
+    : declareItem+
     ;
-
-itemList2
-    : cursorDeclaration | cursorDefinition | functionDeclaration | functionDefinition | procedureDeclaration | procedureDefinition
+    
+declareItem
+    : typeDefinition | cursorDeclaration | itemDeclaration | functionDeclaration | procedureDeclaration | cursorDefinition | functionDefinition | procedureDefinition
     ;
 
 cursorDefinition
@@ -89,16 +88,12 @@ procedureDefinition
     : procedureDeclaration (IS | AS) (callSpec | declareSection? body)
     ;
 
-itemList1
-    :(typeDefinition | cursorDeclaration | itemDeclaration | functionDeclaration | procedureDeclaration)*
-    ;
-
 cursorDeclaration
     : CURSOR variableName ((cursorParameterDec (COMMA_ cursorParameterDec)*))? RETURN rowtype SEMI_
     ;
 
 cursorParameterDec
-    : variableName IN? dataType ((COLON_ EQ_ | DEFAULT) expr)?
+    : variableName IN? dataType ((ASSIGNMENT_OPERATOR_ | DEFAULT) expr)?
     ;
 
 rowtype
@@ -113,8 +108,8 @@ itemDeclaration
 collectionVariableDecl
     : variableName
       (
-      typeName (COLON_ EQ_ (qualifiedExpression | functionCall | variableName))?
-      | typeName (COLON_ EQ_  (collectionConstructor | variableName))?
+      typeName (ASSIGNMENT_OPERATOR_ (qualifiedExpression | functionCall | variableName))?
+      | typeName (ASSIGNMENT_OPERATOR_  (collectionConstructor | variableName))?
       | typeName MOD_ TYPE
       )
       SEMI_
@@ -153,7 +148,7 @@ collectionConstructor
     ;
 
 constantDeclaration
-    : variableName CONSTANT dataType (NOT NULL)? (COLON_ EQ_ | DEFAULT) expr SEMI_
+    : variableName CONSTANT dataType (NOT NULL)? (ASSIGNMENT_OPERATOR_ | DEFAULT) expr SEMI_
     ;
 
 cursorVariableDeclaration
@@ -169,7 +164,7 @@ recordVariableDeclaration
     ;
 
 variableDeclaration
-    : variableName dataType ((NOT NULL)? (COLON_ EQ_ | DEFAULT) expr)? SEMI_
+    : variableName dataType ((NOT NULL)? (ASSIGNMENT_OPERATOR_ | DEFAULT) expr)? SEMI_
     ;
 
 typeDefinition
@@ -181,7 +176,7 @@ recordTypeDefinition
     ;
 
 fieldDefinition
-    : typeName dataType ((NOT NULL)? (COLON_ EQ_ | DEFAULT) expr)?
+    : typeName dataType ((NOT NULL)? (ASSIGNMENT_OPERATOR_ | DEFAULT) expr)?
     ;
 
 refCursorTypeDefinition
@@ -213,10 +208,6 @@ nestedTableTypeDef
 
 assocArrayTypeDef
     : TABLE OF dataType (NOT NULL)?  INDEX BY (PLS_INTEGER | BINARY_INTEGER | (VARCHAR2 | VARCHAR2 | STRING) LP_ INTEGER_ RP_ | LONG | typeAttribute | rowtypeAttribute)
-    ;
-
-typeAttribute
-    : (variableName | objectName) MOD_ TYPE
     ;
 
 rowtypeAttribute

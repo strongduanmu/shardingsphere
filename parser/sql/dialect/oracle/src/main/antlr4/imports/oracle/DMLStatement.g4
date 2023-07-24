@@ -148,7 +148,19 @@ parenthesisSelectSubquery
     ;
 
 queryBlock
-    : withClause? SELECT hint? duplicateSpecification? selectList selectFromClause whereClause? hierarchicalQueryClause? groupByClause? modelClause?
+    : withClause? SELECT hint? duplicateSpecification? selectList selectIntoClause? selectFromClause whereClause? hierarchicalQueryClause? groupByClause? modelClause?
+    ;
+
+selectIntoClause
+    : (BULK COLLECT)? INTO variableNames
+    ;
+
+variableNames
+    : variableName (COMMA_ variableName)*
+    ;
+
+variableName
+    : identifier | stringLiterals
     ;
 
 withClause
@@ -168,7 +180,7 @@ functionHeading
     ;
 
 parameterDeclaration
-    : parameterName ((IN? dataType ((COLON_ EQ_ | DEFAULT) expr)?) | (IN? OUT NOCOPY? dataType))?
+    : parameterName ((IN? dataType ((ASSIGNMENT_OPERATOR_ | DEFAULT) expr)?) | (IN? OUT NOCOPY? dataType))?
     ;
 
 procedureDeclaration
@@ -406,8 +418,7 @@ unqualifiedShorthand
     ;
 
 selectList
-    : unqualifiedShorthand
-    | selectProjection (COMMA_ selectProjection)*
+    : (unqualifiedShorthand | selectProjection) (COMMA_ selectProjection)*
     ;
 
 selectProjection

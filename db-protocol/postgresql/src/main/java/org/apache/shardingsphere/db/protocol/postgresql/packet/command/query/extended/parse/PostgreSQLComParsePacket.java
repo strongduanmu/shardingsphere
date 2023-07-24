@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.extended.parse;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import org.apache.shardingsphere.db.protocol.packet.sql.SQLReceivedPacket;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQLCommandPacket;
@@ -24,6 +25,8 @@ import org.apache.shardingsphere.db.protocol.postgresql.packet.command.PostgreSQ
 import org.apache.shardingsphere.db.protocol.postgresql.packet.command.query.extended.PostgreSQLColumnType;
 import org.apache.shardingsphere.db.protocol.postgresql.packet.identifier.PostgreSQLIdentifierTag;
 import org.apache.shardingsphere.db.protocol.postgresql.payload.PostgreSQLPacketPayload;
+import org.apache.shardingsphere.infra.hint.HintValueContext;
+import org.apache.shardingsphere.infra.hint.SQLHintUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,13 +41,18 @@ public final class PostgreSQLComParsePacket extends PostgreSQLCommandPacket impl
     
     private final String statementId;
     
+    @Getter(AccessLevel.NONE)
     private final String sql;
     
-    public PostgreSQLComParsePacket(final PostgreSQLPacketPayload payload) {
+    private final HintValueContext hintValueContext;
+    
+    public PostgreSQLComParsePacket(final PostgreSQLPacketPayload payload, final boolean sqlCommentParseEnabled) {
         this.payload = payload;
         payload.readInt4();
         statementId = payload.readStringNul();
-        sql = payload.readStringNul();
+        String originSQL = payload.readStringNul();
+        hintValueContext = sqlCommentParseEnabled ? new HintValueContext() : SQLHintUtils.extractHint(originSQL).orElseGet(HintValueContext::new);
+        sql = sqlCommentParseEnabled ? originSQL : SQLHintUtils.removeHint(originSQL);
     }
     
     /**
@@ -66,12 +74,12 @@ public final class PostgreSQLComParsePacket extends PostgreSQLCommandPacket impl
     }
     
     @Override
-    public PostgreSQLIdentifierTag getIdentifier() {
-        return PostgreSQLCommandPacketType.PARSE_COMMAND;
+    public String getSQL() {
+        return sql;
     }
     
     @Override
-    public String getSQL() {
-        return sql;
+    public PostgreSQLIdentifierTag getIdentifier() {
+        return PostgreSQLCommandPacketType.PARSE_COMMAND;
     }
 }

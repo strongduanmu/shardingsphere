@@ -25,8 +25,8 @@ import org.apache.shardingsphere.infra.executor.sql.execute.result.query.impl.ra
 import org.apache.shardingsphere.infra.merge.result.MergedResult;
 import org.apache.shardingsphere.infra.merge.result.impl.local.LocalDataMergedResult;
 import org.apache.shardingsphere.infra.merge.result.impl.local.LocalDataQueryResultRow;
-import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.backend.handler.admin.executor.DatabaseAdminQueryExecutor;
+import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ExpressionProjectionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ProjectionSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
@@ -62,7 +62,7 @@ public final class ShowConnectionIdExecutor implements DatabaseAdminQueryExecuto
         Collection<ProjectionSegment> projections = sqlStatement.getProjections().getProjections();
         for (ProjectionSegment each : projections) {
             if (each instanceof ExpressionProjectionSegment) {
-                return ((ExpressionProjectionSegment) each).getAlias().orElse(FUNCTION_NAME);
+                return ((ExpressionProjectionSegment) each).getAliasName().orElse(FUNCTION_NAME);
             }
         }
         return FUNCTION_NAME;

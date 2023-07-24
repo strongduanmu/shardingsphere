@@ -24,13 +24,11 @@ import org.apache.shardingsphere.infra.datasource.config.DataSourceConfiguration
 import org.apache.shardingsphere.infra.datasource.pool.creator.DataSourcePoolCreator;
 import org.apache.shardingsphere.infra.datasource.props.DataSourceProperties;
 import org.apache.shardingsphere.infra.datasource.props.DataSourcePropertiesCreator;
+import org.apache.shardingsphere.infra.datasource.storage.StorageResource;
 
 import javax.sql.DataSource;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 /**
  * Data source generated database configuration.
@@ -38,20 +36,20 @@ import java.util.stream.Collectors;
 @Getter
 public final class DataSourceGeneratedDatabaseConfiguration implements DatabaseConfiguration {
     
-    private final Map<String, DataSource> dataSources;
+    private final StorageResource storageResource;
     
     private final Collection<RuleConfiguration> ruleConfigurations;
     
-    private final Map<String, DataSourceProperties> dataSourceProperties;
+    private final Map<String, DataSourceProperties> dataSourcePropsMap;
     
-    public DataSourceGeneratedDatabaseConfiguration(final Map<String, DataSourceConfiguration> dataSources, final Collection<RuleConfiguration> ruleConfigs) {
-        this.dataSources = DataSourcePoolCreator.create(createDataSourcePropertiesMap(dataSources));
+    public DataSourceGeneratedDatabaseConfiguration(final Map<String, DataSourceConfiguration> dataSourceConfigs, final Collection<RuleConfiguration> ruleConfigs) {
         ruleConfigurations = ruleConfigs;
-        dataSourceProperties = createDataSourcePropertiesMap(dataSources);
+        dataSourcePropsMap = DataSourcePropertiesCreator.createFromConfiguration(dataSourceConfigs);
+        this.storageResource = DataSourcePoolCreator.createStorageResource(dataSourcePropsMap);
     }
     
-    private Map<String, DataSourceProperties> createDataSourcePropertiesMap(final Map<String, DataSourceConfiguration> dataSources) {
-        return dataSources.entrySet().stream().collect(Collectors
-                .toMap(Entry::getKey, entry -> DataSourcePropertiesCreator.create("com.zaxxer.hikari.HikariDataSource", entry.getValue()), (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
+    @Override
+    public Map<String, DataSource> getDataSources() {
+        return storageResource.getWrappedDataSources();
     }
 }

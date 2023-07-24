@@ -19,7 +19,6 @@ package org.apache.shardingsphere.driver.jdbc.core.connection;
 
 import lombok.Getter;
 import org.apache.shardingsphere.driver.jdbc.adapter.AbstractConnectionAdapter;
-import org.apache.shardingsphere.driver.jdbc.context.JDBCContext;
 import org.apache.shardingsphere.driver.jdbc.core.datasource.metadata.ShardingSphereDatabaseMetaData;
 import org.apache.shardingsphere.driver.jdbc.core.statement.ShardingSpherePreparedStatement;
 import org.apache.shardingsphere.driver.jdbc.core.statement.ShardingSphereStatement;
@@ -29,6 +28,7 @@ import org.apache.shardingsphere.infra.util.exception.ShardingSpherePrecondition
 import org.apache.shardingsphere.mode.manager.ContextManager;
 
 import java.sql.Array;
+import java.sql.CallableStatement;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -48,9 +48,6 @@ public final class ShardingSphereConnection extends AbstractConnectionAdapter {
     private final ContextManager contextManager;
     
     @Getter
-    private final JDBCContext jdbcContext;
-    
-    @Getter
     private final DriverDatabaseConnectionManager databaseConnectionManager;
     
     private boolean autoCommit = true;
@@ -61,10 +58,9 @@ public final class ShardingSphereConnection extends AbstractConnectionAdapter {
     
     private volatile boolean closed;
     
-    public ShardingSphereConnection(final String databaseName, final ContextManager contextManager, final JDBCContext jdbcContext) {
+    public ShardingSphereConnection(final String databaseName, final ContextManager contextManager) {
         this.databaseName = databaseName;
         this.contextManager = contextManager;
-        this.jdbcContext = jdbcContext;
         databaseConnectionManager = new DriverDatabaseConnectionManager(databaseName, contextManager);
     }
     
@@ -78,7 +74,7 @@ public final class ShardingSphereConnection extends AbstractConnectionAdapter {
     }
     
     @Override
-    public DatabaseMetaData getMetaData() {
+    public DatabaseMetaData getMetaData() throws SQLException {
         return new ShardingSphereDatabaseMetaData(this);
     }
     
@@ -125,6 +121,24 @@ public final class ShardingSphereConnection extends AbstractConnectionAdapter {
     @Override
     public Statement createStatement(final int resultSetType, final int resultSetConcurrency, final int resultSetHoldability) {
         return new ShardingSphereStatement(this, resultSetType, resultSetConcurrency, resultSetHoldability);
+    }
+    
+    @Override
+    public CallableStatement prepareCall(final String sql) throws SQLException {
+        // TODO Support single DataSource scenario for now. Implement ShardingSphereCallableStatement to support multi DataSource scenarios.
+        return databaseConnectionManager.getRandomConnection().prepareCall(sql);
+    }
+    
+    @Override
+    public CallableStatement prepareCall(final String sql, final int resultSetType, final int resultSetConcurrency) throws SQLException {
+        // TODO Support single DataSource scenario for now. Implement ShardingSphereCallableStatement to support multi DataSource scenarios.
+        return databaseConnectionManager.getRandomConnection().prepareCall(sql, resultSetType, resultSetConcurrency);
+    }
+    
+    @Override
+    public CallableStatement prepareCall(final String sql, final int resultSetType, final int resultSetConcurrency, final int resultSetHoldability) throws SQLException {
+        // TODO Support single DataSource scenario for now. Implement ShardingSphereCallableStatement to support multi DataSource scenarios.
+        return databaseConnectionManager.getRandomConnection().prepareCall(sql, resultSetType, resultSetConcurrency, resultSetHoldability);
     }
     
     @Override

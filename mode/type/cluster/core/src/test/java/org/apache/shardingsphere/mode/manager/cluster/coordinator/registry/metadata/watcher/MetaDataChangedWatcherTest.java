@@ -17,10 +17,10 @@
 
 package org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.metadata.watcher;
 
-import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.GovernanceEvent;
-import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.config.event.schema.TableMetaDataChangedEvent;
-import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEvent;
-import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEvent.Type;
+import org.apache.shardingsphere.infra.rule.event.GovernanceEvent;
+import org.apache.shardingsphere.mode.event.schema.TableMetaDataChangedEvent;
+import org.apache.shardingsphere.mode.event.DataChangedEvent;
+import org.apache.shardingsphere.mode.event.DataChangedEvent.Type;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -75,7 +75,7 @@ class MetaDataChangedWatcherTest {
     
     @Test
     void assertCreateDataSourceChangedEvent() {
-        String key = "/metadata/sharding_db/versions/0/data_sources";
+        String key = "/metadata/sharding_db/versions/0/data_sources/units";
         String value = "{}";
         Optional<GovernanceEvent> actual = createEvent(key, value, Type.UPDATED);
         assertTrue(actual.isPresent());
@@ -83,7 +83,7 @@ class MetaDataChangedWatcherTest {
     
     @Test
     void assertCreateDataSourceChangedEventWithAddEvent() {
-        String key = "/metadata/sharding_db/versions/0/data_sources";
+        String key = "/metadata/sharding_db/versions/0/data_sources/units";
         String value = "{}";
         Optional<GovernanceEvent> actual = createEvent(key, value, Type.ADDED);
         assertTrue(actual.isPresent());

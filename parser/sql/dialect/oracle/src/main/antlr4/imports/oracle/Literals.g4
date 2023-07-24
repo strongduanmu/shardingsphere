@@ -20,13 +20,20 @@ lexer grammar Literals;
 import Alphabet, Symbol;
 
 IDENTIFIER_
-    : [A-Za-z\u0080-\uFFFF]+[A-Za-z_$#0-9\u0080-\uFFFF]*
-    |  DQ_ ~'"'+ DQ_
+    : [A-Za-z\u0080-\uFF0B\uFF0D-\uFFFF]+[A-Za-z_$#0-9\u0080-\uFF0B\uFF0D-\uFFFF]*
     ;
 
-STRING_ 
+STRING_
+    : SINGLE_QUOTED_TEXT
+    | DOUBLE_QUOTED_TEXT
+    ;
+
+SINGLE_QUOTED_TEXT
+    : (SQ_ ('\\'. | '\'\'' | ~('\'' | '\\'))* SQ_)
+    ;
+
+DOUBLE_QUOTED_TEXT
     : (DQ_ ( '\\'. | '""' | ~('"'| '\\') )* DQ_)
-    | (SQ_ ('\\'. | '\'\'' | ~('\'' | '\\'))* SQ_)
     ;
 
 INTEGER_

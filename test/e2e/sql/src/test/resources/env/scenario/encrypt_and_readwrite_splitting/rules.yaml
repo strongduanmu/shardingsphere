@@ -16,7 +16,9 @@
 #
 
 rules:
-
+- !SINGLE
+  tables:
+    - "*.*"
 - !READWRITE_SPLITTING
   dataSources:
     readwrite_ds:
@@ -73,6 +75,7 @@ rules:
           cipher:
             name: telephone_cipher
             encryptorName: aes_encryptor
-
+    
 props:
-  sql-federation-type: ADVANCED
+  sql-show: true
+
