@@ -25,14 +25,13 @@
     </parent>
     <groupId>org.apache.shardingsphere</groupId>
     <artifactId>shardingsphere</artifactId>
-    <version>5.4.1-SNAPSHOT</version>
+    <version>5.4.2-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Apache ShardingSphere</name>
     <description>Build criterion and ecosystem above multi-model databases</description>
     
     <modules>
         <module>infra</module>
-        <module>dialect-exception</module>
         <module>parser</module>
         <module>db-protocol</module>
         <module>mode</module>
@@ -56,8 +55,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.deploy.skip>false</maven.deploy.skip>
         <maven.javadoc.skip>true</maven.javadoc.skip>
-        <checkstyle.skip>true</checkstyle.skip>
-        <rat.skip>true</rat.skip>
         <shade.package>org.apache.shardingsphere.shade</shade.package>
         <antlr.output.directory>${basedir}/target/generated-sources/antlr4</antlr.output.directory>
         
@@ -66,78 +63,111 @@
         <sonar.exclusions>**/autogen/**/*</sonar.exclusions>
         
         <!-- 3rd party library versions -->
-        <guava.version>30.0-jre</guava.version>
+        <guava.version>32.1.2-jre</guava.version>
+        <checker-qual.version>3.39.0</checker-qual.version>
+        <error_prone_annotations.version>2.22.0</error_prone_annotations.version>
+        <j2objc-annotations.version>1.3</j2objc-annotations.version>
+        
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-collections4.version>4.4</commons-collections4.version>
-        <commons-codec.version>1.15</commons-codec.version>
+        <commons-codec.version>1.16.0</commons-codec.version>
+        <commons-math3.version>3.6.1</commons-math3.version>
+        <caffeine.version>2.9.3</caffeine.version>
         <transmittable-thread-local.version>2.14.2</transmittable-thread-local.version>
         
         <antlr4.version>4.10.1</antlr4.version>
-        <snakeyaml.version>1.33</snakeyaml.version>
-        <gson.version>2.9.1</gson.version>
+        <snakeyaml.version>2.2</snakeyaml.version>
+        <gson.version>2.10.1</gson.version>
         <jackson.version>2.14.0</jackson.version>
+        <json-path.version>2.8.0</json-path.version>
+        <json-smart.version>2.4.10</json-smart.version>
+        <accessors-smart.version>2.4.9</accessors-smart.version>
+        <asm.version>9.3</asm.version>
         <groovy.version>4.0.10</groovy.version>
         <freemarker.version>2.3.31</freemarker.version>
-        <caffeine.version>2.9.3</caffeine.version>
+        <bytebuddy.version>1.14.8</bytebuddy.version>
         
-        <jaxb.version>2.3.0</jaxb.version>
+        <jaxb-api.version>2.3.1</jaxb-api.version>
+        <jaxb-runtime.version>2.3.1</jaxb-runtime.version>
         <annotation-api.version>1.3.2</annotation-api.version>
         <activation-api.version>1.2.0</activation-api.version>
-        <truffle-api.version>21.2.0</truffle-api.version>
         
-        <calcite.version>1.32.0</calcite.version>
+        <calcite.version>1.35.0</calcite.version>
         <immutables.version>2.9.3</immutables.version>
-        <netty.version>4.1.90.Final</netty.version>
-        <bouncycastle.version>1.70</bouncycastle.version>
         
         <javax.transaction.version>1.1</javax.transaction.version>
+        <atomikos.version>6.0.0</atomikos.version>
+        <narayana.version>5.12.4.Final</narayana.version>
+        <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
+        <jboss-logging.version>3.2.1.Final</jboss-logging.version>
+        <seata.version>1.6.1</seata.version>
         
-        <zookeeper.version>3.8.1</zookeeper.version>
-        <curator.version>5.4.0</curator.version>
-        <jetcd.version>0.7.5</jetcd.version>
-        <apollo-client.version>1.9.0</apollo-client.version>
+        <netty.version>4.1.99.Final</netty.version>
+        <bouncycastle.version>1.70</bouncycastle.version>
         
-        <elasticjob.version>3.0.3</elasticjob.version>
+        <curator.version>5.5.0</curator.version>
+        <zookeeper.version>3.9.0</zookeeper.version>
+        <audience-annotations.version>0.12.0</audience-annotations.version>
+        <jetcd.version>0.7.6</jetcd.version>
+        <consul.api.version>1.4.1</consul.api.version>
+        
+        <grpc.version>1.58.0</grpc.version>
+        <protobuf.version>3.21.12</protobuf.version>
+        <httpclient.version>4.5.13</httpclient.version>
+        <okhttp.version>4.12.0</okhttp.version>
+        
+        <elasticjob.version>3.0.4</elasticjob.version>
         
         <slf4j.version>1.7.36</slf4j.version>
-        <logback.version>1.2.11</logback.version>
+        <logback.version>1.2.12</logback.version>
+        <commons-logging.version>1.2</commons-logging.version>
         
-        <lombok.version>1.18.20</lombok.version>
+        <lombok.version>1.18.30</lombok.version>
         
-        <postgresql.version>42.4.1</postgresql.version>
-        <opengauss.version>3.1.0-og</opengauss.version>
-        <mysql-connector-java.version>5.1.49</mysql-connector-java.version>
-        <mariadb-java-client.version>2.4.2</mariadb-java-client.version>
-        <h2.version>2.1.214</h2.version>
+        <postgresql.version>42.4.3</postgresql.version>
+        <mysql-connector-java.version>8.0.31</mysql-connector-java.version>
         <mssql.version>6.1.7.jre8-preview</mssql.version>
         <hbase.client.version>1.7.1</hbase.client.version>
+        <h2.version>2.2.224</h2.version>
+        <opengauss.version>3.1.0-og</opengauss.version>
+        <mariadb-java-client.version>2.4.2</mariadb-java-client.version>
         
         <hikari-cp.version>4.0.3</hikari-cp.version>
-        <commons-dbcp2.version>2.9.0</commons-dbcp2.version>
         
-        <junit.version>5.9.2</junit.version>
+        <jooq.version>3.14.15</jooq.version>
+        
+        <prometheus-simpleclient.version>0.11.0</prometheus-simpleclient.version>
+        <prometheus-jmx.version>0.16.1</prometheus-jmx.version>
+        <opentelemetry.version>1.31.0</opentelemetry.version>
+        <kotlin-stdlib.version>1.9.10</kotlin-stdlib.version>
+        
+        <junit.version>5.10.0</junit.version>
         <hamcrest.version>2.2</hamcrest.version>
         <mockito.version>4.11.0</mockito.version>
-        
-        <protobuf-java.version>3.21.12</protobuf-java.version>
         <awaitility.version>4.2.0</awaitility.version>
+        <testcontainers.version>1.17.3</testcontainers.version>
+        <commons-csv.version>1.9.0</commons-csv.version>
+        
+        <graalvm.version>21.2.0</graalvm.version>
         
         <!-- 3rd party library plugin versions -->
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <dockerfile-maven.version>1.4.13</dockerfile-maven.version>
         <docker-compose-maven-plugin.version>4.0.0</docker-compose-maven-plugin.version>
         <os-maven-plugin.version>1.6.2</os-maven-plugin.version>
-        <native-maven-plugin.version>0.9.22</native-maven-plugin.version>
+        <native-maven-plugin.version>0.9.27</native-maven-plugin.version>
         
         <!-- Compile plugin versions -->
+        <templating-maven-plugin.version>1.0.0</templating-maven-plugin.version>
+        <git-commit-id-plugin.version>4.9.10</git-commit-id-plugin.version>
         <maven-enforcer-plugin.version>3.2.1</maven-enforcer-plugin.version>
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
-        <maven-surefire-plugin.version>3.0.0</maven-surefire-plugin.version>
+        <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
-        <jandex-maven-plugin.version>3.0.5</jandex-maven-plugin.version>
+        <jandex-maven-plugin.version>3.1.3</jandex-maven-plugin.version>
         <build-helper-maven-plugin.version>3.3.0</build-helper-maven-plugin.version>
-        <maven-dependency-plugin.version>3.5.0</maven-dependency-plugin.version>
+        <maven-dependency-plugin.version>3.6.0</maven-dependency-plugin.version>
         <exec-maven-plugin.version>3.1.0</exec-maven-plugin.version>
         
         <!-- Release plugin versions -->
@@ -145,7 +175,9 @@
         <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
         <maven-release-plugin.version>3.0.0</maven-release-plugin.version>
         <maven-assembly-plugin.version>3.5.0</maven-assembly-plugin.version>
-        <maven-shade-plugin.version>3.4.1</maven-shade-plugin.version>
+        
+        <maven-shade-plugin.version>3.5.1</maven-shade-plugin.version>
+        <checksum-maven-plugin.version>1.10</checksum-maven-plugin.version>
         
         <!-- Check plugin versions -->
         <apache-rat-plugin.version>0.15</apache-rat-plugin.version>
@@ -177,16 +209,24 @@
                         <groupId>com.google.guava</groupId>
                         <artifactId>listenablefuture</artifactId>
                     </exclusion>
-                    <exclusion>
-                        <groupId>com.google.errorprone</groupId>
-                        <artifactId>error_prone_annotations</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.google.j2objc</groupId>
-                        <artifactId>j2objc-annotations</artifactId>
-                    </exclusion>
                 </exclusions>
             </dependency>
+            <dependency>
+                <groupId>org.checkerframework</groupId>
+                <artifactId>checker-qual</artifactId>
+                <version>${checker-qual.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.errorprone</groupId>
+                <artifactId>error_prone_annotations</artifactId>
+                <version>${error_prone_annotations.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.j2objc</groupId>
+                <artifactId>j2objc-annotations</artifactId>
+                <version>${j2objc-annotations.version}</version>
+            </dependency>
+            
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
@@ -201,6 +241,11 @@
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
                 <version>${commons-codec.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.ben-manes.caffeine</groupId>
+                <artifactId>caffeine</artifactId>
+                <version>${caffeine.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.alibaba</groupId>
@@ -219,24 +264,31 @@
                 <version>${gson.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.fasterxml.jackson.dataformat</groupId>
-                <artifactId>jackson-dataformat-yaml</artifactId>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
                 <version>${jackson.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson.version}</version>
+                <groupId>com.jayway.jsonpath</groupId>
+                <artifactId>json-path</artifactId>
+                <version>${json-path.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>${jackson.version}</version>
+                <groupId>net.minidev</groupId>
+                <artifactId>json-smart</artifactId>
+                <version>${json-smart.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-                <version>${jackson.version}</version>
+                <groupId>net.minidev</groupId>
+                <artifactId>accessors-smart</artifactId>
+                <version>${accessors-smart.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm</artifactId>
+                <version>${asm.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.groovy</groupId>
@@ -247,17 +299,12 @@
             <dependency>
                 <groupId>javax.xml.bind</groupId>
                 <artifactId>jaxb-api</artifactId>
-                <version>${jaxb.version}</version>
+                <version>${jaxb-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.sun.xml.bind</groupId>
-                <artifactId>jaxb-core</artifactId>
-                <version>${jaxb.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.sun.xml.bind</groupId>
-                <artifactId>jaxb-impl</artifactId>
-                <version>${jaxb.version}</version>
+                <groupId>org.glassfish.jaxb</groupId>
+                <artifactId>jaxb-runtime</artifactId>
+                <version>${jaxb-runtime.version}</version>
             </dependency>
             <dependency>
                 <groupId>javax.annotation</groupId>
@@ -271,9 +318,20 @@
             </dependency>
             
             <dependency>
+                <groupId>org.freemarker</groupId>
+                <artifactId>freemarker</artifactId>
+                <version>${freemarker.version}</version>
+            </dependency>
+            
+            <dependency>
                 <groupId>org.apache.calcite</groupId>
                 <artifactId>calcite-core</artifactId>
                 <version>${calcite.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-math3</artifactId>
+                <version>${commons-math3.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.immutables</groupId>
@@ -281,75 +339,7 @@
                 <version>${immutables.version}</version>
                 <scope>provided</scope>
             </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-buffer</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec-http</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec-http2</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec-socks</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-common</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-handler</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-handler-proxy</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-resolver</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-transport</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-transport-classes-epoll</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-transport-native-epoll</artifactId>
-                <version>${netty.version}</version>
-                <classifier>linux-x86_64</classifier>
-                <scope>runtime</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-transport-native-epoll</artifactId>
-                <version>${netty.version}</version>
-                <classifier>linux-aarch_64</classifier>
-                <scope>runtime</scope>
-            </dependency>
+            
             <dependency>
                 <groupId>javax.transaction</groupId>
                 <artifactId>jta</artifactId>
@@ -357,16 +347,24 @@
             </dependency>
             
             <dependency>
-                <groupId>org.apache.zookeeper</groupId>
-                <artifactId>zookeeper</artifactId>
-                <version>${zookeeper.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>io.netty</groupId>
-                        <artifactId>netty-transport-native-epoll</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
+            
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk15on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bctls-jdk15on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-framework</artifactId>
@@ -383,33 +381,35 @@
                 <version>${curator.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.etcd</groupId>
-                <artifactId>jetcd-core</artifactId>
-                <version>${jetcd.version}</version>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper</artifactId>
+                <version>${zookeeper.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>com.google.guava</groupId>
-                        <artifactId>guava</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.google.android</groupId>
-                        <artifactId>annotations</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>io.vertx</groupId>
-                        <artifactId>vertx-grpc</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>io.netty</groupId>
-                        <artifactId>netty-transport-native-unix-common</artifactId>
+                        <groupId>ch.qos.logback</groupId>
+                        <artifactId>logback-core</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>com.ctrip.framework.apollo</groupId>
-                <artifactId>apollo-client</artifactId>
-                <version>${apollo-client.version}</version>
-                <scope>provided</scope>
+                <groupId>org.apache.yetus</groupId>
+                <artifactId>audience-annotations</artifactId>
+                <version>${audience-annotations.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-bom</artifactId>
+                <version>${grpc.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-bom</artifactId>
+                <version>${protobuf.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             
             <dependency>
@@ -452,23 +452,6 @@
             </dependency>
             
             <dependency>
-                <groupId>com.google.protobuf</groupId>
-                <artifactId>protobuf-java</artifactId>
-                <version>${protobuf-java.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.google.protobuf</groupId>
-                <artifactId>protobuf-java-util</artifactId>
-                <version>${protobuf-java.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.google.j2objc</groupId>
-                        <artifactId>j2objc-annotations</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            
-            <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
                 <version>${lombok.version}</version>
@@ -476,11 +459,12 @@
             </dependency>
             
             <dependency>
-                <groupId>com.h2database</groupId>
-                <artifactId>h2</artifactId>
-                <version>${h2.version}</version>
-                <scope>test</scope>
+                <groupId>commons-logging</groupId>
+                <artifactId>commons-logging</artifactId>
+                <version>${commons-logging.version}</version>
+                <scope>provided</scope>
             </dependency>
+            
             <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
@@ -488,8 +472,8 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>mysql</groupId>
-                <artifactId>mysql-connector-java</artifactId>
+                <groupId>com.mysql</groupId>
+                <artifactId>mysql-connector-j</artifactId>
                 <version>${mysql-connector-java.version}</version>
                 <scope>test</scope>
             </dependency>
@@ -500,10 +484,9 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>org.mariadb.jdbc</groupId>
-                <artifactId>mariadb-java-client</artifactId>
-                <version>${mariadb-java-client.version}</version>
-                <scope>test</scope>
+                <groupId>org.apache.hbase</groupId>
+                <artifactId>hbase-shaded-client</artifactId>
+                <version>${hbase.client.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opengauss</groupId>
@@ -512,9 +495,16 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-shaded-client</artifactId>
-                <version>${hbase.client.version}</version>
+                <groupId>org.mariadb.jdbc</groupId>
+                <artifactId>mariadb-java-client</artifactId>
+                <version>${mariadb-java-client.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>${h2.version}</version>
+                <scope>test</scope>
             </dependency>
             
             <dependency>
@@ -523,30 +513,13 @@
                 <version>${hikari-cp.version}</version>
                 <scope>test</scope>
             </dependency>
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-dbcp2</artifactId>
-                <version>${commons-dbcp2.version}</version>
-                <scope>test</scope>
-            </dependency>
             
             <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-api</artifactId>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
                 <version>${junit.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-engine</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-params</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>org.hamcrest</groupId>
@@ -556,20 +529,25 @@
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
-                <artifactId>mockito-core</artifactId>
+                <artifactId>mockito-bom</artifactId>
                 <version>${mockito.version}</version>
-                <scope>test</scope>
+                <type>pom</type>
+                <scope>import</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>net.bytebuddy</groupId>
+                        <artifactId>byte-buddy</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>net.bytebuddy</groupId>
+                        <artifactId>byte-buddy-agent</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-inline</artifactId>
-                <version>${mockito.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-junit-jupiter</artifactId>
-                <version>${mockito.version}</version>
+                <groupId>org.awaitility</groupId>
+                <artifactId>awaitility</artifactId>
+                <version>${awaitility.version}</version>
                 <scope>test</scope>
             </dependency>
             
@@ -585,37 +563,19 @@
                 <artifactId>logback-classic</artifactId>
                 <version>${logback.version}</version>
                 <scope>test</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-api</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             
             <dependency>
-                <groupId>org.freemarker</groupId>
-                <artifactId>freemarker</artifactId>
-                <version>${freemarker.version}</version>
-            </dependency>
-            
-            <dependency>
-                <groupId>com.github.ben-manes.caffeine</groupId>
-                <artifactId>caffeine</artifactId>
-                <version>${caffeine.version}</version>
-            </dependency>
-            
-            <dependency>
-                <groupId>org.awaitility</groupId>
-                <artifactId>awaitility</artifactId>
-                <version>${awaitility.version}</version>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy</artifactId>
+                <version>${bytebuddy.version}</version>
                 <scope>test</scope>
             </dependency>
-            
             <dependency>
-                <groupId>org.graalvm.truffle</groupId>
-                <artifactId>truffle-api</artifactId>
-                <version>${truffle-api.version}</version>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy-agent</artifactId>
+                <version>${bytebuddy.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -624,6 +584,14 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
         </dependency>
         
         <dependency>
@@ -634,14 +602,12 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>
@@ -650,14 +616,17 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-inline</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
         
         <dependency>
@@ -836,119 +805,6 @@
                     </configuration>
                 </plugin>
                 
-                <!-- Check plugins -->
-                <plugin>
-                    <groupId>org.apache.rat</groupId>
-                    <artifactId>apache-rat-plugin</artifactId>
-                    <version>${apache-rat-plugin.version}</version>
-                    <configuration>
-                        <!--suppress MavenModelInspection -->
-                        <excludesFile>${maven.multiModuleProjectDirectory}/src/resources/rat.txt</excludesFile>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>check</goal>
-                            </goals>
-                            <phase>verify</phase>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>com.diffplug.spotless</groupId>
-                    <artifactId>spotless-maven-plugin</artifactId>
-                    <version>${spotless-maven-plugin.version}</version>
-                    <configuration>
-                        <java>
-                            <eclipse>
-                                <!--suppress MavenModelInspection -->
-                                <file>${maven.multiModuleProjectDirectory}/src/resources/spotless/java.xml</file>
-                            </eclipse>
-                            <licenseHeader>
-                                <!--suppress MavenModelInspection -->
-                                <file>${maven.multiModuleProjectDirectory}/src/resources/spotless/copyright.txt</file>
-                            </licenseHeader>
-                        </java>
-                        <pom>
-                            <sortPom>
-                                <encoding>UTF-8</encoding>
-                                <nrOfIndentSpace>4</nrOfIndentSpace>
-                                <keepBlankLines>true</keepBlankLines>
-                                <indentBlankLines>true</indentBlankLines>
-                                <indentSchemaLocation>false</indentSchemaLocation>
-                                <spaceBeforeCloseEmptyElement>true</spaceBeforeCloseEmptyElement>
-                                <sortModules>false</sortModules>
-                                <sortExecutions>false</sortExecutions>
-                                <predefinedSortOrder>custom_1</predefinedSortOrder>
-                                <expandEmptyElements>false</expandEmptyElements>
-                                <sortProperties>false</sortProperties>
-                            </sortPom>
-                            <replace>
-                                <name>Leading blank line</name>
-                                <search>--&gt;
-&lt;project</search>
-                                <replacement>--&gt;
-
-&lt;project</replacement>
-                            </replace>
-                        </pom>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>${maven-checkstyle-plugin.version}</version>
-                    <configuration>
-                        <consoleOutput>true</consoleOutput>
-                        <failOnViolation>true</failOnViolation>
-                        <failsOnError>true</failsOnError>
-                        <violationSeverity>error</violationSeverity>
-                        <!--suppress MavenModelInspection -->
-                        <configLocation>${maven.multiModuleProjectDirectory}/src/resources/checkstyle.xml</configLocation>
-                        <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                        <excludes>**/autogen/**/*</excludes>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-pmd-plugin</artifactId>
-                    <version>${maven-pmd-plugin.version}</version>
-                    <configuration>
-                        <aggregate>true</aggregate>
-                        <targetJdk>${java.version}</targetJdk>
-                        <rulesets>
-                            <!--suppress MavenModelInspection -->
-                            <ruleset>${maven.multiModuleProjectDirectory}/src/resources/pmd.xml</ruleset>
-                        </rulesets>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>com.github.spotbugs</groupId>
-                    <artifactId>spotbugs-maven-plugin</artifactId>
-                    <version>${spotbugs-maven-plugin.version}</version>
-                    <configuration>
-                        <fork>false</fork>
-                        <failOnError>false</failOnError>
-                        <!--suppress MavenModelInspection -->
-                        <excludeFilterFile>${maven.multiModuleProjectDirectory}/src/resources/spotbugs.xml</excludeFilterFile>
-                        <plugins>
-                            <plugin>
-                                <groupId>com.mebigfatguy.fb-contrib</groupId>
-                                <artifactId>fb-contrib</artifactId>
-                                <version>${fb-contrib.version}</version>
-                            </plugin>
-                            <plugin>
-                                <groupId>com.h3xstream.findsecbugs</groupId>
-                                <artifactId>findsecbugs-plugin</artifactId>
-                                <version>${findsecbugs.version}</version>
-                            </plugin>
-                        </plugins>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.sonarsource.scanner.maven</groupId>
-                    <artifactId>sonar-maven-plugin</artifactId>
-                    <version>${sonar-maven-plugin.version}</version>
-                </plugin>
-                
                 <!-- Report plugins -->
                 <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>
@@ -1005,43 +861,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            
-            <!-- Check plugins -->
-            <plugin>
-                <groupId>org.apache.rat</groupId>
-                <artifactId>apache-rat-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>com.diffplug.spotless</groupId>
-                <artifactId>spotless-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>apply</goal>
-                        </goals>
-                        <phase>compile</phase>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>validate</id>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                        <phase>validate</phase>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-pmd-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>com.github.spotbugs</groupId>
-                <artifactId>spotbugs-maven-plugin</artifactId>
             </plugin>
         </plugins>
         
@@ -1149,7 +968,7 @@
         <connection>scm:git:https://github.com/apache/shardingsphere.git</connection>
         <developerConnection>scm:git:https://github.com/apache/shardingsphere.git</developerConnection>
         <url>https://github.com/apache/shardingsphere.git</url>
-        <tag>5.4.0</tag>
+        <tag>HEAD</tag>
     </scm>
     
     <distributionManagement>
@@ -1185,7 +1004,6 @@
         <profile>
             <id>generateStandardMetadata</id>
             <properties>
-                <truffle-api.version>22.3.1</truffle-api.version>
                 <jacoco.skip>true</jacoco.skip>
                 <maven.javadoc.skip>true</maven.javadoc.skip>
                 <checkstyle.skip>true</checkstyle.skip>
@@ -1195,7 +1013,6 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <version>${maven-compiler-plugin.version}</version>
                         <configuration>
@@ -1204,14 +1021,12 @@
                         </configuration>
                     </plugin>
                     <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <version>${maven-surefire-plugin.version}</version>
                         <configuration>
                             <excludes>
                                 <exclude>org.apache.shardingsphere.agent.core.**</exclude>
                             </excludes>
-                            <argLine>--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED</argLine>
                         </configuration>
                     </plugin>
                     <plugin>
@@ -1252,6 +1067,165 @@
                                 <phase>package</phase>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>check</id>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <!-- Check plugins -->
+                        <plugin>
+                            <groupId>org.apache.rat</groupId>
+                            <artifactId>apache-rat-plugin</artifactId>
+                            <version>${apache-rat-plugin.version}</version>
+                            <configuration>
+                                <!--suppress MavenModelInspection -->
+                                <excludesFile>${maven.multiModuleProjectDirectory}/src/resources/rat.txt</excludesFile>
+                            </configuration>
+                            <executions>
+                                <execution>
+                                    <goals>
+                                        <goal>check</goal>
+                                    </goals>
+                                    <phase>verify</phase>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        <plugin>
+                            <groupId>com.diffplug.spotless</groupId>
+                            <artifactId>spotless-maven-plugin</artifactId>
+                            <version>${spotless-maven-plugin.version}</version>
+                            <configuration>
+                                <java>
+                                    <eclipse>
+                                        <!--suppress MavenModelInspection -->
+                                        <file>${maven.multiModuleProjectDirectory}/src/resources/spotless/java.xml</file>
+                                    </eclipse>
+                                    <licenseHeader>
+                                        <!--suppress MavenModelInspection -->
+                                        <file>${maven.multiModuleProjectDirectory}/src/resources/spotless/copyright.txt</file>
+                                    </licenseHeader>
+                                </java>
+                                <pom>
+                                    <sortPom>
+                                        <encoding>UTF-8</encoding>
+                                        <nrOfIndentSpace>4</nrOfIndentSpace>
+                                        <keepBlankLines>true</keepBlankLines>
+                                        <indentBlankLines>true</indentBlankLines>
+                                        <indentSchemaLocation>false</indentSchemaLocation>
+                                        <spaceBeforeCloseEmptyElement>true</spaceBeforeCloseEmptyElement>
+                                        <sortModules>false</sortModules>
+                                        <sortExecutions>false</sortExecutions>
+                                        <predefinedSortOrder>custom_1</predefinedSortOrder>
+                                        <expandEmptyElements>false</expandEmptyElements>
+                                        <sortProperties>false</sortProperties>
+                                    </sortPom>
+                                    <replace>
+                                        <name>Leading blank line</name>
+                                        <search>--&gt;
+&lt;project</search>
+                                        <replacement>--&gt;
+
+&lt;project</replacement>
+                                    </replace>
+                                </pom>
+                            </configuration>
+                        </plugin>
+                        <plugin>
+                            <artifactId>maven-checkstyle-plugin</artifactId>
+                            <version>${maven-checkstyle-plugin.version}</version>
+                            <configuration>
+                                <consoleOutput>true</consoleOutput>
+                                <failOnViolation>true</failOnViolation>
+                                <failsOnError>true</failsOnError>
+                                <violationSeverity>error</violationSeverity>
+                                <!--suppress MavenModelInspection -->
+                                <configLocation>${maven.multiModuleProjectDirectory}/src/resources/checkstyle.xml</configLocation>
+                                <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                                <excludes>**/autogen/**/*</excludes>
+                            </configuration>
+                        </plugin>
+                        <plugin>
+                            <artifactId>maven-pmd-plugin</artifactId>
+                            <version>${maven-pmd-plugin.version}</version>
+                            <configuration>
+                                <aggregate>true</aggregate>
+                                <targetJdk>${java.version}</targetJdk>
+                                <rulesets>
+                                    <!--suppress MavenModelInspection -->
+                                    <ruleset>${maven.multiModuleProjectDirectory}/src/resources/pmd.xml</ruleset>
+                                </rulesets>
+                            </configuration>
+                        </plugin>
+                        <plugin>
+                            <groupId>com.github.spotbugs</groupId>
+                            <artifactId>spotbugs-maven-plugin</artifactId>
+                            <version>${spotbugs-maven-plugin.version}</version>
+                            <configuration>
+                                <fork>false</fork>
+                                <failOnError>false</failOnError>
+                                <!--suppress MavenModelInspection -->
+                                <excludeFilterFile>${maven.multiModuleProjectDirectory}/src/resources/spotbugs.xml</excludeFilterFile>
+                                <plugins>
+                                    <plugin>
+                                        <groupId>com.mebigfatguy.fb-contrib</groupId>
+                                        <artifactId>fb-contrib</artifactId>
+                                        <version>${fb-contrib.version}</version>
+                                    </plugin>
+                                    <plugin>
+                                        <groupId>com.h3xstream.findsecbugs</groupId>
+                                        <artifactId>findsecbugs-plugin</artifactId>
+                                        <version>${findsecbugs.version}</version>
+                                    </plugin>
+                                </plugins>
+                            </configuration>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.sonarsource.scanner.maven</groupId>
+                            <artifactId>sonar-maven-plugin</artifactId>
+                            <version>${sonar-maven-plugin.version}</version>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+                <plugins>
+                    <!-- Check plugins -->
+                    <plugin>
+                        <groupId>org.apache.rat</groupId>
+                        <artifactId>apache-rat-plugin</artifactId>
+                    </plugin>
+                    <plugin>
+                        <groupId>com.diffplug.spotless</groupId>
+                        <artifactId>spotless-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>apply</goal>
+                                </goals>
+                                <phase>compile</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>validate</id>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <phase>validate</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-pmd-plugin</artifactId>
+                    </plugin>
+                    <plugin>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs-maven-plugin</artifactId>
                     </plugin>
                 </plugins>
             </build>

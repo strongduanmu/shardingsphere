@@ -20,10 +20,10 @@ package org.apache.shardingsphere.shadow.distsql.handler.update;
 import org.apache.shardingsphere.distsql.handler.exception.algorithm.MissingRequiredAlgorithmException;
 import org.apache.shardingsphere.distsql.handler.update.RuleDefinitionDropUpdater;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.infra.util.exception.ShardingSpherePreconditions;
+import org.apache.shardingsphere.infra.exception.core.ShardingSpherePreconditions;
 import org.apache.shardingsphere.shadow.api.config.ShadowRuleConfiguration;
 import org.apache.shardingsphere.shadow.distsql.handler.checker.ShadowRuleStatementChecker;
-import org.apache.shardingsphere.shadow.distsql.parser.statement.DropDefaultShadowAlgorithmStatement;
+import org.apache.shardingsphere.shadow.distsql.statement.DropDefaultShadowAlgorithmStatement;
 
 import java.util.Collections;
 
@@ -66,7 +66,7 @@ public final class DropDefaultShadowAlgorithmStatementUpdater implements RuleDef
     public boolean updateCurrentRuleConfiguration(final DropDefaultShadowAlgorithmStatement sqlStatement, final ShadowRuleConfiguration currentRuleConfig) {
         currentRuleConfig.getShadowAlgorithms().remove(currentRuleConfig.getDefaultShadowAlgorithmName());
         currentRuleConfig.setDefaultShadowAlgorithmName(null);
-        return false;
+        return currentRuleConfig.isEmpty();
     }
     
     @Override
@@ -75,7 +75,7 @@ public final class DropDefaultShadowAlgorithmStatementUpdater implements RuleDef
     }
     
     @Override
-    public String getType() {
-        return DropDefaultShadowAlgorithmStatement.class.getName();
+    public Class<DropDefaultShadowAlgorithmStatement> getType() {
+        return DropDefaultShadowAlgorithmStatement.class;
     }
 }

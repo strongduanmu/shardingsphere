@@ -25,8 +25,10 @@ import org.apache.shardingsphere.data.pipeline.cdc.config.job.CDCJobConfiguratio
 import org.apache.shardingsphere.data.pipeline.cdc.config.task.CDCTaskConfiguration;
 import org.apache.shardingsphere.data.pipeline.cdc.context.CDCJobItemContext;
 import org.apache.shardingsphere.data.pipeline.cdc.context.CDCProcessContext;
+import org.apache.shardingsphere.data.pipeline.cdc.core.importer.sink.CDCSocketSink;
 import org.apache.shardingsphere.data.pipeline.cdc.core.prepare.CDCJobPreparer;
 import org.apache.shardingsphere.data.pipeline.cdc.core.task.CDCTasksRunner;
+import org.apache.shardingsphere.data.pipeline.cdc.generator.CDCResponseUtils;
 import org.apache.shardingsphere.data.pipeline.cdc.yaml.swapper.YamlCDCJobConfigurationSwapper;
 import org.apache.shardingsphere.data.pipeline.common.context.PipelineJobItemContext;
 import org.apache.shardingsphere.data.pipeline.common.datasource.DefaultPipelineDataSourceManager;
@@ -36,7 +38,6 @@ import org.apache.shardingsphere.data.pipeline.common.execute.ExecuteEngine;
 import org.apache.shardingsphere.data.pipeline.common.ingest.position.FinishedPosition;
 import org.apache.shardingsphere.data.pipeline.common.job.JobStatus;
 import org.apache.shardingsphere.data.pipeline.common.job.progress.InventoryIncrementalJobItemProgress;
-import org.apache.shardingsphere.infra.util.close.QuietlyCloser;
 import org.apache.shardingsphere.data.pipeline.core.importer.sink.PipelineSink;
 import org.apache.shardingsphere.data.pipeline.core.job.AbstractPipelineJob;
 import org.apache.shardingsphere.data.pipeline.core.job.PipelineJobCenter;
@@ -44,6 +45,7 @@ import org.apache.shardingsphere.data.pipeline.core.task.PipelineTask;
 import org.apache.shardingsphere.data.pipeline.core.task.runner.PipelineTasksRunner;
 import org.apache.shardingsphere.elasticjob.api.ShardingContext;
 import org.apache.shardingsphere.elasticjob.simple.job.SimpleJob;
+import org.apache.shardingsphere.infra.util.close.QuietlyCloser;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -114,17 +116,15 @@ public final class CDCJob extends AbstractPipelineJob implements SimpleJob {
         } catch (final RuntimeException ex) {
             // CHECKSTYLE:ON
             for (PipelineJobItemContext each : jobItemContexts) {
-                processFailed(each, ex);
+                processFailed(each.getJobId(), each.getShardingItem(), ex);
             }
             throw ex;
         }
     }
     
-    @Override
-    protected void processFailed(final PipelineJobItemContext jobItemContext, final Exception ex) {
-        String jobId = jobItemContext.getJobId();
-        log.error("job prepare failed, {}-{}", jobId, jobItemContext.getShardingItem(), ex);
-        jobAPI.persistJobItemErrorMessage(jobItemContext.getJobId(), jobItemContext.getShardingItem(), ex);
+    private void processFailed(final String jobId, final int shardingItem, final Exception ex) {
+        log.error("job execution failed, {}-{}", jobId, shardingItem, ex);
+        jobAPI.updateJobItemErrorMessage(jobId, shardingItem, ex);
         PipelineJobCenter.stop(jobId);
         jobAPI.updateJobConfigurationDisabled(jobId, true);
     }
@@ -186,10 +186,14 @@ public final class CDCJob extends AbstractPipelineJob implements SimpleJob {
         
         private final String identifier;
         
-        private final PipelineJobItemContext jobItemContext;
+        private final CDCJobItemContext jobItemContext;
         
         @Override
         public void onSuccess() {
+            if (jobItemContext.isStopping()) {
+                log.info("onSuccess, stopping true, ignore");
+                return;
+            }
             log.info("onSuccess, all {} tasks finished.", identifier);
         }
         
@@ -197,7 +201,11 @@ public final class CDCJob extends AbstractPipelineJob implements SimpleJob {
         public void onFailure(final Throwable throwable) {
             log.error("onFailure, {} task execute failed.", identifier, throwable);
             String jobId = jobItemContext.getJobId();
-            jobAPI.persistJobItemErrorMessage(jobId, jobItemContext.getShardingItem(), throwable);
+            jobAPI.updateJobItemErrorMessage(jobId, jobItemContext.getShardingItem(), throwable);
+            if (jobItemContext.getSink() instanceof CDCSocketSink) {
+                CDCSocketSink cdcSink = (CDCSocketSink) jobItemContext.getSink();
+                cdcSink.getChannel().writeAndFlush(CDCResponseUtils.failed("", "", throwable.getMessage()));
+            }
             PipelineJobCenter.stop(jobId);
             jobAPI.updateJobConfigurationDisabled(jobId, true);
         }

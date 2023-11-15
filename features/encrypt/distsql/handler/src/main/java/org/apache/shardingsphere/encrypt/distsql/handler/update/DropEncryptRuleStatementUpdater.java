@@ -22,10 +22,10 @@ import org.apache.shardingsphere.distsql.handler.update.RuleDefinitionDropUpdate
 import org.apache.shardingsphere.encrypt.api.config.EncryptRuleConfiguration;
 import org.apache.shardingsphere.encrypt.api.config.rule.EncryptColumnItemRuleConfiguration;
 import org.apache.shardingsphere.encrypt.api.config.rule.EncryptTableRuleConfiguration;
-import org.apache.shardingsphere.encrypt.distsql.parser.statement.DropEncryptRuleStatement;
+import org.apache.shardingsphere.encrypt.distsql.statement.DropEncryptRuleStatement;
 import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.infra.util.exception.ShardingSpherePreconditions;
+import org.apache.shardingsphere.infra.exception.core.ShardingSpherePreconditions;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -77,7 +77,7 @@ public final class DropEncryptRuleStatementUpdater implements RuleDefinitionDrop
     public boolean updateCurrentRuleConfiguration(final DropEncryptRuleStatement sqlStatement, final EncryptRuleConfiguration currentRuleConfig) {
         sqlStatement.getTables().forEach(each -> dropRule(currentRuleConfig, each));
         dropUnusedEncryptor(currentRuleConfig);
-        return currentRuleConfig.getTables().isEmpty();
+        return currentRuleConfig.isEmpty();
     }
     
     private void dropRule(final EncryptRuleConfiguration currentRuleConfig, final String ruleName) {
@@ -107,7 +107,7 @@ public final class DropEncryptRuleStatementUpdater implements RuleDefinitionDrop
     }
     
     @Override
-    public String getType() {
-        return DropEncryptRuleStatement.class.getName();
+    public Class<DropEncryptRuleStatement> getType() {
+        return DropEncryptRuleStatement.class;
     }
 }

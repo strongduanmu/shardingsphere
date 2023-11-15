@@ -21,12 +21,11 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.shardingsphere.data.pipeline.api.ingest.record.Column;
-import org.apache.shardingsphere.data.pipeline.api.ingest.record.DataRecord;
-import org.apache.shardingsphere.data.pipeline.api.ingest.record.GroupedDataRecord;
-import org.apache.shardingsphere.data.pipeline.api.ingest.record.Record;
-import org.apache.shardingsphere.data.pipeline.api.job.JobOperationType;
-import org.apache.shardingsphere.data.pipeline.api.metadata.LogicTableName;
+import org.apache.shardingsphere.data.pipeline.core.ingest.record.Column;
+import org.apache.shardingsphere.data.pipeline.core.ingest.record.DataRecord;
+import org.apache.shardingsphere.data.pipeline.core.ingest.record.GroupedDataRecord;
+import org.apache.shardingsphere.data.pipeline.core.ingest.record.Record;
+import org.apache.shardingsphere.data.pipeline.common.job.JobOperationType;
 import org.apache.shardingsphere.data.pipeline.common.config.ImporterConfiguration;
 import org.apache.shardingsphere.data.pipeline.common.datasource.PipelineDataSourceManager;
 import org.apache.shardingsphere.data.pipeline.common.ingest.IngestDataChangeType;
@@ -36,20 +35,18 @@ import org.apache.shardingsphere.data.pipeline.common.sqlbuilder.PipelineImportS
 import org.apache.shardingsphere.data.pipeline.common.util.PipelineJdbcUtils;
 import org.apache.shardingsphere.data.pipeline.core.exception.job.PipelineImporterJobWriteException;
 import org.apache.shardingsphere.data.pipeline.core.importer.DataRecordMerger;
-import org.apache.shardingsphere.data.pipeline.spi.ratelimit.JobRateLimitAlgorithm;
+import org.apache.shardingsphere.data.pipeline.common.spi.algorithm.JobRateLimitAlgorithm;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * Pipeline data source sink.
@@ -137,7 +134,10 @@ public final class PipelineDataSourceSink implements PipelineSink {
     
     private void doFlush(final DataSource dataSource, final List<DataRecord> buffer) throws SQLException {
         try (Connection connection = dataSource.getConnection()) {
-            connection.setAutoCommit(false);
+            boolean enableTransaction = buffer.size() > 1;
+            if (enableTransaction) {
+                connection.setAutoCommit(false);
+            }
             switch (buffer.get(0).getType()) {
                 case IngestDataChangeType.INSERT:
                     if (null != rateLimitAlgorithm) {
@@ -160,48 +160,15 @@ public final class PipelineDataSourceSink implements PipelineSink {
                 default:
                     break;
             }
-            connection.commit();
-        }
-    }
-    
-    private void doFlush(final Connection connection, final List<DataRecord> buffer) {
-        // TODO it's better use transaction, but execute delete maybe not effect when open transaction of PostgreSQL sometimes
-        for (DataRecord each : buffer) {
-            try {
-                doFlush(connection, each);
-            } catch (final SQLException ex) {
-                throw new PipelineImporterJobWriteException(String.format("Write failed, record=%s", each), ex);
+            if (enableTransaction) {
+                connection.commit();
             }
-        }
-    }
-    
-    private void doFlush(final Connection connection, final DataRecord dataRecord) throws SQLException {
-        switch (dataRecord.getType()) {
-            case IngestDataChangeType.INSERT:
-                if (null != rateLimitAlgorithm) {
-                    rateLimitAlgorithm.intercept(JobOperationType.INSERT, 1);
-                }
-                executeBatchInsert(connection, Collections.singletonList(dataRecord));
-                break;
-            case IngestDataChangeType.UPDATE:
-                if (null != rateLimitAlgorithm) {
-                    rateLimitAlgorithm.intercept(JobOperationType.UPDATE, 1);
-                }
-                executeUpdate(connection, dataRecord);
-                break;
-            case IngestDataChangeType.DELETE:
-                if (null != rateLimitAlgorithm) {
-                    rateLimitAlgorithm.intercept(JobOperationType.DELETE, 1);
-                }
-                executeBatchDelete(connection, Collections.singletonList(dataRecord));
-                break;
-            default:
         }
     }
     
     private void executeBatchInsert(final Connection connection, final List<DataRecord> dataRecords) throws SQLException {
         DataRecord dataRecord = dataRecords.get(0);
-        String insertSql = importSQLBuilder.buildInsertSQL(getSchemaName(dataRecord.getTableName()), dataRecord);
+        String insertSql = importSQLBuilder.buildInsertSQL(getImporterConfig().findSchemaName(dataRecord.getTableName()).orElse(null), dataRecord);
         try (PreparedStatement preparedStatement = connection.prepareStatement(insertSql)) {
             batchInsertStatement.set(preparedStatement);
             preparedStatement.setQueryTimeout(30);
@@ -217,10 +184,6 @@ public final class PipelineDataSourceSink implements PipelineSink {
         }
     }
     
-    private String getSchemaName(final String logicTableName) {
-        return getImporterConfig().getSchemaName(new LogicTableName(logicTableName));
-    }
-    
     private void executeUpdate(final Connection connection, final List<DataRecord> dataRecords) throws SQLException {
         for (DataRecord each : dataRecords) {
             executeUpdate(connection, each);
@@ -231,7 +194,7 @@ public final class PipelineDataSourceSink implements PipelineSink {
         Set<String> shardingColumns = importerConfig.getShardingColumns(dataRecord.getTableName());
         List<Column> conditionColumns = RecordUtils.extractConditionColumns(dataRecord, shardingColumns);
         List<Column> setColumns = dataRecord.getColumns().stream().filter(Column::isUpdated).collect(Collectors.toList());
-        String updateSql = importSQLBuilder.buildUpdateSQL(getSchemaName(dataRecord.getTableName()), dataRecord, conditionColumns);
+        String updateSql = importSQLBuilder.buildUpdateSQL(getImporterConfig().findSchemaName(dataRecord.getTableName()).orElse(null), dataRecord, conditionColumns);
         try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
             updateStatement.set(preparedStatement);
             for (int i = 0; i < setColumns.size(); i++) {
@@ -240,7 +203,7 @@ public final class PipelineDataSourceSink implements PipelineSink {
             for (int i = 0; i < conditionColumns.size(); i++) {
                 Column keyColumn = conditionColumns.get(i);
                 // TODO There to be compatible with PostgreSQL before value is null except primary key and unsupported updating sharding value now.
-                if (shardingColumns.contains(keyColumn.getName()) && keyColumn.getOldValue() == null) {
+                if (shardingColumns.contains(keyColumn.getName()) && null == keyColumn.getOldValue()) {
                     preparedStatement.setObject(setColumns.size() + i + 1, keyColumn.getValue());
                     continue;
                 }
@@ -258,7 +221,7 @@ public final class PipelineDataSourceSink implements PipelineSink {
     
     private void executeBatchDelete(final Connection connection, final List<DataRecord> dataRecords) throws SQLException {
         DataRecord dataRecord = dataRecords.get(0);
-        String deleteSQL = importSQLBuilder.buildDeleteSQL(getSchemaName(dataRecord.getTableName()), dataRecord,
+        String deleteSQL = importSQLBuilder.buildDeleteSQL(getImporterConfig().findSchemaName(dataRecord.getTableName()).orElse(null), dataRecord,
                 RecordUtils.extractConditionColumns(dataRecord, importerConfig.getShardingColumns(dataRecord.getTableName())));
         try (PreparedStatement preparedStatement = connection.prepareStatement(deleteSQL)) {
             batchDeleteStatement.set(preparedStatement);
@@ -274,21 +237,18 @@ public final class PipelineDataSourceSink implements PipelineSink {
                 }
                 preparedStatement.addBatch();
             }
-            int[] counts = preparedStatement.executeBatch();
-            if (IntStream.of(counts).anyMatch(value -> 1 != value)) {
-                log.warn("batchDelete failed, counts={}, sql={}, dataRecords={}", Arrays.toString(counts), deleteSQL, dataRecords);
-            }
+            preparedStatement.executeBatch();
         } finally {
             batchDeleteStatement.set(null);
         }
     }
     
     private void sequentialFlush(final DataSource dataSource, final List<DataRecord> buffer) {
-        if (buffer.isEmpty()) {
-            return;
-        }
-        try (Connection connection = dataSource.getConnection()) {
-            doFlush(connection, buffer);
+        // TODO it's better use transaction, but execute delete maybe not effect when open transaction of PostgreSQL sometimes
+        try {
+            for (DataRecord each : buffer) {
+                doFlush(dataSource, Collections.singletonList(each));
+            }
         } catch (final SQLException ex) {
             throw new PipelineImporterJobWriteException(ex);
         }

@@ -17,7 +17,7 @@
 
 package org.apache.shardingsphere.broadcast.distsql.handler.query;
 
-import org.apache.shardingsphere.broadcast.distsql.parser.statement.ShowBroadcastTableRulesStatement;
+import org.apache.shardingsphere.broadcast.distsql.statement.ShowBroadcastTableRulesStatement;
 import org.apache.shardingsphere.broadcast.rule.BroadcastRule;
 import org.apache.shardingsphere.distsql.handler.query.RQLExecutor;
 import org.apache.shardingsphere.infra.merge.result.impl.local.LocalDataQueryResultRow;
@@ -47,7 +47,7 @@ public final class ShowBroadcastTableRuleExecutor implements RQLExecutor<ShowBro
     }
     
     @Override
-    public String getType() {
-        return ShowBroadcastTableRulesStatement.class.getName();
+    public Class<ShowBroadcastTableRulesStatement> getType() {
+        return ShowBroadcastTableRulesStatement.class;
     }
 }

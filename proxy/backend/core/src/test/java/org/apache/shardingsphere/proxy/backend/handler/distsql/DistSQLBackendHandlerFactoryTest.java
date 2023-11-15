@@ -18,16 +18,16 @@
 package org.apache.shardingsphere.proxy.backend.handler.distsql;
 
 import org.apache.shardingsphere.distsql.handler.exception.rule.MissingRequiredRuleException;
-import org.apache.shardingsphere.distsql.parser.segment.AlgorithmSegment;
-import org.apache.shardingsphere.distsql.parser.statement.rdl.alter.AlterStorageUnitStatement;
-import org.apache.shardingsphere.distsql.parser.statement.rdl.create.RegisterStorageUnitStatement;
-import org.apache.shardingsphere.distsql.parser.statement.rdl.drop.UnregisterStorageUnitStatement;
-import org.apache.shardingsphere.distsql.parser.statement.rql.show.ShowStorageUnitsStatement;
+import org.apache.shardingsphere.distsql.segment.AlgorithmSegment;
+import org.apache.shardingsphere.distsql.statement.rdl.alter.AlterStorageUnitStatement;
+import org.apache.shardingsphere.distsql.statement.rdl.create.RegisterStorageUnitStatement;
+import org.apache.shardingsphere.distsql.statement.rdl.drop.UnregisterStorageUnitStatement;
+import org.apache.shardingsphere.distsql.statement.rql.show.ShowStorageUnitsStatement;
 import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
 import org.apache.shardingsphere.infra.instance.mode.ModeContextManager;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.infra.metadata.database.resource.ShardingSphereResourceMetaData;
-import org.apache.shardingsphere.infra.metadata.database.rule.ShardingSphereRuleMetaData;
+import org.apache.shardingsphere.infra.metadata.database.resource.ResourceMetaData;
+import org.apache.shardingsphere.infra.metadata.database.rule.RuleMetaData;
 import org.apache.shardingsphere.mode.manager.ContextManager;
 import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
@@ -36,20 +36,20 @@ import org.apache.shardingsphere.proxy.backend.handler.distsql.rql.RQLBackendHan
 import org.apache.shardingsphere.proxy.backend.response.header.query.QueryResponseHeader;
 import org.apache.shardingsphere.proxy.backend.response.header.update.UpdateResponseHeader;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
-import org.apache.shardingsphere.readwritesplitting.distsql.parser.statement.AlterReadwriteSplittingRuleStatement;
-import org.apache.shardingsphere.readwritesplitting.distsql.parser.statement.CreateReadwriteSplittingRuleStatement;
-import org.apache.shardingsphere.readwritesplitting.distsql.parser.statement.DropReadwriteSplittingRuleStatement;
+import org.apache.shardingsphere.readwritesplitting.distsql.statement.AlterReadwriteSplittingRuleStatement;
+import org.apache.shardingsphere.readwritesplitting.distsql.statement.CreateReadwriteSplittingRuleStatement;
+import org.apache.shardingsphere.readwritesplitting.distsql.statement.DropReadwriteSplittingRuleStatement;
 import org.apache.shardingsphere.shadow.api.config.ShadowRuleConfiguration;
-import org.apache.shardingsphere.shadow.distsql.parser.segment.ShadowAlgorithmSegment;
-import org.apache.shardingsphere.shadow.distsql.parser.statement.AlterDefaultShadowAlgorithmStatement;
-import org.apache.shardingsphere.shadow.distsql.parser.statement.AlterShadowRuleStatement;
-import org.apache.shardingsphere.shadow.distsql.parser.statement.CreateShadowRuleStatement;
-import org.apache.shardingsphere.shadow.distsql.parser.statement.DropShadowAlgorithmStatement;
-import org.apache.shardingsphere.shadow.distsql.parser.statement.DropShadowRuleStatement;
-import org.apache.shardingsphere.shadow.distsql.parser.statement.ShowShadowAlgorithmsStatement;
-import org.apache.shardingsphere.shadow.distsql.parser.statement.ShowShadowRulesStatement;
-import org.apache.shardingsphere.shadow.distsql.parser.statement.ShowShadowTableRulesStatement;
-import org.apache.shardingsphere.sharding.distsql.parser.statement.CreateShardingTableRuleStatement;
+import org.apache.shardingsphere.shadow.distsql.segment.ShadowAlgorithmSegment;
+import org.apache.shardingsphere.shadow.distsql.statement.AlterDefaultShadowAlgorithmStatement;
+import org.apache.shardingsphere.shadow.distsql.statement.AlterShadowRuleStatement;
+import org.apache.shardingsphere.shadow.distsql.statement.CreateShadowRuleStatement;
+import org.apache.shardingsphere.shadow.distsql.statement.DropShadowAlgorithmStatement;
+import org.apache.shardingsphere.shadow.distsql.statement.DropShadowRuleStatement;
+import org.apache.shardingsphere.shadow.distsql.statement.ShowShadowAlgorithmsStatement;
+import org.apache.shardingsphere.shadow.distsql.statement.ShowShadowRulesStatement;
+import org.apache.shardingsphere.shadow.distsql.statement.ShowShadowTableRulesStatement;
+import org.apache.shardingsphere.sharding.distsql.statement.CreateShardingTableRuleStatement;
 import org.apache.shardingsphere.test.mock.AutoMockExtension;
 import org.apache.shardingsphere.test.mock.StaticMockSettings;
 import org.apache.shardingsphere.test.util.PropertiesBuilder;
@@ -92,9 +92,8 @@ class DistSQLBackendHandlerFactoryTest {
     
     private ShardingSphereDatabase mockDatabase() {
         ShardingSphereDatabase result = mock(ShardingSphereDatabase.class, RETURNS_DEEP_STUBS);
-        when(result.getResourceMetaData().getDataSources()).thenReturn(Collections.emptyMap());
         when(result.getResourceMetaData().getNotExistedDataSources(any())).thenReturn(Collections.emptyList());
-        when(result.getRuleMetaData()).thenReturn(new ShardingSphereRuleMetaData(Collections.emptyList()));
+        when(result.getRuleMetaData()).thenReturn(new RuleMetaData(Collections.emptyList()));
         return result;
     }
     
@@ -119,7 +118,7 @@ class DistSQLBackendHandlerFactoryTest {
     
     @Test
     void assertExecuteShardingTableRuleContext() throws SQLException {
-        when(ProxyContext.getInstance().getDatabase("foo_db").getRuleMetaData()).thenReturn(new ShardingSphereRuleMetaData(Collections.emptyList()));
+        when(ProxyContext.getInstance().getDatabase("foo_db").getRuleMetaData()).thenReturn(new RuleMetaData(Collections.emptyList()));
         assertThat(RDLBackendHandlerFactory.newInstance(mock(CreateShardingTableRuleStatement.class), connectionSession).execute(), instanceOf(UpdateResponseHeader.class));
     }
     
@@ -135,25 +134,25 @@ class DistSQLBackendHandlerFactoryTest {
     
     @Test
     void assertExecuteAlterShadowRuleContext() throws SQLException {
-        mockShardingSphereRuleMetaData();
+        mockRuleMetaData();
         assertThat(RDLBackendHandlerFactory.newInstance(mock(AlterShadowRuleStatement.class), connectionSession).execute(), instanceOf(UpdateResponseHeader.class));
     }
     
     @Test
     void assertExecuteCreateShadowRuleContext() throws SQLException {
-        mockShardingSphereRuleMetaData();
+        mockRuleMetaData();
         assertThat(RDLBackendHandlerFactory.newInstance(mock(CreateShadowRuleStatement.class), connectionSession).execute(), instanceOf(UpdateResponseHeader.class));
     }
     
     @Test
     void assertExecuteDropShadowRuleContext() throws SQLException {
-        mockShardingSphereRuleMetaData();
+        mockRuleMetaData();
         assertThat(RDLBackendHandlerFactory.newInstance(mock(DropShadowRuleStatement.class), connectionSession).execute(), instanceOf(UpdateResponseHeader.class));
     }
     
     @Test
     void assertExecuteAlterDefaultShadowAlgorithm() throws SQLException {
-        mockShardingSphereRuleMetaData();
+        mockRuleMetaData();
         AlterDefaultShadowAlgorithmStatement statement = new AlterDefaultShadowAlgorithmStatement(
                 new ShadowAlgorithmSegment("foo", new AlgorithmSegment("SQL_HINT", PropertiesBuilder.build(new Property("type", "value")))));
         assertThat(RDLBackendHandlerFactory.newInstance(statement, connectionSession).execute(), instanceOf(UpdateResponseHeader.class));
@@ -161,25 +160,25 @@ class DistSQLBackendHandlerFactoryTest {
     
     @Test
     void assertExecuteShowShadowRulesContext() throws SQLException {
-        mockShardingSphereRuleMetaData();
+        mockRuleMetaData();
         assertThat(RQLBackendHandlerFactory.newInstance(mock(ShowShadowRulesStatement.class), connectionSession).execute(), instanceOf(QueryResponseHeader.class));
     }
     
     @Test
     void assertExecuteShowShadowTableRulesContext() throws SQLException {
-        mockShardingSphereRuleMetaData();
+        mockRuleMetaData();
         assertThat(RQLBackendHandlerFactory.newInstance(mock(ShowShadowTableRulesStatement.class), connectionSession).execute(), instanceOf(QueryResponseHeader.class));
     }
     
     @Test
     void assertExecuteShowShadowAlgorithmsContext() throws SQLException {
-        mockShardingSphereRuleMetaData();
+        mockRuleMetaData();
         assertThat(RQLBackendHandlerFactory.newInstance(mock(ShowShadowAlgorithmsStatement.class), connectionSession).execute(), instanceOf(QueryResponseHeader.class));
     }
     
     @Test
     void assertExecuteDropShadowAlgorithmContext() throws SQLException {
-        mockShardingSphereRuleMetaData();
+        mockRuleMetaData();
         assertThat(RDLBackendHandlerFactory.newInstance(mock(DropShadowAlgorithmStatement.class), connectionSession).execute(), instanceOf(UpdateResponseHeader.class));
     }
     
@@ -208,11 +207,11 @@ class DistSQLBackendHandlerFactoryTest {
         assertThat(RQLBackendHandlerFactory.newInstance(mock(ShowStorageUnitsStatement.class), connectionSession).execute(), instanceOf(QueryResponseHeader.class));
     }
     
-    private void mockShardingSphereRuleMetaData() {
+    private void mockRuleMetaData() {
         ShardingSphereDatabase database = mock(ShardingSphereDatabase.class, RETURNS_DEEP_STUBS);
         when(database.getName()).thenReturn("foo_db");
-        when(database.getResourceMetaData()).thenReturn(mock(ShardingSphereResourceMetaData.class));
-        ShardingSphereRuleMetaData ruleMetaData = mock(ShardingSphereRuleMetaData.class);
+        when(database.getResourceMetaData()).thenReturn(mock(ResourceMetaData.class));
+        RuleMetaData ruleMetaData = mock(RuleMetaData.class);
         ShadowRuleConfiguration ruleConfig = mockShadowRuleConfiguration();
         when(ruleMetaData.getConfigurations()).thenReturn(Collections.singleton(ruleConfig));
         when(database.getRuleMetaData()).thenReturn(ruleMetaData);

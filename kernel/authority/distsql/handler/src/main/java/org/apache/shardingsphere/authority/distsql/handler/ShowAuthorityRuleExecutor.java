@@ -18,7 +18,7 @@
 package org.apache.shardingsphere.authority.distsql.handler;
 
 import org.apache.shardingsphere.authority.config.AuthorityRuleConfiguration;
-import org.apache.shardingsphere.authority.distsql.parser.statement.ShowAuthorityRuleStatement;
+import org.apache.shardingsphere.authority.distsql.statement.ShowAuthorityRuleStatement;
 import org.apache.shardingsphere.authority.rule.AuthorityRule;
 import org.apache.shardingsphere.distsql.handler.ral.query.MetaDataRequiredQueryableRALExecutor;
 import org.apache.shardingsphere.infra.merge.result.impl.local.LocalDataQueryResultRow;
@@ -48,7 +48,7 @@ public final class ShowAuthorityRuleExecutor implements MetaDataRequiredQueryabl
     }
     
     @Override
-    public String getType() {
-        return ShowAuthorityRuleStatement.class.getName();
+    public Class<ShowAuthorityRuleStatement> getType() {
+        return ShowAuthorityRuleStatement.class;
     }
 }

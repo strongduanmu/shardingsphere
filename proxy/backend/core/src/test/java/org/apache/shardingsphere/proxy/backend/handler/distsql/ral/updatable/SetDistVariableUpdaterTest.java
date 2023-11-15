@@ -17,11 +17,11 @@
 
 package org.apache.shardingsphere.proxy.backend.handler.distsql.ral.updatable;
 
-import org.apache.shardingsphere.distsql.parser.statement.ral.updatable.SetDistVariableStatement;
+import org.apache.shardingsphere.distsql.statement.ral.updatable.SetDistVariableStatement;
 import org.apache.shardingsphere.infra.config.mode.ModeConfiguration;
 import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
-import org.apache.shardingsphere.infra.config.props.LoggerLevel;
 import org.apache.shardingsphere.infra.config.props.temporary.TemporaryConfigurationPropertyKey;
+import org.apache.shardingsphere.infra.database.mysql.type.MySQLDatabaseType;
 import org.apache.shardingsphere.infra.instance.ComputeNodeInstance;
 import org.apache.shardingsphere.infra.instance.InstanceContext;
 import org.apache.shardingsphere.infra.instance.metadata.InstanceMetaData;
@@ -41,9 +41,11 @@ import org.apache.shardingsphere.test.mock.StaticMockSettings;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.slf4j.event.Level;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -80,6 +82,18 @@ class SetDistVariableUpdaterTest {
     }
     
     @Test
+    void assertExecuteWithTypedSPI() {
+        SetDistVariableStatement statement = new SetDistVariableStatement("proxy_frontend_database_protocol_type", "MySQL");
+        SetDistVariableUpdater updater = new SetDistVariableUpdater();
+        ContextManager contextManager = mockContextManager();
+        when(ProxyContext.getInstance().getContextManager()).thenReturn(contextManager);
+        updater.executeUpdate(connectionSession, statement);
+        Object actualValue = contextManager.getMetaDataContexts().getMetaData().getProps().getProps().get("proxy-frontend-database-protocol-type");
+        assertThat(actualValue.toString(), is("MySQL"));
+        assertInstanceOf(MySQLDatabaseType.class, contextManager.getMetaDataContexts().getMetaData().getProps().getValue(ConfigurationPropertyKey.PROXY_FRONTEND_DATABASE_PROTOCOL_TYPE));
+    }
+    
+    @Test
     void assertExecuteWithSystemLogLevel() {
         SetDistVariableStatement statement = new SetDistVariableStatement("system_log_level", "debug");
         SetDistVariableUpdater updater = new SetDistVariableUpdater();
@@ -88,7 +102,7 @@ class SetDistVariableUpdaterTest {
         updater.executeUpdate(connectionSession, statement);
         Object actualValue = contextManager.getMetaDataContexts().getMetaData().getProps().getProps().get("system-log-level");
         assertThat(actualValue.toString(), is("DEBUG"));
-        assertThat(contextManager.getMetaDataContexts().getMetaData().getProps().getValue(ConfigurationPropertyKey.SYSTEM_LOG_LEVEL), is(LoggerLevel.DEBUG));
+        assertThat(contextManager.getMetaDataContexts().getMetaData().getProps().getValue(ConfigurationPropertyKey.SYSTEM_LOG_LEVEL), is(Level.DEBUG));
     }
     
     @Test

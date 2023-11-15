@@ -18,9 +18,9 @@
 package org.apache.shardingsphere.data.pipeline.common.ingest.channel.memory;
 
 import lombok.SneakyThrows;
-import org.apache.shardingsphere.data.pipeline.api.ingest.channel.AckCallback;
-import org.apache.shardingsphere.data.pipeline.api.ingest.channel.PipelineChannel;
-import org.apache.shardingsphere.data.pipeline.api.ingest.record.Record;
+import org.apache.shardingsphere.data.pipeline.core.ingest.channel.AckCallback;
+import org.apache.shardingsphere.data.pipeline.core.ingest.channel.PipelineChannel;
+import org.apache.shardingsphere.data.pipeline.core.ingest.record.Record;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -75,13 +75,13 @@ public final class SimpleMemoryPipelineChannel implements PipelineChannel {
     @Override
     public List<Record> peekRecords() {
         List<Record> result = queue.peek();
-        return null != result ? result : Collections.emptyList();
+        return null == result ? Collections.emptyList() : result;
     }
     
     @Override
     public List<Record> pollRecords() {
         List<Record> result = queue.poll();
-        return null != result ? result : Collections.emptyList();
+        return null == result ? Collections.emptyList() : result;
     }
     
     @Override

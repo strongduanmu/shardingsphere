@@ -17,13 +17,13 @@
 
 package org.apache.shardingsphere.shadow.distsql.update;
 
-import org.apache.shardingsphere.distsql.parser.segment.AlgorithmSegment;
+import org.apache.shardingsphere.distsql.segment.AlgorithmSegment;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.infra.util.spi.exception.ServiceProviderNotFoundServerException;
+import org.apache.shardingsphere.infra.spi.exception.ServiceProviderNotFoundException;
 import org.apache.shardingsphere.shadow.api.config.ShadowRuleConfiguration;
 import org.apache.shardingsphere.shadow.distsql.handler.update.CreateDefaultShadowAlgorithmStatementUpdater;
-import org.apache.shardingsphere.shadow.distsql.parser.segment.ShadowAlgorithmSegment;
-import org.apache.shardingsphere.shadow.distsql.parser.statement.CreateDefaultShadowAlgorithmStatement;
+import org.apache.shardingsphere.shadow.distsql.segment.ShadowAlgorithmSegment;
+import org.apache.shardingsphere.shadow.distsql.statement.CreateDefaultShadowAlgorithmStatement;
 import org.apache.shardingsphere.test.util.PropertiesBuilder;
 import org.apache.shardingsphere.test.util.PropertiesBuilder.Property;
 import org.junit.jupiter.api.Test;
@@ -51,7 +51,7 @@ class CreateDefaultShadowAlgorithmStatementUpdaterTest {
     void assertExecuteWithInvalidAlgorithm() {
         CreateDefaultShadowAlgorithmStatement statement = mock(CreateDefaultShadowAlgorithmStatement.class);
         when(statement.getShadowAlgorithmSegment()).thenReturn(new ShadowAlgorithmSegment("algorithmName", new AlgorithmSegment("name", PropertiesBuilder.build(new Property("type", "value")))));
-        assertThrows(ServiceProviderNotFoundServerException.class, () -> updater.checkSQLStatement(database, statement, currentConfig));
+        assertThrows(ServiceProviderNotFoundException.class, () -> updater.checkSQLStatement(database, statement, currentConfig));
     }
     
     @Test

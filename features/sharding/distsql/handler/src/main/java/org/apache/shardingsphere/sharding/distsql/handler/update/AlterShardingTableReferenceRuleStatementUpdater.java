@@ -22,14 +22,14 @@ import org.apache.shardingsphere.distsql.handler.exception.rule.InvalidRuleConfi
 import org.apache.shardingsphere.distsql.handler.exception.rule.MissingRequiredRuleException;
 import org.apache.shardingsphere.distsql.handler.update.RuleDefinitionAlterUpdater;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.infra.util.exception.ShardingSpherePreconditions;
+import org.apache.shardingsphere.infra.exception.core.ShardingSpherePreconditions;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingAutoTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableReferenceRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.distsql.handler.checker.ShardingTableRuleStatementChecker;
-import org.apache.shardingsphere.sharding.distsql.parser.segment.table.TableReferenceRuleSegment;
-import org.apache.shardingsphere.sharding.distsql.parser.statement.AlterShardingTableReferenceRuleStatement;
+import org.apache.shardingsphere.sharding.distsql.segment.table.TableReferenceRuleSegment;
+import org.apache.shardingsphere.sharding.distsql.statement.AlterShardingTableReferenceRuleStatement;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -131,7 +131,7 @@ public final class AlterShardingTableReferenceRuleStatementUpdater implements Ru
     }
     
     @Override
-    public String getType() {
-        return AlterShardingTableReferenceRuleStatement.class.getName();
+    public Class<AlterShardingTableReferenceRuleStatement> getType() {
+        return AlterShardingTableReferenceRuleStatement.class;
     }
 }

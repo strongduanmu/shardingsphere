@@ -133,7 +133,9 @@ import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.s
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.AlterPolicyStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.AlterProcedureStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.AlterPublicationStatementTestCase;
+import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.AlterProfileStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.AlterRoutineStatementTestCase;
+import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.AlterRollbackSegmentStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.AlterRuleStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.AlterSchemaStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.AlterSequenceStatementTestCase;
@@ -159,6 +161,7 @@ import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.s
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateAccessMethodStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateAggregateStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateCastStatementTestCase;
+import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateClusterStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateCollationStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateContextStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateControlFileStatementTestCase;
@@ -178,13 +181,17 @@ import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.s
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateFunctionStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateIndexStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateInmemoryJoinGroupStatementTestCase;
+import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateJavaStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateLanguageStatementTestCase;
+import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateLibraryStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateLockdownProfileStatementTestCase;
+import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateMaterializedViewLogStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateMaterializedViewStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateOperatorStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreatePFileStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreatePolicyStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateProcedureStatementTestCase;
+import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateProfileStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreatePublicationStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateRestorePointStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.CreateRollbackSegmentStatementTestCase;
@@ -279,6 +286,7 @@ import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.s
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.RenameStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.RenameTableStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.SecurityLabelStmtStatementTestCase;
+import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.SwitchStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.TruncateStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.ddl.UnlistenStatementTestCase;
 import org.apache.shardingsphere.test.it.sql.parser.internal.cases.parser.jaxb.statement.dml.CallStatementTestCase;
@@ -462,6 +470,9 @@ public final class RootSQLParserTestCases {
     
     @XmlElement(name = "insert")
     private final List<InsertStatementTestCase> insertTestCases = new LinkedList<>();
+    
+    @XmlElement(name = "create-cluster")
+    private final List<CreateClusterStatementTestCase> createClusterTestCases = new LinkedList<>();
     
     @XmlElement(name = "drop-tablespace")
     private final List<DropTableSpaceStatementTestCase> dropTableSpaceTestCases = new LinkedList<>();
@@ -1372,6 +1383,12 @@ public final class RootSQLParserTestCases {
     @XmlElement(name = "alter-operator")
     private final List<AlterOperatorStatementTestCase> alterOperatorTestCases = new LinkedList<>();
     
+    @XmlElement(name = "alter-profile")
+    private final List<AlterProfileStatementTestCase> alterProfileTestCases = new LinkedList<>();
+    
+    @XmlElement(name = "alter-rollback-segment")
+    private final List<AlterRollbackSegmentStatementTestCase> alterRollbackSegmentTestCases = new LinkedList<>();
+    
     @XmlElement(name = "create-text-search")
     private final List<CreateTextSearchStatementTestCase> createTextSearchTestCases = new LinkedList<>();
     
@@ -1654,6 +1671,9 @@ public final class RootSQLParserTestCases {
     @XmlElement(name = "create-materialized-view")
     private final List<CreateMaterializedViewStatementTestCase> createMaterializedViewStatementTestCases = new LinkedList<>();
     
+    @XmlElement(name = "create-materialized-view-log")
+    private final List<CreateMaterializedViewLogStatementTestCase> createMaterializedViewLogStatementTestCases = new LinkedList<>();
+    
     @XmlElement(name = "create-operator")
     private final List<CreateOperatorStatementTestCase> createOperatorStatementTestCases = new LinkedList<>();
     
@@ -1695,6 +1715,18 @@ public final class RootSQLParserTestCases {
     
     @XmlElement(name = "change-replication-source-to")
     private final List<ChangeReplicationSourceToStatementTestCase> changeReplicationSourceToStatementTestCases = new LinkedList<>();
+    
+    @XmlElement(name = "create-java")
+    private final List<CreateJavaStatementTestCase> createJavaStatementTestCases = new LinkedList<>();
+    
+    @XmlElement(name = "create-library")
+    private final List<CreateLibraryStatementTestCase> createLibraryStatementTestCases = new LinkedList<>();
+    
+    @XmlElement(name = "switch")
+    private final List<SwitchStatementTestCase> switchStatementTestCases = new LinkedList<>();
+    
+    @XmlElement(name = "create-profile")
+    private final List<CreateProfileStatementTestCase> createProfileStatementTestCases = new LinkedList<>();
     
     /**
      * Get all SQL parser test cases.

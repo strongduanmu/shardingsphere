@@ -18,7 +18,7 @@
 package org.apache.shardingsphere.data.pipeline.common.datasource;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.shardingsphere.data.pipeline.api.datasource.config.PipelineDataSourceConfiguration;
+import org.apache.shardingsphere.data.pipeline.api.PipelineDataSourceConfiguration;
 
 import java.sql.SQLException;
 import java.util.Map;
@@ -41,7 +41,11 @@ public final class DefaultPipelineDataSourceManager implements PipelineDataSourc
         synchronized (cachedDataSources) {
             result = cachedDataSources.get(dataSourceConfig);
             if (null != result) {
-                return result;
+                if (!result.isClosed()) {
+                    return result;
+                } else {
+                    log.warn("{} is already closed, create again", result);
+                }
             }
             result = PipelineDataSourceFactory.newInstance(dataSourceConfig);
             cachedDataSources.put(dataSourceConfig, result);
@@ -49,10 +53,12 @@ public final class DefaultPipelineDataSourceManager implements PipelineDataSourc
         }
     }
     
-    // TODO monitor each DataSource close
     @Override
     public void close() {
         for (PipelineDataSourceWrapper each : cachedDataSources.values()) {
+            if (each.isClosed()) {
+                continue;
+            }
             try {
                 each.close();
             } catch (final SQLException ex) {

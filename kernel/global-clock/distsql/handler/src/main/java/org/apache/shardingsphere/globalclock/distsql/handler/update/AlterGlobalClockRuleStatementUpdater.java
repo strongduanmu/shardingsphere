@@ -19,7 +19,7 @@ package org.apache.shardingsphere.globalclock.distsql.handler.update;
 
 import org.apache.shardingsphere.distsql.handler.ral.update.GlobalRuleRALUpdater;
 import org.apache.shardingsphere.globalclock.api.config.GlobalClockRuleConfiguration;
-import org.apache.shardingsphere.globalclock.distsql.parser.statement.updatable.AlterGlobalClockRuleStatement;
+import org.apache.shardingsphere.globalclock.distsql.statement.updatable.AlterGlobalClockRuleStatement;
 
 /**
  * Alter global clock rule statement updater.
@@ -41,7 +41,7 @@ public final class AlterGlobalClockRuleStatementUpdater implements GlobalRuleRAL
     }
     
     @Override
-    public String getType() {
-        return AlterGlobalClockRuleStatement.class.getName();
+    public Class<AlterGlobalClockRuleStatement> getType() {
+        return AlterGlobalClockRuleStatement.class;
     }
 }

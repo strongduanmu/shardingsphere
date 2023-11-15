@@ -21,15 +21,13 @@
     <parent>
         <groupId>org.apache.shardingsphere</groupId>
         <artifactId>shardingsphere-it</artifactId>
-        <version>5.4.1-SNAPSHOT</version>
+        <version>5.4.2-SNAPSHOT</version>
     </parent>
     <artifactId>shardingsphere-it-parser</artifactId>
     <name>${project.artifactId}</name>
     
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
-        
-        <commons-csv.version>1.9.0</commons-csv.version>
     </properties>
     
     <dependencies>

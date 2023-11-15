@@ -20,12 +20,13 @@ package org.apache.shardingsphere.proxy.backend.handler.distsql.ral.updatable;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
-import org.apache.shardingsphere.distsql.parser.statement.ral.updatable.SetDistVariableStatement;
+import org.apache.shardingsphere.distsql.statement.ral.updatable.SetDistVariableStatement;
 import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
 import org.apache.shardingsphere.infra.config.props.temporary.TemporaryConfigurationPropertyKey;
-import org.apache.shardingsphere.infra.util.props.TypedPropertyKey;
-import org.apache.shardingsphere.infra.util.props.TypedPropertyValue;
-import org.apache.shardingsphere.infra.util.props.exception.TypedPropertyValueException;
+import org.apache.shardingsphere.infra.props.TypedPropertyKey;
+import org.apache.shardingsphere.infra.props.TypedPropertyValue;
+import org.apache.shardingsphere.infra.props.exception.TypedPropertyValueException;
+import org.apache.shardingsphere.infra.spi.type.typed.TypedSPI;
 import org.apache.shardingsphere.logging.constant.LoggingConstants;
 import org.apache.shardingsphere.logging.util.LoggingUtils;
 import org.apache.shardingsphere.mode.manager.ContextManager;
@@ -82,7 +83,10 @@ public final class SetDistVariableUpdater implements ConnectionSessionRequiredRA
     private Object getValue(final TypedPropertyKey propertyKey, final String value) {
         try {
             Object propertyValue = new TypedPropertyValue(propertyKey, value).getValue();
-            return Enum.class.isAssignableFrom(propertyKey.getType()) ? propertyValue.toString() : propertyValue;
+            if (Enum.class.isAssignableFrom(propertyKey.getType())) {
+                return propertyValue.toString();
+            }
+            return TypedSPI.class.isAssignableFrom(propertyKey.getType()) ? ((TypedSPI) propertyValue).getType().toString() : propertyValue;
         } catch (final TypedPropertyValueException ignored) {
             throw new InvalidValueException(value);
         }
@@ -117,7 +121,7 @@ public final class SetDistVariableUpdater implements ConnectionSessionRequiredRA
     }
     
     @Override
-    public String getType() {
-        return SetDistVariableStatement.class.getName();
+    public Class<SetDistVariableStatement> getType() {
+        return SetDistVariableStatement.class;
     }
 }

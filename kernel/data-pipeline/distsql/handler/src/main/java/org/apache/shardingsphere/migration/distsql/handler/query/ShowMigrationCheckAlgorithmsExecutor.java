@@ -20,9 +20,9 @@ package org.apache.shardingsphere.migration.distsql.handler.query;
 import org.apache.shardingsphere.data.pipeline.core.job.service.InventoryIncrementalJobAPI;
 import org.apache.shardingsphere.data.pipeline.core.job.service.PipelineJobAPI;
 import org.apache.shardingsphere.distsql.handler.ral.query.QueryableRALExecutor;
-import org.apache.shardingsphere.infra.database.spi.DatabaseType;
+import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
 import org.apache.shardingsphere.infra.merge.result.impl.local.LocalDataQueryResultRow;
-import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
+import org.apache.shardingsphere.infra.spi.type.typed.TypedSPILoader;
 import org.apache.shardingsphere.migration.distsql.statement.ShowMigrationCheckAlgorithmsStatement;
 
 import java.util.Arrays;
@@ -38,18 +38,18 @@ public final class ShowMigrationCheckAlgorithmsExecutor implements QueryableRALE
     public Collection<LocalDataQueryResultRow> getRows(final ShowMigrationCheckAlgorithmsStatement sqlStatement) {
         InventoryIncrementalJobAPI jobAPI = (InventoryIncrementalJobAPI) TypedSPILoader.getService(PipelineJobAPI.class, "MIGRATION");
         return jobAPI.listDataConsistencyCheckAlgorithms().stream().map(
-                each -> new LocalDataQueryResultRow(each.getType(),
+                each -> new LocalDataQueryResultRow(each.getType(), each.getTypeAliases(),
                         each.getSupportedDatabaseTypes().stream().map(DatabaseType::getType).collect(Collectors.joining(",")), each.getDescription()))
                 .collect(Collectors.toList());
     }
     
     @Override
     public Collection<String> getColumnNames() {
-        return Arrays.asList("type", "supported_database_types", "description");
+        return Arrays.asList("type", "type_aliases", "supported_database_types", "description");
     }
     
     @Override
-    public String getType() {
-        return ShowMigrationCheckAlgorithmsStatement.class.getName();
+    public Class<ShowMigrationCheckAlgorithmsStatement> getType() {
+        return ShowMigrationCheckAlgorithmsStatement.class;
     }
 }

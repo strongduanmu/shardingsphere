@@ -18,13 +18,15 @@
 package org.apache.shardingsphere.sharding.merge.dql;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.shardingsphere.infra.binder.segment.select.orderby.OrderByItem;
-import org.apache.shardingsphere.infra.binder.segment.select.pagination.PaginationContext;
-import org.apache.shardingsphere.infra.binder.statement.SQLStatementContext;
-import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementContext;
-import org.apache.shardingsphere.infra.database.DatabaseTypeEngine;
+import org.apache.commons.collections4.map.CaseInsensitiveMap;
+import org.apache.shardingsphere.infra.binder.context.segment.select.orderby.OrderByItem;
+import org.apache.shardingsphere.infra.binder.context.segment.select.pagination.PaginationContext;
+import org.apache.shardingsphere.infra.binder.context.statement.SQLStatementContext;
+import org.apache.shardingsphere.infra.binder.context.statement.dml.SelectStatementContext;
+import org.apache.shardingsphere.infra.database.core.metadata.database.DialectDatabaseMetaData;
 import org.apache.shardingsphere.infra.database.core.spi.DatabaseTypedSPILoader;
-import org.apache.shardingsphere.infra.database.spi.DatabaseType;
+import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
+import org.apache.shardingsphere.infra.database.core.type.DatabaseTypeRegistry;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
 import org.apache.shardingsphere.infra.merge.engine.merger.ResultMerger;
 import org.apache.shardingsphere.infra.merge.result.MergedResult;
@@ -44,7 +46,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 
 /**
  * DQL result merger for Sharding.
@@ -72,7 +73,7 @@ public final class ShardingDQLResultMerger implements ResultMerger {
     }
     
     private Map<String, Integer> getColumnLabelIndexMap(final QueryResult queryResult) throws SQLException {
-        Map<String, Integer> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, Integer> result = new CaseInsensitiveMap<>();
         for (int i = queryResult.getMetaData().getColumnCount(); i > 0; i--) {
             result.put(SQLUtils.getExactlyValue(queryResult.getMetaData().getColumnLabel(i)), i);
         }
@@ -81,7 +82,7 @@ public final class ShardingDQLResultMerger implements ResultMerger {
     
     private MergedResult build(final List<QueryResult> queryResults, final SelectStatementContext selectStatementContext,
                                final Map<String, Integer> columnLabelIndexMap, final ShardingSphereDatabase database) throws SQLException {
-        String defaultSchemaName = DatabaseTypeEngine.getDefaultSchemaName(selectStatementContext.getDatabaseType(), database.getName());
+        String defaultSchemaName = new DatabaseTypeRegistry(selectStatementContext.getDatabaseType()).getDefaultSchemaName(database.getName());
         ShardingSphereSchema schema = selectStatementContext.getTablesContext().getSchemaName()
                 .map(database::getSchema).orElseGet(() -> database.getSchema(defaultSchemaName));
         if (isNeedProcessGroupBy(selectStatementContext)) {
@@ -106,9 +107,9 @@ public final class ShardingDQLResultMerger implements ResultMerger {
     }
     
     private void setGroupByForDistinctRow(final SelectStatementContext selectStatementContext) {
+        DialectDatabaseMetaData dialectDatabaseMetaData = new DatabaseTypeRegistry(selectStatementContext.getSqlStatement().getDatabaseType()).getDialectDatabaseMetaData();
         for (int index = 1; index <= selectStatementContext.getProjectionsContext().getExpandProjections().size(); index++) {
-            OrderByItem orderByItem = new OrderByItem(new IndexOrderByItemSegment(-1, -1, index, OrderDirection.ASC,
-                    selectStatementContext.getSqlStatement().getDatabaseType().getDefaultNullsOrderType()));
+            OrderByItem orderByItem = new OrderByItem(new IndexOrderByItemSegment(-1, -1, index, OrderDirection.ASC, dialectDatabaseMetaData.getDefaultNullsOrderType()));
             orderByItem.setIndex(index);
             selectStatementContext.getGroupByContext().getItems().add(orderByItem);
         }

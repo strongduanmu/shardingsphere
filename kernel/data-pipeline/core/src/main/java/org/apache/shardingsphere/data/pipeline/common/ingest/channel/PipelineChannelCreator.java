@@ -17,9 +17,9 @@
 
 package org.apache.shardingsphere.data.pipeline.common.ingest.channel;
 
-import org.apache.shardingsphere.data.pipeline.api.ingest.channel.AckCallback;
-import org.apache.shardingsphere.data.pipeline.api.ingest.channel.PipelineChannel;
-import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPI;
+import org.apache.shardingsphere.data.pipeline.core.ingest.channel.AckCallback;
+import org.apache.shardingsphere.data.pipeline.core.ingest.channel.PipelineChannel;
+import org.apache.shardingsphere.infra.spi.type.typed.TypedSPI;
 
 /**
  * Pipeline channel creator.

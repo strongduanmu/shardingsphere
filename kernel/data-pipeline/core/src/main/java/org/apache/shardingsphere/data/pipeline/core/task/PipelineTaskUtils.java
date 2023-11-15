@@ -19,9 +19,9 @@ package org.apache.shardingsphere.data.pipeline.core.task;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.apache.shardingsphere.data.pipeline.api.config.ingest.InventoryDumperConfiguration;
-import org.apache.shardingsphere.data.pipeline.api.ingest.channel.PipelineChannel;
-import org.apache.shardingsphere.data.pipeline.api.ingest.position.IngestPosition;
+import org.apache.shardingsphere.data.pipeline.core.ingest.dumper.context.InventoryDumperContext;
+import org.apache.shardingsphere.data.pipeline.core.ingest.channel.PipelineChannel;
+import org.apache.shardingsphere.data.pipeline.core.ingest.position.IngestPosition;
 import org.apache.shardingsphere.data.pipeline.common.ingest.channel.AckCallbacks;
 import org.apache.shardingsphere.data.pipeline.common.ingest.channel.PipelineChannelCreator;
 import org.apache.shardingsphere.data.pipeline.common.job.progress.InventoryIncrementalJobItemProgress;
@@ -39,26 +39,26 @@ public final class PipelineTaskUtils {
     /**
      * Generate inventory task id.
      *
-     * @param inventoryDumperConfig inventory dumper configuration
+     * @param inventoryDumperContext inventory dumper context
      * @return inventory task id
      */
-    public static String generateInventoryTaskId(final InventoryDumperConfiguration inventoryDumperConfig) {
-        String result = String.format("%s.%s", inventoryDumperConfig.getDataSourceName(), inventoryDumperConfig.getActualTableName());
-        return null == inventoryDumperConfig.getShardingItem() ? result : result + "#" + inventoryDumperConfig.getShardingItem();
+    public static String generateInventoryTaskId(final InventoryDumperContext inventoryDumperContext) {
+        String result = String.format("%s.%s", inventoryDumperContext.getCommonContext().getDataSourceName(), inventoryDumperContext.getActualTableName());
+        return result + "#" + inventoryDumperContext.getShardingItem();
     }
     
     /**
      * Create incremental task progress.
      *
      * @param position ingest position
-     * @param jobItemProgress job item progress
+     * @param initProgress initial job item progress
      * @return incremental task progress
      */
-    public static IncrementalTaskProgress createIncrementalTaskProgress(final IngestPosition position, final InventoryIncrementalJobItemProgress jobItemProgress) {
+    public static IncrementalTaskProgress createIncrementalTaskProgress(final IngestPosition position, final InventoryIncrementalJobItemProgress initProgress) {
         IncrementalTaskProgress result = new IncrementalTaskProgress(position);
-        if (null != jobItemProgress && null != jobItemProgress.getIncremental()) {
-            Optional.ofNullable(jobItemProgress.getIncremental().getIncrementalTaskProgress())
-                    .ifPresent(optional -> result.setIncrementalTaskDelay(jobItemProgress.getIncremental().getIncrementalTaskProgress().getIncrementalTaskDelay()));
+        if (null != initProgress && null != initProgress.getIncremental()) {
+            Optional.ofNullable(initProgress.getIncremental().getIncrementalTaskProgress())
+                    .ifPresent(optional -> result.setIncrementalTaskDelay(initProgress.getIncremental().getIncrementalTaskProgress().getIncrementalTaskDelay()));
         }
         return result;
     }

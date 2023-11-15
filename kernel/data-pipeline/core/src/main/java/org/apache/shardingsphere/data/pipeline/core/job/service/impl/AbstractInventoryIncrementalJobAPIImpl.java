@@ -24,7 +24,6 @@ import org.apache.shardingsphere.data.pipeline.common.config.job.PipelineJobConf
 import org.apache.shardingsphere.data.pipeline.common.config.process.PipelineProcessConfiguration;
 import org.apache.shardingsphere.data.pipeline.common.config.process.PipelineProcessConfigurationUtils;
 import org.apache.shardingsphere.data.pipeline.common.context.InventoryIncrementalJobItemContext;
-import org.apache.shardingsphere.data.pipeline.common.context.InventoryIncrementalProcessContext;
 import org.apache.shardingsphere.data.pipeline.common.context.PipelineContextKey;
 import org.apache.shardingsphere.data.pipeline.common.context.PipelineJobItemContext;
 import org.apache.shardingsphere.data.pipeline.common.job.JobStatus;
@@ -41,20 +40,17 @@ import org.apache.shardingsphere.data.pipeline.common.pojo.InventoryIncrementalJ
 import org.apache.shardingsphere.data.pipeline.common.pojo.TableBasedPipelineJobInfo;
 import org.apache.shardingsphere.data.pipeline.common.task.progress.IncrementalTaskProgress;
 import org.apache.shardingsphere.data.pipeline.common.task.progress.InventoryTaskProgress;
-import org.apache.shardingsphere.data.pipeline.core.consistencycheck.ConsistencyCheckJobItemProgressContext;
-import org.apache.shardingsphere.data.pipeline.core.consistencycheck.PipelineDataConsistencyChecker;
-import org.apache.shardingsphere.data.pipeline.core.consistencycheck.algorithm.DataConsistencyCalculateAlgorithm;
-import org.apache.shardingsphere.data.pipeline.core.consistencycheck.result.DataConsistencyCheckResult;
+import org.apache.shardingsphere.data.pipeline.core.consistencycheck.result.TableDataConsistencyCheckResult;
+import org.apache.shardingsphere.data.pipeline.core.consistencycheck.table.TableDataConsistencyChecker;
 import org.apache.shardingsphere.data.pipeline.core.job.PipelineJobIdUtils;
 import org.apache.shardingsphere.data.pipeline.core.job.service.InventoryIncrementalJobAPI;
 import org.apache.shardingsphere.data.pipeline.core.job.service.PipelineAPIFactory;
 import org.apache.shardingsphere.data.pipeline.core.metadata.PipelineProcessConfigurationPersistService;
 import org.apache.shardingsphere.data.pipeline.core.task.PipelineTask;
 import org.apache.shardingsphere.elasticjob.infra.pojo.JobConfigurationPOJO;
-import org.apache.shardingsphere.infra.database.spi.DatabaseType;
-import org.apache.shardingsphere.infra.util.spi.ShardingSphereServiceLoader;
-import org.apache.shardingsphere.infra.util.spi.annotation.SPIDescription;
-import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPILoader;
+import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
+import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
+import org.apache.shardingsphere.infra.spi.annotation.SPIDescription;
 import org.apache.shardingsphere.infra.util.yaml.YamlEngine;
 
 import java.util.Collection;
@@ -65,7 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Properties;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -82,26 +78,20 @@ public abstract class AbstractInventoryIncrementalJobAPIImpl extends AbstractPip
     private final YamlJobOffsetInfoSwapper jobOffsetInfoSwapper = new YamlJobOffsetInfoSwapper();
     
     @Override
-    public abstract InventoryIncrementalProcessContext buildPipelineProcessContext(PipelineJobConfiguration pipelineJobConfig);
-    
-    @Override
     public void alterProcessConfiguration(final PipelineContextKey contextKey, final PipelineProcessConfiguration processConfig) {
         // TODO check rateLimiter type match or not
-        processConfigPersistService.persist(contextKey, getJobType(), processConfig);
+        processConfigPersistService.persist(contextKey, getType(), processConfig);
     }
     
     @Override
     public PipelineProcessConfiguration showProcessConfiguration(final PipelineContextKey contextKey) {
-        return PipelineProcessConfigurationUtils.convertWithDefaultValue(processConfigPersistService.load(contextKey, getJobType()));
+        return PipelineProcessConfigurationUtils.convertWithDefaultValue(processConfigPersistService.load(contextKey, getType()));
     }
-    
-    @Override
-    protected abstract TableBasedPipelineJobInfo getJobInfo(String jobId);
     
     @Override
     public Map<Integer, InventoryIncrementalJobItemProgress> getJobProgress(final PipelineJobConfiguration jobConfig) {
         String jobId = jobConfig.getJobId();
-        JobConfigurationPOJO jobConfigPOJO = getElasticJobConfigPOJO(jobId);
+        JobConfigurationPOJO jobConfigPOJO = PipelineJobIdUtils.getElasticJobConfigurationPOJO(jobId);
         return IntStream.range(0, jobConfig.getJobShardingCount()).boxed().collect(LinkedHashMap::new, (map, each) -> {
             Optional<InventoryIncrementalJobItemProgress> jobItemProgress = getJobItemProgress(jobId, each);
             jobItemProgress.ifPresent(optional -> optional.setActive(!jobConfigPOJO.isDisabled()));
@@ -111,14 +101,14 @@ public abstract class AbstractInventoryIncrementalJobAPIImpl extends AbstractPip
     
     @Override
     public List<InventoryIncrementalJobItemInfo> getJobItemInfos(final String jobId) {
-        JobConfigurationPOJO jobConfigPOJO = getElasticJobConfigPOJO(jobId);
+        JobConfigurationPOJO jobConfigPOJO = PipelineJobIdUtils.getElasticJobConfigurationPOJO(jobId);
         PipelineJobConfiguration jobConfig = getJobConfiguration(jobConfigPOJO);
         long startTimeMillis = Long.parseLong(Optional.ofNullable(jobConfigPOJO.getProps().getProperty("start_time_millis")).orElse("0"));
         Map<Integer, InventoryIncrementalJobItemProgress> jobProgress = getJobProgress(jobConfig);
         List<InventoryIncrementalJobItemInfo> result = new LinkedList<>();
         for (Entry<Integer, InventoryIncrementalJobItemProgress> entry : jobProgress.entrySet()) {
             int shardingItem = entry.getKey();
-            TableBasedPipelineJobInfo jobInfo = getJobInfo(jobId);
+            TableBasedPipelineJobInfo jobInfo = (TableBasedPipelineJobInfo) getJobInfo(jobId);
             InventoryIncrementalJobItemProgress jobItemProgress = entry.getValue();
             String errorMessage = getJobItemErrorMessage(jobId, shardingItem);
             if (null == jobItemProgress) {
@@ -126,7 +116,7 @@ public abstract class AbstractInventoryIncrementalJobAPIImpl extends AbstractPip
                 continue;
             }
             int inventoryFinishedPercentage = 0;
-            if (JobStatus.EXECUTE_INCREMENTAL_TASK == jobItemProgress.getStatus()) {
+            if (JobStatus.EXECUTE_INCREMENTAL_TASK == jobItemProgress.getStatus() || JobStatus.FINISHED == jobItemProgress.getStatus()) {
                 inventoryFinishedPercentage = 100;
             } else if (0 != jobItemProgress.getProcessedRecordsCount() && 0 != jobItemProgress.getInventoryRecordsCount()) {
                 inventoryFinishedPercentage = (int) Math.min(100, jobItemProgress.getProcessedRecordsCount() * 100 / jobItemProgress.getInventoryRecordsCount());
@@ -209,9 +199,10 @@ public abstract class AbstractInventoryIncrementalJobAPIImpl extends AbstractPip
     @Override
     public Collection<DataConsistencyCheckAlgorithmInfo> listDataConsistencyCheckAlgorithms() {
         Collection<DataConsistencyCheckAlgorithmInfo> result = new LinkedList<>();
-        for (DataConsistencyCalculateAlgorithm each : ShardingSphereServiceLoader.getServiceInstances(DataConsistencyCalculateAlgorithm.class)) {
+        for (TableDataConsistencyChecker each : ShardingSphereServiceLoader.getServiceInstances(TableDataConsistencyChecker.class)) {
             SPIDescription description = each.getClass().getAnnotation(SPIDescription.class);
-            result.add(new DataConsistencyCheckAlgorithmInfo(each.getType(), getSupportedDatabaseTypes(each.getSupportedDatabaseTypes()), null == description ? "" : description.value()));
+            String typeAliases = each.getTypeAliases().stream().map(Object::toString).collect(Collectors.joining(","));
+            result.add(new DataConsistencyCheckAlgorithmInfo(each.getType(), typeAliases, getSupportedDatabaseTypes(each.getSupportedDatabaseTypes()), null == description ? "" : description.value()));
         }
         return result;
     }
@@ -221,30 +212,12 @@ public abstract class AbstractInventoryIncrementalJobAPIImpl extends AbstractPip
     }
     
     @Override
-    public DataConsistencyCalculateAlgorithm buildDataConsistencyCalculateAlgorithm(final String algorithmType, final Properties algorithmProps) {
-        return TypedSPILoader.getService(DataConsistencyCalculateAlgorithm.class, null == algorithmType ? "DATA_MATCH" : algorithmType, algorithmProps);
-    }
-    
-    @Override
-    public Map<String, DataConsistencyCheckResult> dataConsistencyCheck(final PipelineJobConfiguration jobConfig, final DataConsistencyCalculateAlgorithm calculateAlgorithm,
-                                                                        final ConsistencyCheckJobItemProgressContext progressContext) {
-        String jobId = jobConfig.getJobId();
-        PipelineDataConsistencyChecker dataConsistencyChecker = buildPipelineDataConsistencyChecker(jobConfig, buildPipelineProcessContext(jobConfig), progressContext);
-        Map<String, DataConsistencyCheckResult> result = dataConsistencyChecker.check(calculateAlgorithm);
-        log.info("job {} with check algorithm '{}' data consistency checker result {}", jobId, calculateAlgorithm.getType(), result);
-        return result;
-    }
-    
-    protected abstract PipelineDataConsistencyChecker buildPipelineDataConsistencyChecker(PipelineJobConfiguration pipelineJobConfig, InventoryIncrementalProcessContext processContext,
-                                                                                          ConsistencyCheckJobItemProgressContext progressContext);
-    
-    @Override
-    public boolean aggregateDataConsistencyCheckResults(final String jobId, final Map<String, DataConsistencyCheckResult> checkResults) {
+    public boolean aggregateDataConsistencyCheckResults(final String jobId, final Map<String, TableDataConsistencyCheckResult> checkResults) {
         if (checkResults.isEmpty()) {
             throw new IllegalArgumentException("checkResults empty, jobId:" + jobId);
         }
-        for (Entry<String, DataConsistencyCheckResult> entry : checkResults.entrySet()) {
-            DataConsistencyCheckResult checkResult = entry.getValue();
+        for (Entry<String, TableDataConsistencyCheckResult> entry : checkResults.entrySet()) {
+            TableDataConsistencyCheckResult checkResult = entry.getValue();
             if (!checkResult.isMatched()) {
                 return false;
             }

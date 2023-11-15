@@ -18,11 +18,12 @@
 package org.apache.shardingsphere.broadcast.distsql.handler.update;
 
 import org.apache.shardingsphere.broadcast.api.config.BroadcastRuleConfiguration;
-import org.apache.shardingsphere.broadcast.distsql.parser.statement.CreateBroadcastTableRuleStatement;
+import org.apache.shardingsphere.broadcast.distsql.statement.CreateBroadcastTableRuleStatement;
 import org.apache.shardingsphere.distsql.handler.exception.rule.DuplicateRuleException;
+import org.apache.shardingsphere.distsql.handler.exception.storageunit.EmptyStorageUnitException;
 import org.apache.shardingsphere.distsql.handler.update.RuleDefinitionCreateUpdater;
+import org.apache.shardingsphere.infra.exception.core.ShardingSpherePreconditions;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.infra.util.exception.ShardingSpherePreconditions;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -34,6 +35,7 @@ public final class CreateBroadcastTableRuleStatementUpdater implements RuleDefin
     
     @Override
     public void checkSQLStatement(final ShardingSphereDatabase database, final CreateBroadcastTableRuleStatement sqlStatement, final BroadcastRuleConfiguration currentRuleConfig) {
+        ShardingSpherePreconditions.checkState(!database.getResourceMetaData().getStorageUnits().isEmpty(), () -> new EmptyStorageUnitException(database.getName()));
         if (!sqlStatement.isIfNotExists()) {
             checkDuplicate(sqlStatement, currentRuleConfig);
         }
@@ -74,7 +76,7 @@ public final class CreateBroadcastTableRuleStatementUpdater implements RuleDefin
     }
     
     @Override
-    public String getType() {
-        return CreateBroadcastTableRuleStatement.class.getName();
+    public Class<CreateBroadcastTableRuleStatement> getType() {
+        return CreateBroadcastTableRuleStatement.class;
     }
 }

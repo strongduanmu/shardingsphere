@@ -24,7 +24,7 @@ import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.sharding.ShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.distsql.handler.enums.ShardingStrategyType;
-import org.apache.shardingsphere.sharding.distsql.parser.statement.ShowDefaultShardingStrategyStatement;
+import org.apache.shardingsphere.sharding.distsql.statement.ShowDefaultShardingStrategyStatement;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 
 import java.util.Arrays;
@@ -74,7 +74,7 @@ public final class ShowDefaultShardingStrategyExecutor implements RQLExecutor<Sh
     }
     
     @Override
-    public String getType() {
-        return ShowDefaultShardingStrategyStatement.class.getName();
+    public Class<ShowDefaultShardingStrategyStatement> getType() {
+        return ShowDefaultShardingStrategyStatement.class;
     }
 }

@@ -19,12 +19,12 @@ package org.apache.shardingsphere.proxy.backend.handler.distsql.rdl;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.apache.shardingsphere.distsql.parser.statement.rdl.RDLStatement;
-import org.apache.shardingsphere.distsql.parser.statement.rdl.RuleDefinitionStatement;
-import org.apache.shardingsphere.distsql.parser.statement.rdl.StorageUnitDefinitionStatement;
-import org.apache.shardingsphere.distsql.parser.statement.rdl.alter.AlterStorageUnitStatement;
-import org.apache.shardingsphere.distsql.parser.statement.rdl.create.RegisterStorageUnitStatement;
-import org.apache.shardingsphere.distsql.parser.statement.rdl.drop.UnregisterStorageUnitStatement;
+import org.apache.shardingsphere.distsql.statement.rdl.RDLStatement;
+import org.apache.shardingsphere.distsql.statement.rdl.RuleDefinitionStatement;
+import org.apache.shardingsphere.distsql.statement.rdl.StorageUnitDefinitionStatement;
+import org.apache.shardingsphere.distsql.statement.rdl.alter.AlterStorageUnitStatement;
+import org.apache.shardingsphere.distsql.statement.rdl.create.RegisterStorageUnitStatement;
+import org.apache.shardingsphere.distsql.statement.rdl.drop.UnregisterStorageUnitStatement;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.handler.ProxyBackendHandler;
 import org.apache.shardingsphere.proxy.backend.handler.distsql.rdl.rule.NewRuleDefinitionBackendHandler;
@@ -52,7 +52,8 @@ public final class RDLBackendHandlerFactory {
             return getStorageUnitBackendHandler((StorageUnitDefinitionStatement) sqlStatement, connectionSession);
         }
         // TODO Remove when metadata structure adjustment completed. #25485
-        if ("Cluster".equals(ProxyContext.getInstance().getContextManager().getInstanceContext().getModeConfiguration().getType())) {
+        String modeType = ProxyContext.getInstance().getContextManager().getInstanceContext().getModeConfiguration().getType();
+        if ("Cluster".equals(modeType) || "Standalone".equals(modeType)) {
             return new NewRuleDefinitionBackendHandler<>((RuleDefinitionStatement) sqlStatement, connectionSession);
         }
         return new RuleDefinitionBackendHandler<>((RuleDefinitionStatement) sqlStatement, connectionSession);

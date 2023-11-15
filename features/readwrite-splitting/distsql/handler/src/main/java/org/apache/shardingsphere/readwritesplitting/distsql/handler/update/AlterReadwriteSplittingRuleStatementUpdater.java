@@ -25,7 +25,7 @@ import org.apache.shardingsphere.readwritesplitting.api.ReadwriteSplittingRuleCo
 import org.apache.shardingsphere.readwritesplitting.api.rule.ReadwriteSplittingDataSourceRuleConfiguration;
 import org.apache.shardingsphere.readwritesplitting.distsql.handler.checker.ReadwriteSplittingRuleStatementChecker;
 import org.apache.shardingsphere.readwritesplitting.distsql.handler.converter.ReadwriteSplittingRuleStatementConverter;
-import org.apache.shardingsphere.readwritesplitting.distsql.parser.statement.AlterReadwriteSplittingRuleStatement;
+import org.apache.shardingsphere.readwritesplitting.distsql.statement.AlterReadwriteSplittingRuleStatement;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -92,7 +92,7 @@ public final class AlterReadwriteSplittingRuleStatementUpdater implements RuleDe
     }
     
     @Override
-    public String getType() {
-        return AlterReadwriteSplittingRuleStatement.class.getName();
+    public Class<AlterReadwriteSplittingRuleStatement> getType() {
+        return AlterReadwriteSplittingRuleStatement.class;
     }
 }

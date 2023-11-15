@@ -21,14 +21,10 @@
     <parent>
         <groupId>org.apache.shardingsphere</groupId>
         <artifactId>shardingsphere-sql-translator-provider</artifactId>
-        <version>5.4.1-SNAPSHOT</version>
+        <version>5.4.2-SNAPSHOT</version>
     </parent>
     <artifactId>shardingsphere-sql-translator-jooq-provider</artifactId>
     <name>${project.artifactId}</name>
-    
-    <properties>
-        <jooq.version>3.14.15</jooq.version>
-    </properties>
     
     <dependencies>
         <dependency>

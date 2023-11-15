@@ -17,23 +17,28 @@
 
 package org.apache.shardingsphere.infra.rewrite.engine;
 
-import org.apache.shardingsphere.infra.binder.statement.CommonSQLStatementContext;
+import org.apache.shardingsphere.infra.binder.context.statement.CommonSQLStatementContext;
 import org.apache.shardingsphere.infra.database.core.DefaultDatabase;
-import org.apache.shardingsphere.infra.database.spi.DatabaseType;
+import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
 import org.apache.shardingsphere.infra.hint.HintValueContext;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
+import org.apache.shardingsphere.infra.metadata.database.resource.unit.StorageUnit;
+import org.apache.shardingsphere.infra.metadata.database.rule.RuleMetaData;
 import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.rewrite.context.SQLRewriteContext;
 import org.apache.shardingsphere.infra.rewrite.engine.result.GenericSQLRewriteResult;
 import org.apache.shardingsphere.infra.session.connection.ConnectionContext;
+import org.apache.shardingsphere.infra.session.query.QueryContext;
 import org.apache.shardingsphere.sqltranslator.api.config.SQLTranslatorRuleConfiguration;
 import org.apache.shardingsphere.sqltranslator.rule.SQLTranslatorRule;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -43,9 +48,17 @@ class GenericSQLRewriteEngineTest {
     void assertRewrite() {
         DatabaseType databaseType = mock(DatabaseType.class);
         SQLTranslatorRule rule = new SQLTranslatorRule(new SQLTranslatorRuleConfiguration());
-        GenericSQLRewriteResult actual = new GenericSQLRewriteEngine(rule, databaseType, Collections.singletonMap("ds_0", databaseType))
-                .rewrite(new SQLRewriteContext(mockDatabase(), mock(CommonSQLStatementContext.class), "SELECT 1", Collections.emptyList(), mock(ConnectionContext.class),
-                        new HintValueContext()));
+        ShardingSphereDatabase database = mock(ShardingSphereDatabase.class, RETURNS_DEEP_STUBS);
+        when(database.getProtocolType()).thenReturn(databaseType);
+        Map<String, StorageUnit> storageUnits = mockStorageUnits(databaseType);
+        when(database.getResourceMetaData().getStorageUnits()).thenReturn(storageUnits);
+        CommonSQLStatementContext sqlStatementContext = mock(CommonSQLStatementContext.class);
+        when(sqlStatementContext.getDatabaseType()).thenReturn(databaseType);
+        QueryContext queryContext = mock(QueryContext.class);
+        when(queryContext.getSqlStatementContext()).thenReturn(sqlStatementContext);
+        GenericSQLRewriteResult actual = new GenericSQLRewriteEngine(rule, database, mock(RuleMetaData.class))
+                .rewrite(new SQLRewriteContext(database, sqlStatementContext, "SELECT 1", Collections.emptyList(), mock(ConnectionContext.class),
+                        new HintValueContext()), queryContext);
         assertThat(actual.getSqlRewriteUnit().getSql(), is("SELECT 1"));
         assertThat(actual.getSqlRewriteUnit().getParameters(), is(Collections.emptyList()));
     }
@@ -53,17 +66,25 @@ class GenericSQLRewriteEngineTest {
     @Test
     void assertRewriteStorageTypeIsEmpty() {
         SQLTranslatorRule rule = new SQLTranslatorRule(new SQLTranslatorRuleConfiguration());
-        GenericSQLRewriteResult actual = new GenericSQLRewriteEngine(rule, mock(DatabaseType.class), Collections.emptyMap())
-                .rewrite(new SQLRewriteContext(mockDatabase(), mock(CommonSQLStatementContext.class), "SELECT 1", Collections.emptyList(), mock(ConnectionContext.class),
-                        new HintValueContext()));
+        ShardingSphereDatabase database = mock(ShardingSphereDatabase.class, RETURNS_DEEP_STUBS);
+        when(database.getName()).thenReturn(DefaultDatabase.LOGIC_NAME);
+        when(database.getSchemas()).thenReturn(Collections.singletonMap("test", mock(ShardingSphereSchema.class)));
+        when(database.getResourceMetaData().getStorageUnits()).thenReturn(Collections.emptyMap());
+        CommonSQLStatementContext sqlStatementContext = mock(CommonSQLStatementContext.class);
+        DatabaseType databaseType = mock(DatabaseType.class);
+        when(sqlStatementContext.getDatabaseType()).thenReturn(databaseType);
+        QueryContext queryContext = mock(QueryContext.class);
+        when(queryContext.getSqlStatementContext()).thenReturn(sqlStatementContext);
+        GenericSQLRewriteResult actual = new GenericSQLRewriteEngine(rule, database, mock(RuleMetaData.class))
+                .rewrite(new SQLRewriteContext(database, sqlStatementContext, "SELECT 1", Collections.emptyList(), mock(ConnectionContext.class),
+                        new HintValueContext()), queryContext);
         assertThat(actual.getSqlRewriteUnit().getSql(), is("SELECT 1"));
         assertThat(actual.getSqlRewriteUnit().getParameters(), is(Collections.emptyList()));
     }
     
-    private ShardingSphereDatabase mockDatabase() {
-        ShardingSphereDatabase result = mock(ShardingSphereDatabase.class);
-        when(result.getName()).thenReturn(DefaultDatabase.LOGIC_NAME);
-        when(result.getSchemas()).thenReturn(Collections.singletonMap("test", mock(ShardingSphereSchema.class)));
-        return result;
+    private Map<String, StorageUnit> mockStorageUnits(final DatabaseType databaseType) {
+        StorageUnit result = mock(StorageUnit.class, RETURNS_DEEP_STUBS);
+        when(result.getStorageType()).thenReturn(databaseType);
+        return Collections.singletonMap("ds_0", result);
     }
 }

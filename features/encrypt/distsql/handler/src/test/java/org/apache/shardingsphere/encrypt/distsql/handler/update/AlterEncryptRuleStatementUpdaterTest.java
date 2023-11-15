@@ -19,18 +19,18 @@ package org.apache.shardingsphere.encrypt.distsql.handler.update;
 
 import org.apache.shardingsphere.distsql.handler.exception.rule.InvalidRuleConfigurationException;
 import org.apache.shardingsphere.distsql.handler.exception.rule.MissingRequiredRuleException;
-import org.apache.shardingsphere.distsql.parser.segment.AlgorithmSegment;
+import org.apache.shardingsphere.distsql.segment.AlgorithmSegment;
 import org.apache.shardingsphere.encrypt.api.config.EncryptRuleConfiguration;
 import org.apache.shardingsphere.encrypt.api.config.rule.EncryptColumnItemRuleConfiguration;
 import org.apache.shardingsphere.encrypt.api.config.rule.EncryptColumnRuleConfiguration;
 import org.apache.shardingsphere.encrypt.api.config.rule.EncryptTableRuleConfiguration;
-import org.apache.shardingsphere.encrypt.distsql.parser.segment.EncryptColumnItemSegment;
-import org.apache.shardingsphere.encrypt.distsql.parser.segment.EncryptColumnSegment;
-import org.apache.shardingsphere.encrypt.distsql.parser.segment.EncryptRuleSegment;
-import org.apache.shardingsphere.encrypt.distsql.parser.statement.AlterEncryptRuleStatement;
+import org.apache.shardingsphere.encrypt.distsql.segment.EncryptColumnItemSegment;
+import org.apache.shardingsphere.encrypt.distsql.segment.EncryptColumnSegment;
+import org.apache.shardingsphere.encrypt.distsql.segment.EncryptRuleSegment;
+import org.apache.shardingsphere.encrypt.distsql.statement.AlterEncryptRuleStatement;
 import org.apache.shardingsphere.infra.config.algorithm.AlgorithmConfiguration;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.infra.util.spi.exception.ServiceProviderNotFoundServerException;
+import org.apache.shardingsphere.infra.spi.exception.ServiceProviderNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -68,7 +68,7 @@ class AlterEncryptRuleStatementUpdaterTest {
     
     @Test
     void assertCheckSQLStatementWithoutToBeAlteredEncryptors() {
-        assertThrows(ServiceProviderNotFoundServerException.class, () -> updater.checkSQLStatement(database, createSQLStatement("INVALID_TYPE"), createCurrentRuleConfiguration()));
+        assertThrows(ServiceProviderNotFoundException.class, () -> updater.checkSQLStatement(database, createSQLStatement("INVALID_TYPE"), createCurrentRuleConfiguration()));
     }
     
     @Test
@@ -78,9 +78,9 @@ class AlterEncryptRuleStatementUpdaterTest {
     
     @Test
     void assertUpdateCurrentRuleConfigurationWithInUsedEncryptor() {
-        EncryptRuleConfiguration currentRuleConfiguration = createCurrentRuleConfigurationWithMultipleTableRules();
-        updater.updateCurrentRuleConfiguration(currentRuleConfiguration, createToBeAlteredRuleConfiguration());
-        assertThat(currentRuleConfiguration.getEncryptors().size(), is(1));
+        EncryptRuleConfiguration currentRuleConfig = createCurrentRuleConfigurationWithMultipleTableRules();
+        updater.updateCurrentRuleConfiguration(currentRuleConfig, createToBeAlteredRuleConfiguration());
+        assertThat(currentRuleConfig.getEncryptors().size(), is(1));
     }
     
     private AlterEncryptRuleStatement createSQLStatement(final String encryptorName) {

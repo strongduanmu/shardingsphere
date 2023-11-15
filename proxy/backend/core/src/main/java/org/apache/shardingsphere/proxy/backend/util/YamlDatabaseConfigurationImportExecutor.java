@@ -17,15 +17,13 @@
 
 package org.apache.shardingsphere.proxy.backend.util;
 
-import com.zaxxer.hikari.HikariDataSource;
 import org.apache.shardingsphere.broadcast.api.config.BroadcastRuleConfiguration;
 import org.apache.shardingsphere.broadcast.rule.BroadcastRule;
 import org.apache.shardingsphere.broadcast.yaml.config.YamlBroadcastRuleConfiguration;
 import org.apache.shardingsphere.broadcast.yaml.swapper.YamlBroadcastRuleConfigurationSwapper;
-import org.apache.shardingsphere.distsql.handler.exception.DistSQLException;
 import org.apache.shardingsphere.distsql.handler.exception.datasource.MissingRequiredDataSourcesException;
 import org.apache.shardingsphere.distsql.handler.exception.storageunit.InvalidStorageUnitsException;
-import org.apache.shardingsphere.distsql.handler.validate.DataSourcePropertiesValidateHandler;
+import org.apache.shardingsphere.distsql.handler.validate.DataSourcePoolPropertiesValidateHandler;
 import org.apache.shardingsphere.encrypt.api.config.CompatibleEncryptRuleConfiguration;
 import org.apache.shardingsphere.encrypt.api.config.EncryptRuleConfiguration;
 import org.apache.shardingsphere.encrypt.rule.EncryptRule;
@@ -34,16 +32,21 @@ import org.apache.shardingsphere.encrypt.yaml.config.YamlEncryptRuleConfiguratio
 import org.apache.shardingsphere.encrypt.yaml.swapper.YamlCompatibleEncryptRuleConfigurationSwapper;
 import org.apache.shardingsphere.encrypt.yaml.swapper.YamlEncryptRuleConfigurationSwapper;
 import org.apache.shardingsphere.infra.config.rule.RuleConfiguration;
-import org.apache.shardingsphere.infra.database.spi.DatabaseType;
 import org.apache.shardingsphere.infra.database.DatabaseTypeEngine;
+import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
+import org.apache.shardingsphere.infra.datasource.pool.config.DataSourceConfiguration;
 import org.apache.shardingsphere.infra.datasource.pool.creator.DataSourcePoolCreator;
-import org.apache.shardingsphere.infra.datasource.props.DataSourceProperties;
-import org.apache.shardingsphere.infra.datasource.props.DataSourcePropertiesCreator;
+import org.apache.shardingsphere.infra.datasource.pool.props.creator.DataSourcePoolPropertiesCreator;
+import org.apache.shardingsphere.infra.datasource.pool.props.domain.DataSourcePoolProperties;
+import org.apache.shardingsphere.infra.exception.core.ShardingSpherePreconditions;
+import org.apache.shardingsphere.infra.exception.core.external.sql.type.generic.UnsupportedSQLOperationException;
+import org.apache.shardingsphere.infra.exception.core.external.sql.type.kernel.category.DistSQLException;
 import org.apache.shardingsphere.infra.instance.InstanceContext;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
+import org.apache.shardingsphere.infra.metadata.database.resource.node.StorageNode;
+import org.apache.shardingsphere.infra.metadata.database.resource.unit.StorageUnit;
+import org.apache.shardingsphere.infra.metadata.database.resource.unit.StorageUnitNodeMapCreator;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
-import org.apache.shardingsphere.infra.util.exception.ShardingSpherePreconditions;
-import org.apache.shardingsphere.infra.util.exception.external.sql.type.generic.UnsupportedSQLOperationException;
 import org.apache.shardingsphere.infra.yaml.config.pojo.rule.YamlRuleConfiguration;
 import org.apache.shardingsphere.mask.api.config.MaskRuleConfiguration;
 import org.apache.shardingsphere.mask.rule.MaskRule;
@@ -77,7 +80,6 @@ import org.apache.shardingsphere.single.rule.SingleRule;
 import org.apache.shardingsphere.single.yaml.config.pojo.YamlSingleRuleConfiguration;
 import org.apache.shardingsphere.single.yaml.config.swapper.YamlSingleRuleConfigurationSwapper;
 
-import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
@@ -106,7 +108,7 @@ public final class YamlDatabaseConfigurationImportExecutor {
     
     private final YamlProxyDataSourceConfigurationSwapper dataSourceConfigSwapper = new YamlProxyDataSourceConfigurationSwapper();
     
-    private final DataSourcePropertiesValidateHandler validateHandler = new DataSourcePropertiesValidateHandler();
+    private final DataSourcePoolPropertiesValidateHandler validateHandler = new DataSourcePoolPropertiesValidateHandler();
     
     /**
      * Import proxy database from yaml configuration.
@@ -130,7 +132,7 @@ public final class YamlDatabaseConfigurationImportExecutor {
     private void checkDatabase(final String databaseName) {
         ShardingSpherePreconditions.checkNotNull(databaseName, () -> new UnsupportedSQLOperationException("Property `databaseName` in imported config is required"));
         if (ProxyContext.getInstance().databaseExists(databaseName)) {
-            ShardingSpherePreconditions.checkState(ProxyContext.getInstance().getDatabase(databaseName).getResourceMetaData().getDataSources().isEmpty(),
+            ShardingSpherePreconditions.checkState(ProxyContext.getInstance().getDatabase(databaseName).getResourceMetaData().getStorageUnits().isEmpty(),
                     () -> new UnsupportedSQLOperationException(String.format("Database `%s` exists and is not empty，overwrite is not supported", databaseName)));
         }
     }
@@ -147,18 +149,23 @@ public final class YamlDatabaseConfigurationImportExecutor {
     }
     
     private void addResources(final String databaseName, final Map<String, YamlProxyDataSourceConfiguration> yamlDataSourceMap) {
-        Map<String, DataSourceProperties> dataSourcePropsMap = new LinkedHashMap<>(yamlDataSourceMap.size(), 1F);
+        Map<String, DataSourcePoolProperties> propsMap = new LinkedHashMap<>(yamlDataSourceMap.size(), 1F);
         for (Entry<String, YamlProxyDataSourceConfiguration> entry : yamlDataSourceMap.entrySet()) {
-            dataSourcePropsMap.put(entry.getKey(), DataSourcePropertiesCreator.create(HikariDataSource.class.getName(), dataSourceConfigSwapper.swap(entry.getValue())));
+            DataSourceConfiguration dataSourceConfig = dataSourceConfigSwapper.swap(entry.getValue());
+            propsMap.put(entry.getKey(), DataSourcePoolPropertiesCreator.create(dataSourceConfig));
         }
-        validateHandler.validate(dataSourcePropsMap);
+        validateHandler.validate(propsMap);
         try {
-            ProxyContext.getInstance().getContextManager().getInstanceContext().getModeContextManager().registerStorageUnits(databaseName, dataSourcePropsMap);
+            ProxyContext.getInstance().getContextManager().getInstanceContext().getModeContextManager().registerStorageUnits(databaseName, propsMap);
         } catch (final SQLException ex) {
             throw new InvalidStorageUnitsException(Collections.singleton(ex.getMessage()));
         }
-        Map<String, DataSource> dataSource = ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaData().getDatabase(databaseName).getResourceMetaData().getDataSources();
-        dataSourcePropsMap.forEach((key, value) -> dataSource.put(key, DataSourcePoolCreator.create(value)));
+        Map<String, StorageUnit> storageUnits = ProxyContext.getInstance().getContextManager()
+                .getMetaDataContexts().getMetaData().getDatabase(databaseName).getResourceMetaData().getStorageUnits();
+        Map<String, StorageNode> toBeAddedStorageNode = StorageUnitNodeMapCreator.create(propsMap);
+        for (Entry<String, DataSourcePoolProperties> entry : propsMap.entrySet()) {
+            storageUnits.put(entry.getKey(), new StorageUnit(toBeAddedStorageNode.get(entry.getKey()), entry.getValue(), DataSourcePoolCreator.create(entry.getValue())));
+        }
     }
     
     private void addRules(final String databaseName, final Collection<YamlRuleConfiguration> yamlRuleConfigs) {
@@ -245,7 +252,7 @@ public final class YamlDatabaseConfigurationImportExecutor {
         InstanceContext instanceContext = ProxyContext.getInstance().getContextManager().getInstanceContext();
         shardingRuleConfigImportChecker.check(database, shardingRuleConfig);
         allRuleConfigs.add(shardingRuleConfig);
-        database.getRuleMetaData().getRules().add(new ShardingRule(shardingRuleConfig, database.getResourceMetaData().getDataSources().keySet(), instanceContext));
+        database.getRuleMetaData().getRules().add(new ShardingRule(shardingRuleConfig, database.getResourceMetaData().getStorageUnits().keySet(), instanceContext));
     }
     
     private void addReadwriteSplittingRuleConfiguration(final ReadwriteSplittingRuleConfiguration readwriteSplittingRuleConfig,
@@ -260,7 +267,7 @@ public final class YamlDatabaseConfigurationImportExecutor {
     private void addEncryptRuleConfiguration(final EncryptRuleConfiguration encryptRuleConfig, final Collection<RuleConfiguration> allRuleConfigs, final ShardingSphereDatabase database) {
         encryptRuleConfigImportChecker.check(database, encryptRuleConfig);
         allRuleConfigs.add(encryptRuleConfig);
-        database.getRuleMetaData().getRules().add(new EncryptRule(encryptRuleConfig));
+        database.getRuleMetaData().getRules().add(new EncryptRule(database.getName(), encryptRuleConfig));
     }
     
     private void addShadowRuleConfiguration(final ShadowRuleConfiguration shadowRuleConfig, final Collection<RuleConfiguration> allRuleConfigs, final ShardingSphereDatabase database) {
@@ -277,12 +284,19 @@ public final class YamlDatabaseConfigurationImportExecutor {
     
     private void addBroadcastRuleConfiguration(final BroadcastRuleConfiguration broadcastRuleConfig, final Collection<RuleConfiguration> allRuleConfigs, final ShardingSphereDatabase database) {
         allRuleConfigs.add(broadcastRuleConfig);
-        database.getRuleMetaData().getRules().add(new BroadcastRule(broadcastRuleConfig, database.getName(), database.getResourceMetaData().getDataSources()));
+        database.getRuleMetaData().getRules().add(new BroadcastRule(broadcastRuleConfig, database.getName(),
+                database.getResourceMetaData().getStorageUnits().entrySet().stream()
+                        .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().getDataSource(), (oldValue, currentValue) -> oldValue, LinkedHashMap::new)),
+                database.getRuleMetaData().getRules()));
     }
     
-    private void addSingleRuleConfiguration(final SingleRuleConfiguration broadcastRuleConfig, final Collection<RuleConfiguration> allRuleConfigs, final ShardingSphereDatabase database) {
-        allRuleConfigs.add(broadcastRuleConfig);
-        database.getRuleMetaData().getRules().add(new SingleRule(broadcastRuleConfig, database.getName(), database.getResourceMetaData().getDataSources(), database.getRuleMetaData().getRules()));
+    private void addSingleRuleConfiguration(final SingleRuleConfiguration singleRuleConfig, final Collection<RuleConfiguration> allRuleConfigs, final ShardingSphereDatabase database) {
+        allRuleConfigs.add(singleRuleConfig);
+        database.getRuleMetaData().getRules().add(
+                new SingleRule(singleRuleConfig, database.getName(), database.getProtocolType(),
+                        database.getResourceMetaData().getStorageUnits().entrySet().stream()
+                                .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().getDataSource(), (oldValue, currentValue) -> oldValue, LinkedHashMap::new)),
+                        database.getRuleMetaData().getRules()));
     }
     
     private void dropDatabase(final String databaseName) {

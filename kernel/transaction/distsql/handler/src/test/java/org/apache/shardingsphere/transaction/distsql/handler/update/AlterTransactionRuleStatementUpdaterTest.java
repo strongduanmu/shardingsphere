@@ -17,16 +17,16 @@
 
 package org.apache.shardingsphere.transaction.distsql.handler.update;
 
-import org.apache.shardingsphere.infra.util.props.PropertiesConverter;
-import org.apache.shardingsphere.infra.util.spi.ShardingSphereServiceLoader;
+import org.apache.shardingsphere.infra.props.PropertiesConverter;
+import org.apache.shardingsphere.infra.spi.ShardingSphereServiceLoader;
 import org.apache.shardingsphere.test.mock.AutoMockExtension;
 import org.apache.shardingsphere.test.mock.StaticMockSettings;
 import org.apache.shardingsphere.test.util.PropertiesBuilder;
 import org.apache.shardingsphere.test.util.PropertiesBuilder.Property;
 import org.apache.shardingsphere.transaction.config.TransactionRuleConfiguration;
 import org.apache.shardingsphere.transaction.distsql.handler.fixture.ShardingSphereTransactionManagerFixture;
-import org.apache.shardingsphere.transaction.distsql.parser.segment.TransactionProviderSegment;
-import org.apache.shardingsphere.transaction.distsql.parser.statement.updatable.AlterTransactionRuleStatement;
+import org.apache.shardingsphere.transaction.distsql.segment.TransactionProviderSegment;
+import org.apache.shardingsphere.transaction.distsql.statement.updatable.AlterTransactionRuleStatement;
 import org.apache.shardingsphere.transaction.spi.ShardingSphereTransactionManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

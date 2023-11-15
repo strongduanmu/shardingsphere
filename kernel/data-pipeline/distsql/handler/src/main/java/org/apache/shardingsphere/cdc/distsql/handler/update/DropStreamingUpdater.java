@@ -32,11 +32,11 @@ public final class DropStreamingUpdater implements RALUpdater<DropStreamingState
     
     @Override
     public void executeUpdate(final String databaseName, final DropStreamingStatement sqlStatement) throws SQLException {
-        jobAPI.stopAndDrop(sqlStatement.getJobId());
+        jobAPI.dropStreaming(sqlStatement.getJobId());
     }
     
     @Override
-    public String getType() {
-        return DropStreamingStatement.class.getName();
+    public Class<DropStreamingStatement> getType() {
+        return DropStreamingStatement.class;
     }
 }

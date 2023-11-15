@@ -18,7 +18,7 @@
 package org.apache.shardingsphere.proxy.backend.handler.distsql.ral.updatable;
 
 import org.apache.shardingsphere.distsql.handler.ral.update.RALUpdater;
-import org.apache.shardingsphere.distsql.parser.statement.ral.updatable.ImportDatabaseConfigurationStatement;
+import org.apache.shardingsphere.distsql.statement.ral.updatable.ImportDatabaseConfigurationStatement;
 import org.apache.shardingsphere.infra.util.yaml.YamlEngine;
 import org.apache.shardingsphere.proxy.backend.config.yaml.YamlProxyDatabaseConfiguration;
 import org.apache.shardingsphere.proxy.backend.exception.FileIOException;
@@ -48,7 +48,7 @@ public final class ImportDatabaseConfigurationUpdater implements RALUpdater<Impo
     }
     
     @Override
-    public String getType() {
-        return ImportDatabaseConfigurationStatement.class.getName();
+    public Class<ImportDatabaseConfigurationStatement> getType() {
+        return ImportDatabaseConfigurationStatement.class;
     }
 }

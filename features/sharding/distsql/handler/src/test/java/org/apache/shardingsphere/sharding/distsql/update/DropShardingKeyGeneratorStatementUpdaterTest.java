@@ -25,7 +25,7 @@ import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingAutoTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.strategy.keygen.KeyGenerateStrategyConfiguration;
 import org.apache.shardingsphere.sharding.distsql.handler.update.DropShardingKeyGeneratorStatementUpdater;
-import org.apache.shardingsphere.sharding.distsql.parser.statement.DropShardingKeyGeneratorStatement;
+import org.apache.shardingsphere.sharding.distsql.statement.DropShardingKeyGeneratorStatement;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -46,7 +46,7 @@ class DropShardingKeyGeneratorStatementUpdaterTest {
     
     @Test
     void assertExecuteWithNotExistWithIfExists() {
-        DropShardingKeyGeneratorStatement sqlStatement = new DropShardingKeyGeneratorStatement(true, Collections.singletonList("uuid_key_generator"));
+        DropShardingKeyGeneratorStatement sqlStatement = new DropShardingKeyGeneratorStatement(true, Collections.singleton("uuid_key_generator"));
         new DropShardingKeyGeneratorStatementUpdater().checkSQLStatement(mock(ShardingSphereDatabase.class), sqlStatement, new ShardingRuleConfiguration());
     }
     

@@ -20,7 +20,7 @@ package org.apache.shardingsphere.shadow.distsql.handler.query;
 import org.apache.shardingsphere.distsql.handler.query.RQLExecutor;
 import org.apache.shardingsphere.infra.merge.result.impl.local.LocalDataQueryResultRow;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.shadow.distsql.parser.statement.CountShadowRuleStatement;
+import org.apache.shardingsphere.shadow.distsql.statement.CountShadowRuleStatement;
 import org.apache.shardingsphere.shadow.rule.ShadowRule;
 
 import java.util.Arrays;
@@ -51,7 +51,7 @@ public final class CountShadowRuleExecutor implements RQLExecutor<CountShadowRul
     }
     
     @Override
-    public String getType() {
-        return CountShadowRuleStatement.class.getName();
+    public Class<CountShadowRuleStatement> getType() {
+        return CountShadowRuleStatement.class;
     }
 }

@@ -17,7 +17,6 @@
 
 package org.apache.shardingsphere.data.pipeline.core.job.service;
 
-import org.apache.shardingsphere.data.pipeline.common.config.PipelineTaskConfiguration;
 import org.apache.shardingsphere.data.pipeline.common.config.job.PipelineJobConfiguration;
 import org.apache.shardingsphere.data.pipeline.common.config.job.yaml.YamlPipelineJobConfiguration;
 import org.apache.shardingsphere.data.pipeline.common.config.process.PipelineProcessConfiguration;
@@ -25,14 +24,14 @@ import org.apache.shardingsphere.data.pipeline.common.context.PipelineContextKey
 import org.apache.shardingsphere.data.pipeline.common.context.PipelineJobItemContext;
 import org.apache.shardingsphere.data.pipeline.common.context.PipelineProcessContext;
 import org.apache.shardingsphere.data.pipeline.common.job.JobStatus;
-import org.apache.shardingsphere.data.pipeline.common.job.PipelineJobId;
+import org.apache.shardingsphere.data.pipeline.common.job.PipelineJob;
 import org.apache.shardingsphere.data.pipeline.common.job.progress.PipelineJobItemProgress;
-import org.apache.shardingsphere.data.pipeline.common.job.type.JobType;
 import org.apache.shardingsphere.data.pipeline.common.pojo.PipelineJobInfo;
-import org.apache.shardingsphere.infra.util.spi.annotation.SingletonSPI;
-import org.apache.shardingsphere.infra.util.spi.type.typed.TypedSPI;
+import org.apache.shardingsphere.data.pipeline.core.task.config.PipelineTaskConfiguration;
+import org.apache.shardingsphere.elasticjob.infra.pojo.JobConfigurationPOJO;
+import org.apache.shardingsphere.infra.spi.annotation.SingletonSPI;
+import org.apache.shardingsphere.infra.spi.type.typed.TypedSPI;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -40,21 +39,6 @@ import java.util.Optional;
  */
 @SingletonSPI
 public interface PipelineJobAPI extends TypedSPI {
-    
-    /**
-     * Get job type.
-     *
-     * @return job type
-     */
-    JobType getJobType();
-    
-    /**
-     * Marshal pipeline job id.
-     *
-     * @param pipelineJobId pipeline job id
-     * @return marshaled text
-     */
-    String marshalJobId(PipelineJobId pipelineJobId);
     
     /**
      * Extend YAML job configuration.
@@ -113,12 +97,20 @@ public interface PipelineJobAPI extends TypedSPI {
     PipelineJobConfiguration getJobConfiguration(String jobId);
     
     /**
-     * Get pipeline job info.
+     * Get job configuration.
      *
-     * @param contextKey context key
-     * @return job info list
+     * @param jobConfigPOJO job configuration POJO
+     * @return pipeline job configuration
      */
-    List<PipelineJobInfo> list(PipelineContextKey contextKey);
+    PipelineJobConfiguration getJobConfiguration(JobConfigurationPOJO jobConfigPOJO);
+    
+    /**
+     * Get pipeline job info.
+     * 
+     * @param jobId job ID
+     * @return pipeline job info
+     */
+    PipelineJobInfo getJobInfo(String jobId);
     
     /**
      * Persist job item progress.
@@ -162,13 +154,13 @@ public interface PipelineJobAPI extends TypedSPI {
     String getJobItemErrorMessage(String jobId, int shardingItem);
     
     /**
-     * Persist job item error message.
+     * Update job item error message.
      *
      * @param jobId job id
      * @param shardingItem sharding item
      * @param error error
      */
-    void persistJobItemErrorMessage(String jobId, int shardingItem, Object error);
+    void updateJobItemErrorMessage(String jobId, int shardingItem, Object error);
     
     /**
      * Clean job item error message.
@@ -177,4 +169,14 @@ public interface PipelineJobAPI extends TypedSPI {
      * @param shardingItem sharding item
      */
     void cleanJobItemErrorMessage(String jobId, int shardingItem);
+    
+    /**
+     * Get pipeline job class.
+     * 
+     * @return pipeline job class
+     */
+    Class<? extends PipelineJob> getPipelineJobClass();
+    
+    @Override
+    String getType();
 }

@@ -19,10 +19,10 @@ package org.apache.shardingsphere.proxy.backend.handler.distsql.ral;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.apache.shardingsphere.distsql.parser.statement.ral.QueryableRALStatement;
-import org.apache.shardingsphere.distsql.parser.statement.ral.RALStatement;
-import org.apache.shardingsphere.distsql.parser.statement.ral.UpdatableGlobalRuleRALStatement;
-import org.apache.shardingsphere.distsql.parser.statement.ral.UpdatableRALStatement;
+import org.apache.shardingsphere.distsql.statement.ral.QueryableRALStatement;
+import org.apache.shardingsphere.distsql.statement.ral.RALStatement;
+import org.apache.shardingsphere.distsql.statement.ral.UpdatableGlobalRuleRALStatement;
+import org.apache.shardingsphere.distsql.statement.ral.UpdatableRALStatement;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.handler.ProxyBackendHandler;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
@@ -45,7 +45,8 @@ public final class RALBackendHandlerFactory {
             return new QueryableRALBackendHandler<>((QueryableRALStatement) sqlStatement, connectionSession);
         }
         if (sqlStatement instanceof UpdatableGlobalRuleRALStatement) {
-            if ("Cluster".equals(ProxyContext.getInstance().getContextManager().getInstanceContext().getModeConfiguration().getType())) {
+            String modeType = ProxyContext.getInstance().getContextManager().getInstanceContext().getModeConfiguration().getType();
+            if ("Cluster".equals(modeType) || "Standalone".equals(modeType)) {
                 return new NewUpdatableGlobalRuleRALBackendHandler((UpdatableGlobalRuleRALStatement) sqlStatement);
             }
             return new UpdatableGlobalRuleRALBackendHandler((UpdatableGlobalRuleRALStatement) sqlStatement);

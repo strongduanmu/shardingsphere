@@ -23,10 +23,10 @@ import org.apache.shardingsphere.data.pipeline.common.job.progress.yaml.YamlCons
 import org.apache.shardingsphere.data.pipeline.core.job.service.PipelineAPIFactory;
 import org.apache.shardingsphere.data.pipeline.scenario.consistencycheck.ConsistencyCheckJob;
 import org.apache.shardingsphere.data.pipeline.scenario.consistencycheck.ConsistencyCheckJobId;
-import org.apache.shardingsphere.data.pipeline.scenario.consistencycheck.api.impl.ConsistencyCheckJobAPI;
 import org.apache.shardingsphere.data.pipeline.scenario.consistencycheck.config.yaml.YamlConsistencyCheckJobConfiguration;
 import org.apache.shardingsphere.data.pipeline.scenario.consistencycheck.context.ConsistencyCheckJobItemContext;
 import org.apache.shardingsphere.elasticjob.api.ShardingContext;
+import org.apache.shardingsphere.infra.instance.metadata.InstanceType;
 import org.apache.shardingsphere.infra.util.yaml.YamlEngine;
 import org.apache.shardingsphere.test.it.data.pipeline.core.util.JobConfigurationBuilder;
 import org.apache.shardingsphere.test.it.data.pipeline.core.util.PipelineContextUtils;
@@ -48,21 +48,23 @@ class ConsistencyCheckJobTest {
     
     @Test
     void assertBuildPipelineJobItemContext() {
-        ConsistencyCheckJobId pipelineJobId = new ConsistencyCheckJobId(PipelineContextKey.buildForProxy(), JobConfigurationBuilder.createYamlMigrationJobConfiguration().getJobId());
-        String checkJobId = new ConsistencyCheckJobAPI().marshalJobId(pipelineJobId);
+        ConsistencyCheckJobId pipelineJobId = new ConsistencyCheckJobId(new PipelineContextKey(InstanceType.PROXY), JobConfigurationBuilder.createYamlMigrationJobConfiguration().getJobId());
+        String checkJobId = pipelineJobId.marshal();
         Map<String, Object> expectTableCheckPosition = Collections.singletonMap("t_order", 100);
         PipelineAPIFactory.getGovernanceRepositoryAPI(PipelineContextUtils.getContextKey()).persistJobItemProgress(checkJobId, 0,
                 YamlEngine.marshal(createYamlConsistencyCheckJobItemProgress(expectTableCheckPosition)));
         ConsistencyCheckJob consistencyCheckJob = new ConsistencyCheckJob(checkJobId);
         ConsistencyCheckJobItemContext actual = consistencyCheckJob.buildPipelineJobItemContext(
                 new ShardingContext(checkJobId, "", 1, YamlEngine.marshal(createYamlConsistencyCheckJobConfiguration(checkJobId)), 0, ""));
-        assertThat(actual.getProgressContext().getTableCheckPositions(), is(expectTableCheckPosition));
+        assertThat(actual.getProgressContext().getSourceTableCheckPositions(), is(expectTableCheckPosition));
+        assertThat(actual.getProgressContext().getTargetTableCheckPositions(), is(expectTableCheckPosition));
     }
     
     private YamlConsistencyCheckJobItemProgress createYamlConsistencyCheckJobItemProgress(final Map<String, Object> expectTableCheckPosition) {
         YamlConsistencyCheckJobItemProgress result = new YamlConsistencyCheckJobItemProgress();
         result.setStatus(JobStatus.RUNNING.name());
-        result.setTableCheckPositions(expectTableCheckPosition);
+        result.setSourceTableCheckPositions(expectTableCheckPosition);
+        result.setTargetTableCheckPositions(expectTableCheckPosition);
         return result;
     }
     
@@ -70,6 +72,8 @@ class ConsistencyCheckJobTest {
         YamlConsistencyCheckJobConfiguration result = new YamlConsistencyCheckJobConfiguration();
         result.setJobId(checkJobId);
         result.setParentJobId("");
+        result.setAlgorithmTypeName("DATA_MATCH");
+        result.setSourceDatabaseType("H2");
         return result;
     }
 }

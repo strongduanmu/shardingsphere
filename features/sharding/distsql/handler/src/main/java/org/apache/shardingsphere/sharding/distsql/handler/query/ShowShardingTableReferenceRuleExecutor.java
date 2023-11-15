@@ -22,7 +22,7 @@ import org.apache.shardingsphere.infra.merge.result.impl.local.LocalDataQueryRes
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableReferenceRuleConfiguration;
-import org.apache.shardingsphere.sharding.distsql.parser.statement.ShowShardingTableReferenceRulesStatement;
+import org.apache.shardingsphere.sharding.distsql.statement.ShowShardingTableReferenceRulesStatement;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 
 import java.util.Arrays;
@@ -43,7 +43,7 @@ public final class ShowShardingTableReferenceRuleExecutor implements RQLExecutor
             return Collections.emptyList();
         }
         Collection<LocalDataQueryResultRow> result = new LinkedList<>();
-        for (final ShardingTableReferenceRuleConfiguration referenceRule : ((ShardingRuleConfiguration) rule.get().getConfiguration()).getBindingTableGroups()) {
+        for (ShardingTableReferenceRuleConfiguration referenceRule : ((ShardingRuleConfiguration) rule.get().getConfiguration()).getBindingTableGroups()) {
             if (null == sqlStatement.getRuleName() || referenceRule.getName().equalsIgnoreCase(sqlStatement.getRuleName())) {
                 result.add(new LocalDataQueryResultRow(referenceRule.getName(), referenceRule.getReference()));
             }
@@ -57,7 +57,7 @@ public final class ShowShardingTableReferenceRuleExecutor implements RQLExecutor
     }
     
     @Override
-    public String getType() {
-        return ShowShardingTableReferenceRulesStatement.class.getName();
+    public Class<ShowShardingTableReferenceRulesStatement> getType() {
+        return ShowShardingTableReferenceRulesStatement.class;
     }
 }

@@ -20,11 +20,10 @@ package org.apache.shardingsphere.data.pipeline.common.registrycenter.repository
 import com.google.common.base.Strings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.shardingsphere.data.pipeline.common.job.type.JobType;
 import org.apache.shardingsphere.data.pipeline.common.metadata.node.PipelineMetaDataNode;
-import org.apache.shardingsphere.data.pipeline.core.consistencycheck.result.DataConsistencyCheckResult;
-import org.apache.shardingsphere.data.pipeline.core.consistencycheck.result.yaml.YamlDataConsistencyCheckResult;
-import org.apache.shardingsphere.data.pipeline.core.consistencycheck.result.yaml.YamlDataConsistencyCheckResultSwapper;
+import org.apache.shardingsphere.data.pipeline.core.consistencycheck.result.TableDataConsistencyCheckResult;
+import org.apache.shardingsphere.data.pipeline.core.consistencycheck.result.yaml.YamlTableDataConsistencyCheckResult;
+import org.apache.shardingsphere.data.pipeline.core.consistencycheck.result.yaml.YamlTableDataConsistencyCheckResultSwapper;
 import org.apache.shardingsphere.infra.util.yaml.YamlEngine;
 import org.apache.shardingsphere.mode.repository.cluster.ClusterPersistRepository;
 import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEventListener;
@@ -98,14 +97,14 @@ public final class GovernanceRepositoryAPIImpl implements GovernanceRepositoryAP
     
     @SuppressWarnings("unchecked")
     @Override
-    public Map<String, DataConsistencyCheckResult> getCheckJobResult(final String parentJobId, final String checkJobId) {
+    public Map<String, TableDataConsistencyCheckResult> getCheckJobResult(final String parentJobId, final String checkJobId) {
         String yamlCheckResultMapText = repository.getDirectly(PipelineMetaDataNode.getCheckJobResultPath(parentJobId, checkJobId));
         if (Strings.isNullOrEmpty(yamlCheckResultMapText)) {
             return Collections.emptyMap();
         }
-        YamlDataConsistencyCheckResultSwapper swapper = new YamlDataConsistencyCheckResultSwapper();
+        YamlTableDataConsistencyCheckResultSwapper swapper = new YamlTableDataConsistencyCheckResultSwapper();
         Map<String, String> yamlCheckResultMap = YamlEngine.unmarshal(yamlCheckResultMapText, Map.class, true);
-        Map<String, DataConsistencyCheckResult> result = new HashMap<>(yamlCheckResultMap.size(), 1F);
+        Map<String, TableDataConsistencyCheckResult> result = new HashMap<>(yamlCheckResultMap.size(), 1F);
         for (Entry<String, String> entry : yamlCheckResultMap.entrySet()) {
             result.put(entry.getKey(), swapper.swapToObject(entry.getValue()));
         }
@@ -113,13 +112,13 @@ public final class GovernanceRepositoryAPIImpl implements GovernanceRepositoryAP
     }
     
     @Override
-    public void persistCheckJobResult(final String parentJobId, final String checkJobId, final Map<String, DataConsistencyCheckResult> checkResultMap) {
+    public void persistCheckJobResult(final String parentJobId, final String checkJobId, final Map<String, TableDataConsistencyCheckResult> checkResultMap) {
         if (null == checkResultMap) {
             return;
         }
         Map<String, String> yamlCheckResultMap = new LinkedHashMap<>();
-        for (Entry<String, DataConsistencyCheckResult> entry : checkResultMap.entrySet()) {
-            YamlDataConsistencyCheckResult yamlCheckResult = new YamlDataConsistencyCheckResultSwapper().swapToYamlConfiguration(entry.getValue());
+        for (Entry<String, TableDataConsistencyCheckResult> entry : checkResultMap.entrySet()) {
+            YamlTableDataConsistencyCheckResult yamlCheckResult = new YamlTableDataConsistencyCheckResultSwapper().swapToYamlConfiguration(entry.getValue());
             yamlCheckResultMap.put(entry.getKey(), YamlEngine.marshal(yamlCheckResult));
         }
         repository.persist(PipelineMetaDataNode.getCheckJobResultPath(parentJobId, checkJobId), YamlEngine.marshal(yamlCheckResultMap));
@@ -156,38 +155,38 @@ public final class GovernanceRepositoryAPIImpl implements GovernanceRepositoryAP
     }
     
     @Override
+    public void update(final String key, final String value) {
+        repository.update(key, value);
+    }
+    
+    @Override
     public List<Integer> getShardingItems(final String jobId) {
         List<String> result = getChildrenKeys(PipelineMetaDataNode.getJobOffsetPath(jobId));
         return result.stream().map(Integer::parseInt).collect(Collectors.toList());
     }
     
     @Override
-    public String getMetaDataDataSources(final JobType jobType) {
+    public String getMetaDataDataSources(final String jobType) {
         return repository.getDirectly(PipelineMetaDataNode.getMetaDataDataSourcesPath(jobType));
     }
     
     @Override
-    public void persistMetaDataDataSources(final JobType jobType, final String metaDataDataSources) {
+    public void persistMetaDataDataSources(final String jobType, final String metaDataDataSources) {
         repository.persist(PipelineMetaDataNode.getMetaDataDataSourcesPath(jobType), metaDataDataSources);
     }
     
     @Override
-    public String getMetaDataProcessConfiguration(final JobType jobType) {
+    public String getMetaDataProcessConfiguration(final String jobType) {
         return repository.getDirectly(PipelineMetaDataNode.getMetaDataProcessConfigPath(jobType));
     }
     
     @Override
-    public void persistMetaDataProcessConfiguration(final JobType jobType, final String processConfigYamlText) {
+    public void persistMetaDataProcessConfiguration(final String jobType, final String processConfigYamlText) {
         repository.persist(PipelineMetaDataNode.getMetaDataProcessConfigPath(jobType), processConfigYamlText);
     }
     
     @Override
     public String getJobItemErrorMessage(final String jobId, final int shardingItem) {
         return repository.getDirectly(PipelineMetaDataNode.getJobItemErrorMessagePath(jobId, shardingItem));
-    }
-    
-    @Override
-    public void cleanJobItemErrorMessage(final String jobId, final int shardingItem) {
-        repository.delete(PipelineMetaDataNode.getJobItemErrorMessagePath(jobId, shardingItem));
     }
 }

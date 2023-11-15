@@ -20,7 +20,7 @@ package org.apache.shardingsphere.mask.distsql.handler.query;
 import org.apache.shardingsphere.distsql.handler.query.RQLExecutor;
 import org.apache.shardingsphere.infra.merge.result.impl.local.LocalDataQueryResultRow;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.mask.distsql.parser.statement.CountMaskRuleStatement;
+import org.apache.shardingsphere.mask.distsql.statement.CountMaskRuleStatement;
 import org.apache.shardingsphere.mask.rule.MaskRule;
 
 import java.util.Arrays;
@@ -51,7 +51,7 @@ public final class CountMaskRuleExecutor implements RQLExecutor<CountMaskRuleSta
     }
     
     @Override
-    public String getType() {
-        return CountMaskRuleStatement.class.getName();
+    public Class<CountMaskRuleStatement> getType() {
+        return CountMaskRuleStatement.class;
     }
 }

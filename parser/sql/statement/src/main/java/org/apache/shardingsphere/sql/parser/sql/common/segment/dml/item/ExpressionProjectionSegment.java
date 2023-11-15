@@ -60,6 +60,11 @@ public final class ExpressionProjectionSegment implements ProjectionSegment, Com
     }
     
     @Override
+    public String getColumnLabel() {
+        return getAliasName().orElse(text);
+    }
+    
+    @Override
     public Optional<String> getAliasName() {
         return null == alias ? Optional.empty() : Optional.ofNullable(alias.getIdentifier().getValue());
     }
@@ -69,8 +74,17 @@ public final class ExpressionProjectionSegment implements ProjectionSegment, Com
         return Optional.ofNullable(alias).map(AliasSegment::getIdentifier);
     }
     
+    /**
+     * Get alias segment.
+     *
+     * @return alias segment
+     */
+    public AliasSegment getAliasSegment() {
+        return alias;
+    }
+    
     @Override
     public int getStopIndex() {
-        return null != alias ? alias.getStopIndex() : stopIndex;
+        return null == alias ? stopIndex : alias.getStopIndex();
     }
 }

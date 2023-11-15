@@ -24,8 +24,8 @@ import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableReferenceRuleConfiguration;
 import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfiguration;
 import org.apache.shardingsphere.sharding.distsql.handler.update.CreateShardingTableReferenceRuleStatementUpdater;
-import org.apache.shardingsphere.sharding.distsql.parser.segment.table.TableReferenceRuleSegment;
-import org.apache.shardingsphere.sharding.distsql.parser.statement.CreateShardingTableReferenceRuleStatement;
+import org.apache.shardingsphere.sharding.distsql.segment.table.TableReferenceRuleSegment;
+import org.apache.shardingsphere.sharding.distsql.statement.CreateShardingTableReferenceRuleStatement;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -71,9 +71,9 @@ class CreateShardingTableReferenceRuleStatementUpdaterTest {
         updater.checkSQLStatement(database, sqlStatement, currentRuleConfig);
         ShardingRuleConfiguration toBeCreatedRuleConfig = updater.buildToBeCreatedRuleConfiguration(currentRuleConfig, sqlStatement);
         updater.updateCurrentRuleConfiguration(currentRuleConfig, toBeCreatedRuleConfig);
-        Collection<ShardingTableReferenceRuleConfiguration> referenceRuleConfigurations = currentRuleConfig.getBindingTableGroups();
-        assertThat(referenceRuleConfigurations.size(), is(1));
-        Iterator<ShardingTableReferenceRuleConfiguration> iterator = referenceRuleConfigurations.iterator();
+        Collection<ShardingTableReferenceRuleConfiguration> referenceRuleConfigs = currentRuleConfig.getBindingTableGroups();
+        assertThat(referenceRuleConfigs.size(), is(1));
+        Iterator<ShardingTableReferenceRuleConfiguration> iterator = referenceRuleConfigs.iterator();
         assertThat(iterator.next().getReference(), is("t_1,t_2"));
     }
     

@@ -19,7 +19,7 @@ package org.apache.shardingsphere.data.pipeline.common.pojo;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.shardingsphere.infra.database.spi.DatabaseType;
+import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
 
 import java.util.Collection;
 
@@ -31,6 +31,8 @@ import java.util.Collection;
 public final class DataConsistencyCheckAlgorithmInfo {
     
     private final String type;
+    
+    private final String typeAliases;
     
     private final Collection<DatabaseType> supportedDatabaseTypes;
     

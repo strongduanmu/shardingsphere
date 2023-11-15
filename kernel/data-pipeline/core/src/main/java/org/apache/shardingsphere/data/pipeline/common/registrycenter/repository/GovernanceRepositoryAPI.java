@@ -17,8 +17,7 @@
 
 package org.apache.shardingsphere.data.pipeline.common.registrycenter.repository;
 
-import org.apache.shardingsphere.data.pipeline.common.job.type.JobType;
-import org.apache.shardingsphere.data.pipeline.core.consistencycheck.result.DataConsistencyCheckResult;
+import org.apache.shardingsphere.data.pipeline.core.consistencycheck.result.TableDataConsistencyCheckResult;
 import org.apache.shardingsphere.mode.repository.cluster.listener.DataChangedEventListener;
 
 import java.util.Collection;
@@ -112,7 +111,7 @@ public interface GovernanceRepositoryAPI {
      * @param checkJobId check job id
      * @return check job result
      */
-    Map<String, DataConsistencyCheckResult> getCheckJobResult(String parentJobId, String checkJobId);
+    Map<String, TableDataConsistencyCheckResult> getCheckJobResult(String parentJobId, String checkJobId);
     
     /**
      * Persist check job result.
@@ -121,7 +120,7 @@ public interface GovernanceRepositoryAPI {
      * @param checkJobId check job id
      * @param checkResultMap check result map
      */
-    void persistCheckJobResult(String parentJobId, String checkJobId, Map<String, DataConsistencyCheckResult> checkResultMap);
+    void persistCheckJobResult(String parentJobId, String checkJobId, Map<String, TableDataConsistencyCheckResult> checkResultMap);
     
     /**
      * Delete check job result.
@@ -171,6 +170,14 @@ public interface GovernanceRepositoryAPI {
     void persist(String key, String value);
     
     /**
+     * Update data.
+     *
+     * @param key key of data
+     * @param value value of data
+     */
+    void update(String key, String value);
+    
+    /**
      * Get sharding items of job.
      *
      * @param jobId job id
@@ -184,7 +191,7 @@ public interface GovernanceRepositoryAPI {
      * @param jobType job type
      * @return data source properties
      */
-    String getMetaDataDataSources(JobType jobType);
+    String getMetaDataDataSources(String jobType);
     
     /**
      * Persist meta data data sources.
@@ -192,7 +199,7 @@ public interface GovernanceRepositoryAPI {
      * @param jobType job type
      * @param metaDataDataSources data source properties
      */
-    void persistMetaDataDataSources(JobType jobType, String metaDataDataSources);
+    void persistMetaDataDataSources(String jobType, String metaDataDataSources);
     
     /**
      * Get meta data process configuration.
@@ -200,7 +207,7 @@ public interface GovernanceRepositoryAPI {
      * @param jobType job type, nullable
      * @return process configuration YAML text
      */
-    String getMetaDataProcessConfiguration(JobType jobType);
+    String getMetaDataProcessConfiguration(String jobType);
     
     /**
      * Persist meta data process configuration.
@@ -208,7 +215,7 @@ public interface GovernanceRepositoryAPI {
      * @param jobType job type, nullable
      * @param processConfigYamlText process configuration YAML text
      */
-    void persistMetaDataProcessConfiguration(JobType jobType, String processConfigYamlText);
+    void persistMetaDataProcessConfiguration(String jobType, String processConfigYamlText);
     
     /**
      * Get job item error msg.
@@ -218,12 +225,4 @@ public interface GovernanceRepositoryAPI {
      * @return error msg
      */
     String getJobItemErrorMessage(String jobId, int shardingItem);
-    
-    /**
-     * Clean job item error message.
-     *
-     * @param jobId job id
-     * @param shardingItem sharding item
-     */
-    void cleanJobItemErrorMessage(String jobId, int shardingItem);
 }

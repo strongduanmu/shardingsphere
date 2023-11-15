@@ -17,16 +17,18 @@
 
 package org.apache.shardingsphere.single.distsql.handler.update;
 
-import org.apache.shardingsphere.dialect.exception.syntax.table.TableExistsException;
 import org.apache.shardingsphere.distsql.handler.exception.storageunit.MissingRequiredStorageUnitsException;
 import org.apache.shardingsphere.distsql.handler.update.RuleDefinitionCreateUpdater;
 import org.apache.shardingsphere.infra.database.DatabaseTypeEngine;
+import org.apache.shardingsphere.infra.database.core.metadata.database.DialectDatabaseMetaData;
+import org.apache.shardingsphere.infra.database.core.type.DatabaseTypeRegistry;
 import org.apache.shardingsphere.infra.exception.InvalidDataNodesFormatException;
+import org.apache.shardingsphere.infra.exception.core.ShardingSpherePreconditions;
+import org.apache.shardingsphere.infra.exception.dialect.exception.syntax.table.TableExistsException;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.infra.metadata.database.resource.ShardingSphereResourceMetaData;
+import org.apache.shardingsphere.infra.metadata.database.resource.ResourceMetaData;
 import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.rule.identifier.type.DataSourceContainedRule;
-import org.apache.shardingsphere.infra.util.exception.ShardingSpherePreconditions;
 import org.apache.shardingsphere.single.api.config.SingleRuleConfiguration;
 import org.apache.shardingsphere.single.api.constant.SingleTableConstants;
 import org.apache.shardingsphere.single.datanode.SingleTableDataNodeLoader;
@@ -40,6 +42,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 /**
@@ -49,7 +52,7 @@ public final class LoadSingleTableStatementUpdater implements RuleDefinitionCrea
     
     @Override
     public void checkSQLStatement(final ShardingSphereDatabase database, final LoadSingleTableStatement sqlStatement, final SingleRuleConfiguration currentRuleConfig) {
-        String defaultSchemaName = DatabaseTypeEngine.getDefaultSchemaName(database.getProtocolType(), database.getName());
+        String defaultSchemaName = new DatabaseTypeRegistry(database.getProtocolType()).getDefaultSchemaName(database.getName());
         checkDuplicatedTables(database, sqlStatement, defaultSchemaName);
         checkStorageUnits(database, sqlStatement);
         checkActualTableExist(database, sqlStatement, defaultSchemaName);
@@ -57,7 +60,8 @@ public final class LoadSingleTableStatementUpdater implements RuleDefinitionCrea
     
     private void checkDuplicatedTables(final ShardingSphereDatabase database, final LoadSingleTableStatement sqlStatement, final String defaultSchemaName) {
         Collection<SingleTableSegment> tableSegments = sqlStatement.getTables();
-        boolean isSchemaSupportedDatabaseType = database.getProtocolType().getDefaultSchema().isPresent();
+        DialectDatabaseMetaData dialectDatabaseMetaData = new DatabaseTypeRegistry(database.getProtocolType()).getDialectDatabaseMetaData();
+        boolean isSchemaSupportedDatabaseType = dialectDatabaseMetaData.getDefaultSchema().isPresent();
         ShardingSphereSchema schema = database.getSchema(defaultSchemaName);
         for (SingleTableSegment each : tableSegments) {
             checkDatabaseTypeAndTableNodeStyle(isSchemaSupportedDatabaseType, each);
@@ -109,11 +113,15 @@ public final class LoadSingleTableStatementUpdater implements RuleDefinitionCrea
         if (requiredDataSources.isEmpty()) {
             return;
         }
-        ShardingSphereResourceMetaData resourceMetaData = database.getResourceMetaData();
-        Map<String, DataSource> aggregateDataSourceMap = SingleTableLoadUtils.getAggregatedDataSourceMap(resourceMetaData.getDataSources(), database.getRuleMetaData().getRules());
+        ResourceMetaData resourceMetaData = database.getResourceMetaData();
+        Map<String, DataSource> aggregateDataSourceMap = SingleTableLoadUtils.getAggregatedDataSourceMap(
+                resourceMetaData.getStorageUnits().entrySet().stream()
+                        .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().getDataSource(), (oldValue, currentValue) -> oldValue, LinkedHashMap::new)),
+                database.getRuleMetaData().getRules());
         Map<String, Map<String, Collection<String>>> actualTableNodes = new LinkedHashMap<>();
         for (String each : requiredDataSources) {
-            Map<String, Collection<String>> schemaTableNames = SingleTableDataNodeLoader.loadSchemaTableNames(database.getName(), database.getProtocolType(), aggregateDataSourceMap.get(each), each);
+            DataSource dataSource = aggregateDataSourceMap.get(each);
+            Map<String, Collection<String>> schemaTableNames = SingleTableDataNodeLoader.loadSchemaTableNames(database.getName(), DatabaseTypeEngine.getStorageType(dataSource), dataSource, each);
             if (!schemaTableNames.isEmpty()) {
                 actualTableNodes.put(each, schemaTableNames);
             }
@@ -153,7 +161,7 @@ public final class LoadSingleTableStatementUpdater implements RuleDefinitionCrea
     }
     
     @Override
-    public String getType() {
-        return LoadSingleTableStatement.class.getName();
+    public Class<LoadSingleTableStatement> getType() {
+        return LoadSingleTableStatement.class;
     }
 }
