@@ -18,26 +18,19 @@
 package org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.status.compute.watcher;
 
 import com.google.common.base.Strings;
-import org.apache.shardingsphere.infra.instance.ComputeNodeData;
-import org.apache.shardingsphere.infra.instance.metadata.InstanceMetaData;
-import org.apache.shardingsphere.infra.instance.metadata.InstanceMetaDataFactory;
-import org.apache.shardingsphere.infra.instance.metadata.InstanceType;
+import org.apache.shardingsphere.infra.rule.event.GovernanceEvent;
 import org.apache.shardingsphere.infra.util.yaml.YamlEngine;
 import org.apache.shardingsphere.metadata.persist.node.ComputeNode;
-import org.apache.shardingsphere.infra.rule.event.GovernanceEvent;
+import org.apache.shardingsphere.mode.event.DataChangedEvent;
+import org.apache.shardingsphere.mode.event.DataChangedEvent.Type;
 import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.GovernanceWatcher;
-import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.NewGovernanceWatcher;
-import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.status.compute.event.InstanceOfflineEvent;
-import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.status.compute.event.InstanceOnlineEvent;
-import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.status.compute.event.KillLocalProcessEvent;
+import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.status.compute.event.ComputeNodeInstanceStateChangedEvent;
 import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.status.compute.event.KillLocalProcessCompletedEvent;
+import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.status.compute.event.KillLocalProcessEvent;
 import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.status.compute.event.LabelsEvent;
 import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.status.compute.event.ReportLocalProcessesCompletedEvent;
 import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.status.compute.event.ReportLocalProcessesEvent;
-import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.status.compute.event.StateEvent;
 import org.apache.shardingsphere.mode.manager.cluster.coordinator.registry.status.compute.event.WorkerIdEvent;
-import org.apache.shardingsphere.mode.event.DataChangedEvent;
-import org.apache.shardingsphere.mode.event.DataChangedEvent.Type;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,10 +43,10 @@ import java.util.regex.Pattern;
 /**
  * Compute node state changed watcher.
  */
-public final class ComputeNodeStateChangedWatcher implements GovernanceWatcher<GovernanceEvent>, NewGovernanceWatcher<GovernanceEvent> {
+public final class ComputeNodeStateChangedWatcher implements GovernanceWatcher<GovernanceEvent> {
     
     @Override
-    public Collection<String> getWatchingKeys(final String databaseName) {
+    public Collection<String> getWatchingKeys() {
         return Collections.singleton(ComputeNode.getComputeNodePath());
     }
     
@@ -71,9 +64,6 @@ public final class ComputeNodeStateChangedWatcher implements GovernanceWatcher<G
                 return result;
             }
         }
-        if (event.getKey().startsWith(ComputeNode.getOnlineInstanceNodePath())) {
-            return createInstanceEvent(event);
-        }
         if (event.getKey().startsWith(ComputeNode.getShowProcessListTriggerNodePath())) {
             return createReportLocalProcessesEvent(event);
         }
@@ -85,8 +75,8 @@ public final class ComputeNodeStateChangedWatcher implements GovernanceWatcher<G
     
     @SuppressWarnings("unchecked")
     private Optional<GovernanceEvent> createInstanceGovernanceEvent(final DataChangedEvent event, final String instanceId) {
-        if (event.getKey().equals(ComputeNode.getInstanceStatusNodePath(instanceId)) && Type.DELETED != event.getType()) {
-            return Optional.of(new StateEvent(instanceId, event.getValue()));
+        if (event.getKey().equals(ComputeNode.getComputeNodeStateNodePath(instanceId)) && Type.DELETED != event.getType()) {
+            return Optional.of(new ComputeNodeInstanceStateChangedEvent(instanceId, event.getValue()));
         }
         if (event.getKey().equals(ComputeNode.getInstanceLabelsNodePath(instanceId)) && Type.DELETED != event.getType()) {
             return Optional.of(new LabelsEvent(instanceId, Strings.isNullOrEmpty(event.getValue()) ? new ArrayList<>() : YamlEngine.unmarshal(event.getValue(), Collection.class)));
@@ -95,26 +85,6 @@ public final class ComputeNodeStateChangedWatcher implements GovernanceWatcher<G
             return Optional.of(new WorkerIdEvent(instanceId, Strings.isNullOrEmpty(event.getValue()) ? null : Integer.valueOf(event.getValue())));
         }
         return Optional.empty();
-    }
-    
-    private Optional<GovernanceEvent> createInstanceEvent(final DataChangedEvent event) {
-        Matcher matcher = getInstanceOnlinePathMatcher(event.getKey());
-        if (matcher.find()) {
-            ComputeNodeData computeNodeData = YamlEngine.unmarshal(event.getValue(), ComputeNodeData.class);
-            InstanceMetaData instanceMetaData = InstanceMetaDataFactory.create(matcher.group(2),
-                    InstanceType.valueOf(matcher.group(1).toUpperCase()), computeNodeData.getAttribute(), computeNodeData.getVersion());
-            if (Type.ADDED == event.getType()) {
-                return Optional.of(new InstanceOnlineEvent(instanceMetaData));
-            }
-            if (Type.DELETED == event.getType()) {
-                return Optional.of(new InstanceOfflineEvent(instanceMetaData));
-            }
-        }
-        return Optional.empty();
-    }
-    
-    private Matcher getInstanceOnlinePathMatcher(final String onlineInstancePath) {
-        return Pattern.compile(ComputeNode.getOnlineInstanceNodePath() + "/([\\S]+)/([\\S]+)$", Pattern.CASE_INSENSITIVE).matcher(onlineInstancePath);
     }
     
     private Optional<GovernanceEvent> createReportLocalProcessesEvent(final DataChangedEvent event) {

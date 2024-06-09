@@ -17,20 +17,20 @@
 
 package org.apache.shardingsphere.proxy.backend.handler.distsql.ral.queryable;
 
-import org.apache.shardingsphere.distsql.statement.ral.queryable.ShowComputeNodesStatement;
+import org.apache.shardingsphere.distsql.statement.ral.queryable.show.ShowComputeNodesStatement;
 import org.apache.shardingsphere.infra.config.mode.ModeConfiguration;
 import org.apache.shardingsphere.infra.config.mode.PersistRepositoryConfiguration;
 import org.apache.shardingsphere.infra.instance.ComputeNodeInstance;
-import org.apache.shardingsphere.infra.instance.InstanceContext;
+import org.apache.shardingsphere.infra.instance.ComputeNodeInstanceContext;
 import org.apache.shardingsphere.infra.instance.metadata.proxy.ProxyInstanceMetaData;
 import org.apache.shardingsphere.infra.merge.result.impl.local.LocalDataQueryResultRow;
 import org.apache.shardingsphere.infra.state.instance.InstanceStateContext;
+import org.apache.shardingsphere.mode.manager.ContextManager;
 import org.apache.shardingsphere.mode.repository.standalone.StandalonePersistRepositoryConfiguration;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -42,35 +42,21 @@ import static org.mockito.Mockito.when;
 class ShowComputeNodesExecutorTest {
     
     @Test
-    void assertGetColumns() {
-        ShowComputeNodesExecutor executor = new ShowComputeNodesExecutor();
-        Collection<String> columns = executor.getColumnNames();
-        assertThat(columns.size(), is(9));
-        Iterator<String> iterator = columns.iterator();
-        assertThat(iterator.next(), is("instance_id"));
-        assertThat(iterator.next(), is("instance_type"));
-        assertThat(iterator.next(), is("host"));
-        assertThat(iterator.next(), is("port"));
-        assertThat(iterator.next(), is("status"));
-        assertThat(iterator.next(), is("mode_type"));
-        assertThat(iterator.next(), is("worker_id"));
-        assertThat(iterator.next(), is("labels"));
-        assertThat(iterator.next(), is("version"));
-    }
-    
-    @Test
     void assertExecuteWithStandaloneMode() {
         ShowComputeNodesExecutor executor = new ShowComputeNodesExecutor();
-        Collection<LocalDataQueryResultRow> actual = executor.getRows(createStandaloneInstanceContext(), mock(ShowComputeNodesStatement.class));
+        ContextManager contextManager = mock(ContextManager.class);
+        ComputeNodeInstanceContext computeNodeInstanceContext = createStandaloneInstanceContext();
+        when(contextManager.getComputeNodeInstanceContext()).thenReturn(computeNodeInstanceContext);
+        Collection<LocalDataQueryResultRow> actual = executor.getRows(mock(ShowComputeNodesStatement.class), contextManager);
         assertThat(actual.size(), is(1));
         LocalDataQueryResultRow row = actual.iterator().next();
         assertThat(row.getCell(1), is("foo"));
         assertThat(row.getCell(2), is("PROXY"));
         assertThat(row.getCell(3), is("127.0.0.1"));
-        assertThat(row.getCell(4), is(3308));
+        assertThat(row.getCell(4), is("3308"));
         assertThat(row.getCell(5), is("OK"));
         assertThat(row.getCell(6), is("Standalone"));
-        assertThat(row.getCell(7), is(0));
+        assertThat(row.getCell(7), is("0"));
         assertThat(row.getCell(8), is(""));
         assertThat(row.getCell(9), is("foo_version"));
     }
@@ -78,22 +64,25 @@ class ShowComputeNodesExecutorTest {
     @Test
     void assertExecuteWithClusterMode() {
         ShowComputeNodesExecutor executor = new ShowComputeNodesExecutor();
-        Collection<LocalDataQueryResultRow> actual = executor.getRows(createClusterInstanceContext(), mock(ShowComputeNodesStatement.class));
+        ContextManager contextManager = mock(ContextManager.class);
+        ComputeNodeInstanceContext computeNodeInstanceContext = createClusterInstanceContext();
+        when(contextManager.getComputeNodeInstanceContext()).thenReturn(computeNodeInstanceContext);
+        Collection<LocalDataQueryResultRow> actual = executor.getRows(mock(ShowComputeNodesStatement.class), contextManager);
         assertThat(actual.size(), is(1));
         LocalDataQueryResultRow row = actual.iterator().next();
         assertThat(row.getCell(1), is("foo"));
         assertThat(row.getCell(2), is("PROXY"));
         assertThat(row.getCell(3), is("127.0.0.1"));
-        assertThat(row.getCell(4), is(3309));
+        assertThat(row.getCell(4), is("3309"));
         assertThat(row.getCell(5), is("OK"));
         assertThat(row.getCell(6), is("Cluster"));
-        assertThat(row.getCell(7), is(1));
+        assertThat(row.getCell(7), is("1"));
         assertThat(row.getCell(8), is(""));
         assertThat(row.getCell(9), is("foo_version"));
     }
     
-    private InstanceContext createStandaloneInstanceContext() {
-        InstanceContext result = mock(InstanceContext.class, RETURNS_DEEP_STUBS);
+    private ComputeNodeInstanceContext createStandaloneInstanceContext() {
+        ComputeNodeInstanceContext result = mock(ComputeNodeInstanceContext.class, RETURNS_DEEP_STUBS);
         when(result.getInstance().getMetaData()).thenReturn(new ProxyInstanceMetaData("foo", "127.0.0.1@3308", "foo_version"));
         when(result.getInstance().getState()).thenReturn(new InstanceStateContext());
         when(result.getModeConfiguration()).thenReturn(new ModeConfiguration("Standalone", new StandalonePersistRepositoryConfiguration("H2", new Properties())));
@@ -101,8 +90,8 @@ class ShowComputeNodesExecutorTest {
         return result;
     }
     
-    private InstanceContext createClusterInstanceContext() {
-        InstanceContext result = mock(InstanceContext.class, RETURNS_DEEP_STUBS);
+    private ComputeNodeInstanceContext createClusterInstanceContext() {
+        ComputeNodeInstanceContext result = mock(ComputeNodeInstanceContext.class, RETURNS_DEEP_STUBS);
         when(result.getModeConfiguration()).thenReturn(new ModeConfiguration("Cluster", mock(PersistRepositoryConfiguration.class)));
         ComputeNodeInstance computeNodeInstance = mock(ComputeNodeInstance.class, RETURNS_DEEP_STUBS);
         when(computeNodeInstance.getMetaData()).thenReturn(new ProxyInstanceMetaData("foo", "127.0.0.1@3309", "foo_version"));

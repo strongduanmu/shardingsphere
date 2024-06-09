@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.apache.shardingsphere</groupId>
         <artifactId>shardingsphere</artifactId>
-        <version>5.4.2-SNAPSHOT</version>
+        <version>5.5.1-SNAPSHOT</version>
     </parent>
     <artifactId>shardingsphere-infra</artifactId>
     <packaging>pom</packaging>
@@ -34,6 +34,7 @@
         <module>data-source-pool</module>
         <module>common</module>
         <module>context</module>
+        <module>url</module>
         <module>distsql-handler</module>
         <module>parser</module>
         <module>binder</module>
@@ -44,5 +45,7 @@
         <module>session</module>
         <module>expr</module>
         <module>util</module>
+        <module>reachability-metadata</module>
+        <module>algorithm</module>
     </modules>
 </project>

@@ -45,7 +45,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-import javax.xml.bind.JAXBException;
 import java.io.IOException;
 import java.sql.Types;
 import java.util.Arrays;
@@ -69,7 +68,7 @@ class SQLStatementCompilerIT {
     
     @BeforeEach
     void init() {
-        Map<String, ShardingSphereTable> tables = new HashMap<>();
+        Map<String, ShardingSphereTable> tables = new HashMap<>(12, 1F);
         tables.put("t_order_federate", createOrderFederationTableMetaData());
         tables.put("t_user_info", createUserInfoTableMetaData());
         tables.put("t_order", createTOrderTableMetaData());
@@ -252,7 +251,7 @@ class SQLStatementCompilerIT {
     
     private static class TestCaseArgumentsProvider implements ArgumentsProvider {
         
-        @SneakyThrows({IOException.class, JAXBException.class})
+        @SneakyThrows(IOException.class)
         @Override
         public Stream<? extends Arguments> provideArguments(final ExtensionContext extensionContext) {
             return TestCasesLoader.getInstance().generate().stream().map(Arguments::of);

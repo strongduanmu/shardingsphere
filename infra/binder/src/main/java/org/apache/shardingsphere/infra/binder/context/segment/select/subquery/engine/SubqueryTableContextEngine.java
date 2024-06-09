@@ -43,8 +43,8 @@ public final class SubqueryTableContextEngine {
      * @return subquery table context map
      */
     public Map<String, SubqueryTableContext> createSubqueryTableContexts(final SelectStatementContext subqueryContext, final String aliasName) {
-        Map<String, SubqueryTableContext> result = new LinkedHashMap<>();
-        TableSegment tableSegment = subqueryContext.getSqlStatement().getFrom();
+        Map<String, SubqueryTableContext> result = new LinkedHashMap<>(subqueryContext.getProjectionsContext().getExpandProjections().size(), 1F);
+        TableSegment tableSegment = subqueryContext.getSqlStatement().getFrom().orElse(null);
         for (Projection each : subqueryContext.getProjectionsContext().getExpandProjections()) {
             if (!(each instanceof ColumnProjection)) {
                 continue;
@@ -55,7 +55,7 @@ public final class SubqueryTableContextEngine {
                 result.computeIfAbsent(tableName.toLowerCase(), unused -> new SubqueryTableContext(tableName, aliasName)).getColumnNames().add(columnName);
             }
             if (tableSegment instanceof JoinTableSegment && ((ColumnProjection) each).getOwner().isPresent()) {
-                Optional<String> tableName = getTableNameByOwner(subqueryContext.getTablesContext().getSimpleTableSegments(), ((ColumnProjection) each).getOwner().get().getValue());
+                Optional<String> tableName = getTableNameByOwner(subqueryContext.getTablesContext().getSimpleTables(), ((ColumnProjection) each).getOwner().get().getValue());
                 tableName.ifPresent(optional -> result.computeIfAbsent(optional.toLowerCase(), unused -> new SubqueryTableContext(optional, aliasName)).getColumnNames().add(columnName));
             }
         }

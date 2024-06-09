@@ -43,7 +43,7 @@ public final class TableToken extends SQLToken implements Substitutable, RouteUn
     public TableToken(final int startIndex, final int stopIndex, final IdentifierValue tableSegment, final SQLStatementContext sqlStatementContext, final ShardingRule shardingRule) {
         super(startIndex);
         this.stopIndex = stopIndex;
-        this.tableName = tableSegment;
+        tableName = tableSegment;
         this.sqlStatementContext = sqlStatementContext;
         this.shardingRule = shardingRule;
     }
@@ -51,7 +51,7 @@ public final class TableToken extends SQLToken implements Substitutable, RouteUn
     @Override
     public String toString(final RouteUnit routeUnit) {
         String actualTableName = TokenUtils.getLogicAndActualTableMap(routeUnit, sqlStatementContext, shardingRule).get(tableName.getValue().toLowerCase());
-        actualTableName = null == actualTableName ? tableName.getValue().toLowerCase() : actualTableName;
+        actualTableName = null == actualTableName ? tableName.getValue() : actualTableName;
         return tableName.getQuoteCharacter().wrap(actualTableName);
     }
 }

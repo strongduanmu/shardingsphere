@@ -60,12 +60,12 @@ public abstract class AbstractShadowDMLStatementRouteEngine implements ShadowRou
     
     @Override
     public final void route(final RouteContext routeContext, final ShadowRule rule) {
-        tableAliasNameMappings.putAll(getTableAliasNameMappings(((TableAvailable) sqlStatementContext).getAllTables()));
+        tableAliasNameMappings.putAll(getTableAliasNameMappings(((TableAvailable) sqlStatementContext).getTablesContext().getSimpleTables()));
         decorateRouteContext(routeContext, rule, findShadowDataSourceMappings(rule));
     }
     
     private Map<String, String> getTableAliasNameMappings(final Collection<SimpleTableSegment> tableSegments) {
-        Map<String, String> result = new LinkedHashMap<>();
+        Map<String, String> result = new LinkedHashMap<>(tableSegments.size(), 1F);
         for (SimpleTableSegment each : tableSegments) {
             String tableName = each.getTableName().getIdentifier().getValue();
             String alias = each.getAliasName().isPresent() ? each.getAliasName().get() : tableName;

@@ -17,9 +17,9 @@
 
 package org.apache.shardingsphere.data.pipeline.core.consistencycheck.table.calculator;
 
-import org.apache.shardingsphere.data.pipeline.common.metadata.CaseInsensitiveQualifiedTable;
-import org.apache.shardingsphere.data.pipeline.common.metadata.model.PipelineColumnMetaData;
-import org.apache.shardingsphere.data.pipeline.common.datasource.PipelineDataSourceWrapper;
+import org.apache.shardingsphere.infra.metadata.caseinsensitive.CaseInsensitiveQualifiedTable;
+import org.apache.shardingsphere.data.pipeline.core.metadata.model.PipelineColumnMetaData;
+import org.apache.shardingsphere.data.pipeline.core.datasource.PipelineDataSourceWrapper;
 import org.apache.shardingsphere.data.pipeline.core.consistencycheck.result.SingleTableInventoryCalculatedResult;
 import org.apache.shardingsphere.data.pipeline.core.exception.data.PipelineTableDataConsistencyCheckLoadingFailedException;
 import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
@@ -93,7 +93,7 @@ class CRC32SingleTableInventoryCalculatorTest {
     
     @Test
     void assertCalculateFailed() throws SQLException {
-        when(connection.prepareStatement(anyString())).thenThrow(new SQLException());
+        when(connection.prepareStatement(anyString())).thenThrow(new SQLException(""));
         assertThrows(PipelineTableDataConsistencyCheckLoadingFailedException.class, () -> new CRC32SingleTableInventoryCalculator().calculate(parameter));
     }
 }

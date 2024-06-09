@@ -60,13 +60,13 @@ public final class MySQLDialectSaneQueryResultEngine implements DialectSaneQuery
             return Optional.of(createQueryResult());
         }
         if (sqlStatement instanceof MySQLSetStatement) {
-            return Optional.of(new UpdateResult(0, 0));
+            return Optional.of(new UpdateResult(0, 0L));
         }
         return Optional.empty();
     }
     
     private Optional<ExecuteResult> createQueryResult(final SelectStatement sqlStatement) {
-        if (null != sqlStatement.getFrom()) {
+        if (sqlStatement.getFrom().isPresent()) {
             return Optional.empty();
         }
         List<RawQueryResultColumnMetaData> queryResultColumnMetaDataList = new ArrayList<>(sqlStatement.getProjections().getProjections().size());

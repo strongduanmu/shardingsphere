@@ -50,7 +50,9 @@ public final class TableTokenGenerator implements CollectionSQLTokenGenerator<SQ
     }
     
     private boolean isAllBindingTables(final SQLStatementContext sqlStatementContext) {
-        Collection<String> shardingLogicTableNames = shardingRule.getShardingLogicTableNames(sqlStatementContext.getTablesContext().getTableNames());
+        Collection<String> shardingLogicTableNames = sqlStatementContext instanceof TableAvailable
+                ? shardingRule.getShardingLogicTableNames(((TableAvailable) sqlStatementContext).getTablesContext().getTableNames())
+                : Collections.emptyList();
         return shardingLogicTableNames.size() > 1 && shardingRule.isAllBindingTables(shardingLogicTableNames);
     }
     
@@ -61,9 +63,9 @@ public final class TableTokenGenerator implements CollectionSQLTokenGenerator<SQ
     
     private Collection<SQLToken> generateSQLTokens(final TableAvailable sqlStatementContext) {
         Collection<SQLToken> result = new LinkedList<>();
-        for (SimpleTableSegment each : sqlStatementContext.getAllTables()) {
+        for (SimpleTableSegment each : sqlStatementContext.getTablesContext().getSimpleTables()) {
             TableNameSegment tableName = each.getTableName();
-            if (shardingRule.findTableRule(tableName.getIdentifier().getValue()).isPresent()) {
+            if (shardingRule.findShardingTable(tableName.getIdentifier().getValue()).isPresent()) {
                 result.add(new TableToken(tableName.getStartIndex(), tableName.getStopIndex(), tableName.getIdentifier(), (SQLStatementContext) sqlStatementContext, shardingRule));
             }
         }

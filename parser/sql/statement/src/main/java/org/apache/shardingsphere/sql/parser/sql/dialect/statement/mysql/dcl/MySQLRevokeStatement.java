@@ -19,12 +19,11 @@ package org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dcl;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.ACLTypeEnum;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.GrantLevelSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dcl.RevokeStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.MySQLStatement;
 import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.segment.MySQLRoleOrPrivilegeSegment;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.segment.UserSegment;
+import org.apache.shardingsphere.sql.parser.sql.common.segment.dcl.UserSegment;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -44,7 +43,7 @@ public final class MySQLRevokeStatement extends RevokeStatement implements MySQL
     
     private final Collection<UserSegment> fromUsers = new LinkedList<>();
     
-    private ACLTypeEnum aclType;
+    private String aclObject;
     
     private GrantLevelSegment level;
 }

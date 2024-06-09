@@ -59,7 +59,7 @@ public final class ConnectionContext implements AutoCloseable {
      * @return used data source names
      */
     public Collection<String> getUsedDataSourceNames() {
-        Collection<String> result = new HashSet<>(usedDataSourceProvider.getNames().size(), 1L);
+        Collection<String> result = new HashSet<>(usedDataSourceProvider.getNames().size(), 1F);
         for (String each : usedDataSourceProvider.getNames()) {
             result.add(each.contains(".") ? each.split("\\.")[1] : each);
         }
@@ -78,14 +78,14 @@ public final class ConnectionContext implements AutoCloseable {
     /**
      * Clear cursor connection context.
      */
-    public void clearCursorConnectionContext() {
+    public void clearCursorContext() {
         cursorContext.close();
     }
     
     /**
      * Clear transaction connection context.
      */
-    public void clearTransactionConnectionContext() {
+    public void clearTransactionContext() {
         transactionContext.close();
     }
     
@@ -112,7 +112,7 @@ public final class ConnectionContext implements AutoCloseable {
     @Override
     public void close() {
         trafficInstanceId = null;
-        clearCursorConnectionContext();
-        clearTransactionConnectionContext();
+        clearCursorContext();
+        clearTransactionContext();
     }
 }

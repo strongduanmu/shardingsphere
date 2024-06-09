@@ -17,7 +17,6 @@
 
 package org.apache.shardingsphere.proxy.backend.mysql.handler.admin.executor;
 
-import com.google.common.eventbus.Subscribe;
 import lombok.Getter;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResult;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResultMetaData;
@@ -28,8 +27,7 @@ import org.apache.shardingsphere.infra.executor.sql.execute.result.query.type.me
 import org.apache.shardingsphere.infra.executor.sql.process.Process;
 import org.apache.shardingsphere.infra.merge.result.MergedResult;
 import org.apache.shardingsphere.infra.merge.result.impl.transparent.TransparentMergedResult;
-import org.apache.shardingsphere.mode.process.event.ShowProcessListRequestEvent;
-import org.apache.shardingsphere.mode.process.event.ShowProcessListResponseEvent;
+import org.apache.shardingsphere.infra.util.eventbus.EventSubscriber;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.handler.admin.executor.DatabaseAdminQueryExecutor;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
@@ -45,10 +43,9 @@ import java.util.stream.Collectors;
 /**
  * Show process list executor.
  */
-@SuppressWarnings("UnstableApiUsage")
-public final class ShowProcessListExecutor implements DatabaseAdminQueryExecutor {
+public final class ShowProcessListExecutor implements DatabaseAdminQueryExecutor, EventSubscriber {
     
-    private Collection<Process> processes;
+    private final boolean showFullProcesslist;
     
     @Getter
     private QueryResultMetaData queryResultMetaData;
@@ -56,18 +53,9 @@ public final class ShowProcessListExecutor implements DatabaseAdminQueryExecutor
     @Getter
     private MergedResult mergedResult;
     
-    public ShowProcessListExecutor() {
-        ProxyContext.getInstance().getContextManager().getInstanceContext().getEventBusContext().register(this);
-    }
-    
-    /**
-     * Receive and handle response event.
-     *
-     * @param event show process list response event
-     */
-    @Subscribe
-    public void receiveProcessListData(final ShowProcessListResponseEvent event) {
-        processes = event.getProcesses();
+    public ShowProcessListExecutor(final boolean showFullProcesslist) {
+        this.showFullProcesslist = showFullProcesslist;
+        ProxyContext.getInstance().getContextManager().getComputeNodeInstanceContext().getEventBusContext().register(this);
     }
     
     @Override
@@ -77,7 +65,7 @@ public final class ShowProcessListExecutor implements DatabaseAdminQueryExecutor
     }
     
     private QueryResult getQueryResult() {
-        ProxyContext.getInstance().getContextManager().getInstanceContext().getEventBusContext().post(new ShowProcessListRequestEvent());
+        Collection<Process> processes = ProxyContext.getInstance().getContextManager().getPersistServiceFacade().getProcessPersistService().getProcessList();
         if (null == processes || processes.isEmpty()) {
             return new RawMemoryQueryResult(queryResultMetaData, Collections.emptyList());
         }
@@ -97,12 +85,12 @@ public final class ShowProcessListExecutor implements DatabaseAdminQueryExecutor
         if (process.isIdle()) {
             rowValues.add("");
         } else {
-            int processDoneCount = process.getCompletedUnitCount();
+            int processDoneCount = process.getCompletedUnitCount().get();
             String statePrefix = "Executing ";
-            rowValues.add(statePrefix + processDoneCount + "/" + process.getTotalUnitCount());
+            rowValues.add(statePrefix + processDoneCount + "/" + process.getTotalUnitCount().get());
             sql = process.getSql();
         }
-        if (null != sql && sql.length() > 100) {
+        if (null != sql && sql.length() > 100 && !showFullProcesslist) {
             sql = sql.substring(0, 100);
         }
         rowValues.add(null != sql ? sql : "");

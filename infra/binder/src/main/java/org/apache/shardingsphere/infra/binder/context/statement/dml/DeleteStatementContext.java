@@ -90,11 +90,6 @@ public final class DeleteStatementContext extends CommonSQLStatementContext impl
     }
     
     @Override
-    public Collection<SimpleTableSegment> getAllTables() {
-        return tablesContext.getSimpleTableSegments();
-    }
-    
-    @Override
     public Collection<WhereSegment> getWhereSegments() {
         return whereSegments;
     }

@@ -20,12 +20,10 @@ package org.apache.shardingsphere.mode.subsciber;
 import com.google.common.eventbus.Subscribe;
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.infra.config.rule.RuleConfiguration;
-import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.rule.event.rule.alter.AlterRuleItemEvent;
 import org.apache.shardingsphere.infra.rule.event.rule.drop.DropRuleItemEvent;
 import org.apache.shardingsphere.infra.spi.type.typed.TypedSPILoader;
-import org.apache.shardingsphere.mode.event.config.AlterDatabaseRuleConfigurationEvent;
-import org.apache.shardingsphere.mode.event.config.DropDatabaseRuleConfigurationEvent;
+import org.apache.shardingsphere.infra.util.eventbus.EventSubscriber;
 import org.apache.shardingsphere.mode.manager.ContextManager;
 import org.apache.shardingsphere.mode.spi.RuleItemConfigurationChangedProcessor;
 
@@ -33,7 +31,7 @@ import org.apache.shardingsphere.mode.spi.RuleItemConfigurationChangedProcessor;
  * Rule item changed subscriber.
  */
 @RequiredArgsConstructor
-public final class RuleItemChangedSubscriber {
+public final class RuleItemChangedSubscriber implements EventSubscriber {
     
     private final ContextManager contextManager;
     
@@ -42,20 +40,22 @@ public final class RuleItemChangedSubscriber {
      *
      * @param event alter rule item event
      */
-    @SuppressWarnings({"UnstableApiUsage", "rawtypes", "unchecked"})
+    @SuppressWarnings({"rawtypes", "unchecked", "unused"})
     @Subscribe
     public void renew(final AlterRuleItemEvent event) {
-        if (!event.getActiveVersion().equals(contextManager.getMetaDataContexts().getPersistService().getMetaDataVersionPersistService().getActiveVersionByFullPath(event.getActiveVersionKey()))) {
+        if (!event.getActiveVersion().equals(contextManager.getPersistServiceFacade().getMetaDataPersistService().getMetaDataVersionPersistService()
+                .getActiveVersionByFullPath(event.getActiveVersionKey()))) {
             return;
         }
         RuleItemConfigurationChangedProcessor processor = TypedSPILoader.getService(RuleItemConfigurationChangedProcessor.class, event.getType());
         String yamlContent =
-                contextManager.getMetaDataContexts().getPersistService().getMetaDataVersionPersistService().getVersionPathByActiveVersion(event.getActiveVersionKey(), event.getActiveVersion());
-        ShardingSphereDatabase database = contextManager.getMetaDataContexts().getMetaData().getDatabases().get(event.getDatabaseName());
-        RuleConfiguration currentRuleConfig = processor.findRuleConfiguration(database);
+                contextManager.getPersistServiceFacade().getMetaDataPersistService().getMetaDataVersionPersistService()
+                        .getVersionPathByActiveVersion(event.getActiveVersionKey(), event.getActiveVersion());
+        String databaseName = event.getDatabaseName();
+        RuleConfiguration currentRuleConfig = processor.findRuleConfiguration(contextManager.getMetaDataContexts().getMetaData().getDatabase(databaseName));
         synchronized (this) {
             processor.changeRuleItemConfiguration(event, currentRuleConfig, processor.swapRuleItemConfiguration(event, yamlContent));
-            contextManager.getInstanceContext().getEventBusContext().post(new AlterDatabaseRuleConfigurationEvent(event.getDatabaseName(), currentRuleConfig));
+            contextManager.getMetaDataContextManager().getConfigurationManager().alterRuleConfiguration(databaseName, currentRuleConfig);
         }
     }
     
@@ -64,18 +64,18 @@ public final class RuleItemChangedSubscriber {
      *
      * @param event drop rule item event
      */
-    @SuppressWarnings({"UnstableApiUsage", "rawtypes", "unchecked"})
+    @SuppressWarnings({"rawtypes", "unchecked", "unused"})
     @Subscribe
     public void renew(final DropRuleItemEvent event) {
-        if (!contextManager.getMetaDataContexts().getMetaData().containsDatabase(event.getDatabaseName())) {
+        String databaseName = event.getDatabaseName();
+        if (!contextManager.getMetaDataContexts().getMetaData().containsDatabase(databaseName)) {
             return;
         }
         RuleItemConfigurationChangedProcessor processor = TypedSPILoader.getService(RuleItemConfigurationChangedProcessor.class, event.getType());
-        ShardingSphereDatabase database = contextManager.getMetaDataContexts().getMetaData().getDatabases().get(event.getDatabaseName());
-        RuleConfiguration currentRuleConfig = processor.findRuleConfiguration(database);
+        RuleConfiguration currentRuleConfig = processor.findRuleConfiguration(contextManager.getMetaDataContexts().getMetaData().getDatabase(databaseName));
         synchronized (this) {
             processor.dropRuleItemConfiguration(event, currentRuleConfig);
-            contextManager.getInstanceContext().getEventBusContext().post(new DropDatabaseRuleConfigurationEvent(event.getDatabaseName(), currentRuleConfig));
+            contextManager.getMetaDataContextManager().getConfigurationManager().dropRuleConfiguration(databaseName, currentRuleConfig);
         }
     }
 }

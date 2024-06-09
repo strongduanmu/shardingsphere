@@ -22,8 +22,9 @@ import lombok.Getter;
 import org.apache.shardingsphere.infra.config.rule.RuleConfiguration;
 import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
-import org.apache.shardingsphere.infra.rule.identifier.type.DataNodeContainedRule;
-import org.apache.shardingsphere.infra.rule.identifier.type.DataSourceContainedRule;
+import org.apache.shardingsphere.infra.rule.attribute.RuleAttribute;
+import org.apache.shardingsphere.infra.rule.attribute.datanode.DataNodeRuleAttribute;
+import org.apache.shardingsphere.infra.rule.attribute.datasource.DataSourceMapperRuleAttribute;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -106,11 +107,13 @@ public final class RuleMetaData {
     public Map<String, Collection<Class<? extends ShardingSphereRule>>> getInUsedStorageUnitNameAndRulesMap() {
         Map<String, Collection<Class<? extends ShardingSphereRule>>> result = new LinkedHashMap<>();
         for (ShardingSphereRule each : rules) {
-            if (each instanceof DataSourceContainedRule) {
-                mergeInUsedStorageUnitNameAndRules(result, getInUsedStorageUnitNameAndRulesMap(each, getInUsedStorageUnitNames((DataSourceContainedRule) each)));
-            } else if (each instanceof DataNodeContainedRule) {
-                mergeInUsedStorageUnitNameAndRules(result, getInUsedStorageUnitNameAndRulesMap(each, getInUsedStorageUnitNames((DataNodeContainedRule) each)));
+            Optional<DataSourceMapperRuleAttribute> ruleAttribute = each.getAttributes().findAttribute(DataSourceMapperRuleAttribute.class);
+            if (ruleAttribute.isPresent()) {
+                mergeInUsedStorageUnitNameAndRules(result, getInUsedStorageUnitNameAndRulesMap(each, getInUsedStorageUnitNames(ruleAttribute.get())));
+                continue;
             }
+            each.getAttributes().findAttribute(DataNodeRuleAttribute.class)
+                    .ifPresent(optional -> mergeInUsedStorageUnitNameAndRules(result, getInUsedStorageUnitNameAndRulesMap(each, getInUsedStorageUnitNames(optional))));
         }
         return result;
     }
@@ -126,12 +129,12 @@ public final class RuleMetaData {
         return result;
     }
     
-    private Collection<String> getInUsedStorageUnitNames(final DataSourceContainedRule rule) {
-        return rule.getDataSourceMapper().values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
+    private Collection<String> getInUsedStorageUnitNames(final DataSourceMapperRuleAttribute ruleAttribute) {
+        return ruleAttribute.getDataSourceMapper().values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
     }
     
-    private Collection<String> getInUsedStorageUnitNames(final DataNodeContainedRule rule) {
-        return rule.getAllDataNodes().values().stream().flatMap(each -> each.stream().map(DataNode::getDataSourceName).collect(Collectors.toSet()).stream()).collect(Collectors.toSet());
+    private Collection<String> getInUsedStorageUnitNames(final DataNodeRuleAttribute ruleAttribute) {
+        return ruleAttribute.getAllDataNodes().values().stream().flatMap(each -> each.stream().map(DataNode::getDataSourceName).collect(Collectors.toSet()).stream()).collect(Collectors.toSet());
     }
     
     private void mergeInUsedStorageUnitNameAndRules(final Map<String, Collection<Class<? extends ShardingSphereRule>>> storageUnitNameAndRules,
@@ -147,5 +150,20 @@ public final class RuleMetaData {
                 storageUnitNameAndRules.put(entry.getKey(), entry.getValue());
             }
         }
+    }
+    
+    /**
+     * Get rule attributes.
+     * 
+     * @param attributeClass rule attribute class
+     * @param <T> type of rule attributes
+     * @return rule attributes
+     */
+    public <T extends RuleAttribute> Collection<T> getAttributes(final Class<T> attributeClass) {
+        Collection<T> result = new LinkedList<>();
+        for (ShardingSphereRule each : rules) {
+            each.getAttributes().findAttribute(attributeClass).ifPresent(result::add);
+        }
+        return result;
     }
 }

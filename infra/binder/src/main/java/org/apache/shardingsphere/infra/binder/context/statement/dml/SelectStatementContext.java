@@ -45,7 +45,7 @@ import org.apache.shardingsphere.infra.exception.dialect.exception.syntax.databa
 import org.apache.shardingsphere.infra.exception.dialect.exception.syntax.database.UnknownDatabaseException;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.infra.rule.identifier.type.TableContainedRule;
+import org.apache.shardingsphere.infra.rule.attribute.table.TableMapperRuleAttribute;
 import org.apache.shardingsphere.sql.parser.sql.common.enums.ParameterMarkerType;
 import org.apache.shardingsphere.sql.parser.sql.common.enums.SubqueryType;
 import org.apache.shardingsphere.sql.parser.sql.common.extractor.TableExtractor;
@@ -61,7 +61,6 @@ import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.Or
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.TextOrderByItemSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.JoinTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SubqueryTableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableSegment;
 import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
@@ -121,17 +120,16 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
         tablesContext = new TablesContext(getAllTableSegments(), subqueryContexts, getDatabaseType());
         groupByContext = new GroupByContextEngine().createGroupByContext(sqlStatement);
         orderByContext = new OrderByContextEngine().createOrderBy(sqlStatement, groupByContext);
-        projectionsContext = new ProjectionsContextEngine(getDatabaseType())
-                .createProjectionsContext(getSqlStatement().getFrom(), getSqlStatement().getProjections(), groupByContext, orderByContext);
-        paginationContext = new PaginationContextEngine().createPaginationContext(sqlStatement, projectionsContext, params, whereSegments);
+        projectionsContext = new ProjectionsContextEngine(getDatabaseType()).createProjectionsContext(getSqlStatement().getProjections(), groupByContext, orderByContext);
+        paginationContext = new PaginationContextEngine(getDatabaseType()).createPaginationContext(sqlStatement, projectionsContext, params, whereSegments);
         String databaseName = tablesContext.getDatabaseName().orElse(defaultDatabaseName);
         containsEnhancedTable = isContainsEnhancedTable(metaData, databaseName, getTablesContext().getTableNames());
     }
     
     private boolean isContainsEnhancedTable(final ShardingSphereMetaData metaData, final String databaseName, final Collection<String> tableNames) {
-        for (TableContainedRule each : getTableContainedRules(metaData, databaseName)) {
+        for (TableMapperRuleAttribute each : getTableMapperRuleAttributes(metaData, databaseName)) {
             for (String tableName : tableNames) {
-                if (each.getEnhancedTableMapper().contains(tableName)) {
+                if (each.getEnhancedTableNames().contains(tableName)) {
                     return true;
                 }
             }
@@ -139,14 +137,14 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
         return false;
     }
     
-    private Collection<TableContainedRule> getTableContainedRules(final ShardingSphereMetaData metaData, final String databaseName) {
+    private Collection<TableMapperRuleAttribute> getTableMapperRuleAttributes(final ShardingSphereMetaData metaData, final String databaseName) {
         if (null == databaseName) {
-            ShardingSpherePreconditions.checkState(tablesContext.getSimpleTableSegments().isEmpty(), NoDatabaseSelectedException::new);
+            ShardingSpherePreconditions.checkMustEmpty(tablesContext.getSimpleTables(), NoDatabaseSelectedException::new);
             return Collections.emptyList();
         }
         ShardingSphereDatabase database = metaData.getDatabase(databaseName);
         ShardingSpherePreconditions.checkNotNull(database, () -> new UnknownDatabaseException(databaseName));
-        return database.getRuleMetaData().findRules(TableContainedRule.class);
+        return database.getRuleMetaData().getAttributes(TableMapperRuleAttribute.class);
     }
     
     private Map<Integer, SelectStatementContext> createSubqueryContexts(final ShardingSphereMetaData metaData, final List<Object> params, final String defaultDatabaseName) {
@@ -166,7 +164,7 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
      * @return whether contains join query or not
      */
     public boolean isContainsJoinQuery() {
-        return getSqlStatement().getFrom() instanceof JoinTableSegment;
+        return getSqlStatement().getFrom().isPresent() && getSqlStatement().getFrom().get() instanceof JoinTableSegment;
     }
     
     /**
@@ -198,7 +196,7 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
     
     /**
      * Judge whether contains dollar parameter marker or not.
-     * 
+     *
      * @return whether contains dollar parameter marker or not
      */
     public boolean isContainsDollarParameterMarker() {
@@ -225,7 +223,7 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
     
     /**
      * Judge whether contains partial distinct aggregation.
-     * 
+     *
      * @return whether contains partial distinct aggregation
      */
     public boolean isContainsPartialDistinctAggregation() {
@@ -321,7 +319,7 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
     
     /**
      * Find column projection.
-     * 
+     *
      * @param columnIndex column index
      * @return find column projection
      */
@@ -343,11 +341,6 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
     @Override
     public SelectStatement getSqlStatement() {
         return (SelectStatement) super.getSqlStatement();
-    }
-    
-    @Override
-    public Collection<SimpleTableSegment> getAllTables() {
-        return tablesContext.getSimpleTableSegments();
     }
     
     @Override
@@ -389,11 +382,11 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
      * @return whether sql statement contains table subquery segment or not
      */
     public boolean containsTableSubquery() {
-        return getSqlStatement().getFrom() instanceof SubqueryTableSegment;
+        return getSqlStatement().getFrom().isPresent() && getSqlStatement().getFrom().get() instanceof SubqueryTableSegment || getSqlStatement().getWithSegment().isPresent();
     }
     
     @Override
     public void setUpParameters(final List<Object> params) {
-        paginationContext = new PaginationContextEngine().createPaginationContext(getSqlStatement(), projectionsContext, params, whereSegments);
+        paginationContext = new PaginationContextEngine(getDatabaseType()).createPaginationContext(getSqlStatement(), projectionsContext, params, whereSegments);
     }
 }

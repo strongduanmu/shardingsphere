@@ -20,7 +20,6 @@ package org.apache.shardingsphere.proxy.backend.handler.admin.executor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.authority.checker.AuthorityChecker;
 import org.apache.shardingsphere.authority.rule.AuthorityRule;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResultMetaData;
@@ -71,7 +70,6 @@ public abstract class AbstractDatabaseMetaDataExecutor implements DatabaseAdminQ
     public final void execute(final ConnectionSession connectionSession) throws SQLException {
         Collection<String> databaseNames = getDatabaseNames(connectionSession);
         for (String databaseName : databaseNames) {
-            initDatabaseData(databaseName);
             processMetaData(databaseName, resultSet -> handleResultSet(databaseName, resultSet));
         }
         postProcess();
@@ -83,9 +81,10 @@ public abstract class AbstractDatabaseMetaDataExecutor implements DatabaseAdminQ
     private void handleResultSet(final String databaseName, final ResultSet resultSet) {
         ResultSetMetaData metaData = resultSet.getMetaData();
         while (resultSet.next()) {
-            Map<String, Object> rowMap = new LinkedHashMap<>();
-            Map<String, String> aliasMap = new LinkedHashMap<>();
-            for (int i = 1; i < metaData.getColumnCount() + 1; i++) {
+            int columnCount = metaData.getColumnCount();
+            Map<String, Object> rowMap = new LinkedHashMap<>(columnCount, 1F);
+            Map<String, String> aliasMap = new LinkedHashMap<>(columnCount, 1F);
+            for (int i = 1; i < columnCount + 1; i++) {
                 aliasMap.put(metaData.getColumnName(i), metaData.getColumnLabel(i));
                 rowMap.put(metaData.getColumnLabel(i), resultSet.getString(i));
             }
@@ -100,8 +99,6 @@ public abstract class AbstractDatabaseMetaDataExecutor implements DatabaseAdminQ
             }
         }
     }
-    
-    protected abstract void initDatabaseData(String databaseName);
     
     protected abstract Collection<String> getDatabaseNames(ConnectionSession connectionSession);
     
@@ -127,7 +124,7 @@ public abstract class AbstractDatabaseMetaDataExecutor implements DatabaseAdminQ
     }
     
     protected static Boolean hasDataSource(final String databaseName) {
-        return ProxyContext.getInstance().getDatabase(databaseName).containsDataSource();
+        return ProxyContext.getInstance().getContextManager().getDatabase(databaseName).containsDataSource();
     }
     
     protected static boolean isAuthorized(final String databaseName, final Grantee grantee) {
@@ -139,16 +136,11 @@ public abstract class AbstractDatabaseMetaDataExecutor implements DatabaseAdminQ
      * Default database meta data executor, execute sql directly in the database to obtain the result source data.
      */
     @RequiredArgsConstructor
-    @Slf4j
     public static class DefaultDatabaseMetaDataExecutor extends AbstractDatabaseMetaDataExecutor {
         
         private final String sql;
         
         private final List<Object> parameters;
-        
-        @Override
-        protected void initDatabaseData(final String databaseName) {
-        }
         
         @Override
         protected Collection<String> getDatabaseNames(final ConnectionSession connectionSession) {

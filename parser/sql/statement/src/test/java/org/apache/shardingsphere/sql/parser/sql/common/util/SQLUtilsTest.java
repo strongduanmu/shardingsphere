@@ -48,8 +48,8 @@ class SQLUtilsTest {
     void assertGetExactlyNumberForBigInteger() {
         assertThat(SQLUtils.getExactlyNumber("10000000000000000000", 10), is(new BigInteger("10000000000000000000")));
         assertThat(SQLUtils.getExactlyNumber("10000000000000000000", 16), is(new BigInteger("75557863725914323419136")));
-        assertThat(SQLUtils.getExactlyNumber(String.valueOf(Long.MIN_VALUE + 1), 10), is(Long.MIN_VALUE + 1));
-        assertThat(SQLUtils.getExactlyNumber(String.valueOf(Long.MAX_VALUE - 1), 10), is(Long.MAX_VALUE - 1));
+        assertThat(SQLUtils.getExactlyNumber(String.valueOf(Long.MIN_VALUE + 1L), 10), is(Long.MIN_VALUE + 1L));
+        assertThat(SQLUtils.getExactlyNumber(String.valueOf(Long.MAX_VALUE - 1L), 10), is(Long.MAX_VALUE - 1L));
     }
     
     @Test
@@ -99,48 +99,6 @@ class SQLUtilsTest {
     void assertGetExpressionWithoutOutsideParentheses() {
         assertThat(SQLUtils.getExpressionWithoutOutsideParentheses("((a + b*c))"), is("a + b*c"));
         assertThat(SQLUtils.getExpressionWithoutOutsideParentheses(""), is(""));
-    }
-    
-    @Test
-    void assertConvertLikePatternToRegexWhenEndWithPattern() {
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding_"), is("sharding."));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding%"), is("sharding.*"));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding%_"), is("sharding.*."));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding\\_"), is("sharding_"));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding\\%"), is("sharding%"));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding\\%\\_"), is("sharding%_"));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding_\\_"), is("sharding._"));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding%\\%"), is("sharding.*%"));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding_\\%"), is("sharding.%"));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding\\_%"), is("sharding_.*"));
-    }
-    
-    @Test
-    void assertConvertLikePatternToRegexWhenStartWithPattern() {
-        assertThat(SQLUtils.convertLikePatternToRegex("_sharding"), is(".sharding"));
-        assertThat(SQLUtils.convertLikePatternToRegex("%sharding"), is(".*sharding"));
-        assertThat(SQLUtils.convertLikePatternToRegex("%_sharding"), is(".*.sharding"));
-        assertThat(SQLUtils.convertLikePatternToRegex("\\_sharding"), is("_sharding"));
-        assertThat(SQLUtils.convertLikePatternToRegex("\\%sharding"), is("%sharding"));
-        assertThat(SQLUtils.convertLikePatternToRegex("\\%\\_sharding"), is("%_sharding"));
-        assertThat(SQLUtils.convertLikePatternToRegex("_\\_sharding"), is("._sharding"));
-        assertThat(SQLUtils.convertLikePatternToRegex("%\\%sharding"), is(".*%sharding"));
-        assertThat(SQLUtils.convertLikePatternToRegex("_\\%sharding"), is(".%sharding"));
-        assertThat(SQLUtils.convertLikePatternToRegex("\\_%sharding"), is("_.*sharding"));
-    }
-    
-    @Test
-    void assertConvertLikePatternToRegexWhenContainsPattern() {
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding_db"), is("sharding.db"));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding%db"), is("sharding.*db"));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding%_db"), is("sharding.*.db"));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding\\_db"), is("sharding_db"));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding\\%db"), is("sharding%db"));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding\\%\\_db"), is("sharding%_db"));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding_\\_db"), is("sharding._db"));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding%\\%db"), is("sharding.*%db"));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding_\\%db"), is("sharding.%db"));
-        assertThat(SQLUtils.convertLikePatternToRegex("sharding\\_%db"), is("sharding_.*db"));
     }
     
     @Test
