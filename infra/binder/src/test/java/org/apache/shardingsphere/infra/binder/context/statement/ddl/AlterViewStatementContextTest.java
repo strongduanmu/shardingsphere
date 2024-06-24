@@ -18,14 +18,14 @@
 package org.apache.shardingsphere.infra.binder.context.statement.ddl;
 
 import org.apache.shardingsphere.infra.binder.context.statement.CommonSQLStatementContext;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableNameSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterViewStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.ddl.MySQLAlterViewStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLSelectStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.ddl.PostgreSQLAlterViewStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.TableNameSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.ddl.AlterViewStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dml.SelectStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.IdentifierValue;
+import org.apache.shardingsphere.sql.parser.statement.mysql.ddl.MySQLAlterViewStatement;
+import org.apache.shardingsphere.sql.parser.statement.mysql.dml.MySQLSelectStatement;
+import org.apache.shardingsphere.sql.parser.statement.postgresql.ddl.PostgreSQLAlterViewStatement;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -52,7 +52,7 @@ class AlterViewStatementContextTest {
         when(select.getFrom()).thenReturn(Optional.of(view));
         MySQLAlterViewStatement alterViewStatement = mock(MySQLAlterViewStatement.class);
         when(alterViewStatement.getView()).thenReturn(view);
-        when(alterViewStatement.getSelect()).thenReturn(select);
+        when(alterViewStatement.getSelectStatement()).thenReturn(Optional.of(select));
         assertNewInstance(alterViewStatement);
     }
     

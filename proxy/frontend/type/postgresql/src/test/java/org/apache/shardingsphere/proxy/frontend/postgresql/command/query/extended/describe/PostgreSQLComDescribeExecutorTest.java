@@ -55,7 +55,7 @@ import org.apache.shardingsphere.proxy.frontend.postgresql.command.PortalContext
 import org.apache.shardingsphere.proxy.frontend.postgresql.command.query.extended.Portal;
 import org.apache.shardingsphere.proxy.frontend.postgresql.command.query.extended.PostgreSQLServerPreparedStatement;
 import org.apache.shardingsphere.sql.parser.api.CacheOption;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.SQLStatement;
 import org.apache.shardingsphere.sqltranslator.rule.SQLTranslatorRule;
 import org.apache.shardingsphere.sqltranslator.rule.builder.DefaultSQLTranslatorRuleConfigurationBuilder;
 import org.apache.shardingsphere.test.mock.AutoMockExtension;
@@ -408,7 +408,7 @@ class PostgreSQLComDescribeExecutorTest {
         when(connection.prepareStatement(sql).getParameterMetaData()).thenReturn(parameterMetaData);
         ResultSetMetaData resultSetMetaData = prepareResultSetMetaData();
         when(connection.prepareStatement(sql).getMetaData()).thenReturn(resultSetMetaData);
-        when(databaseConnectionManager.getConnections(nullable(String.class), anyInt(), anyInt(), any(ConnectionMode.class))).thenReturn(Collections.singletonList(connection));
+        when(databaseConnectionManager.getConnections(any(), nullable(String.class), anyInt(), anyInt(), any(ConnectionMode.class))).thenReturn(Collections.singletonList(connection));
         when(connectionSession.getDatabaseConnectionManager()).thenReturn(databaseConnectionManager);
     }
     

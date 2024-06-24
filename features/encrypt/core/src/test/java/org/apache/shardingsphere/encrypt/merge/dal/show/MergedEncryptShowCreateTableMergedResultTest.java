@@ -17,9 +17,9 @@
 
 package org.apache.shardingsphere.encrypt.merge.dal.show;
 
-import org.apache.shardingsphere.encrypt.api.config.rule.EncryptColumnItemRuleConfiguration;
-import org.apache.shardingsphere.encrypt.api.config.rule.EncryptColumnRuleConfiguration;
-import org.apache.shardingsphere.encrypt.api.config.rule.EncryptTableRuleConfiguration;
+import org.apache.shardingsphere.encrypt.config.rule.EncryptColumnItemRuleConfiguration;
+import org.apache.shardingsphere.encrypt.config.rule.EncryptColumnRuleConfiguration;
+import org.apache.shardingsphere.encrypt.config.rule.EncryptTableRuleConfiguration;
 import org.apache.shardingsphere.encrypt.rule.EncryptRule;
 import org.apache.shardingsphere.encrypt.rule.EncryptTable;
 import org.apache.shardingsphere.infra.binder.context.statement.dal.ShowCreateTableStatementContext;
@@ -30,9 +30,9 @@ import org.apache.shardingsphere.infra.spi.type.typed.TypedSPILoader;
 import org.apache.shardingsphere.parser.config.SQLParserRuleConfiguration;
 import org.apache.shardingsphere.parser.rule.SQLParserRule;
 import org.apache.shardingsphere.sql.parser.api.CacheOption;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableNameSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.TableNameSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.IdentifierValue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

@@ -49,7 +49,7 @@ import org.apache.shardingsphere.proxy.backend.connector.jdbc.statement.JDBCBack
 import org.apache.shardingsphere.proxy.backend.context.BackendExecutorContext;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.SQLStatement;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -152,8 +152,8 @@ public final class PostgreSQLBatchedStatementsExecutor {
                 metaDataContexts.getMetaData().getProps().<Integer>getValue(ConfigurationPropertyKey.MAX_CONNECTIONS_SIZE_PER_QUERY),
                 connectionSession.getDatabaseConnectionManager(), (JDBCBackendStatement) connectionSession.getStatementManager(),
                 new StatementOption(false), rules, metaDataContexts.getMetaData().getDatabase(connectionSession.getDatabaseName()).getResourceMetaData().getStorageUnits());
-        executionGroupContext = prepareEngine.prepare(anyExecutionContext.getRouteContext(), executionUnitParams.keySet(),
-                new ExecutionGroupReportContext(connectionSession.getProcessId(), connectionSession.getDatabaseName(), connectionSession.getGrantee()));
+        executionGroupContext = prepareEngine.prepare(connectionSession.getDatabaseName(), anyExecutionContext.getRouteContext(), executionUnitParams.keySet(),
+                new ExecutionGroupReportContext(connectionSession.getProcessId(), connectionSession.getDatabaseName(), connectionSession.getConnectionContext().getGrantee()));
         for (ExecutionGroup<JDBCExecutionUnit> eachGroup : executionGroupContext.getInputGroups()) {
             for (JDBCExecutionUnit each : eachGroup.getInputs()) {
                 prepareJDBCExecutionUnit(each);

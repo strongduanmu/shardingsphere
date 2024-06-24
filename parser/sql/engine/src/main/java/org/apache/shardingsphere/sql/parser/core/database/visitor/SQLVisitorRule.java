@@ -21,7 +21,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.shardingsphere.sql.parser.exception.SQLASTVisitorException;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatementType;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.SQLStatementType;
 
 /**
  * SQL visitor rule.
@@ -46,8 +46,6 @@ public enum SQLVisitorRule {
     COPY("Copy", SQLStatementType.DML),
     
     HANDLER_STATEMENT("HandlerStatement", SQLStatementType.DML),
-    
-    LOCKTABLE("LockTable", SQLStatementType.DML),
     
     CREATE_TABLE("CreateTable", SQLStatementType.DDL),
     
@@ -645,13 +643,13 @@ public enum SQLVisitorRule {
     
     FETCH("Fetch", SQLStatementType.DDL),
     
-    CHECKPOINT("Checkpoint", SQLStatementType.DML),
-    
     CLUSTER("Cluster", SQLStatementType.DDL),
     
     CREATE_ACCESS_METHOD("CreateAccessMethod", SQLStatementType.DDL),
     
     DO("DoStatement", SQLStatementType.DML),
+    
+    CHECKPOINT("Checkpoint", SQLStatementType.TCL),
     
     PREPARE_TRANSACTION("PrepareTransaction", SQLStatementType.TCL),
     

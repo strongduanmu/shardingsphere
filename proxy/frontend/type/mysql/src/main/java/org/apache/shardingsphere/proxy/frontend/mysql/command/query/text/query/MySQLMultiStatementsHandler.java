@@ -55,8 +55,8 @@ import org.apache.shardingsphere.proxy.backend.handler.ProxyBackendHandler;
 import org.apache.shardingsphere.proxy.backend.response.header.ResponseHeader;
 import org.apache.shardingsphere.proxy.backend.response.header.update.UpdateResponseHeader;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.UpdateStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.SQLStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dml.UpdateStatement;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -136,8 +136,8 @@ public final class MySQLMultiStatementsHandler implements ProxyBackendHandler {
         Collection<ExecutionContext> executionContexts = createExecutionContexts();
         Map<String, List<ExecutionUnit>> dataSourcesToExecutionUnits = buildDataSourcesToExecutionUnits(executionContexts);
         ExecutionGroupContext<JDBCExecutionUnit> executionGroupContext =
-                prepareEngine.prepare(executionContexts.iterator().next().getRouteContext(), samplingExecutionUnit(dataSourcesToExecutionUnits),
-                        new ExecutionGroupReportContext(connectionSession.getProcessId(), connectionSession.getDatabaseName(), connectionSession.getGrantee()));
+                prepareEngine.prepare(connectionSession.getDatabaseName(), executionContexts.iterator().next().getRouteContext(), samplingExecutionUnit(dataSourcesToExecutionUnits),
+                        new ExecutionGroupReportContext(connectionSession.getProcessId(), connectionSession.getDatabaseName(), connectionSession.getConnectionContext().getGrantee()));
         for (ExecutionGroup<JDBCExecutionUnit> each : executionGroupContext.getInputGroups()) {
             for (JDBCExecutionUnit unit : each.getInputs()) {
                 prepareBatchedStatement(unit, dataSourcesToExecutionUnits);

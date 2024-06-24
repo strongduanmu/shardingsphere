@@ -30,12 +30,12 @@ import org.apache.shardingsphere.infra.database.core.metadata.database.DialectDa
 import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
 import org.apache.shardingsphere.infra.database.core.type.DatabaseTypeRegistry;
 import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereSchema;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.OwnerSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SubqueryTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.column.ColumnSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.OwnerSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SubqueryTableSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.TableSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.IdentifierValue;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -62,7 +62,6 @@ public final class TablesContext {
     
     private final Collection<String> schemaNames = new CaseInsensitiveSet<>();
     
-    @Getter(AccessLevel.NONE)
     private final Collection<String> databaseNames = new CaseInsensitiveSet<>();
     
     @Getter(AccessLevel.NONE)

@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.proxy.backend.connector;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import org.apache.shardingsphere.infra.binder.context.aware.CursorDefinitionAware;
 import org.apache.shardingsphere.infra.binder.context.segment.insert.keygen.GeneratedKeyContext;
 import org.apache.shardingsphere.infra.binder.context.statement.SQLStatementContext;
@@ -70,10 +71,10 @@ import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.backend.session.transaction.TransactionStatus;
 import org.apache.shardingsphere.proxy.backend.util.TransactionUtils;
 import org.apache.shardingsphere.sharding.merge.common.IteratorStreamMergedResult;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.DMLStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLInsertStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.SQLStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dml.DMLStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dml.SelectStatement;
+import org.apache.shardingsphere.sql.parser.statement.mysql.dml.MySQLInsertStatement;
 import org.apache.shardingsphere.sqlfederation.executor.context.SQLFederationContext;
 import org.apache.shardingsphere.transaction.api.TransactionType;
 import org.apache.shardingsphere.transaction.implicit.ImplicitTransactionCallback;
@@ -105,7 +106,7 @@ public final class DatabaseConnector implements DatabaseBackendHandler {
     
     private final ShardingSphereDatabase database;
     
-    private final boolean selectContainsEnhancedTable;
+    private final boolean containsDerivedProjections;
     
     private final QueryContext queryContext;
     
@@ -121,7 +122,7 @@ public final class DatabaseConnector implements DatabaseBackendHandler {
         this.driverType = driverType;
         this.database = database;
         this.queryContext = queryContext;
-        selectContainsEnhancedTable = sqlStatementContext instanceof SelectStatementContext && ((SelectStatementContext) sqlStatementContext).isContainsEnhancedTable();
+        containsDerivedProjections = sqlStatementContext instanceof SelectStatementContext && ((SelectStatementContext) sqlStatementContext).containsDerivedProjections();
         this.databaseConnectionManager = databaseConnectionManager;
         if (sqlStatementContext instanceof CursorAvailable) {
             prepareCursorStatementContext((CursorAvailable) sqlStatementContext, databaseConnectionManager.getConnectionSession());
@@ -166,7 +167,10 @@ public final class DatabaseConnector implements DatabaseBackendHandler {
     @Override
     public ResponseHeader execute() throws SQLException {
         MetaDataContexts metaDataContexts = ProxyContext.getInstance().getContextManager().getMetaDataContexts();
-        if (proxySQLExecutor.getSqlFederationEngine().decide(queryContext.getSqlStatementContext(), queryContext.getParameters(), database, metaDataContexts.getMetaData().getGlobalRuleMetaData())) {
+        String defaultDatabaseName = databaseConnectionManager.getConnectionSession().getDefaultDatabaseName();
+        ShardingSphereDatabase defaultDatabase = Strings.isNullOrEmpty(defaultDatabaseName) ? database : metaDataContexts.getMetaData().getDatabase(defaultDatabaseName);
+        if (proxySQLExecutor.getSqlFederationEngine().decide(queryContext.getSqlStatementContext(), queryContext.getParameters(), defaultDatabase,
+                metaDataContexts.getMetaData().getGlobalRuleMetaData())) {
             ResultSet resultSet = doExecuteFederation(queryContext, metaDataContexts);
             return processExecuteFederation(resultSet, metaDataContexts);
         }
@@ -305,18 +309,14 @@ public final class DatabaseConnector implements DatabaseBackendHandler {
     }
     
     private int getColumnCount(final SQLStatementContext sqlStatementContext, final QueryResult queryResultSample) throws SQLException {
-        return selectContainsEnhancedTable && hasSelectExpandProjections(sqlStatementContext)
+        return containsDerivedProjections
                 ? ((SelectStatementContext) sqlStatementContext).getProjectionsContext().getExpandProjections().size()
                 : queryResultSample.getMetaData().getColumnCount();
     }
     
-    private boolean hasSelectExpandProjections(final SQLStatementContext sqlStatementContext) {
-        return sqlStatementContext instanceof SelectStatementContext && !((SelectStatementContext) sqlStatementContext).getProjectionsContext().getExpandProjections().isEmpty();
-    }
-    
     private QueryHeader createQueryHeader(final QueryHeaderBuilderEngine queryHeaderBuilderEngine, final SQLStatementContext sqlStatementContext,
                                           final QueryResult queryResultSample, final ShardingSphereDatabase database, final int columnIndex) throws SQLException {
-        return selectContainsEnhancedTable && hasSelectExpandProjections(sqlStatementContext)
+        return containsDerivedProjections
                 ? queryHeaderBuilderEngine.build(((SelectStatementContext) sqlStatementContext).getProjectionsContext(), queryResultSample.getMetaData(), database, columnIndex)
                 : queryHeaderBuilderEngine.build(queryResultSample.getMetaData(), database, columnIndex);
     }

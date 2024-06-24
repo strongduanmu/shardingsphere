@@ -46,30 +46,31 @@ import org.apache.shardingsphere.infra.exception.dialect.exception.syntax.databa
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.rule.attribute.table.TableMapperRuleAttribute;
-import org.apache.shardingsphere.sql.parser.sql.common.enums.ParameterMarkerType;
-import org.apache.shardingsphere.sql.parser.sql.common.enums.SubqueryType;
-import org.apache.shardingsphere.sql.parser.sql.common.extractor.TableExtractor;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.column.ColumnSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.BinaryOperationExpression;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.subquery.SubquerySegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.ColumnOrderByItemSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.ExpressionOrderByItemSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.IndexOrderByItemSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.OrderByItemSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.item.TextOrderByItemSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.predicate.WhereSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.JoinTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SubqueryTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.util.ColumnExtractor;
-import org.apache.shardingsphere.sql.parser.sql.common.util.ExpressionExtractUtils;
-import org.apache.shardingsphere.sql.parser.sql.common.util.SQLUtils;
-import org.apache.shardingsphere.sql.parser.sql.common.util.SubqueryExtractUtils;
-import org.apache.shardingsphere.sql.parser.sql.common.util.WhereExtractUtils;
-import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
+import org.apache.shardingsphere.sql.parser.statement.core.enums.ParameterMarkerType;
+import org.apache.shardingsphere.sql.parser.statement.core.enums.SubqueryType;
+import org.apache.shardingsphere.sql.parser.statement.core.util.TableExtractor;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.column.ColumnSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.expr.BinaryOperationExpression;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.expr.ExpressionSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.expr.subquery.SubquerySegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.order.item.ColumnOrderByItemSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.order.item.ExpressionOrderByItemSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.order.item.IndexOrderByItemSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.order.item.OrderByItemSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.order.item.TextOrderByItemSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.predicate.WhereSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.JoinTableSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SubqueryTableSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.TableSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dml.SelectStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.util.ColumnExtractUtils;
+import org.apache.shardingsphere.sql.parser.statement.core.util.ExpressionExtractUtils;
+import org.apache.shardingsphere.sql.parser.statement.core.util.SQLUtils;
+import org.apache.shardingsphere.sql.parser.statement.core.util.SubqueryExtractUtils;
+import org.apache.shardingsphere.sql.parser.statement.core.util.WhereExtractUtils;
+import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.IdentifierValue;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -111,19 +112,29 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
     
     private PaginationContext paginationContext;
     
-    public SelectStatementContext(final ShardingSphereMetaData metaData, final List<Object> params, final SelectStatement sqlStatement, final String defaultDatabaseName) {
+    public SelectStatementContext(final ShardingSphereMetaData metaData, final List<Object> params, final SelectStatement sqlStatement, final String defaultDatabaseName,
+                                  final Collection<TableSegment> inheritedTables) {
         super(sqlStatement);
         extractWhereSegments(whereSegments, sqlStatement);
-        ColumnExtractor.extractColumnSegments(columnSegments, whereSegments);
+        ColumnExtractUtils.extractColumnSegments(columnSegments, whereSegments);
+        Collection<TableSegment> tableSegments = getAllTableSegments(inheritedTables);
         ExpressionExtractUtils.extractJoinConditions(joinConditions, whereSegments);
-        subqueryContexts = createSubqueryContexts(metaData, params, defaultDatabaseName);
-        tablesContext = new TablesContext(getAllTableSegments(), subqueryContexts, getDatabaseType());
+        subqueryContexts = createSubqueryContexts(metaData, params, defaultDatabaseName, tableSegments);
+        tablesContext = new TablesContext(tableSegments, subqueryContexts, getDatabaseType());
         groupByContext = new GroupByContextEngine().createGroupByContext(sqlStatement);
         orderByContext = new OrderByContextEngine().createOrderBy(sqlStatement, groupByContext);
         projectionsContext = new ProjectionsContextEngine(getDatabaseType()).createProjectionsContext(getSqlStatement().getProjections(), groupByContext, orderByContext);
         paginationContext = new PaginationContextEngine(getDatabaseType()).createPaginationContext(sqlStatement, projectionsContext, params, whereSegments);
-        String databaseName = tablesContext.getDatabaseName().orElse(defaultDatabaseName);
-        containsEnhancedTable = isContainsEnhancedTable(metaData, databaseName, getTablesContext().getTableNames());
+        containsEnhancedTable = isContainsEnhancedTable(metaData, tablesContext.getDatabaseNames(), defaultDatabaseName);
+    }
+    
+    private boolean isContainsEnhancedTable(final ShardingSphereMetaData metaData, final Collection<String> databaseNames, final String defaultDatabaseName) {
+        for (String each : databaseNames) {
+            if (isContainsEnhancedTable(metaData, each, getTablesContext().getTableNames())) {
+                return true;
+            }
+        }
+        return isContainsEnhancedTable(metaData, defaultDatabaseName, getTablesContext().getTableNames());
     }
     
     private boolean isContainsEnhancedTable(final ShardingSphereMetaData metaData, final String databaseName, final Collection<String> tableNames) {
@@ -147,11 +158,12 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
         return database.getRuleMetaData().getAttributes(TableMapperRuleAttribute.class);
     }
     
-    private Map<Integer, SelectStatementContext> createSubqueryContexts(final ShardingSphereMetaData metaData, final List<Object> params, final String defaultDatabaseName) {
+    private Map<Integer, SelectStatementContext> createSubqueryContexts(final ShardingSphereMetaData metaData, final List<Object> params, final String defaultDatabaseName,
+                                                                        final Collection<TableSegment> tableSegments) {
         Collection<SubquerySegment> subquerySegments = SubqueryExtractUtils.getSubquerySegments(getSqlStatement());
         Map<Integer, SelectStatementContext> result = new HashMap<>(subquerySegments.size(), 1F);
         for (SubquerySegment each : subquerySegments) {
-            SelectStatementContext subqueryContext = new SelectStatementContext(metaData, params, each.getSelect(), defaultDatabaseName);
+            SelectStatementContext subqueryContext = new SelectStatementContext(metaData, params, each.getSelect(), defaultDatabaseName, tableSegments);
             subqueryContext.setSubqueryType(each.getSubqueryType());
             result.put(each.getStartIndex(), subqueryContext);
         }
@@ -364,8 +376,9 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
         whereSegments.addAll(WhereExtractUtils.getJoinWhereSegments(selectStatement));
     }
     
-    private Collection<TableSegment> getAllTableSegments() {
+    private Collection<TableSegment> getAllTableSegments(final Collection<TableSegment> inheritedTables) {
         TableExtractor tableExtractor = new TableExtractor();
+        appendInheritedSimpleTables(inheritedTables, tableExtractor);
         tableExtractor.extractTablesFromSelect(getSqlStatement());
         Collection<TableSegment> result = new LinkedList<>(tableExtractor.getRewriteTables());
         for (TableSegment each : tableExtractor.getTableContext()) {
@@ -376,6 +389,14 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
         return result;
     }
     
+    private void appendInheritedSimpleTables(final Collection<TableSegment> inheritedTables, final TableExtractor tableExtractor) {
+        for (TableSegment each : inheritedTables) {
+            if (each instanceof SimpleTableSegment) {
+                tableExtractor.getTableContext().add(each);
+            }
+        }
+    }
+    
     /**
      * Judge whether sql statement contains table subquery segment or not.
      *
@@ -383,6 +404,15 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
      */
     public boolean containsTableSubquery() {
         return getSqlStatement().getFrom().isPresent() && getSqlStatement().getFrom().get() instanceof SubqueryTableSegment || getSqlStatement().getWithSegment().isPresent();
+    }
+    
+    /**
+     * Judge whether contains derived projections.
+     *
+     * @return contains derived projections or not
+     */
+    public boolean containsDerivedProjections() {
+        return containsEnhancedTable && !projectionsContext.getExpandProjections().isEmpty();
     }
     
     @Override

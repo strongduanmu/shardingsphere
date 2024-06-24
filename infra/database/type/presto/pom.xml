@@ -32,6 +32,11 @@
             <artifactId>shardingsphere-infra-database-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.facebook.presto</groupId>
+            <artifactId>presto-jdbc</artifactId>
+            <scope>runtime</scope>
+        </dependency>
         
         <dependency>
             <groupId>org.apache.shardingsphere</groupId>

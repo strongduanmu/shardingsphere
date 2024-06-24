@@ -28,15 +28,15 @@ import org.apache.shardingsphere.infra.binder.statement.dml.SelectStatementBinde
 import org.apache.shardingsphere.infra.binder.statement.dml.UpdateStatementBinder;
 import org.apache.shardingsphere.infra.hint.HintValueContext;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DDLStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.DMLStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.DeleteStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.InsertStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.MergeStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.UpdateStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.opengauss.ddl.OpenGaussCursorStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.SQLStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.ddl.CursorStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.ddl.DDLStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dml.DMLStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dml.DeleteStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dml.InsertStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dml.MergeStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dml.SelectStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dml.UpdateStatement;
 
 import java.util.List;
 
@@ -97,8 +97,8 @@ public final class SQLBindEngine {
     }
     
     private static SQLStatement bindDDLStatement(final SQLStatement statement, final ShardingSphereMetaData metaData, final String defaultDatabaseName) {
-        if (statement instanceof OpenGaussCursorStatement) {
-            return new CursorStatementBinder().bind((OpenGaussCursorStatement) statement, metaData, defaultDatabaseName);
+        if (statement instanceof CursorStatement) {
+            return new CursorStatementBinder().bind((CursorStatement) statement, metaData, defaultDatabaseName);
         }
         return statement;
     }

@@ -46,17 +46,16 @@ import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.frontend.command.executor.CommandExecutor;
 import org.apache.shardingsphere.proxy.frontend.postgresql.command.PortalContext;
 import org.apache.shardingsphere.proxy.frontend.postgresql.command.query.extended.PostgreSQLServerPreparedStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.ReturningSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.assignment.InsertValuesSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.LiteralExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ColumnProjectionSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ExpressionProjectionSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ProjectionSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.item.ShorthandProjectionSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.InsertStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.handler.dml.InsertStatementHandler;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.ReturningSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.assignment.InsertValuesSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.expr.ExpressionSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.expr.simple.LiteralExpressionSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.expr.simple.ParameterMarkerExpressionSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.item.ColumnProjectionSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.item.ExpressionProjectionSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.item.ProjectionSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.item.ShorthandProjectionSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dml.InsertStatement;
 
 import java.sql.Connection;
 import java.sql.ParameterMetaData;
@@ -125,7 +124,7 @@ public final class PostgreSQLComDescribeExecutor implements CommandExecutor {
     private void describeInsertStatementByDatabaseMetaData(final PostgreSQLServerPreparedStatement preparedStatement) {
         InsertStatement insertStatement = (InsertStatement) preparedStatement.getSqlStatementContext().getSqlStatement();
         Collection<Integer> unspecifiedTypeParameterIndexes = getUnspecifiedTypeParameterIndexes(preparedStatement);
-        Optional<ReturningSegment> returningSegment = InsertStatementHandler.getReturningSegment(insertStatement);
+        Optional<ReturningSegment> returningSegment = insertStatement.getReturningSegment();
         if (insertStatement.getParameterMarkerSegments().isEmpty() && unspecifiedTypeParameterIndexes.isEmpty() && !returningSegment.isPresent()) {
             return;
         }
@@ -246,7 +245,7 @@ public final class PostgreSQLComDescribeExecutor implements CommandExecutor {
                 queryContext, database, metaDataContexts.getMetaData().getGlobalRuleMetaData(), metaDataContexts.getMetaData().getProps(), connectionSession.getConnectionContext());
         ExecutionUnit executionUnitSample = executionContext.getExecutionUnits().iterator().next();
         ProxyDatabaseConnectionManager databaseConnectionManager = connectionSession.getDatabaseConnectionManager();
-        Connection connection = databaseConnectionManager.getConnections(executionUnitSample.getDataSourceName(), 0, 1, ConnectionMode.CONNECTION_STRICTLY).iterator().next();
+        Connection connection = databaseConnectionManager.getConnections(databaseName, executionUnitSample.getDataSourceName(), 0, 1, ConnectionMode.CONNECTION_STRICTLY).iterator().next();
         try (PreparedStatement actualPreparedStatement = connection.prepareStatement(executionUnitSample.getSqlUnit().getSql())) {
             populateParameterTypes(logicPreparedStatement, actualPreparedStatement);
             populateColumnTypes(logicPreparedStatement, actualPreparedStatement);

@@ -51,9 +51,9 @@ import org.apache.shardingsphere.proxy.backend.session.ServerPreparedStatementRe
 import org.apache.shardingsphere.proxy.frontend.mysql.command.query.binary.MySQLServerPreparedStatement;
 import org.apache.shardingsphere.proxy.frontend.mysql.command.query.binary.MySQLStatementIdGenerator;
 import org.apache.shardingsphere.sql.parser.api.CacheOption;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLInsertStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLSelectStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLUpdateStatement;
+import org.apache.shardingsphere.sql.parser.statement.mysql.dml.MySQLInsertStatement;
+import org.apache.shardingsphere.sql.parser.statement.mysql.dml.MySQLSelectStatement;
+import org.apache.shardingsphere.sql.parser.statement.mysql.dml.MySQLUpdateStatement;
 import org.apache.shardingsphere.test.mock.AutoMockExtension;
 import org.apache.shardingsphere.test.mock.StaticMockSettings;
 import org.junit.jupiter.api.BeforeEach;
@@ -110,6 +110,7 @@ class MySQLComStmtPrepareExecutorTest {
         when(packet.getSQL()).thenReturn(sql);
         when(packet.getHintValueContext()).thenReturn(new HintValueContext());
         when(connectionSession.getConnectionId()).thenReturn(1);
+        when(connectionSession.getDefaultDatabaseName()).thenReturn("foo_db");
         MySQLStatementIdGenerator.getInstance().registerConnection(1);
         ContextManager contextManager = mockContextManager();
         when(ProxyContext.getInstance().getContextManager()).thenReturn(contextManager);

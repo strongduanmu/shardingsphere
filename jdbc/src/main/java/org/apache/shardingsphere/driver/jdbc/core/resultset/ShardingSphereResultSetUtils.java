@@ -40,14 +40,12 @@ public final class ShardingSphereResultSetUtils {
      * Create column label and index map.
      *
      * @param sqlStatementContext SQL statement context
-     * @param selectContainsEnhancedTable select contains enhanced table
      * @param resultSetMetaData meta data of result set
      * @return column label and index map
      * @throws SQLException SQL exception
      */
-    public static Map<String, Integer> createColumnLabelAndIndexMap(final SQLStatementContext sqlStatementContext, final boolean selectContainsEnhancedTable,
-                                                                    final ResultSetMetaData resultSetMetaData) throws SQLException {
-        if (selectContainsEnhancedTable && hasSelectExpandProjections(sqlStatementContext)) {
+    public static Map<String, Integer> createColumnLabelAndIndexMap(final SQLStatementContext sqlStatementContext, final ResultSetMetaData resultSetMetaData) throws SQLException {
+        if (sqlStatementContext instanceof SelectStatementContext && ((SelectStatementContext) sqlStatementContext).containsDerivedProjections()) {
             return createColumnLabelAndIndexMapWithExpandProjections((SelectStatementContext) sqlStatementContext);
         }
         Map<String, Integer> result = new CaseInsensitiveMap<>(resultSetMetaData.getColumnCount(), 1F);
@@ -65,9 +63,5 @@ public final class ShardingSphereResultSetUtils {
             result.put(DerivedColumn.isDerivedColumnName(projection.getColumnLabel()) ? projection.getExpression() : projection.getColumnLabel(), columnIndex);
         }
         return result;
-    }
-    
-    private static boolean hasSelectExpandProjections(final SQLStatementContext sqlStatementContext) {
-        return sqlStatementContext instanceof SelectStatementContext && !((SelectStatementContext) sqlStatementContext).getProjectionsContext().getExpandProjections().isEmpty();
     }
 }

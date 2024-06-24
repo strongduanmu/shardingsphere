@@ -38,13 +38,14 @@ import org.apache.shardingsphere.parser.rule.SQLParserRule;
 import org.apache.shardingsphere.parser.rule.builder.DefaultSQLParserRuleConfigurationBuilder;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dml.SelectStatement;
 import org.apache.shardingsphere.test.fixture.jdbc.MockedDataSource;
 import org.apache.shardingsphere.test.mock.AutoMockExtension;
 import org.apache.shardingsphere.test.mock.StaticMockSettings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -84,12 +85,12 @@ class SelectInformationSchemataExecutorTest {
     
     private SelectStatement statement;
     
-    @Mock
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private ConnectionSession connectionSession;
     
     @BeforeEach
     void setUp() {
-        when(connectionSession.getGrantee()).thenReturn(grantee);
+        when(connectionSession.getConnectionContext().getGrantee()).thenReturn(grantee);
         statement = (SelectStatement) new SQLParserRule(
                 new DefaultSQLParserRuleConfigurationBuilder().build()).getSQLParserEngine(TypedSPILoader.getService(DatabaseType.class, "MySQL")).parse(sql, false);
     }
@@ -187,6 +188,7 @@ class SelectInformationSchemataExecutorTest {
     private Connection mockConnection(final Map<String, String> expectedResultSetMap) throws SQLException {
         Connection result = mock(Connection.class, RETURNS_DEEP_STUBS);
         when(result.getMetaData().getURL()).thenReturn("jdbc:mysql://localhost:3306/foo_ds");
+        when(result.getCatalog()).thenReturn("foo_ds");
         ResultSet resultSet = mockResultSet(expectedResultSetMap);
         when(result.prepareStatement(any(String.class)).executeQuery()).thenReturn(resultSet);
         return result;

@@ -45,11 +45,11 @@ import org.apache.shardingsphere.sharding.api.config.rule.ShardingTableRuleConfi
 import org.apache.shardingsphere.sharding.api.config.strategy.sharding.StandardShardingStrategyConfiguration;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
 import org.apache.shardingsphere.sql.parser.api.CacheOption;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.SQLStatement;
 import org.apache.shardingsphere.test.fixture.jdbc.MockedDataSource;
 import org.apache.shardingsphere.test.util.PropertiesBuilder;
 import org.apache.shardingsphere.test.util.PropertiesBuilder.Property;
-import org.apache.shardingsphere.timeservice.api.config.TimestampServiceRuleConfiguration;
+import org.apache.shardingsphere.timeservice.config.TimestampServiceRuleConfiguration;
 import org.apache.shardingsphere.timeservice.core.rule.TimestampServiceRule;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;

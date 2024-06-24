@@ -18,7 +18,8 @@
 package org.apache.shardingsphere.broadcast.route;
 
 import com.google.common.collect.Lists;
-import org.apache.shardingsphere.broadcast.api.config.BroadcastRuleConfiguration;
+import org.apache.groovy.util.Maps;
+import org.apache.shardingsphere.broadcast.config.BroadcastRuleConfiguration;
 import org.apache.shardingsphere.broadcast.rule.BroadcastRule;
 import org.apache.shardingsphere.infra.binder.context.statement.ddl.CreateTableStatementContext;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
@@ -39,11 +40,11 @@ import org.apache.shardingsphere.infra.rule.attribute.datanode.DataNodeRuleAttri
 import org.apache.shardingsphere.infra.session.connection.ConnectionContext;
 import org.apache.shardingsphere.infra.session.query.QueryContext;
 import org.apache.shardingsphere.infra.spi.type.ordered.OrderedSPILoader;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableNameSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateTableStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.ddl.MySQLCreateTableStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.TableNameSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.ddl.CreateTableStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.IdentifierValue;
+import org.apache.shardingsphere.sql.parser.statement.mysql.ddl.MySQLCreateTableStatement;
 import org.apache.shardingsphere.test.fixture.jdbc.MockedDataSource;
 import org.junit.jupiter.api.Test;
 
@@ -75,7 +76,7 @@ class BroadcastSqlRouterTest {
         when(currentConfig.getTables()).thenReturn(Collections.singleton("t_order"));
         BroadcastRule broadcastRule = new BroadcastRule(currentConfig, DefaultDatabase.LOGIC_NAME, createMultiDataSourceMap(), Collections.emptyList());
         RouteContext routeContext = new BroadcastSQLRouter().createRouteContext(createQueryContext(), mock(RuleMetaData.class), mockDatabaseWithMultipleResources(), broadcastRule,
-                new ConfigurationProperties(new Properties()), new ConnectionContext());
+                new ConfigurationProperties(new Properties()), new ConnectionContext(Collections::emptySet));
         List<RouteUnit> routeUnits = new ArrayList<>(routeContext.getRouteUnits());
         assertThat(routeContext.getRouteUnits().size(), is(2));
         assertThat(routeUnits.get(0).getDataSourceMapper().getLogicName(), is(routeUnits.get(0).getDataSourceMapper().getActualName()));
@@ -93,7 +94,7 @@ class BroadcastSqlRouterTest {
         broadcastRule.getAttributes().getAttribute(DataNodeRuleAttribute.class).getAllDataNodes().put("t_order", Collections.singletonList(createDataNode("tmp_ds")));
         ShardingSphereDatabase database = mockSingleDatabase();
         RouteContext routeContext = new BroadcastSQLRouter().createRouteContext(
-                createQueryContext(), mock(RuleMetaData.class), database, broadcastRule, new ConfigurationProperties(new Properties()), new ConnectionContext());
+                createQueryContext(), mock(RuleMetaData.class), database, broadcastRule, new ConfigurationProperties(new Properties()), new ConnectionContext(Collections::emptySet));
         assertThat(routeContext.getRouteUnits().size(), is(1));
         RouteUnit routeUnit = routeContext.getRouteUnits().iterator().next();
         assertThat(routeUnit.getDataSourceMapper().getLogicName(), is("tmp_ds"));
@@ -109,7 +110,8 @@ class BroadcastSqlRouterTest {
         RouteContext routeContext = new RouteContext();
         routeContext.getRouteUnits().add(new RouteUnit(new RouteMapper("foo_ds", "foo_ds"), Lists.newArrayList()));
         BroadcastSQLRouter sqlRouter = (BroadcastSQLRouter) OrderedSPILoader.getServices(SQLRouter.class, Collections.singleton(broadcastRule)).get(broadcastRule);
-        sqlRouter.decorateRouteContext(routeContext, createQueryContext(), mockSingleDatabase(), broadcastRule, new ConfigurationProperties(new Properties()), new ConnectionContext());
+        sqlRouter.decorateRouteContext(routeContext, createQueryContext(),
+                mockSingleDatabase(), broadcastRule, new ConfigurationProperties(new Properties()), new ConnectionContext(Collections::emptySet));
         Iterator<String> routedDataSourceNames = routeContext.getActualDataSourceNames().iterator();
         assertThat(routedDataSourceNames.next(), is("foo_ds"));
     }
@@ -150,10 +152,10 @@ class BroadcastSqlRouterTest {
     private ShardingSphereDatabase mockDatabaseWithMultipleResources() {
         Map<String, StorageUnit> storageUnits = new HashMap<>(2, 1F);
         DataSourcePoolProperties dataSourcePoolProps0 = mock(DataSourcePoolProperties.class, RETURNS_DEEP_STUBS);
-        when(dataSourcePoolProps0.getConnectionPropertySynonyms().getStandardProperties()).thenReturn(Collections.singletonMap("url", "jdbc:mock://127.0.0.1/ds_0"));
+        when(dataSourcePoolProps0.getConnectionPropertySynonyms().getStandardProperties()).thenReturn(Maps.of("url", "jdbc:mock://127.0.0.1/ds_0", "username", "test"));
         storageUnits.put("ds_0", new StorageUnit(mock(StorageNode.class), dataSourcePoolProps0, new MockedDataSource()));
         DataSourcePoolProperties dataSourcePoolProps1 = mock(DataSourcePoolProperties.class, RETURNS_DEEP_STUBS);
-        when(dataSourcePoolProps1.getConnectionPropertySynonyms().getStandardProperties()).thenReturn(Collections.singletonMap("url", "jdbc:mock://127.0.0.1/ds_1"));
+        when(dataSourcePoolProps1.getConnectionPropertySynonyms().getStandardProperties()).thenReturn(Maps.of("url", "jdbc:mock://127.0.0.1/ds_1", "username", "test"));
         storageUnits.put("ds_1", new StorageUnit(mock(StorageNode.class), dataSourcePoolProps1, new MockedDataSource()));
         ShardingSphereDatabase result = mock(ShardingSphereDatabase.class, RETURNS_DEEP_STUBS);
         when(result.getResourceMetaData().getStorageUnits()).thenReturn(storageUnits);

@@ -23,7 +23,7 @@ import org.apache.shardingsphere.infra.database.core.DefaultDatabase;
 import org.apache.shardingsphere.infra.route.context.RouteMapper;
 import org.apache.shardingsphere.infra.route.context.RouteUnit;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
-import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
+import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.IdentifierValue;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -39,7 +39,7 @@ class TableTokenTest {
     
     @Test
     void assertToString() {
-        TableToken tableToken = new TableToken(0, 0, new IdentifierValue("t_order"),
+        ShardingTableToken tableToken = new ShardingTableToken(0, 0, new IdentifierValue("t_order"),
                 mock(SQLStatementContext.class, withSettings().extraInterfaces(TableAvailable.class).defaultAnswer(RETURNS_DEEP_STUBS)), mock(ShardingRule.class));
         RouteUnit routeUnit = mock(RouteUnit.class);
         when(routeUnit.getTableMappers()).thenReturn(Collections.singletonList(new RouteMapper("t_order", "t_order_0")));

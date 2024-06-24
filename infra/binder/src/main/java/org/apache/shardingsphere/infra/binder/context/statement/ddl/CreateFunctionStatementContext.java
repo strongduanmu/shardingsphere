@@ -20,11 +20,10 @@ package org.apache.shardingsphere.infra.binder.context.statement.ddl;
 import lombok.Getter;
 import org.apache.shardingsphere.infra.binder.context.segment.table.TablesContext;
 import org.apache.shardingsphere.infra.binder.context.statement.CommonSQLStatementContext;
-import org.apache.shardingsphere.sql.parser.sql.common.extractor.TableExtractor;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.routine.RoutineBodySegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateFunctionStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.handler.ddl.CreateFunctionStatementHandler;
+import org.apache.shardingsphere.sql.parser.statement.core.util.TableExtractor;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.ddl.routine.RoutineBodySegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.ddl.CreateFunctionStatement;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -40,7 +39,7 @@ public final class CreateFunctionStatementContext extends CommonSQLStatementCont
     
     public CreateFunctionStatementContext(final CreateFunctionStatement sqlStatement) {
         super(sqlStatement);
-        Optional<RoutineBodySegment> routineBodySegment = CreateFunctionStatementHandler.getRoutineBodySegment(sqlStatement);
+        Optional<RoutineBodySegment> routineBodySegment = sqlStatement.getRoutineBody();
         Collection<SimpleTableSegment> tables = routineBodySegment.map(optional -> new TableExtractor().extractExistTableFromRoutineBody(optional)).orElseGet(Collections::emptyList);
         tablesContext = new TablesContext(tables, getDatabaseType());
     }

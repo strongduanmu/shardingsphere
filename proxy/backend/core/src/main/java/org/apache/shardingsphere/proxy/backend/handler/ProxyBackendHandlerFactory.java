@@ -52,15 +52,15 @@ import org.apache.shardingsphere.proxy.backend.handler.transaction.TransactionBa
 import org.apache.shardingsphere.proxy.backend.handler.transaction.TransactionalErrorAllowedSQLStatementHandler;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.backend.state.ProxyClusterState;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dal.EmptyStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dal.FlushStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dcl.DCLStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CreateDatabaseStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DropDatabaseStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.RenameTableStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.tcl.TCLStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLShowCreateUserStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.SQLStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dal.EmptyStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dal.FlushStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dcl.DCLStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.ddl.CreateDatabaseStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.ddl.DropDatabaseStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.ddl.RenameTableStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.tcl.TCLStatement;
+import org.apache.shardingsphere.sql.parser.statement.mysql.dal.MySQLShowCreateUserStatement;
 import org.apache.shardingsphere.transaction.util.AutoCommitUtils;
 
 import java.sql.SQLException;
@@ -146,7 +146,7 @@ public final class ProxyBackendHandlerFactory {
         }
         AuthorityRule authorityRule = ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaData().getGlobalRuleMetaData().getSingleRule(AuthorityRule.class);
         ShardingSphereDatabase database = ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaData().getDatabase(databaseName);
-        ShardingSpherePreconditions.checkState(new AuthorityChecker(authorityRule, connectionSession.getGrantee()).isAuthorized(databaseName),
+        ShardingSpherePreconditions.checkState(new AuthorityChecker(authorityRule, connectionSession.getConnectionContext().getGrantee()).isAuthorized(databaseName),
                 () -> new UnknownDatabaseException(databaseName));
         SQLAuditEngine.audit(queryContext, ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaData().getGlobalRuleMetaData(), database);
         backendHandler = DatabaseAdminBackendHandlerFactory.newInstance(databaseType, sqlStatementContext, connectionSession);

@@ -55,16 +55,16 @@ import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
 import org.apache.shardingsphere.proxy.backend.session.transaction.TransactionStatus;
 import org.apache.shardingsphere.proxy.backend.util.TransactionUtils;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.SQLStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.CloseStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.DDLStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.FetchStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.MoveStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.TruncateStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dml.MySQLInsertStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.opengauss.OpenGaussStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.opengauss.ddl.OpenGaussCursorStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.PostgreSQLStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.SQLStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.ddl.CloseStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.ddl.DDLStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.ddl.FetchStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.ddl.MoveStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.ddl.TruncateStatement;
+import org.apache.shardingsphere.sql.parser.statement.mysql.dml.MySQLInsertStatement;
+import org.apache.shardingsphere.sql.parser.statement.opengauss.OpenGaussStatement;
+import org.apache.shardingsphere.sql.parser.statement.opengauss.ddl.OpenGaussCursorStatement;
+import org.apache.shardingsphere.sql.parser.statement.postgresql.PostgreSQLStatement;
 import org.apache.shardingsphere.sqlfederation.engine.SQLFederationEngine;
 import org.apache.shardingsphere.transaction.api.TransactionType;
 import org.apache.shardingsphere.transaction.spi.TransactionHook;
@@ -103,9 +103,9 @@ public final class ProxySQLExecutor {
         regularExecutor = new ProxyJDBCExecutor(type, databaseConnectionManager.getConnectionSession(), databaseConnector, jdbcExecutor);
         rawExecutor = new RawExecutor(executorEngine, connectionContext);
         MetaDataContexts metaDataContexts = ProxyContext.getInstance().getContextManager().getMetaDataContexts();
-        String databaseName = databaseConnectionManager.getConnectionSession().getDatabaseName();
-        String schemaName = getSchemaName(queryContext.getSqlStatementContext(), metaDataContexts.getMetaData().getDatabase(databaseName));
-        sqlFederationEngine = new SQLFederationEngine(databaseName, schemaName, metaDataContexts.getMetaData(), metaDataContexts.getStatistics(), jdbcExecutor);
+        String defaultDatabaseName = databaseConnectionManager.getConnectionSession().getDefaultDatabaseName();
+        String defaultSchemaName = getSchemaName(queryContext.getSqlStatementContext(), metaDataContexts.getMetaData().getDatabase(defaultDatabaseName));
+        sqlFederationEngine = new SQLFederationEngine(defaultDatabaseName, defaultSchemaName, metaDataContexts.getMetaData(), metaDataContexts.getStatistics(), jdbcExecutor);
     }
     
     private String getSchemaName(final SQLStatementContext sqlStatementContext, final ShardingSphereDatabase database) {
@@ -199,9 +199,10 @@ public final class ProxySQLExecutor {
         RawExecutionPrepareEngine prepareEngine = new RawExecutionPrepareEngine(maxConnectionsSizePerQuery, rules);
         ExecutionGroupContext<RawSQLExecutionUnit> executionGroupContext;
         try {
-            executionGroupContext = prepareEngine.prepare(executionContext.getRouteContext(), executionContext.getExecutionUnits(),
+            String databaseName = databaseConnectionManager.getConnectionSession().getDatabaseName();
+            executionGroupContext = prepareEngine.prepare(databaseName, executionContext.getRouteContext(), executionContext.getExecutionUnits(),
                     new ExecutionGroupReportContext(databaseConnectionManager.getConnectionSession().getProcessId(),
-                            databaseConnectionManager.getConnectionSession().getDatabaseName(), databaseConnectionManager.getConnectionSession().getGrantee()));
+                            databaseName, databaseConnectionManager.getConnectionSession().getConnectionContext().getGrantee()));
         } catch (final SQLException ex) {
             return getSaneExecuteResults(executionContext, ex);
         }
@@ -212,14 +213,15 @@ public final class ProxySQLExecutor {
     private List<ExecuteResult> useDriverToExecute(final ExecutionContext executionContext, final Collection<ShardingSphereRule> rules,
                                                    final int maxConnectionsSizePerQuery, final boolean isReturnGeneratedKeys, final boolean isExceptionThrown) throws SQLException {
         JDBCBackendStatement statementManager = (JDBCBackendStatement) databaseConnectionManager.getConnectionSession().getStatementManager();
+        String databaseName = databaseConnectionManager.getConnectionSession().getDatabaseName();
         DriverExecutionPrepareEngine<JDBCExecutionUnit, Connection> prepareEngine = new DriverExecutionPrepareEngine<>(
                 type, maxConnectionsSizePerQuery, databaseConnectionManager, statementManager, new StatementOption(isReturnGeneratedKeys), rules,
-                ProxyContext.getInstance().getContextManager().getDatabase(databaseConnectionManager.getConnectionSession().getDatabaseName()).getResourceMetaData().getStorageUnits());
+                ProxyContext.getInstance().getContextManager().getDatabase(databaseName).getResourceMetaData().getStorageUnits());
         ExecutionGroupContext<JDBCExecutionUnit> executionGroupContext;
         try {
-            executionGroupContext = prepareEngine.prepare(executionContext.getRouteContext(), executionContext.getExecutionUnits(),
+            executionGroupContext = prepareEngine.prepare(databaseName, executionContext.getRouteContext(), executionContext.getExecutionUnits(),
                     new ExecutionGroupReportContext(databaseConnectionManager.getConnectionSession().getProcessId(),
-                            databaseConnectionManager.getConnectionSession().getDatabaseName(), databaseConnectionManager.getConnectionSession().getGrantee()));
+                            databaseName, databaseConnectionManager.getConnectionSession().getConnectionContext().getGrantee()));
         } catch (final SQLException ex) {
             return getSaneExecuteResults(executionContext, ex);
         }

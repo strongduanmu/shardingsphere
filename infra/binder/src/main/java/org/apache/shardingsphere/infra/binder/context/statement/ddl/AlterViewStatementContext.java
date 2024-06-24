@@ -21,11 +21,10 @@ import lombok.Getter;
 import org.apache.shardingsphere.infra.binder.context.segment.table.TablesContext;
 import org.apache.shardingsphere.infra.binder.context.statement.CommonSQLStatementContext;
 import org.apache.shardingsphere.infra.binder.context.type.TableAvailable;
-import org.apache.shardingsphere.sql.parser.sql.common.extractor.TableExtractor;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.ddl.AlterViewStatement;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.SelectStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.handler.ddl.AlterViewStatementHandler;
+import org.apache.shardingsphere.sql.parser.statement.core.util.TableExtractor;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.ddl.AlterViewStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dml.SelectStatement;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -43,13 +42,13 @@ public final class AlterViewStatementContext extends CommonSQLStatementContext i
         super(sqlStatement);
         Collection<SimpleTableSegment> tables = new LinkedList<>();
         tables.add(sqlStatement.getView());
-        Optional<SelectStatement> selectStatement = AlterViewStatementHandler.getSelectStatement(sqlStatement);
+        Optional<SelectStatement> selectStatement = sqlStatement.getSelectStatement();
         selectStatement.ifPresent(optional -> {
             TableExtractor extractor = new TableExtractor();
             extractor.extractTablesFromSelect(optional);
             tables.addAll(extractor.getRewriteTables());
         });
-        AlterViewStatementHandler.getRenameView(sqlStatement).ifPresent(tables::add);
+        sqlStatement.getRenameView().ifPresent(tables::add);
         tablesContext = new TablesContext(tables, getDatabaseType());
     }
     

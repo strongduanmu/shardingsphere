@@ -30,8 +30,7 @@ import org.apache.shardingsphere.sharding.route.engine.condition.ShardingConditi
 import org.apache.shardingsphere.sharding.route.engine.type.standard.ShardingStandardRoutingEngine;
 import org.apache.shardingsphere.sharding.route.engine.validator.dml.ShardingDMLStatementValidator;
 import org.apache.shardingsphere.sharding.rule.ShardingRule;
-import org.apache.shardingsphere.sql.parser.sql.common.statement.dml.UpdateStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.handler.dml.UpdateStatementHandler;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.dml.UpdateStatement;
 
 import java.util.List;
 import java.util.Optional;
@@ -59,7 +58,7 @@ public final class ShardingUpdateStatementValidator extends ShardingDMLStatement
         if (setAssignmentRouteContext.isPresent() && !isSameRouteContext(routeContext, setAssignmentRouteContext.get())) {
             throw new UnsupportedUpdatingShardingValueException(tableName);
         }
-        ShardingSpherePreconditions.checkState(!UpdateStatementHandler.getLimitSegment(updateStatement).isPresent()
+        ShardingSpherePreconditions.checkState(!updateStatement.getLimit().isPresent()
                 || routeContext.getRouteUnits().size() <= 1, () -> new DMLMultipleDataNodesWithLimitException("UPDATE"));
     }
 }

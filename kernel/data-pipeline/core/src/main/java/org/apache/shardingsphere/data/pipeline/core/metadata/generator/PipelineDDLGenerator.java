@@ -35,11 +35,11 @@ import org.apache.shardingsphere.infra.hint.HintValueContext;
 import org.apache.shardingsphere.infra.metadata.database.schema.util.IndexMetaDataUtils;
 import org.apache.shardingsphere.infra.parser.SQLParserEngine;
 import org.apache.shardingsphere.infra.session.query.QueryContext;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.SQLSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.constraint.ConstraintSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.ddl.index.IndexSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableNameSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.SQLSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.ddl.constraint.ConstraintSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.ddl.index.IndexSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.TableNameSegment;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -126,7 +126,7 @@ public final class PipelineDDLGenerator {
     }
     
     private QueryContext getQueryContext(final String databaseName, final SQLParserEngine parserEngine, final String sql) {
-        SQLStatementContext sqlStatementContext = new SQLBindEngine(null, databaseName, new HintValueContext()).bind(parserEngine.parse(sql, false), Collections.emptyList());
+        SQLStatementContext sqlStatementContext = new SQLBindEngine(null, databaseName, new HintValueContext()).bind(parserEngine.parse(sql, true), Collections.emptyList());
         return new QueryContext(sqlStatementContext, sql, Collections.emptyList(), new HintValueContext());
     }
     

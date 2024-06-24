@@ -102,7 +102,7 @@ public abstract class AbstractDatabaseMetaDataExecutor implements DatabaseAdminQ
     
     protected abstract Collection<String> getDatabaseNames(ConnectionSession connectionSession);
     
-    protected abstract void preProcess(String databaseName, Map<String, Object> rows, Map<String, String> alias);
+    protected abstract void preProcess(String databaseName, Map<String, Object> rows, Map<String, String> alias) throws SQLException;
     
     protected abstract void postProcess();
     
@@ -144,7 +144,7 @@ public abstract class AbstractDatabaseMetaDataExecutor implements DatabaseAdminQ
         
         @Override
         protected Collection<String> getDatabaseNames(final ConnectionSession connectionSession) {
-            Optional<String> database = ProxyContext.getInstance().getAllDatabaseNames().stream().filter(each -> isAuthorized(each, connectionSession.getGrantee()))
+            Optional<String> database = ProxyContext.getInstance().getAllDatabaseNames().stream().filter(each -> isAuthorized(each, connectionSession.getConnectionContext().getGrantee()))
                     .filter(AbstractDatabaseMetaDataExecutor::hasDataSource).findFirst();
             return database.map(Collections::singletonList).orElse(Collections.emptyList());
         }
@@ -169,7 +169,7 @@ public abstract class AbstractDatabaseMetaDataExecutor implements DatabaseAdminQ
         }
         
         @Override
-        protected void preProcess(final String databaseName, final Map<String, Object> rows, final Map<String, String> alias) {
+        protected void preProcess(final String databaseName, final Map<String, Object> rows, final Map<String, String> alias) throws SQLException {
         }
         
         @Override

@@ -40,10 +40,10 @@ import org.apache.shardingsphere.proxy.backend.connector.ProxyDatabaseConnection
 import org.apache.shardingsphere.proxy.backend.connector.jdbc.statement.JDBCBackendStatement;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.TableNameSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.postgresql.dml.PostgreSQLInsertStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.TableNameSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.IdentifierValue;
+import org.apache.shardingsphere.sql.parser.statement.postgresql.dml.PostgreSQLInsertStatement;
 import org.apache.shardingsphere.sqltranslator.rule.SQLTranslatorRule;
 import org.apache.shardingsphere.sqltranslator.rule.builder.DefaultSQLTranslatorRuleConfigurationBuilder;
 import org.apache.shardingsphere.test.mock.AutoMockExtension;
@@ -91,7 +91,7 @@ class PostgreSQLBatchedStatementsExecutorTest {
     void assertExecuteBatch() throws SQLException {
         Connection connection = mock(Connection.class, RETURNS_DEEP_STUBS);
         when(connection.getMetaData().getURL()).thenReturn("jdbc:postgresql://127.0.0.1/db");
-        when(databaseConnectionManager.getConnections(nullable(String.class), anyInt(), anyInt(), any(ConnectionMode.class))).thenReturn(Collections.singletonList(connection));
+        when(databaseConnectionManager.getConnections(any(), nullable(String.class), anyInt(), anyInt(), any(ConnectionMode.class))).thenReturn(Collections.singletonList(connection));
         PreparedStatement preparedStatement = mock(PreparedStatement.class);
         when(preparedStatement.getConnection()).thenReturn(connection);
         when(preparedStatement.executeBatch()).thenReturn(new int[]{1, 1, 1});
@@ -155,7 +155,7 @@ class PostgreSQLBatchedStatementsExecutorTest {
         when(result.getDatabaseName()).thenReturn("db");
         when(result.getDatabaseConnectionManager()).thenReturn(databaseConnectionManager);
         when(result.getStatementManager()).thenReturn(backendStatement);
-        when(result.getConnectionContext()).thenReturn(new ConnectionContext());
+        when(result.getConnectionContext()).thenReturn(new ConnectionContext(Collections::emptySet));
         return result;
     }
     

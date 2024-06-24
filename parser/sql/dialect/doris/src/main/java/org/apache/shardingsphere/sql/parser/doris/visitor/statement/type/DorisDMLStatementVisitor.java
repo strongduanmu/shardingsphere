@@ -33,21 +33,21 @@ import org.apache.shardingsphere.sql.parser.autogen.DorisStatementParser.WindowI
 import org.apache.shardingsphere.sql.parser.autogen.DorisStatementParser.WindowSpecificationContext;
 import org.apache.shardingsphere.sql.parser.autogen.DorisStatementParser.WindowingClauseContext;
 import org.apache.shardingsphere.sql.parser.doris.visitor.statement.DorisStatementVisitor;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.ExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.FunctionSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.expr.complex.CommonExpressionSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dml.order.OrderBySegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.WindowItemSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.WindowSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.IndexHintSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.table.SimpleTableSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.doris.dml.DorisCallStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.doris.dml.DorisDoStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.doris.dml.DorisHandlerStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.doris.dml.DorisImportStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.doris.dml.DorisLoadDataStatement;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.doris.dml.DorisLoadXMLStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.expr.ExpressionSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.expr.FunctionSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.expr.complex.CommonExpressionSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.order.OrderBySegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.WindowItemSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.WindowSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.IndexHintSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SimpleTableSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.IdentifierValue;
+import org.apache.shardingsphere.sql.parser.statement.doris.dml.DorisCallStatement;
+import org.apache.shardingsphere.sql.parser.statement.doris.dml.DorisDoStatement;
+import org.apache.shardingsphere.sql.parser.statement.doris.dml.DorisHandlerStatement;
+import org.apache.shardingsphere.sql.parser.statement.doris.dml.DorisImportStatement;
+import org.apache.shardingsphere.sql.parser.statement.doris.dml.DorisLoadDataStatement;
+import org.apache.shardingsphere.sql.parser.statement.doris.dml.DorisLoadXMLStatement;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -105,7 +105,9 @@ public final class DorisDMLStatementVisitor extends DorisStatementVisitor implem
     @Override
     public ASTNode visitIndexHint(final IndexHintContext ctx) {
         Collection<String> indexNames = new LinkedList<>();
-        ctx.indexName().forEach(each -> indexNames.add(each.getText()));
+        if (null != ctx.indexNameList()) {
+            ctx.indexNameList().indexName().forEach(each -> indexNames.add(each.getText()));
+        }
         String useType;
         if (null != ctx.USE()) {
             useType = ctx.USE().getText();
@@ -116,11 +118,11 @@ public final class DorisDMLStatementVisitor extends DorisStatementVisitor implem
         }
         IndexHintSegment result = new IndexHintSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(), indexNames, useType,
                 null == ctx.INDEX() ? ctx.KEY().getText() : ctx.INDEX().getText(), getOriginalText(ctx));
-        if (null != ctx.FOR()) {
+        if (null != ctx.indexHintClause().FOR()) {
             String hintScope;
-            if (null != ctx.JOIN()) {
+            if (null != ctx.indexHintClause().JOIN()) {
                 hintScope = "JOIN";
-            } else if (null != ctx.ORDER()) {
+            } else if (null != ctx.indexHintClause().ORDER()) {
                 hintScope = "ORDER BY";
             } else {
                 hintScope = "GROUP BY";

@@ -20,9 +20,9 @@ package org.apache.shardingsphere.encrypt.rule;
 import com.cedarsoftware.util.CaseInsensitiveMap;
 import com.cedarsoftware.util.CaseInsensitiveSet;
 import com.google.common.base.Preconditions;
-import org.apache.shardingsphere.encrypt.api.config.EncryptRuleConfiguration;
-import org.apache.shardingsphere.encrypt.api.config.rule.EncryptColumnRuleConfiguration;
-import org.apache.shardingsphere.encrypt.api.config.rule.EncryptTableRuleConfiguration;
+import org.apache.shardingsphere.encrypt.config.EncryptRuleConfiguration;
+import org.apache.shardingsphere.encrypt.config.rule.EncryptColumnRuleConfiguration;
+import org.apache.shardingsphere.encrypt.config.rule.EncryptTableRuleConfiguration;
 import org.apache.shardingsphere.encrypt.exception.metadata.EncryptTableNotFoundException;
 import org.apache.shardingsphere.encrypt.exception.metadata.MismatchedEncryptAlgorithmTypeException;
 import org.apache.shardingsphere.encrypt.rule.attribute.EncryptTableMapperRuleAttribute;
@@ -116,9 +116,7 @@ public final class EncryptRule implements DatabaseRule, PartialRuleUpdateSupport
      * @return encrypt table
      */
     public EncryptTable getEncryptTable(final String tableName) {
-        Optional<EncryptTable> encryptTable = findEncryptTable(tableName);
-        ShardingSpherePreconditions.checkState(encryptTable.isPresent(), () -> new EncryptTableNotFoundException(tableName));
-        return encryptTable.get();
+        return findEncryptTable(tableName).orElseThrow(() -> new EncryptTableNotFoundException(tableName));
     }
     
     @Override

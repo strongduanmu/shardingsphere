@@ -17,6 +17,7 @@
 
 package org.apache.shardingsphere.proxy.backend.mysql.handler.admin.executor;
 
+import org.apache.shardingsphere.authority.rule.AuthorityRule;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
 import org.apache.shardingsphere.infra.executor.sql.execute.result.query.QueryResultMetaData;
@@ -35,12 +36,12 @@ import org.apache.shardingsphere.mode.metadata.MetaDataContexts;
 import org.apache.shardingsphere.mode.metadata.MetaDataContextsFactory;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dal.FromSchemaSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dal.ShowFilterSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.dal.ShowLikeSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.segment.generic.DatabaseSegment;
-import org.apache.shardingsphere.sql.parser.sql.common.value.identifier.IdentifierValue;
-import org.apache.shardingsphere.sql.parser.sql.dialect.statement.mysql.dal.MySQLShowTablesStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dal.FromSchemaSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dal.ShowFilterSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dal.ShowLikeSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.DatabaseSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.IdentifierValue;
+import org.apache.shardingsphere.sql.parser.statement.mysql.dal.MySQLShowTablesStatement;
 import org.apache.shardingsphere.test.mock.AutoMockExtension;
 import org.apache.shardingsphere.test.mock.StaticMockSettings;
 import org.junit.jupiter.api.Test;
@@ -193,8 +194,8 @@ class ShowTablesExecutorTest {
         ShardingSphereDataPersistService shardingSphereDataPersistService = mock(ShardingSphereDataPersistService.class);
         when(shardingSphereDataPersistService.load(any())).thenReturn(Optional.empty());
         when(metaDataPersistService.getShardingSphereDataPersistService()).thenReturn(shardingSphereDataPersistService);
-        MetaDataContexts metaDataContexts = MetaDataContextsFactory.create(metaDataPersistService,
-                new ShardingSphereMetaData(databases, mock(ResourceMetaData.class), mock(RuleMetaData.class), new ConfigurationProperties(new Properties())));
+        MetaDataContexts metaDataContexts = MetaDataContextsFactory.create(metaDataPersistService, new ShardingSphereMetaData(databases, mock(ResourceMetaData.class),
+                new RuleMetaData(Collections.singleton(mock(AuthorityRule.class))), new ConfigurationProperties(new Properties())));
         ContextManager result = mock(ContextManager.class, RETURNS_DEEP_STUBS);
         when(result.getMetaDataContexts()).thenReturn(metaDataContexts);
         when(result.getDatabase("db_0")).thenReturn(databases.get("db_0"));
@@ -220,7 +221,7 @@ class ShowTablesExecutorTest {
     }
     
     private ConnectionSession mockConnectionSession() {
-        ConnectionSession result = mock(ConnectionSession.class);
+        ConnectionSession result = mock(ConnectionSession.class, RETURNS_DEEP_STUBS);
         when(result.getDatabaseName()).thenReturn(String.format(DATABASE_PATTERN, 0));
         return result;
     }

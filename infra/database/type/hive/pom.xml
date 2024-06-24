@@ -34,6 +34,11 @@
         </dependency>
         
         <dependency>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-jdbc</artifactId>
+        </dependency>
+        
+        <dependency>
             <groupId>org.apache.shardingsphere</groupId>
             <artifactId>shardingsphere-test-util</artifactId>
             <version>${project.version}</version>
